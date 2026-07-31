@@ -11,7 +11,7 @@ const API_BASE = _IS_CAPACITOR_NATIVE ? 'https://elnasrcsit.website' : '';
 const CBS = {
 
   VERSION: '1.4.0',
-  ASSET_VERSION: '2026073125',
+  ASSET_VERSION: '2026073126',
 
   /* ===== Auth ===== */
   getToken() { return localStorage.getItem('token'); },
@@ -68,20 +68,12 @@ const CBS = {
   },
 
   /* النطاق العام للروابط التي يشاركها المستخدم مع الآخرين.
-     داخل تطبيق Capacitor يكون location.origin هو "http://localhost" دائماً،
-     فكانت روابط المشاركة ورسائل الواتساب تُرسل بـ localhost ولا تفتح عند أحد.
-     أي رابط يخرج من الجهاز يجب أن يمر من هنا لا من location.origin. */
-  PUBLIC_BASE_URL: 'https://elnasrcsit.website',
+     التعريف الفعلي في js/shared.js لأن welcome.html تحتاجه أيضاً ولا تحمّل
+     هذا الملف — الاحتفاظ بنسختين هو ما جعلهما تتباعدان سابقاً. */
+  get PUBLIC_BASE_URL() { return window.CBSShared.PUBLIC_BASE_URL; },
 
   publicBaseUrl() {
-    const host = window.location.hostname || '';
-    const origin = window.location.origin || '';
-    const isNative = !!(window.Capacitor?.isNativePlatform?.());
-    if (isNative || !host || host === 'localhost' || host === '127.0.0.1'
-        || origin === 'null' || window.location.protocol === 'file:') {
-      return this.PUBLIC_BASE_URL;
-    }
-    return origin;
+    return window.CBSShared.publicBaseUrl();
   },
 
   /* ===== Media & File URLs ===== */
@@ -101,15 +93,12 @@ const CBS = {
     return base + path;
   },
 
-  /* ===== Utilities ===== */
+  /* ===== Utilities =====
+     التعريف في js/shared.js — تشاركه welcome.html التي لا تحمّل هذا الملف.
+     ملاحظة: النسخة القديمة هنا كانت `if (!str) return ''` فتُرجع '' للرقم 0
+     وللقيمة false؛ نسخة shared.js تفحص null/undefined فقط. */
   escapeHTML(str) {
-    if (!str) return '';
-    return String(str)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
+    return window.CBSShared.escapeHTML(str);
   },
 
   requireAuth() {

@@ -63,9 +63,33 @@ const uploadLimiter = createRateLimiter(
   (req) => req.user?.id ? `user:${req.user.id}` : `ip:${getIpPrefix(req.ip)}`
 );
 
+/* ===== حدّ استدعاءات الذكاء الاصطناعي =====
+   حصة Gemini المجانية ~20 طلباً يومياً لكل مفتاح، وحصة Cohere/Groq محدودة
+   كذلك. الحدّ العام (1000 طلب/15 دقيقة) لا يحمي منها إطلاقاً: طالب واحد
+   يضغط "ملخص شامل" بضع مرات يستنفد رصيد الدفعة كلها.
+
+   الحدّ لكل مستخدم لا لكل IP — الطلاب داخل الحرم خلف نفس الشبكة، فالحدّ
+   بالـIP كان سيعاقب الجميع بذنب واحد. */
+const aiLimiter = createRateLimiter(
+  60 * 60 * 1000, // ساعة
+  30,             // 30 طلباً للمستخدم في الساعة
+  'استخدمت مساعد كيدي كثيراً خلال الساعة الماضية. أمهله قليلاً ثم عد إليه.',
+  (req) => req.user?.id ? `ai:user:${req.user.id}` : `ai:ip:${getIpPrefix(req.ip)}`
+);
+
+/* حدّ يومي أشمل يحمي الحصة الكلية للنظام لا حصة المستخدم وحده */
+const aiDailyLimiter = createRateLimiter(
+  24 * 60 * 60 * 1000, // يوم
+  120,                 // 120 طلباً للمستخدم يومياً
+  'بلغت الحد اليومي لاستخدام مساعد كيدي. يتجدد غداً.',
+  (req) => req.user?.id ? `aiday:user:${req.user.id}` : `aiday:ip:${getIpPrefix(req.ip)}`
+);
+
 module.exports = {
   apiLimiter,
   authLimiter,
   passwordResetLimiter,
-  uploadLimiter
+  uploadLimiter,
+  aiLimiter,
+  aiDailyLimiter
 };

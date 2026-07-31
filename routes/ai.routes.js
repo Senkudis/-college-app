@@ -6,6 +6,11 @@
 const router = require('express').Router();
 const https  = require('https');
 const auth   = require('../middleware/auth.middleware');
+const { aiLimiter, aiDailyLimiter } = require('../middleware/rateLimiter');
+
+/* الحدود تُطبَّق بعد auth ليكون req.user.id متاحاً (المفتاح لكل مستخدم لا لكل IP).
+   تُوضع على مسارات التوليد المكلِّفة فقط — لا على قراءة/حذف الملاحظات ولا الحالة. */
+const aiGuard = [auth, aiDailyLimiter, aiLimiter];
 
 // =========================================================
 // ===== إعداد مجمع مفاتيح Gemini =====
@@ -747,7 +752,7 @@ router.get('/lecture-context/:id', auth, async (req, res) => {
 // =========================================================
 // 1. ملخص المحتوى — POST /api/ai/summarize
 // =========================================================
-router.post('/summarize', auth, async (req, res) => {
+router.post('/summarize', aiGuard, async (req, res) => {
   try {
     const { text, subjectTitle, lectureTitle } = req.body;
     const liveContext = await getLiveStudentContext(req.user.id, req.activeBatch);
@@ -765,7 +770,7 @@ router.post('/summarize', auth, async (req, res) => {
 // =========================================================
 // 2. سؤال وجواب — POST /api/ai/ask
 // =========================================================
-router.post('/ask', auth, async (req, res) => {
+router.post('/ask', aiGuard, async (req, res) => {
   try {
     const { text, question, prompt: bodyPrompt, history, subjectTitle, lectureTitle, selectedSubjectId, subjectId } = req.body;
     const q = (question || bodyPrompt || '').trim();
@@ -892,7 +897,7 @@ router.post('/ask', auth, async (req, res) => {
 // =========================================================
 // 3. بطاقات المراجعة — POST /api/ai/flashcards
 // =========================================================
-router.post('/flashcards', auth, async (req, res) => {
+router.post('/flashcards', aiGuard, async (req, res) => {
   try {
     const { text, subjectTitle, lectureTitle } = req.body;
     const content = (text && text.trim().length >= 10) ? text.slice(0, 10000) : `الموضوع: ${lectureTitle || 'المحاضرة'} - المادة: ${subjectTitle || 'المادة الأكاديمية'}`;
@@ -922,7 +927,7 @@ ${content}`;
 // =========================================================
 // 4. توليد أسئلة اختبار — POST /api/ai/quiz-gen
 // =========================================================
-router.post('/quiz-gen', auth, async (req, res) => {
+router.post('/quiz-gen', aiGuard, async (req, res) => {
   try {
     const { text, count = 5, subjectTitle, lectureTitle } = req.body;
     const content = (text && text.trim().length >= 10) ? text.slice(0, 10000) : `الموضوع: ${lectureTitle || 'المحاضرة'} - المادة: ${subjectTitle || 'المادة الأكاديمية'}`;

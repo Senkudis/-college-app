@@ -1086,6 +1086,7 @@
     </div>
   </footer>
 
+  <script src="/js/shared.js?v=2026073126"></script>
   <script>
     // Scroll reveal animation
     const reveals = document.querySelectorAll('.reveal');
@@ -1108,11 +1109,8 @@
 
     /* هذه الصفحة لا تحمّل app.js، فتحتاج دالة هروب خاصة بها.
        بدونها أي عنوان خبر فيه < أو " أو ' كان يكسر بناء البطاقة. */
-    function escHtml(str) {
-      return String(str ?? '').replace(/[&<>"']/g, c => ({
-        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
-      }[c]));
-    }
+    // التعريف في /js/shared.js — نسخة محلية سابقة تباعدت عن نسخة التطبيق
+    const escHtml = (str) => window.CBSShared.escapeHTML(str);
 
     function getReadingTimeMinutes(text) {
       const words = (text || '').trim().split(/\s+/).filter(Boolean).length;
@@ -1359,14 +1357,8 @@
       }
     }
 
-    function getPublicBaseUrl() {
-      const host = window.location.hostname || '';
-      const origin = window.location.origin || '';
-      if (!host || host === 'localhost' || host === '127.0.0.1' || origin === 'null' || !!(window.Capacitor?.isNativePlatform?.())) {
-        return 'https://elnasrcsit.website';
-      }
-      return origin;
-    }
+    // التعريف في /js/shared.js — يشاركه app.js فلا تتباعد النسختان
+    const getPublicBaseUrl = () => window.CBSShared.publicBaseUrl();
 
     function shareCurrentNewsLink() {
       if (!window._currentActiveNewsId) return;

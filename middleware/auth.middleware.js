@@ -137,7 +137,29 @@ module.exports = async (req, res, next) => {
       });
     }
 
-    // خطأ غير متوقع
+    /* تعذّر الوصول لقاعدة البيانات ليس خطأ مصادقة.
+       كان هذا الفرع يبتلع أعطال القاعدة تحت رسالة "حدث خطأ غير متوقع في
+       المصادقة"، فيظهر للمستخدم كخطأ عشوائي في أي صفحة يعمل فيها (حفظ خبر
+       مثلاً) بينما السبب الحقيقي انقطاع الاتصال بـ MongoDB. نفصلها بـ 503
+       ورسالة صريحة، ونسجّل التفاصيل كاملة للتشخيص. */
+    const isDbFailure =
+      err.name === 'MongooseError' ||
+      err.name === 'MongoNetworkError' ||
+      err.name === 'MongoServerSelectionError' ||
+      /buffering timed out|failed to connect|topology|ECONNREFUSED|ETIMEDOUT/i.test(err.message || '');
+
+    if (isDbFailure) {
+      console.error('[AUTH] تعذّر الوصول لقاعدة البيانات:', err.message);
+      return res.status(503).json({
+        success: false,
+        message: "الخدمة غير متاحة مؤقتاً — تعذّر الاتصال بقاعدة البيانات",
+        action: "يرجى المحاولة بعد قليل",
+        code: "DB_UNAVAILABLE"
+      });
+    }
+
+    // خطأ غير متوقع فعلاً
+    console.error('[AUTH] خطأ غير متوقع:', err.stack || err.message);
     return res.status(500).json({
       success: false,
       message: "حدث خطأ غير متوقع في المصادقة",

@@ -147,6 +147,50 @@ htmlFiles.forEach(file => {
       logWarning(file, `document.getElementById('${targetId}') referenced in script but id="${targetId}" not found in HTML markup!`);
     }
   }
+
+  /* F-0. shared.js يجب أن يُحمّل قبل app.js.
+     app.js يفوّض إليه escapeHTML و publicBaseUrl، فنسيانه يعطّل كل الصفحة. */
+  const appIdx = content.indexOf('/js/app.js');
+  const sharedIdx = content.indexOf('/js/shared.js?');
+  if (appIdx !== -1) {
+    if (sharedIdx === -1) {
+      logError(file, 'يحمّل app.js دون /js/shared.js — سيفشل CBS.escapeHTML و CBS.publicBaseUrl');
+    } else if (sharedIdx > appIdx) {
+      logError(file, '/js/shared.js يجب أن يسبق /js/app.js في ترتيب التحميل');
+    }
+  }
+
+  /* F. إدراج بيانات المستخدم داخل HTML بلا هروب.
+     أُصلح ~30 موضعاً يدوياً في 2026-07-31، ولا شيء كان يمنع عودتها.
+
+     الدقة تأتي من شرطين معاً، وإلا امتلأ التقرير بإنذارات كاذبة فأُهمل:
+       1) الإدراج داخل قالب نصي يحوي وسم HTML فعلياً (يستبعد textContent وconfirm)
+       2) التعبير يشير إلى حقل يملؤه المستخدم، وغير ممرَّر على دالة هروب */
+  const ESCAPER_CALL = /^(?:[A-Za-z_$][\w$]*\.)?(?:esc[\w$]*|encodeURI|encodeURIComponent|Number|parseInt|parseFloat|String\.raw)\s*\(/i;
+  const USER_FIELDS = /\.(name|title|email|message|caption|notes|description|comment|reason|summary|body|subtitle|feedback|location)\b/;
+
+  // القوالب النصية التي تبني HTML: تحوي `<` متبوعاً بحرف (بداية وسم)
+  const templates = inlineScriptsCode.matchAll(/`([^`\\]*(?:\\.[^`\\]*)*)`/g);
+  for (const t of templates) {
+    const tpl = t[1];
+    if (!/<[a-zA-Z]/.test(tpl)) continue;   // ليس HTML
+
+    for (const m of tpl.matchAll(/\$\{([^{}]*)\}/g)) {
+      const expr = m[1].trim();
+      if (!expr || !USER_FIELDS.test(expr)) continue;
+      if (ESCAPER_CALL.test(expr)) continue;
+      // النمط الدفاعي: CBS.escapeHTML ? CBS.escapeHTML(x) : x
+      if (/\besc[\w$]*\s*\(/i.test(expr)) continue;
+      // نداء دالة مساعدة تبني HTML بنفسها (مثل credRow(...)) — الهروب مسؤوليتها
+      if (/^[a-zA-Z_$][\w$]*\s*\(/.test(expr)) continue;
+      // شرط ثلاثي يبدأ بمقارنة → القيمة المعروضة ثابتة غالباً
+      if (/^[^?]*(===|!==|==|!=)[^?]*\?/.test(expr)) continue;
+      if (/^CBS\.(formatDate|formatDateTime|formatTime|roleLabel|roleBadgeClass|getMediaUrl)\s*\(/.test(expr)) continue;
+
+      // خطأ لا تحذير: هذه ثغرة حقن فعلية، ويجب أن تُفشل npm test فوراً
+      logError(file, `إدراج غير مهرَّب داخل HTML: \${${expr.slice(0, 60)}} — مرّره على CBS.escapeHTML()`);
+    }
+  }
 });
 
 console.log('\n------------------------------------------------');

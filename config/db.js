@@ -108,26 +108,51 @@ async function connectDB() {
     process.exit(1);
   }
 
-  try {
-    const isProduction = process.env.NODE_ENV === 'production';
-    await mongoose.connect(uri, {
-      serverSelectionTimeoutMS: 30000,
-      connectTimeoutMS: 30000,
-      socketTimeoutMS: 30000,
-      tls: true,
-      // tlsInsecure فقط في بيئة التطوير لتجنب مشاكل الشهادات المحلية
-      // في الإنتاج يجب التحقق الكامل من الشهادة
-      tlsInsecure: !isProduction,
-      family: 4
-    });
-    console.log("✅ DB Connected");
-    
-    // Create indexes after connection
-    await createIndexes();
-  } catch (err) {
-    console.error("❌ DB Error:", err.message);
-    process.exit(1);
-  }
+  const isProduction = process.env.NODE_ENV === 'production';
+  const options = {
+    serverSelectionTimeoutMS: 30000,
+    connectTimeoutMS: 30000,
+    socketTimeoutMS: 30000,
+    tls: true,
+    // tlsInsecure فقط في بيئة التطوير لتجنب مشاكل الشهادات المحلية
+    // في الإنتاج يجب التحقق الكامل من الشهادة
+    tlsInsecure: !isProduction,
+    family: 4
+  };
+
+  /* mongoose يعيد الاتصال تلقائياً بعد نجاح أول اتصال، لكنه لا يعيد المحاولة
+     إذا فشلت المحاولة الأولى. كان الكود ينفّذ process.exit(1) هناك، فأي
+     انقطاع شبكة لحظي وقت الإقلاع (أو تأخر DNS) يُسقط الخادم كلياً — ولو لم
+     يكن خلف مدير عمليات يعيد تشغيله، يبقى الموقع متوقفاً حتى تدخّل يدوي.
+     الآن نعيد المحاولة بتباعد متزايد ولا نُنهي العملية أبداً. */
+  let attempt = 0;
+  const MAX_DELAY_MS = 60_000;
+
+  const tryConnect = async () => {
+    attempt++;
+    try {
+      await mongoose.connect(uri, options);
+      console.log(`✅ DB Connected${attempt > 1 ? ` (بعد ${attempt} محاولات)` : ''}`);
+      attempt = 0;
+      await createIndexes();
+    } catch (err) {
+      // تباعد أسّي بحد أقصى دقيقة: 2، 4، 8، 16، 32، 60، 60...
+      const delay = Math.min(2 ** attempt * 1000, MAX_DELAY_MS);
+      console.error(`❌ فشل الاتصال بقاعدة البيانات (محاولة ${attempt}): ${err.message}`);
+      console.error(`   إعادة المحاولة بعد ${Math.round(delay / 1000)} ثانية...`);
+      setTimeout(tryConnect, delay).unref?.();
+    }
+  };
+
+  // لا ننتظر نجاح الاتصال حتى لا يتعطل إقلاع الخادم؛ الطلبات التي تحتاج
+  // القاعدة سترد بخطأ واضح حتى يكتمل الاتصال، وصفحات الواجهة تُخدم فوراً.
+  tryConnect();
+}
+
+/* حالة الاتصال — يستخدمها فحص الصحة ليعكس الواقع بدل ادعاء السلامة دائماً */
+function isDbConnected() {
+  return mongoose.connection.readyState === 1;
 }
 
 module.exports = connectDB;
+module.exports.isDbConnected = isDbConnected;
