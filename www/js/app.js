@@ -11,7 +11,7 @@ const API_BASE = _IS_CAPACITOR_NATIVE ? 'https://elnasrcsit.website' : '';
 const CBS = {
 
   VERSION: '1.4.0',
-  ASSET_VERSION: '2026073126',
+  ASSET_VERSION: '2026073127',
 
   /* ===== Auth ===== */
   getToken() { return localStorage.getItem('token'); },

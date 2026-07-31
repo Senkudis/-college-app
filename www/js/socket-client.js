@@ -40,9 +40,16 @@
 
     socket = window.io(SOCKET_URL, {
       auth: { token },
-      transports: ['websocket', 'polling'], // يرجع لـ polling تلقائياً
+      /* polling أولاً ثم ترقية تلقائية إلى websocket.
+         كان الترتيب معكوساً ('websocket' أولاً)، وSocket.IO لا يتراجع إلى
+         polling ضمن نفس المحاولة — بل يفشل ويعيد المحاولة، فتمتلئ الطرفية
+         برسائل "websocket error" ويتأخر الاتصال. الترتيب الافتراضي يتصل
+         فوراً عبر polling ثم يرقّي بصمت إن سمح الوسيط. */
+      transports: ['polling', 'websocket'],
+      upgrade: true,
       reconnectionAttempts: 10,
       reconnectionDelay: 3000,
+      reconnectionDelayMax: 20000,
       timeout: 10000
     });
 
@@ -61,9 +68,16 @@
       console.warn('[Socket] Disconnected:', reason);
     });
 
+    /* الاتصال اللحظي ميزة إضافية لا شرط لعمل التطبيق (هناك استطلاع دوري
+       للإشعارات). لذا نسجّل أول خطأ فقط بدل إغراق الطرفية برسالة مع كل
+       محاولة من محاولات إعادة الاتصال العشر. */
+    let _errLogged = false;
     socket.on('connect_error', (err) => {
-      console.warn('[Socket] Connection error:', err.message);
+      if (_errLogged) return;
+      _errLogged = true;
+      console.warn('[Socket] تعذّر الاتصال اللحظي (سيُعاد المحاولة بصمت):', err.message);
     });
+    socket.on('connect', () => { _errLogged = false; });
     // تفعيل فك حظر الصوت بلمسة المستخدم الأولى على الشاشة
     let _audioUnlocked = false;
     function _unlockAudio() {

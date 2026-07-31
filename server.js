@@ -55,25 +55,54 @@ app.use(compression());
 // app.use(hpp()); // Prevent HTTP Parameter Pollution (Incompatible with Express 5 req.query getter)
 app.use(requestId);
 
+/* ===== أصول مسموح بها =====
+   الأصول الخاصة بالتطبيق نفسه يجب أن تُقبل دائماً دون الاعتماد على ضبط
+   CORS_ORIGIN، لأن نسيانه كان يعطّل WebSocket بالكامل في الإنتاج:
+   طلبات polling تُرسل من نفس النطاق فلا يضع المتصفح ترويسة Origin وتنجح،
+   بينما مصافحة WebSocket ترسل Origin **دائماً** — فتُرفض بـ400 ويبقى
+   الاتصال اللحظي معطلاً مع تكرار الأخطاء في الطرفية.
+   أصول localhost هنا ليست ثغرة: هكذا يقدّم Capacitor صفحات التطبيق داخل
+   الجهاز (http/https/capacitor://localhost) وليست مواقع على الإنترنت. */
+const APP_ORIGINS = [
+  'https://elnasrcsit.website',
+  'https://www.elnasrcsit.website',
+  'http://localhost',
+  'https://localhost',
+  'capacitor://localhost',
+  'ionic://localhost'
+];
+
+const configuredOrigins = (process.env.CORS_ORIGIN || '')
+  .split(',').map(o => o.trim()).filter(Boolean);
+
+const allowedOriginSet = new Set([...APP_ORIGINS, ...configuredOrigins]);
+
+function isOriginAllowed(origin) {
+  // طلبات بلا Origin (تطبيقات أصلية، curl، طلبات من نفس النطاق عبر XHR)
+  if (!origin) return true;
+  if (allowedOriginSet.has(origin)) return true;
+  // أي منفذ على localhost أثناء التطوير
+  if (process.env.NODE_ENV !== 'production' && /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?$/.test(origin)) {
+    return true;
+  }
+  return false;
+}
+
+function corsOriginCallback(origin, callback) {
+  if (isOriginAllowed(origin)) return callback(null, true);
+  console.warn('[CORS] أصل مرفوض:', origin);
+  callback(new Error('Not allowed by CORS'));
+}
+
 // ===== Socket.io Setup =====
 const io = new SocketServer(httpServer, {
-  cors: { 
-    origin: (origin, callback) => {
-      // Allow requests with no origin (mobile apps, curl, etc.)
-      if (!origin) return callback(null, true);
-      const allowedOrigins = (process.env.CORS_ORIGIN || '').split(',').map(o => o.trim()).filter(Boolean);
-      // Same-origin requests do not need CORS.  In production, an empty
-      // allow-list must not silently permit every website to use the API.
-      if ((process.env.NODE_ENV !== 'production' && allowedOrigins.length === 0) || allowedOrigins.includes(origin)) {
-        callback(null, true);
-      } else {
-        callback(new Error('Not allowed by CORS'));
-      }
-    },
+  cors: {
+    origin: corsOriginCallback,
     methods: ['GET', 'POST'],
     credentials: true
   },
-  transports: ['websocket', 'polling']
+  // polling أولاً ثم الترقية إلى websocket — يعمل خلف أي وسيط لا يدعم الترقية
+  transports: ['polling', 'websocket']
 });
 
 app.set('io', io);
@@ -125,18 +154,10 @@ io.on('connection', (socket) => {
 });
 
 // ===== Core Middleware =====
-const allowedOrigins = (process.env.CORS_ORIGIN || '').split(',').map(o => o.trim()).filter(Boolean);
-
+/* نفس منطق socket.io أعلاه — كان الاثنان مختلفَين: الـAPI يسمح للجميع عند
+   خلوّ CORS_ORIGIN بينما socket.io يرفض الجميع، فيعمل الـAPI ويفشل السوكِت. */
 app.use(cors({
-  origin: (origin, callback) => {
-    // Allow requests with no origin (mobile apps, curl, etc.)
-    if (!origin) return callback(null, true);
-    if ((process.env.NODE_ENV !== 'production' && allowedOrigins.length === 0) || allowedOrigins.includes(origin)) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
+  origin: corsOriginCallback,
   credentials: true
 }));
 
