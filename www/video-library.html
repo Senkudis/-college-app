@@ -1,0 +1,249 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>مكتبة الفيديو | كلية تقنية المعلومات</title>
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css?v=2026073125">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026073125">
+  <style>
+    .library-hero {
+      background: linear-gradient(135deg, #0f172a, #1e293b);
+      border-radius: var(--radius-xl);
+      padding: 28px 32px;
+      color: white;
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .library-hero h1 { font-size: 1.5rem; font-weight: 800; margin: 0; }
+    .library-hero p { opacity: 0.7; margin: 4px 0 0; font-size: 0.9rem; }
+
+    .videos-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px;
+    }
+    .video-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      transition: var(--transition);
+      cursor: pointer;
+    }
+    .video-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); border-color: var(--primary); }
+    .video-card-thumb {
+      aspect-ratio: 16/9;
+      background: #0f172a;
+      position: relative;
+      overflow: hidden;
+    }
+    .video-card-thumb img {
+      width: 100%; height: 100%; object-fit: cover;
+    }
+    .video-card-duration {
+      position: absolute; bottom: 8px; left: 8px;
+      background: rgba(0,0,0,0.8); color: white;
+      padding: 2px 8px; border-radius: 4px;
+      font-size: 0.75rem; font-weight: 700;
+    }
+    .video-card-status {
+      position: absolute; top: 8px; right: 8px;
+      padding: 3px 10px; border-radius: 12px;
+      font-size: 0.7rem; font-weight: 700;
+    }
+    .video-card-status.processing { background: #f59e0b; color: #000; }
+    .video-card-status.ready { display: none; }
+    .video-card-body { padding: 12px; }
+    .video-card-title { font-weight: 700; font-size: 0.86rem; margin-bottom: 5px; color: var(--text-main); }
+    .video-card-meta { font-size: 0.74rem; color: var(--text-muted); display: flex; gap: 10px; flex-wrap: wrap; }
+
+    .filter-bar {
+      display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap;
+    }
+    .filter-bar .search-wrapper { flex: 1; min-width: 160px; }
+    .filter-bar select {
+      padding: 7px 12px; border: 1.5px solid var(--border);
+      border-radius: var(--radius-md); background: var(--bg-card);
+      color: var(--text-main); font-family: 'Cairo', sans-serif;
+      font-size: 0.82rem;
+    }
+
+    @media (max-width: 768px) {
+      .videos-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    }
+    @media (max-width: 420px) {
+      .videos-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+</head>
+<body>
+
+<header class="main-header">
+  <div class="header-brand">
+    <img src="/assets/logo.png" class="header-logo" alt="Logo">
+    <div class="header-title-group">
+      <strong>كلية تقنية المعلومات</strong>
+      <small>مكتبة الفيديو</small>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="location.href='/dashboard.html'" title="الرئيسية"><i class="ri-home-line"></i></button>
+  </div>
+</header>
+
+<div class="page-content">
+
+    <!-- Welcome Banner -->
+    <div class="welcome-banner" style="background: linear-gradient(135deg,#ef4444,#dc2626,#b91c1c);">
+      <div class="welcome-banner-icon-wrap">
+        <i class="ri-play-circle-line welcome-banner-icon"></i>
+      </div>
+      <div class="welcome-banner-body">
+        <h2>مكتبة الفيديو</h2>
+        <p>محتوى المحاضرات المرئية للطلاب</p>
+      </div>
+    </div>
+  <!-- Action button for uploaders -->
+  <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
+    <a href="/creator-studio.html" class="btn btn-primary btn-sm" id="uploadLink" style="display:none;">
+      <i class="ri-upload-cloud-2-line"></i> رفع فيديو
+    </a>
+  </div>
+
+  <div class="filter-bar">
+    <div class="search-wrapper">
+      <i class="ri-search-line"></i>
+      <input type="text" class="search-input" id="searchBox" placeholder="ابحث عن فيديو...">
+    </div>
+    <select id="subjectFilter">
+      <option value="">جميع المقررات</option>
+    </select>
+    <select id="sortSelect">
+      <option value="new">الأحدث أولاً</option>
+      <option value="old">الأقدم أولاً</option>
+    </select>
+  </div>
+
+  <div class="videos-grid" id="videosGrid"></div>
+</div>
+
+<div id="toast-container"></div>
+<footer class="main-footer">جميع الحقوق محفوظة &copy; <span id="year"></span> النظام الجامعي المتكامل</footer>
+
+<script src="/js/app.js?v=2026073125"></script>
+<script src="/js/socket-client.js?v=2026073125" defer></script>
+<script>
+  CBS.init();
+  const user = CBS.getUser();
+  const isDoctorOrLeader = user.roles && (user.roles.includes('doctor') || user.roles.includes('dean') || user.roles.includes('leader'));
+  if (isDoctorOrLeader) document.getElementById('uploadLink').style.display = 'inline-flex';
+
+  let allVideos = [];
+
+  function formatDuration(secs) {
+    if (!secs) return '';
+    const m = Math.floor(secs / 60), s = secs % 60;
+    return `${m}:${String(s).padStart(2, '0')}`;
+  }
+
+  function formatSize(bytes) {
+    if (!bytes) return '';
+    const k = 1024, sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
+
+  async function loadSubjects() {
+    try {
+      const res = await CBS.apiGet('/api/subjects');
+      const _resData = await CBS.readJson(res);
+      const list = _resData.data?.subjects || _resData.subjects || _resData.data || _resData;
+      const sel = document.getElementById('subjectFilter');
+      sel.innerHTML = '<option value="">جميع المقررات</option>' +
+        list.map(s => `<option value="${s._id}">${CBS.escapeHTML(s.name)}</option>`).join('');
+    } catch(e) {}
+  }
+
+  async function loadVideos() {
+    CBS.showLoading('videosGrid', 'جاري التحميل...', 'skeleton-grid');
+    try {
+      const res = await CBS.apiGet('/api/videos');
+      const data = await CBS.readJson(res);
+      allVideos = data.success ? data.videos : [];
+      renderVideos();
+    } catch(e) {
+      CBS.showEmpty('videosGrid', 'حدث خطأ في التحميل', 'ri-wifi-off-line');
+    }
+  }
+
+  function renderVideos() {
+    const q = document.getElementById('searchBox').value.toLowerCase();
+    const subj = document.getElementById('subjectFilter').value;
+    const sort = document.getElementById('sortSelect').value;
+
+    let list = allVideos.filter(v => {
+      if (q && !v.title.toLowerCase().includes(q)) return false;
+      if (subj && (typeof v.subject === 'object' ? v.subject?._id : v.subject) !== subj) return false;
+      return true;
+    });
+
+    list.sort((a, b) => sort === 'new'
+      ? new Date(b.createdAt) - new Date(a.createdAt)
+      : new Date(a.createdAt) - new Date(b.createdAt)
+    );
+
+    if (!list.length) {
+      CBS.showEmpty('videosGrid', 'لا توجد فيديوهات مطابقة', 'ri-video-line');
+      return;
+    }
+
+    document.getElementById('videosGrid').innerHTML = list.map(v => {
+      const subName = typeof v.subject === 'object' ? (v.subject?.name || '') : '';
+      const uploader = typeof v.uploadedBy === 'object' ? (v.uploadedBy?.name || '') : '';
+      return `
+      <div class="video-card" onclick="location.href='/watch-video.html?id=${v._id}'">
+        <div class="video-card-thumb">
+          <img src="/api/videos/${v._id}/thumbnail" alt="${CBS.escapeHTML(v.title)}" loading="lazy">
+          ${v.duration ? `<span class="video-card-duration">${formatDuration(v.duration)}</span>` : ''}
+          <span class="video-card-status ${v.status}">${v.status === 'processing' ? 'قيد المعالجة' : ''}</span>
+        </div>
+        <div class="video-card-body">
+          <div class="video-card-title">${CBS.escapeHTML(v.title)}</div>
+          <div class="video-card-meta">
+            ${subName ? `<span><i class="ri-book-open-line"></i> ${CBS.escapeHTML(subName)}</span>` : ''}
+            ${uploader ? `<span><i class="ri-user-voice-line"></i> ${uploader}</span>` : ''}
+            <span><i class="ri-calendar-line"></i> ${CBS.formatDate(v.createdAt)}</span>
+          </div>
+          <div style="display:flex; gap:12px; font-size:0.8rem; color:var(--text-muted); font-weight:700; margin-top:8px; padding-top:8px; border-top:1px solid rgba(0,0,0,0.05);">
+            <span><i class="ri-eye-line"></i> ${v.views || 0}</span>
+            <span><i class="ri-chat-1-line"></i> ${v.commentsCount || 0}</span>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('searchBox').addEventListener('input', renderVideos);
+  document.getElementById('subjectFilter').addEventListener('change', renderVideos);
+  document.getElementById('sortSelect').addEventListener('change', renderVideos);
+
+  loadSubjects();
+  loadVideos();
+</script>
+<script>document.addEventListener('cbs:refresh',e=>{e.preventDefault();loadVideos().finally(()=>e.detail.done());});</script>
+</body>
+</html>
+
+

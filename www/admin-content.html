@@ -1,0 +1,596 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true'||(!localStorage.getItem('darkMode')&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme','dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>إدارة المحتوى العام | CBS</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Al-Nasr CBS">
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <link rel="stylesheet" href="/css/style.css?v=2026073125">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026073125">
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet">
+  <style>
+    /* ── Tabs ─────────────────────────────── */
+    .tab-bar {
+      display: flex; gap: 6px;
+      background: var(--bg-secondary);
+      padding: 4px; border-radius: 14px;
+      margin-bottom: 18px;
+    }
+    .tab-btn {
+      flex: 1; padding: 9px;
+      border: none; background: none;
+      border-radius: 10px; font-family: 'Cairo', sans-serif;
+      font-size: 0.82rem; font-weight: 700;
+      color: var(--text-muted); cursor: pointer;
+      transition: background .15s, color .15s;
+      display: flex; align-items: center; justify-content: center; gap: 6px;
+    }
+    .tab-btn.active {
+      background: var(--bg-card);
+      color: var(--primary);
+      box-shadow: var(--shadow-sm);
+    }
+
+    /* ── Table ────────────────────────────── */
+    .data-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
+    .data-table thead th {
+      padding: 10px 12px; text-align: right;
+      background: var(--bg-secondary); color: var(--text-muted);
+      font-weight: 700; font-size: 0.75rem;
+      border-bottom: 1px solid var(--border);
+    }
+    .data-table tbody tr {
+      border-bottom: 1px solid var(--border);
+      transition: background .12s;
+    }
+    .data-table tbody tr:hover { background: var(--bg-secondary); }
+    .data-table tbody td { padding: 10px 12px; color: var(--text-main); vertical-align: middle; }
+    .data-table .td-title { font-weight: 700; max-width: 200px; }
+    .data-table .td-title small { font-weight: 400; color: var(--text-muted); display: block; font-size: 0.72rem; }
+
+    /* ── Status badge ─────────────────────── */
+    .badge-pub  { background: #dcfce7; color: #15803d; padding: 2px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; }
+    .badge-draft{ background: #fef9c3; color: #854d0e; padding: 2px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; }
+
+    /* ── Gallery Grid ─────────────────────── */
+    .gallery-mgr-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      gap: 10px;
+    }
+    .gallery-mgr-item {
+      position: relative; border-radius: 12px; overflow: hidden;
+      aspect-ratio: 1;
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+    }
+    .gallery-mgr-item img {
+      width: 100%; height: 100%; object-fit: cover;
+    }
+    .gallery-mgr-item .item-overlay {
+      position: absolute; inset: 0;
+      background: rgba(0,0,0,.55);
+      opacity: 0; transition: opacity .2s;
+      display: flex; flex-direction: column;
+      align-items: center; justify-content: center; gap: 6px;
+    }
+    .gallery-mgr-item:hover .item-overlay { opacity: 1; }
+    .item-overlay button {
+      background: rgba(255,255,255,.15); border: 1px solid rgba(255,255,255,.3);
+      color: #fff; border-radius: 8px;
+      padding: 5px 12px; font-size: 0.72rem; font-weight: 700;
+      cursor: pointer; font-family: 'Cairo', sans-serif;
+      display: flex; align-items: center; gap: 4px;
+      transition: background .15s;
+    }
+    .item-overlay button:hover { background: rgba(255,255,255,.25); }
+    .item-overlay button.del { background: rgba(239,68,68,.5); border-color: rgba(239,68,68,.7); }
+    .item-overlay button.del:hover { background: rgba(239,68,68,.75); }
+    .gallery-mgr-item .visibility-tag {
+      position: absolute; top: 6px; right: 6px;
+      background: rgba(0,0,0,.6); color: #fff;
+      padding: 2px 7px; border-radius: 6px; font-size: 0.65rem;
+    }
+    .gallery-mgr-item.hidden-img { opacity: .5; }
+
+    /* ── Modal (Using Global Classes from style.css) ── */
+    /* Only form-specific styles left */
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; }
+    .form-control {
+      width: 100%; padding: 9px 12px;
+      border: 1.5px solid var(--border); border-radius: 10px;
+      background: var(--bg-card); color: var(--text-main);
+      font-family: 'Cairo', sans-serif; font-size: 0.85rem;
+      transition: border-color .15s;
+    }
+    .form-control:focus { outline: none; border-color: var(--primary); }
+    textarea.form-control { min-height: 100px; resize: vertical; }
+    .form-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 16px; }
+    .form-check { display: flex; align-items: center; gap: 8px; }
+    .form-check input { width: 16px; height: 16px; cursor: pointer; }
+    .form-check label { font-size: 0.83rem; font-weight: 600; color: var(--text-main); cursor: pointer; }
+  </style>
+</head>
+<body>
+
+<header class="main-header">
+  <div class="header-right">
+    <button class="btn-icon" onclick="history.back()" title="رجوع"><i class="ri-arrow-right-line"></i></button>
+    <div class="header-title"><i class="ri-layout-masonry-line"></i> إدارة المحتوى العام</div>
+  </div>
+  <div class="header-left">
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line"></i></button>
+  </div>
+</header>
+
+<div class="page-content">
+
+  <!-- Welcome Banner -->
+  <div class="welcome-banner" style="background:linear-gradient(135deg,#0d3b66,#1a5a99);">
+    <div class="welcome-banner-icon-wrap"><i class="ri-layout-masonry-line welcome-banner-icon"></i></div>
+    <div class="welcome-banner-body">
+      <h2>المحتوى العام للجامعة</h2>
+      <p>إدارة أخبار ومعرض صور صفحة الاستقبال العامة</p>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="tab-bar">
+    <button class="tab-btn active" id="tabNews" onclick="switchTab('news')">
+      <i class="ri-newspaper-line"></i> الأخبار
+    </button>
+    <button class="tab-btn" id="tabGallery" onclick="switchTab('gallery')">
+      <i class="ri-image-2-line"></i> معرض الصور
+    </button>
+  </div>
+
+  <!-- ─── NEWS PANEL ─────────────────────────────────── -->
+  <div id="panelNews">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+      <button class="btn btn-primary btn-sm" onclick="openNewsModal()">
+        <i class="ri-add-line"></i> إضافة خبر
+      </button>
+    </div>
+    <div class="card" style="padding:0;overflow:hidden;">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>العنوان</th>
+            <th>التاريخ</th>
+            <th>الحالة</th>
+            <th>إجراءات</th>
+          </tr>
+        </thead>
+        <tbody id="newsTbody">
+          <tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text-muted)">
+            <i class="ri-loader-4-line" style="animation:spin 1s linear infinite;display:inline-block"></i> جاري التحميل...
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ─── GALLERY PANEL ──────────────────────────────── -->
+  <div id="panelGallery" style="display:none;">
+    <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
+      <button class="btn btn-primary btn-sm" onclick="openGalleryModal()">
+        <i class="ri-upload-2-line"></i> رفع صورة
+      </button>
+    </div>
+    <div class="gallery-mgr-grid" id="galleryMgrGrid">
+      <div style="grid-column:1/-1;text-align:center;padding:24px;color:var(--text-muted)">
+        <i class="ri-loader-4-line" style="animation:spin 1s linear infinite;display:inline-block"></i> جاري التحميل...
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast-container"></div>
+<footer class="main-footer">جميع الحقوق محفوظة &copy; <span id="year"></span> النظام الجامعي المتكامل</footer>
+
+<!-- ─── News Modal ──────────────────────────────────── -->
+<div class="modal-overlay" id="newsModalBack">
+  <div class="modal-box" style="max-width: 500px;">
+    <div class="modal-header">
+      <h3 class="modal-title" id="newsModalTitle">إضافة خبر جديد</h3>
+      <button class="modal-close" onclick="closeNewsModal()"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="newsEditId">
+    <div class="form-group">
+      <label>عنوان الخبر *</label>
+      <input id="newsTitle" type="text" class="form-control" placeholder="عنوان موجز وواضح" maxlength="200">
+    </div>
+    <div class="form-group">
+      <label>الملخص * <span style="font-size:.7rem;color:var(--text-muted)">(يظهر في قائمة الأخبار، حد أقصى 300 حرف)</span></label>
+      <textarea id="newsSummary" class="form-control" rows="2" maxlength="300" placeholder="ملخص قصير للخبر..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>المحتوى الكامل *</label>
+      <textarea id="newsBody" class="form-control" rows="5" placeholder="اكتب تفاصيل الخبر هنا..."></textarea>
+    </div>
+    <div class="form-group">
+      <label>الصورة الرئيسية <span style="font-size:.7rem;color:var(--text-muted)">(اختياري - اختر ملفاً أو ضع رابط)</span></label>
+      <div style="display:flex;gap:8px;">
+        <input id="newsImageFile" type="file" accept="image/*" class="form-control" style="flex:1">
+        <input id="newsImageUrl" type="url" class="form-control" placeholder="أو رابط https://..." style="flex:1">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>التاغات <span style="font-size:.7rem;color:var(--text-muted)">(افصلها بفاصلة)</span></label>
+      <input id="newsTags" type="text" class="form-control" placeholder="أخبار, تخرج, نشاط">
+    </div>
+    <div class="form-group">
+      <label>تاريخ النشر <span style="font-size:.7rem;color:var(--text-muted)">(يمكنك تعديله للربط بتاريخ قديم أو محدد)</span></label>
+      <input id="newsDate" type="date" class="form-control">
+    </div>
+      <div class="form-check">
+        <input type="checkbox" id="newsPublished" checked>
+        <label for="newsPublished">نشر فوراً (إلغاء التحديد يحفظه كمسودة)</label>
+      </div>
+    </div>
+    <div class="modal-footer form-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeNewsModal()">إلغاء</button>
+      <button class="btn btn-primary btn-sm" onclick="saveNews()"><i class="ri-save-line"></i> حفظ</button>
+    </div>
+  </div>
+</div>
+
+<!-- ─── Gallery Modal ───────────────────────────────── -->
+<div class="modal-overlay" id="galleryModalBack">
+  <div class="modal-box" style="max-width: 500px;">
+    <div class="modal-header">
+      <h3 class="modal-title" id="galleryModalTitle">رفع صورة جديدة</h3>
+      <button class="modal-close" onclick="closeGalleryModal()"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body">
+      <input type="hidden" id="galleryEditId">
+    <div class="form-group">
+      <label>الصورة * <span style="font-size:.7rem;color:var(--text-muted)">(اختر ملفاً أو ضع رابط مباشر)</span></label>
+      <div style="display:flex;gap:8px;">
+        <input id="galleryImageFile" type="file" accept="image/*" class="form-control" style="flex:1">
+        <input id="galleryUrl" type="url" class="form-control" placeholder="أو رابط https://..." style="flex:1">
+      </div>
+    </div>
+    <div class="form-group">
+      <label>وصف الصورة</label>
+      <input id="galleryCaption" type="text" class="form-control" placeholder="وصف مختصر للصورة" maxlength="300">
+    </div>
+    <div class="form-group">
+      <label>التصنيف</label>
+      <select id="galleryCategory" class="form-control">
+        <option value="أخرى">أخرى</option>
+        <option value="نشاط">نشاط</option>
+        <option value="مبنى">مبنى</option>
+        <option value="تخرج">تخرج</option>
+      </select>
+    </div>
+      <div class="form-group">
+        <label>رقم الترتيب <span style="font-size:.7rem;color:var(--text-muted)">(الأصغر يظهر أولاً)</span></label>
+        <input id="galleryOrder" type="number" class="form-control" value="0" min="0">
+      </div>
+    </div>
+    <div class="modal-footer form-actions">
+      <button class="btn btn-ghost btn-sm" onclick="closeGalleryModal()">إلغاء</button>
+      <button class="btn btn-primary btn-sm" onclick="saveGallery()"><i class="ri-save-line"></i> حفظ</button>
+    </div>
+  </div>
+</div>
+
+<script src="/js/app.js?v=2026073125"></script>
+<script src="/js/socket-client.js?v=2026073125" defer></script>
+<style>@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}</style>
+<script>
+  CBS.init();
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  // ── Auth: أدمن أو عميد فقط ──────────────────────────
+  const user = CBS.getUser();
+  if (!user?.roles?.some(r => ['admin','dean'].includes(r))) {
+    CBS.toast('غير مصرح للوصول', '', 'error');
+    setTimeout(() => window.location.replace('/index.html'), 1500);
+  }
+
+  // ── Tabs ─────────────────────────────────────────────
+  let activeTab = 'news';
+  function switchTab(tab) {
+    activeTab = tab;
+    document.getElementById('panelNews').style.display    = tab === 'news'    ? '' : 'none';
+    document.getElementById('panelGallery').style.display = tab === 'gallery' ? '' : 'none';
+    document.getElementById('tabNews').classList.toggle('active',    tab === 'news');
+    document.getElementById('tabGallery').classList.toggle('active', tab === 'gallery');
+    if (tab === 'gallery') loadGallery();
+    else loadNews();
+  }
+
+  // ════════════════════════════════════════════════════
+  //  NEWS
+  // ════════════════════════════════════════════════════
+  async function loadNews() {
+    try {
+      const res  = await CBS.apiGet('/api/admin/public/news');
+      const data = await CBS.readJson(res);
+      const tbody = document.getElementById('newsTbody');
+
+      if (!data?.data?.news?.length) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align:center;padding:24px;color:var(--text-muted)">لا توجد أخبار بعد</td></tr>`;
+        return;
+      }
+
+      tbody.innerHTML = data.data.news.map(n => `
+        <tr>
+          <td class="td-title">
+            ${escH(n.title)}
+            <small>${escH(n.summary.substring(0,60))}...</small>
+          </td>
+          <td style="white-space:nowrap;color:var(--text-muted);font-size:.75rem">${fmtDate(n.publishedAt||n.createdAt)}</td>
+          <td>
+            <span class="${n.isPublished ? 'badge-pub' : 'badge-draft'}">
+              ${n.isPublished ? 'منشور' : 'مسودة'}
+            </span>
+          </td>
+          <td>
+            <div style="display:flex;gap:6px;flex-wrap:wrap">
+              <button class="btn btn-ghost btn-xs" onclick="editNews('${n._id}')"><i class="ri-edit-line"></i></button>
+              <button class="btn btn-ghost btn-xs" onclick="toggleNewsPublish('${n._id}',${n.isPublished})" title="${n.isPublished ? 'إخفاء' : 'نشر'}">
+                <i class="ri-${n.isPublished ? 'eye-off-line' : 'eye-line'}"></i>
+              </button>
+              <button class="btn btn-danger btn-xs" onclick="deleteNews('${n._id}')"><i class="ri-delete-bin-line"></i></button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    } catch(e) { CBS.toast('خطأ في تحميل الأخبار', '', 'error'); }
+  }
+
+  function openNewsModal(data=null) {
+    document.getElementById('newsModalTitle').textContent = data ? 'تعديل الخبر' : 'إضافة خبر جديد';
+    document.getElementById('newsEditId').value   = data?._id || '';
+    document.getElementById('newsTitle').value    = data?.title    || '';
+    document.getElementById('newsSummary').value  = data?.summary  || '';
+    document.getElementById('newsBody').value     = data?.body     || '';
+    document.getElementById('newsImageUrl').value = data?.imageUrl || '';
+    if (document.getElementById('newsImageFile')) document.getElementById('newsImageFile').value = '';
+    document.getElementById('newsTags').value     = (data?.tags||[]).join(', ');
+    document.getElementById('newsPublished').checked = data ? data.isPublished : true;
+    
+    const dVal = data?.publishedAt ? new Date(data.publishedAt).toISOString().split('T')[0] : new Date().toISOString().split('T')[0];
+    if (document.getElementById('newsDate')) document.getElementById('newsDate').value = dVal;
+    
+    CBS.openModal('newsModalBack');
+  }
+  function closeNewsModal() {
+    CBS.closeModal('newsModalBack');
+  }
+
+  async function editNews(id) {
+    try {
+      const res  = await CBS.apiGet('/api/admin/public/news');
+      const data = await CBS.readJson(res);
+      const item = data?.data?.news?.find(n => n._id === id);
+      if (item) openNewsModal(item);
+    } catch(e) {}
+  }
+
+  async function uploadAdminFile(fileInput) {
+    if (!fileInput || !fileInput.files || fileInput.files.length === 0) return null;
+    const formData = new FormData();
+    const compressed = await CBS.compressImage(fileInput.files[0]);
+    formData.append('file', compressed);
+
+    const apiEndpoint = (typeof API_BASE !== 'undefined' && API_BASE ? API_BASE : (window.location.hostname === 'localhost' ? 'https://elnasrcsit.website' : '')) + '/api/admin/public/upload';
+    const token = CBS.getToken();
+
+    const res = await fetch(apiEndpoint, {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + (token || '') },
+      body: formData
+    });
+
+    const data = await CBS.readJson(res);
+    if (!res.ok || !data || !data.success) {
+      throw new Error(data?.message || `فشل رفع الملف (رمز الخطأ ${res.status})`);
+    }
+    return data.data?.url || data.url;
+  }
+
+  async function saveNews() {
+    const id      = document.getElementById('newsEditId').value;
+    const title   = document.getElementById('newsTitle').value.trim();
+    const summary = document.getElementById('newsSummary').value.trim();
+    const body    = document.getElementById('newsBody').value.trim();
+    let imgUrl    = document.getElementById('newsImageUrl').value.trim();
+    const tagsRaw = document.getElementById('newsTags').value.trim();
+    const publd   = document.getElementById('newsPublished').checked;
+    const dateVal = document.getElementById('newsDate')?.value;
+
+    if (!title||!summary||!body) { CBS.toast('يرجى ملء الحقول المطلوبة', '', 'warning'); return; }
+
+    try {
+      const fileInput = document.getElementById('newsImageFile');
+      if (fileInput && fileInput.files.length > 0) {
+        imgUrl = await uploadAdminFile(fileInput);
+      }
+    } catch(e) {
+      CBS.toast(e.message || 'فشل رفع الصورة', '', 'error');
+      return;
+    }
+
+    // توحيد فواصل الأسطر: النص المنسوخ من واتساب/وورد يأتي بـ \r\n أو \r وحدها،
+    // وبعض الوسطاء (mod_security على الاستضافة) يرفض حمولة فيها \r منفردة.
+    const normalizeText = (t) => String(t || '').replace(/\r\n?/g, '\n');
+
+    const payload = {
+      title: normalizeText(title),
+      summary: normalizeText(summary),
+      body: normalizeText(body),
+      imageUrl: imgUrl || null,
+      tags: tagsRaw ? tagsRaw.split(',').map(t => t.trim()).filter(Boolean) : [],
+      isPublished: publd,
+      publishedAt: dateVal ? new Date(dateVal).toISOString() : new Date().toISOString()
+    };
+
+    try {
+      let res;
+      if (id) {
+        res = await CBS.apiPut(`/api/admin/public/news/${id}`, payload);
+      } else {
+        res = await CBS.apiPost('/api/admin/public/news', payload);
+      }
+      
+      // res.json() ترمي إذا رد الوسيط بصفحة HTML (مثل حجب mod_security) —
+      // وكان ذلك يظهر كـ"خطأ في الاتصال" المضلّل بدل السبب الحقيقي
+      const d = await res.json().catch(() => ({}));
+      if (res.ok) {
+        CBS.toast(id ? 'تم تحديث الخبر' : 'تم إضافة الخبر', '', 'success');
+        closeNewsModal();
+        loadNews();
+      } else {
+        console.error("Save News Error:", res.status, d);
+        const detail = d.message || `رفض الخادم الطلب (رمز ${res.status})`;
+        CBS.toast('تعذّر حفظ الخبر', detail + (d.requestId ? ` · رقم الطلب: ${d.requestId}` : ''), 'error', 9000);
+      }
+    } catch(e) { 
+      console.error("Save News Network Error:", e);
+      CBS.toast(e.message || 'خطأ في الاتصال', '', 'error'); 
+    }
+  }
+
+  async function toggleNewsPublish(id, current) {
+    try {
+      const res = await CBS.apiPut(`/api/admin/public/news/${id}`, { isPublished: !current });
+      if (res.ok) { CBS.toast(!current ? 'تم النشر' : 'تم الإخفاء', '', 'success'); loadNews(); }
+    } catch(e) {}
+  }
+
+  async function deleteNews(id) {
+    if (!confirm('هل أنت متأكد من حذف هذا الخبر؟')) return;
+    try {
+      const res = await CBS.apiDelete(`/api/admin/public/news/${id}`);
+      if (res.ok) { CBS.toast('تم الحذف', '', 'success'); loadNews(); }
+    } catch(e) { CBS.toast('خطأ في الحذف', '', 'error'); }
+  }
+
+  // ════════════════════════════════════════════════════
+  //  GALLERY
+  // ════════════════════════════════════════════════════
+  async function loadGallery() {
+    try {
+      const res  = await CBS.apiGet('/api/admin/public/gallery');
+      const data = await CBS.readJson(res);
+      const grid = document.getElementById('galleryMgrGrid');
+
+      if (!data?.data?.images?.length) {
+        grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:30px;color:var(--text-muted)">لا توجد صور بعد</div>`;
+        return;
+      }
+
+      grid.innerHTML = data.data.images.map(img => `
+        <div class="gallery-mgr-item ${img.isVisible ? '' : 'hidden-img'}">
+          <img src="${CBS.getMediaUrl(img.imageUrl)}" alt="${escH(img.caption||'')}" loading="lazy">
+          <div class="visibility-tag">${img.category}</div>
+          <div class="item-overlay">
+            <button onclick="editGallery('${img._id}')"><i class="ri-edit-line"></i> تعديل</button>
+            <button onclick="toggleGalleryVisibility('${img._id}',${img.isVisible})">
+              <i class="ri-${img.isVisible ? 'eye-off-line':'eye-line'}"></i> ${img.isVisible ? 'إخفاء':'إظهار'}
+            </button>
+            <button class="del" onclick="deleteGallery('${img._id}')"><i class="ri-delete-bin-line"></i> حذف</button>
+          </div>
+        </div>
+      `).join('');
+    } catch(e) { CBS.toast('خطأ في تحميل المعرض', '', 'error'); }
+  }
+
+  function openGalleryModal(data=null) {
+    document.getElementById('galleryModalTitle').textContent = data ? 'تعديل الصورة' : 'رفع صورة جديدة';
+    document.getElementById('galleryEditId').value  = data?._id     || '';
+    document.getElementById('galleryUrl').value     = data?.imageUrl|| '';
+    if (document.getElementById('galleryImageFile')) document.getElementById('galleryImageFile').value = '';
+    document.getElementById('galleryCaption').value = data?.caption || '';
+    document.getElementById('galleryCategory').value= data?.category|| 'أخرى';
+    document.getElementById('galleryOrder').value   = data?.order   ?? 0;
+    CBS.openModal('galleryModalBack');
+  }
+  function closeGalleryModal() {
+    CBS.closeModal('galleryModalBack');
+  }
+
+  let galleryCache = [];
+  async function editGallery(id) {
+    try {
+      const res  = await CBS.apiGet('/api/admin/public/gallery');
+      const data = await CBS.readJson(res);
+      const item = data?.data?.images?.find(i => i._id === id);
+      if (item) openGalleryModal(item);
+    } catch(e) {}
+  }
+
+  async function saveGallery() {
+    const id      = document.getElementById('galleryEditId').value;
+    let url       = document.getElementById('galleryUrl').value.trim();
+    const caption = document.getElementById('galleryCaption').value.trim();
+    const cat     = document.getElementById('galleryCategory').value;
+    const order   = parseInt(document.getElementById('galleryOrder').value) || 0;
+
+    try {
+      const fileInput = document.getElementById('galleryImageFile');
+      if (fileInput && fileInput.files.length > 0) {
+        url = await uploadAdminFile(fileInput);
+      }
+    } catch(e) {
+      CBS.toast(e.message || 'فشل رفع الصورة', '', 'error');
+      return;
+    }
+
+    if (!url) { CBS.toast('رابط الصورة أو ملف الصورة مطلوب', '', 'warning'); return; }
+
+    const payload = { imageUrl: url, caption, category: cat, order };
+
+    try {
+      let res;
+      if (id) {
+        res = await CBS.apiPut(`/api/admin/public/gallery/${id}`, { caption, category: cat, order });
+      } else {
+        res = await CBS.apiPost('/api/admin/public/gallery', payload);
+      }
+      const d = await res.json();
+      if (res.ok) {
+        CBS.toast(id ? 'تم التحديث' : 'تم إضافة الصورة', '', 'success');
+        closeGalleryModal();
+        loadGallery();
+      } else {
+        CBS.toast(d.message || 'حدث خطأ', '', 'error');
+      }
+    } catch(e) { CBS.toast('خطأ في الاتصال', '', 'error'); }
+  }
+
+  async function toggleGalleryVisibility(id, current) {
+    try {
+      const res = await CBS.apiPut(`/api/admin/public/gallery/${id}`, { isVisible: !current });
+      if (res.ok) { CBS.toast(!current ? 'تم الإظهار' : 'تم الإخفاء', '', 'success'); loadGallery(); }
+    } catch(e) {}
+  }
+
+  async function deleteGallery(id) {
+    if (!confirm('هل أنت متأكد من حذف هذه الصورة؟')) return;
+    try {
+      const res = await CBS.apiDelete(`/api/admin/public/gallery/${id}`);
+      if (res.ok) { CBS.toast('تم حذف الصورة', '', 'success'); loadGallery(); }
+    } catch(e) { CBS.toast('خطأ في الحذف', '', 'error'); }
+  }
+
+  // ── Helpers ─────────────────────────────────────────
+  function escH(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+  function fmtDate(iso) { return iso ? new Date(iso).toLocaleDateString('ar-EG',{year:'numeric',month:'short',day:'numeric'}) : '—'; }
+
+  // ── Init ─────────────────────────────────────────────
+  loadNews();
+</script>
+</body>
+</html>

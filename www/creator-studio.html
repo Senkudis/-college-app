@@ -1,0 +1,1202 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>استوديو المحاضرات | كلية تقنية المعلومات</title>
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css?v=2026073125">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026073125">
+  <style>
+    .studio-hero {
+      background: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7);
+      border-radius: var(--radius-xl);
+      padding: 32px;
+      color: white;
+      margin-bottom: 28px;
+      text-align: center;
+    }
+    .studio-hero h1 { font-size: 1.6rem; font-weight: 800; margin: 0 0 8px; }
+    .studio-hero p { opacity: 0.85; margin: 0; font-size: 0.95rem; }
+
+    .upload-tabs {
+      display: flex; gap: 0; margin-bottom: 24px;
+      border: 2px solid var(--border); border-radius: var(--radius-lg); overflow: hidden;
+    }
+    .upload-tab {
+      flex: 1; padding: 14px; text-align: center; cursor: pointer;
+      font-weight: 700; font-size: 0.95rem;
+      background: var(--bg-card); color: var(--text-muted);
+      transition: var(--transition); border: none;
+    }
+    .upload-tab.active { background: var(--primary); color: white; }
+    .upload-tab:hover:not(.active) { background: var(--primary-light); }
+
+    .tab-panel { display: none; }
+    .tab-panel.active { display: block; }
+
+    .upload-zone {
+      border: 3px dashed var(--border);
+      border-radius: var(--radius-xl);
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: var(--transition);
+      background: var(--bg-card);
+      position: relative;
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--primary);
+      background: var(--primary-light);
+    }
+    .upload-zone i { font-size: 3rem; color: var(--primary); margin-bottom: 12px; display: block; }
+    .upload-zone input[type="file"] { display: none; }
+
+    .record-controls {
+      display: flex; flex-direction: column; align-items: center; gap: 16px;
+      padding: 32px; background: var(--bg-card); border-radius: var(--radius-xl);
+      border: 1px solid var(--border);
+    }
+    .record-preview {
+      width: 100%; max-width: 640px; aspect-ratio: 16/9;
+      background: #000; border-radius: var(--radius-lg); overflow: hidden;
+    }
+    .record-preview video { width: 100%; height: 100%; object-fit: contain; }
+
+    .progress-section {
+      display: none; margin-top: 24px; padding: 24px;
+      background: var(--bg-card); border-radius: var(--radius-xl);
+      border: 1px solid var(--border);
+    }
+    .progress-section.active { display: block; }
+
+    .progress-bar-wrap {
+      width: 100%; height: 24px; background: var(--bg-main);
+      border-radius: 12px; overflow: hidden; margin: 12px 0;
+    }
+    .progress-bar-fill {
+      height: 100%; background: linear-gradient(90deg, #6366f1, #a855f7);
+      border-radius: 12px; transition: width 0.3s ease;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 0.75rem; font-weight: 700;
+      min-width: 40px;
+    }
+
+    .status-badge {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 6px 14px; border-radius: 20px; font-size: 0.85rem; font-weight: 700;
+    }
+    .status-badge.uploading { background: #dbeafe; color: #2563eb; }
+    .status-badge.processing { background: #fef3c7; color: #d97706; }
+    .status-badge.ready { background: #dcfce7; color: #16a34a; }
+    .status-badge.failed { background: #fee2e2; color: #dc2626; }
+
+    .file-info {
+      display: flex; align-items: center; gap: 12px; padding: 14px;
+      background: var(--bg-main); border-radius: var(--radius-md);
+      margin-top: 12px; font-size: 0.9rem;
+    }
+
+    @media (max-width: 768px) {
+      .studio-hero { padding: 20px; }
+      .studio-hero h1 { font-size: 1.3rem; }
+      .upload-zone { padding: 32px 16px; }
+    }
+  </style>
+
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+</head>
+<body>
+
+<header class="main-header">
+  <div class="header-brand">
+    <img src="/assets/logo.png" class="header-logo" alt="Logo">
+    <div class="header-title-group">
+      <strong>كلية تقنية المعلومات</strong>
+      <small>استوديو المحاضرات</small>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="CBS.goHome()" title="الرئيسية"><i class="ri-home-4-line"></i></button>
+  </div>
+</header>
+
+<div class="page-content">
+
+  <div class="studio-hero">
+    <i class="ri-movie-2-line" style="font-size:2.5rem; margin-bottom:8px;"></i>
+    <h1>استوديو رفع المحاضرات</h1>
+    <p>ارفع محاضرة مسجلة أو سجّل من المتصفح مباشرة — يتم إنشاء نسخة خفيفة وصوتية تلقائياً</p>
+  </div>
+
+  <!-- Metadata Form -->
+  <div style="display:grid; gap:16px; margin-bottom:24px;">
+    <div class="form-group">
+      <label class="form-label">عنوان المحاضرة *</label>
+      <div class="input-wrapper"><i class="input-icon ri-text"></i>
+        <input class="form-control" type="text" id="videoTitle" placeholder="مثال: مقدمة في قواعد البيانات">
+      </div>
+    </div>
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items: flex-end;">
+      <div class="form-group">
+        <label class="form-label">المادة *</label>
+        <div class="input-wrapper"><i class="input-icon ri-book-open-line"></i>
+          <select class="form-control" id="videoSubject" onchange="onStudioSubjectChanged(this.value)" style="appearance: none; -moz-appearance: none; -webkit-appearance: none; padding-left: 32px;"><option value="">اختر المادة</option></select>
+          <i class="ri-arrow-down-s-line" style="position: absolute; left: 16px; color: var(--text-muted); pointer-events: none;"></i>
+        </div>
+      </div>
+      <div class="form-group" id="batchesGroup">
+        <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
+          <label class="form-label" style="margin:0;">الدفعات المستهدفة (اختر أكثر من دفعة إن أردت) *</label>
+          <span class="batch-live-counter" id="studioBatchesCounter" style="display: none;"><i class="ri-checkbox-circle-fill"></i> <span id="studioBatchesNum">0</span> دفعة مختارة</span>
+        </div>
+        <div class="batch-actions-bar" id="studioBatchesActionBar" style="display: none;">
+          <div class="batch-actions-btns">
+            <button type="button" class="batch-actions-btn" onclick="toggleSelectAllStudioBatches(true)"><i class="ri-check-double-line"></i> تحديد الكل</button>
+            <button type="button" class="batch-actions-btn" onclick="toggleSelectAllStudioBatches(false)"><i class="ri-close-line"></i> إلغاء التحديد</button>
+          </div>
+          <small style="color: var(--text-muted); font-size: 0.78rem;"><i class="ri-information-line"></i> انقر على أي دفعة لتحديدها</small>
+        </div>
+        <div class="input-wrapper" style="background: var(--bg-input); border: 1px solid var(--border); border-radius: var(--radius-md); padding: 14px; min-height: 64px;" id="videoBatchesContainer">
+          <div class="batch-loading-spinner" style="text-align: center; padding: 16px; color: var(--text-muted); font-size: 0.9rem;">
+            <i class="ri-loader-4-line ri-spin" style="font-size: 1.3rem; vertical-align: middle; margin-left: 6px;"></i> جاري تحميل قائمة الدفعات المتاحة...
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">وصف (اختياري)</label>
+      <div class="input-wrapper"><i class="input-icon ri-file-text-line"></i>
+        <input class="form-control" type="text" id="videoDesc" placeholder="وصف مختصر">
+      </div>
+    </div>
+  </div>
+
+  <!-- Tabs -->
+  <div class="upload-tabs">
+    <button class="upload-tab active" data-tab="file" onclick="switchUploadTab('file')"><i class="ri-upload-cloud-2-line"></i> رفع ملف</button>
+    <button class="upload-tab" data-tab="record" onclick="switchUploadTab('record')"><i class="ri-record-circle-line"></i> تسجيل من المتصفح</button>
+    <button class="upload-tab" data-tab="manage" onclick="switchUploadTab('manage')"><i class="ri-settings-4-line"></i> إدارة المحاضرات</button>
+  </div>
+
+  <!-- File Upload Panel -->
+  <div class="tab-panel active" id="panel-file">
+    <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+      <i class="ri-video-upload-line"></i>
+      <div style="font-weight:700; font-size:1.05rem; margin-bottom:6px;">اسحب الفيديو هنا أو اضغط للاختيار</div>
+      <div style="color:var(--text-muted); font-size:0.85rem;">MP4, WebM, MOV — حتى 2GB</div>
+      <input type="file" id="fileInput" accept="video/*">
+    </div>
+    <div class="file-info" id="fileInfo" style="display:none;">
+      <i class="ri-film-line" style="font-size:1.5rem; color:var(--primary);"></i>
+      <div style="flex:1;">
+        <div id="fileName" style="font-weight:700;"></div>
+        <div id="fileSize" style="font-size:0.8rem; color:var(--text-muted);"></div>
+      </div>
+      <button class="btn btn-danger" style="padding:6px 12px; font-size:0.8rem;" onclick="clearFile()">
+        <i class="ri-close-line"></i> إزالة
+      </button>
+    </div>
+  </div>
+
+  <!-- Browser Recording Panel -->
+  <div class="tab-panel" id="panel-record">
+    <div class="record-controls">
+      <div class="record-preview" style="position: relative; background: #0f172a;">
+        <video id="recordPreview" autoplay muted playsinline style="width: 100%; height: 100%; object-fit: contain;"></video>
+        <canvas id="recordCanvas" width="1280" height="720" style="display:none;"></canvas>
+        <div id="recordLiveStatus" style="position: absolute; bottom: 12px; left: 12px; right: 12px; background: rgba(15, 23, 42, 0.88); backdrop-filter: blur(8px); border: 1px solid rgba(255,255,255,0.15); border-radius: var(--radius-md); padding: 8px 14px; color: #fff; font-size: 0.85rem; display: flex; align-items: center; justify-content: space-between; gap: 8px; z-index: 10;">
+          <span id="recordStatusText"><i class="ri-loader-4-line ri-spin" style="color:#38bdf8;"></i> جاري تهيئة الكاميرا والميكروفون للمعاينة...</span>
+          <span id="recordMicBadge" style="background: rgba(16, 185, 129, 0.2); color: #34d399; padding: 2px 8px; border-radius: 999px; font-size: 0.75rem; display: none;"><i class="ri-mic-fill"></i> الميكروفون متصل</span>
+        </div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:14px; align-items:center; width:100%; max-width:640px;">
+        <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:center;">
+          <label style="font-weight:700; font-size:0.92rem; color:var(--text-main);"><i class="ri-video-add-line"></i> نمط التصوير:</label>
+          <select id="recordMode" class="form-control" style="width:auto; padding:8px 16px; border-radius:var(--radius-md); font-weight:600;" onchange="onRecordModeChanged(this.value)">
+            <option value="camera">الكاميرا فقط (مع الصوت + HD)</option>
+            <option value="screen">شاشة الكمبيوتر / العرض فقط (مع الصوت)</option>
+            <option value="both">الشاشة + الكاميرا في الزاوية (PiP مدمج)</option>
+          </select>
+        </div>
+        <div id="screenRecordWarning" style="display:none; background:var(--warning-bg,#fef3c7); color:#92400e; border:1px solid #fcd34d; border-radius:var(--radius-md); padding:10px 14px; font-size:0.85rem; text-align:center; width:100%;">
+          <i class="ri-smartphone-line"></i> أنت تستخدم تطبيق الهاتف المحمول — تم ضبط التسجيل تلقائياً على كاميرا الهاتف عالية الدقة (HD).
+        </div>
+        <div style="display:flex; gap:12px; flex-wrap:wrap; justify-content:center; width:100%;">
+          <button class="btn btn-primary" id="startRecordBtn" onclick="startBrowserRecord()" style="padding: 10px 24px; font-size: 1rem; font-weight: 700; border-radius: 999px; box-shadow: 0 4px 14px rgba(99,102,241,0.35);">
+            <i class="ri-record-circle-fill" style="color: #ef4444; animation: pulse 1.5s infinite;"></i> بدء التسجيل الآن
+          </button>
+          <button class="btn btn-secondary" id="flipCameraBtn" onclick="flipCamera()" style="display:none; padding: 10px 18px; border-radius: 999px;">
+            <i class="ri-camera-switch-line"></i> قلب الكاميرا
+          </button>
+          <button class="btn btn-danger" id="stopRecordBtn" onclick="stopBrowserRecord()" style="display:none; padding: 10px 24px; font-size: 1rem; font-weight: 700; border-radius: 999px;">
+            <i class="ri-stop-circle-fill"></i> إيقاف وحفظ التسجيل
+          </button>
+        </div>
+      </div>
+      <div id="recordTimer" style="font-size:1.8rem; font-weight:800; color:var(--danger,#ef4444); display:none; letter-spacing: 1px;">00:00</div>
+    </div>
+  </div>
+
+  <!-- Upload Button -->
+  <div style="text-align:center; margin-top:24px;">
+    <button class="btn btn-primary" id="uploadBtn" onclick="startUpload()" style="padding:14px 48px; font-size:1.05rem; border-radius:50px;">
+      <i class="ri-upload-cloud-2-line"></i> بدء الرفع
+    </button>
+  </div>
+
+  <!-- Progress Section -->
+  <div class="progress-section" id="progressSection">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+      <span style="font-weight:700; font-size:1rem;" id="progressTitle">جاري الرفع...</span>
+      <span class="status-badge uploading" id="statusBadge">
+        <i class="ri-loader-4-line"></i> <span id="statusText">رفع</span>
+      </span>
+    </div>
+    <div class="progress-bar-wrap">
+      <div class="progress-bar-fill" id="progressBar" style="width:0%;">0%</div>
+    </div>
+    <div style="display:flex; justify-content:space-between; font-size:0.82rem; color:var(--text-muted);">
+      <span id="progressDetail">0 / 0 قطعة</span>
+      <span id="progressSpeed"></span>
+    </div>
+    <div id="processingMsg" style="display:none; text-align:center; margin-top:16px; padding:16px; background:var(--bg-main); border-radius:var(--radius-md);">
+      <div class="spinner spinner-dark" style="margin:0 auto 10px;"></div>
+      <div style="font-weight:700;">جاري معالجة الفيديو...</div>
+      <div style="font-size:0.85rem; color:var(--text-muted);">يتم إنشاء نسخة 360p ونسخة صوتية — قد تستغرق بضع دقائق</div>
+    </div>
+    <div id="doneMsg" style="display:none; text-align:center; margin-top:16px;">
+      <i class="ri-checkbox-circle-fill" style="font-size:3rem; color:var(--success);"></i>
+      <div style="font-weight:700; font-size:1.1rem; margin-top:8px;">تم رفع المحاضرة بنجاح!</div>
+      <a href="/video-library.html" class="btn btn-primary" style="margin-top:16px; display:inline-flex;">
+        <i class="ri-video-line"></i> عرض المكتبة المرئية
+      </a>
+    </div>
+  </div>
+
+  <!-- Manage Videos Panel -->
+  <div class="tab-panel" id="panel-manage">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+      <h3 style="margin:0;">محاضراتي</h3>
+      <button class="btn btn-primary" style="padding:6px 12px; font-size:0.85rem;" onclick="loadMyVideos()">
+        <i class="ri-refresh-line"></i> تحديث
+      </button>
+    </div>
+    <div id="myVideosList" style="display:flex; flex-direction:column; gap:12px;"></div>
+  </div>
+
+</div>
+
+<!-- Edit Modal -->
+<div id="editModal" style="display:none; position:fixed; top:0; left:0; right:0; bottom:0; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center; padding:20px;">
+  <div style="background:var(--bg-card); width:100%; max-width:600px; border-radius:var(--radius-xl); padding:24px; max-height:90vh; overflow-y:auto;">
+    <h3 style="margin-top:0;">تعديل المحاضرة</h3>
+    <input type="hidden" id="editVideoId">
+    
+    <div class="form-group">
+      <label class="form-label">عنوان المحاضرة</label>
+      <input class="form-control" type="text" id="editTitle">
+    </div>
+    <div class="form-group">
+      <label class="form-label">الوصف</label>
+      <textarea class="form-control" id="editDesc" rows="2"></textarea>
+    </div>
+
+    <hr style="border:none; border-top:1px solid var(--border); margin:20px 0;">
+    
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+      <h4 style="margin:0;">فصول المحاضرة (Chapters)</h4>
+      <button class="btn btn-primary" style="padding:4px 10px; font-size:0.8rem;" onclick="addChapterRow()">
+        <i class="ri-add-line"></i> إضافة فصل
+      </button>
+    </div>
+    <div id="chaptersEditor" style="display:flex; flex-direction:column; gap:8px; margin-bottom:20px;"></div>
+
+    <div style="display:flex; justify-content:flex-end; gap:12px; margin-top:24px;">
+      <button class="btn" style="background:var(--bg-main);" onclick="closeEditModal()">إلغاء</button>
+      <button class="btn btn-primary" onclick="saveVideoEdits()"><i class="ri-save-line"></i> حفظ التغييرات</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<footer class="main-footer">حقوق النشر &copy; <span id="year"></span> جامعة النصر التقنية</footer>
+
+<script src="/js/app.js?v=2026073125"></script>
+<script src="/js/socket-client.js?v=2026073125" defer></script>
+<script>
+  CBS.init({ requireRoles: ['dean', 'doctor', 'leader'] });
+
+  // ===== Load subjects & batches =====
+  (async () => {
+    // 1. Load subjects safely
+    try {
+      const res = await CBS.apiGet('/api/subjects');
+      if (res && res.ok) {
+        const _data = await res.json();
+        const list = _data.data?.subjects || _data.subjects || _data.data || (Array.isArray(_data) ? _data : []);
+        window.allStudioSubjects = list;
+        const sel = document.getElementById('videoSubject');
+        if (sel) {
+          sel.innerHTML = '<option value="">اختر المادة...</option>' + 
+            list.map(s => `<option value="${s._id}">${CBS.escapeHTML(s.name)} ${s.code ? `(${CBS.escapeHTML(s.code)})` : ''}</option>`).join('');
+        }
+      }
+    } catch(e) {
+      console.error('Failed to load subjects:', e);
+    }
+
+    window.onStudioSubjectChanged = function(subjectId) {
+      if (!subjectId || !window.allStudioSubjects) return;
+      const sObj = window.allStudioSubjects.find(s => s._id === subjectId);
+      if (!sObj || !Array.isArray(sObj.batches) || sObj.batches.length === 0) return;
+      
+      const targetBatches = sObj.batches.map(b => typeof b === 'object' ? b : { _id: b, name: 'دفعة تابعة للمقرر' });
+      const targetBatchIds = targetBatches.map(b => b._id.toString());
+      const bContainer = document.getElementById('videoBatchesContainer');
+      const grid = bContainer ? bContainer.querySelector('.batch-pills-grid') : null;
+
+      // Ensure any missing subject batch is injected into the DOM so the doctor can check it
+      if (grid) {
+        targetBatches.forEach(tb => {
+          if (!grid.querySelector(`input[name="batchCheck"][value="${tb._id}"]`)) {
+            const bColor = tb.themeColor || '#6366f1';
+            const pillHtml = `
+              <div class="batch-pill-item checked" onclick="toggleStudioBatchPill(this, event)">
+                <input type="checkbox" name="batchCheck" value="${tb._id}" checked>
+                <span class="batch-pill-icon" style="color: ${bColor};"><i class="ri-group-line"></i></span>
+                <span>${CBS.escapeHTML(tb.name || 'دفعة المقرر')}</span>
+              </div>
+            `;
+            grid.insertAdjacentHTML('beforeend', pillHtml);
+          }
+        });
+      } else if (bContainer && bContainer.innerHTML.includes('ri-information-line')) {
+        // If container previously showed 'no batches', replace it with grid of subject batches!
+        const actionBar = document.getElementById('studioBatchesActionBar');
+        if (actionBar) actionBar.style.display = 'flex';
+        bContainer.innerHTML = `<div class="batch-pills-grid">` + targetBatches.map(tb => {
+          const bColor = tb.themeColor || '#6366f1';
+          return `
+            <div class="batch-pill-item checked" onclick="toggleStudioBatchPill(this, event)">
+              <input type="checkbox" name="batchCheck" value="${tb._id}" checked>
+              <span class="batch-pill-icon" style="color: ${bColor};"><i class="ri-group-line"></i></span>
+              <span>${CBS.escapeHTML(tb.name || 'دفعة المقرر')}</span>
+            </div>
+          `;
+        }).join('') + `</div>`;
+      }
+      
+      document.querySelectorAll('#videoBatchesContainer input[name="batchCheck"]').forEach(cb => {
+        const isTarget = targetBatchIds.includes(cb.value.toString());
+        cb.checked = isTarget;
+        const pill = cb.closest('.batch-pill-item');
+        if (pill) {
+          if (isTarget) {
+            pill.classList.add('checked');
+            pill.style.transform = 'scale(1.03)';
+            setTimeout(() => { pill.style.transform = ''; }, 300);
+          } else {
+            pill.classList.remove('checked');
+          }
+        }
+      });
+      if (typeof updateStudioBatchesCounter === 'function') updateStudioBatchesCounter();
+      CBS.toast('الربط الذكي مع المقرر', `تم تحديد ${targetBatchIds.length} دفعة تابعة لهذا المقرر تلقائياً`, 'info');
+    };
+
+    // 2. Load batches safely
+    try {
+      const user = CBS.getUser() || { roles: [] };
+      if (user.roles.includes('leader') && !user.roles.includes('dean') && !user.roles.includes('doctor')) {
+        const bg = document.getElementById('batchesGroup');
+        if (bg) bg.style.display = 'none';
+      } else {
+        // First try active batches, and if empty/failed try all batches
+        let bRes = await CBS.apiGet('/api/batches?status=active');
+        let _bData = (bRes && bRes.ok) ? await bRes.json() : {};
+        let bList = _bData.batches || _bData.data?.batches || _bData.data || (Array.isArray(_bData) ? _bData : []);
+        
+        if (bList.length === 0) {
+          try {
+            const allRes = await CBS.apiGet('/api/batches');
+            if (allRes && allRes.ok) {
+              const _allData = await allRes.json();
+              bList = _allData.batches || _allData.data?.batches || _allData.data || [];
+            }
+          } catch(err) {}
+        }
+
+        const bContainer = document.getElementById('videoBatchesContainer');
+        if (bContainer) {
+          if (bList.length > 0) {
+            const actionBar = document.getElementById('studioBatchesActionBar');
+            if (actionBar) actionBar.style.display = 'flex';
+            bContainer.innerHTML = `<div class="batch-pills-grid">` + bList.map(b => {
+              const bColor = b.themeColor || '#6366f1';
+              return `
+                <div class="batch-pill-item" onclick="toggleStudioBatchPill(this, event)">
+                  <input type="checkbox" name="batchCheck" value="${b._id}">
+                  <span class="batch-pill-icon" style="color: ${bColor};"><i class="ri-group-line"></i></span>
+                  <span>${CBS.escapeHTML(b.name)} ${b.code ? `<span class="batch-pill-badge">${CBS.escapeHTML(b.code)}</span>` : ''}</span>
+                </div>
+              `;
+            }).join('') + `</div>`;
+          } else {
+            bContainer.innerHTML = '<div style="padding: 14px; color: var(--text-muted); font-size: 0.88rem; text-align: center;"><i class="ri-information-line"></i> لا توجد دفعات منشأة في النظام حالياً. يمكنك اختيار المقرر أعلاه لربط الدفعات تلقائياً.</div>';
+          }
+        }
+      }
+    } catch(e) {
+      console.error('Failed to load batches:', e);
+      const bContainer = document.getElementById('videoBatchesContainer');
+      if (bContainer) {
+        bContainer.innerHTML = '<div style="padding: 14px; color: var(--danger, #ef4444); font-size: 0.88rem; text-align: center;"><i class="ri-error-warning-line"></i> تعذر تحميل الدفعات. يرجى تحديث الصفحة.</div>';
+      }
+    }
+  })();
+
+  window.toggleStudioBatchPill = function(el, event) {
+    if (event && event.target && event.target.tagName === 'INPUT') return;
+    const cb = el.querySelector('input[type="checkbox"]');
+    if (cb) {
+      cb.checked = !cb.checked;
+      if (cb.checked) el.classList.add('checked');
+      else el.classList.remove('checked');
+      updateStudioBatchesCounter();
+    }
+  };
+  window.toggleSelectAllStudioBatches = function(selectAll) {
+    document.querySelectorAll('#videoBatchesContainer input[name="batchCheck"]').forEach(cb => {
+      cb.checked = selectAll;
+      const pill = cb.closest('.batch-pill-item');
+      if (pill) {
+        if (selectAll) pill.classList.add('checked');
+        else pill.classList.remove('checked');
+      }
+    });
+    updateStudioBatchesCounter();
+  };
+  window.updateStudioBatchesCounter = function() {
+    const checkedCount = document.querySelectorAll('#videoBatchesContainer input[name="batchCheck"]:checked').length;
+    const counterEl = document.getElementById('studioBatchesCounter');
+    const numEl = document.getElementById('studioBatchesNum');
+    if (numEl) numEl.textContent = checkedCount;
+    if (counterEl) {
+      counterEl.style.display = checkedCount > 0 ? 'inline-flex' : 'none';
+    }
+  };
+
+  // ===== اكتشاف بيئة Native وإخفاء خيارات تسجيل الشاشة (Native لا يدعم getDisplayMedia) =====
+  (function detectNativeAndAdjustUI() { const isNative = !!(window.Capacitor?.isNativePlatform?.());
+    if (isNative) {
+      const sel = document.getElementById('recordMode');
+      ['screen', 'both'].forEach(val => {
+        const opt = sel.querySelector(`option[value="${val}"]`);
+        if (opt) opt.remove();
+      });
+      sel.value = 'camera';
+      document.getElementById('screenRecordWarning').style.display = 'block';
+    }
+  })();
+
+  // ===== Tab switching =====
+  function switchUploadTab(tab) {
+    document.querySelectorAll('.upload-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+    const targetBtn = document.querySelector(`.upload-tab[data-tab="${tab}"]`);
+    if (targetBtn) targetBtn.classList.add('active');
+    document.getElementById(`panel-${tab}`).classList.add('active');
+    
+    if (tab === 'manage') loadMyVideos();
+    
+    // عند فتح تبويب التسجيل: شغل المعاينة الحية للاستوديو فوراً
+    if (tab === 'record') {
+      startLiveStudioPreview();
+    } else {
+      stopLiveStudioPreview();
+    }
+  }
+
+  let activePreviewStream = null;
+
+  // تشغيل المعاينة الحية قبل التسجيل (Live Studio Preview)
+  async function startLiveStudioPreview() {
+    if (mediaRecorder && mediaRecorder.state === 'recording') return;
+    const modeEl = document.getElementById('recordMode');
+    const mode = modeEl ? modeEl.value : 'camera';
+    const statusText = document.getElementById('recordStatusText');
+    const micBadge = document.getElementById('recordMicBadge');
+    const previewEl = document.getElementById('recordPreview');
+
+    stopLiveStudioPreview();
+
+    try {
+      if (mode === 'camera') {
+        if (statusText) statusText.innerHTML = '<i class="ri-loader-4-line ri-spin" style="color:#38bdf8;"></i> جاري تشغيل الكاميرا الأمامية بجودة HD...';
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: currentFacingMode }, width: { ideal: 1280 }, height: { ideal: 720 } },
+          audio: true
+        });
+        activePreviewStream = stream;
+        if (previewEl) {
+          previewEl.srcObject = stream;
+          applyMirror(currentFacingMode);
+        }
+        if (statusText) statusText.innerHTML = '<i class="ri-checkbox-circle-fill" style="color:#34d399;"></i> المعاينة المباشرة تعمل — الكاميرا والصوت جاهزان لبدء التسجيل بجودة HD';
+        if (micBadge) micBadge.style.display = 'inline-flex';
+        document.getElementById('flipCameraBtn').style.display = 'inline-flex';
+      } else if (mode === 'screen') {
+        if (previewEl) previewEl.srcObject = null;
+        if (statusText) statusText.innerHTML = '<i class="ri-computer-line" style="color:#38bdf8;"></i> وضع شاشة الكمبيوتر — سيطلب منك المتصفح تحديد الشاشة لمشاركتها فور الضغط على زر "بدء التسجيل الآن"';
+        if (micBadge) micBadge.style.display = 'none';
+        document.getElementById('flipCameraBtn').style.display = 'none';
+      } else if (mode === 'both') {
+        if (previewEl) previewEl.srcObject = null;
+        if (statusText) statusText.innerHTML = '<i class="ri-layout-grid-line" style="color:#38bdf8;"></i> وضع العرض المدمج (PiP) — عند الضغط على "بدء التسجيل" ستظهر الشاشة وبداخلها نافذة كاميرا تفاعلية.';
+        if (micBadge) micBadge.style.display = 'none';
+        document.getElementById('flipCameraBtn').style.display = 'inline-flex';
+      }
+    } catch (e) {
+      console.error('Preview error:', e);
+      if (e.name === 'NotAllowedError') {
+        CBS.toast('يرجى السماح بالوصول للكاميرا والميكروفون من إعدادات الهاتف أو المتصفح', '', 'error');
+        if (statusText) statusText.innerHTML = '<i class="ri-error-warning-fill" style="color:#ef4444;"></i> تم رفض إذن الوصول للكاميرا/الميكروفون. يرجى السماح به من الإعدادات.';
+      } else {
+        if (statusText) statusText.innerHTML = '<i class="ri-information-line"></i> اضغط على "بدء التسجيل الآن" لتشغيل التصوير.';
+      }
+    }
+  }
+
+  function stopLiveStudioPreview() {
+    if (activePreviewStream) {
+      activePreviewStream.getTracks().forEach(t => t.stop());
+      activePreviewStream = null;
+    }
+    const previewEl = document.getElementById('recordPreview');
+    if (previewEl && (!mediaRecorder || mediaRecorder.state !== 'recording')) {
+      previewEl.srcObject = null;
+    }
+  }
+
+  window.onRecordModeChanged = function(newMode) {
+    startLiveStudioPreview();
+  };
+
+  // ===== File Selection =====
+  let selectedFile = null;
+
+  const dropZone = document.getElementById('dropZone');
+  const fileInput = document.getElementById('fileInput');
+
+  fileInput.addEventListener('change', (e) => {
+    if (e.target.files[0]) selectFile(e.target.files[0]);
+  });
+
+  dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', (e) => {
+    e.preventDefault(); dropZone.classList.remove('dragover');
+    if (e.dataTransfer.files[0]) selectFile(e.dataTransfer.files[0]);
+  });
+
+  function selectFile(file) {
+    if (!file.type.startsWith('video/')) { CBS.toast('يرجى اختيار ملف فيديو', '', 'error'); return; }
+    if (file.size > 2 * 1024 * 1024 * 1024) { CBS.toast('حجم الملف يتجاوز 2GB', '', 'error'); return; }
+    selectedFile = file;
+    document.getElementById('fileName').textContent = file.name;
+    document.getElementById('fileSize').textContent = formatBytes(file.size);
+    document.getElementById('fileInfo').style.display = 'flex';
+  }
+
+  function clearFile() {
+    selectedFile = null; fileInput.value = '';
+    document.getElementById('fileInfo').style.display = 'none';
+  }
+
+  function formatBytes(bytes) {
+    if (bytes === 0) return '0 B';
+    const k = 1024, sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
+
+  // ===== Browser Recording (MediaRecorder) =====
+  let mediaRecorder = null;
+  let recordedChunks = [];
+  let recordTimerInterval = null;
+  let recordStartTime = null;
+  let activeStreams = [];
+  let canvasInterval = null;
+  let currentFacingMode = 'user'; // 'user' = أمامية, 'environment' = خلفية
+  let currentCamStream = null;
+
+  // تطبيق mirror على preview للكاميرا الأمامية فقط
+  function applyMirror(facingMode) {
+    const preview = document.getElementById('recordPreview');
+    preview.style.transform = facingMode === 'user' ? 'scaleX(-1)' : 'scaleX(1)';
+  }
+
+  async function flipCamera() {
+    currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+    
+    // إذا لم نكن نسجل، قم بقلب المعاينة الحية فوراً
+    if (!mediaRecorder || mediaRecorder.state !== 'recording') {
+      startLiveStudioPreview();
+      CBS.toast(currentFacingMode === 'environment' ? 'تم التحويل للكاميرا الخلفية' : 'تم التحويل للكاميرا الأمامية', '', 'success');
+      return;
+    }
+
+    if (!currentCamStream) return;
+
+    // أثناء التسجيل المباشر: استبدل تراك الكاميرا بسلاسة
+    try {
+      currentCamStream.getVideoTracks().forEach(t => t.stop());
+      const newCamStream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: { ideal: currentFacingMode }, width: { ideal: 1280 }, height: { ideal: 720 } },
+        audio: false
+      });
+
+      const newTrack = newCamStream.getVideoTracks()[0];
+      if (mediaRecorder && mediaRecorder.stream) {
+        // If recording camera only, mediaRecorder stream has the track directly
+        const oldTrack = mediaRecorder.stream.getVideoTracks().find(t => t.kind === 'video' && (!window._isCanvasStream));
+        if (oldTrack) {
+          mediaRecorder.stream.removeTrack(oldTrack);
+          mediaRecorder.stream.addTrack(newTrack);
+        }
+      }
+
+      currentCamStream = newCamStream;
+      activeStreams = activeStreams.filter(s => !s.getVideoTracks().some(t => t.readyState === 'ended'));
+      activeStreams.push(newCamStream);
+
+      const previewEl = document.getElementById('recordPreview');
+      if (previewEl && document.getElementById('recordMode').value === 'camera') {
+        previewEl.srcObject = newCamStream;
+        applyMirror(currentFacingMode);
+      }
+      if (window._pipCamVideo) {
+        window._pipCamVideo.srcObject = newCamStream;
+      }
+
+      CBS.toast(currentFacingMode === 'environment' ? 'تم التحويل للكاميرا الخلفية' : 'تم التحويل للكاميرا الأمامية', '', 'success');
+    } catch(e) {
+      CBS.toast('تعذر تغيير الكاميرا أثناء التسجيل. تأكد من وجود كاميرا خلفية.', '', 'error');
+      currentFacingMode = currentFacingMode === 'user' ? 'environment' : 'user';
+    }
+  }
+
+  // إظهار أو إخفاء زر قلب الكاميرا بناءً على النمط
+  document.getElementById('recordMode').addEventListener('change', (e) => {
+    const btn = document.getElementById('flipCameraBtn');
+    if (btn) btn.style.display = (e.target.value === 'camera' || e.target.value === 'both') ? 'inline-flex' : 'none';
+  });
+
+  if (document.getElementById('recordMode') && (document.getElementById('recordMode').value === 'camera' || document.getElementById('recordMode').value === 'both')) {
+    const btn = document.getElementById('flipCameraBtn');
+    if (btn) btn.style.display = 'inline-flex';
+  }
+
+  async function startBrowserRecord() {
+    let mode;
+    try {
+      mode = document.getElementById('recordMode').value;
+      let finalStream;
+      activeStreams = [];
+
+      // أوقف المعاينة الحية مؤقتاً لتجنب تعارض الكاميرا
+      stopLiveStudioPreview();
+
+      // Get Audio
+      let audioStream;
+      try {
+        audioStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        activeStreams.push(audioStream);
+      } catch(e) {}
+
+      // الكشف عن بيئة Native (Capacitor): لا تدعم getDisplayMedia
+      const isNative = !!(window.Capacitor?.isNativePlatform?.());
+      if (isNative && (mode === 'screen' || mode === 'both')) {
+        CBS.toast('تسجيل الشاشة غير متاح في تطبيق الهاتف. استخدم نمط الكاميرا فقط أو ارفع ملفاً.', '', 'error');
+        activeStreams.forEach(s => s.getTracks().forEach(t => t.stop()));
+        activeStreams = [];
+        startLiveStudioPreview();
+        return;
+      }
+
+      if (mode === 'screen') {
+        const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+        activeStreams.push(screenStream);
+        finalStream = new MediaStream([...screenStream.getVideoTracks(), ...(audioStream ? audioStream.getAudioTracks() : [])]);
+        document.getElementById('recordPreview').srcObject = screenStream;
+        screenStream.getVideoTracks()[0].onended = () => stopBrowserRecord();
+
+      } else if (mode === 'camera') {
+        currentCamStream = await navigator.mediaDevices.getUserMedia({
+          video: { facingMode: { ideal: currentFacingMode }, width: { ideal: 1280 }, height: { ideal: 720 } }
+        });
+        activeStreams.push(currentCamStream);
+        finalStream = new MediaStream([...currentCamStream.getVideoTracks(), ...(audioStream ? audioStream.getAudioTracks() : [])]);
+        const previewEl = document.getElementById('recordPreview');
+        previewEl.srcObject = currentCamStream;
+        applyMirror(currentFacingMode);
+
+        window._isCanvasStream = false;
+        const flipBtn = document.getElementById('flipCameraBtn');
+        if (flipBtn) flipBtn.style.display = 'inline-flex';
+
+      } else if (mode === 'both') {
+        const screenStream = await navigator.mediaDevices.getDisplayMedia({ video: true });
+        currentCamStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: currentFacingMode } });
+        activeStreams.push(screenStream, currentCamStream);
+
+        const canvas = document.getElementById('recordCanvas');
+        const ctx = canvas.getContext('2d');
+        
+        const screenVideo = document.createElement('video');
+        screenVideo.srcObject = screenStream;
+        screenVideo.autoplay = true;
+        screenVideo.muted = true;
+        screenVideo.playsInline = true;
+        screenVideo.play().catch(e => console.error(e));
+        
+        const camVideo = document.createElement('video');
+        camVideo.srcObject = currentCamStream;
+        camVideo.autoplay = true;
+        camVideo.muted = true;
+        camVideo.playsInline = true;
+        camVideo.play().catch(e => console.error(e));
+        window._pipCamVideo = camVideo;
+
+        if (canvasInterval) cancelAnimationFrame(canvasInterval);
+        canvasInterval = requestAnimationFrame(function draw() {
+          if (!activeStreams.length) return;
+          
+          ctx.fillStyle = '#0f172a';
+          ctx.fillRect(0, 0, canvas.width, canvas.height);
+          
+          if (screenVideo.readyState >= 2) {
+            ctx.drawImage(screenVideo, 0, 0, canvas.width, canvas.height);
+          }
+          if (camVideo.readyState >= 2) {
+            const cw = 320, ch = 180;
+            const cx = canvas.width - cw - 20;
+            const cy = canvas.height - ch - 20;
+            
+            ctx.shadowColor = 'rgba(0,0,0,0.6)';
+            ctx.shadowBlur = 12;
+            ctx.fillStyle = '#000';
+            ctx.fillRect(cx-2, cy-2, cw+4, ch+4);
+            ctx.shadowBlur = 0;
+            
+            if (currentFacingMode === 'user') {
+              ctx.save();
+              ctx.translate(cx + cw, cy);
+              ctx.scale(-1, 1);
+              ctx.drawImage(camVideo, 0, 0, cw, ch);
+              ctx.restore();
+            } else {
+              ctx.drawImage(camVideo, cx, cy, cw, ch);
+            }
+          }
+          canvasInterval = requestAnimationFrame(draw);
+        });
+
+        const canvasStream = canvas.captureStream(30);
+        window._isCanvasStream = true;
+        finalStream = new MediaStream([...canvasStream.getVideoTracks(), ...(audioStream ? audioStream.getAudioTracks() : [])]);
+        document.getElementById('recordPreview').srcObject = canvasStream;
+        screenStream.getVideoTracks()[0].onended = () => stopBrowserRecord();
+      }
+
+      recordedChunks = [];
+
+      let mimeType = '';
+      if (MediaRecorder.isTypeSupported('video/webm;codecs=vp9')) mimeType = 'video/webm;codecs=vp9';
+      else if (MediaRecorder.isTypeSupported('video/webm')) mimeType = 'video/webm';
+      else if (MediaRecorder.isTypeSupported('video/mp4')) mimeType = 'video/mp4';
+
+      mediaRecorder = mimeType ? new MediaRecorder(finalStream, { mimeType }) : new MediaRecorder(finalStream);
+      mediaRecorder.ondataavailable = (e) => { if (e.data.size > 0) recordedChunks.push(e.data); };
+      mediaRecorder.onstop = () => {
+        clearInterval(recordTimerInterval);
+        if (canvasInterval) { cancelAnimationFrame(canvasInterval); canvasInterval = null; }
+        const ext = (mediaRecorder.mimeType || '').includes('mp4') ? 'mp4' : 'webm';
+        const blob = new Blob(recordedChunks, { type: mediaRecorder.mimeType || 'video/webm' });
+        selectedFile = new File([blob], `recording_${Date.now()}.${ext}`, { type: blob.type });
+        const nameEl = document.getElementById('fileName');
+        const sizeEl = document.getElementById('fileSize');
+        const infoEl = document.getElementById('fileInfo');
+        if (nameEl && selectedFile) nameEl.textContent = selectedFile.name;
+        if (sizeEl && selectedFile) sizeEl.textContent = formatBytes(selectedFile.size);
+        if (infoEl) infoEl.style.display = 'flex';
+        switchUploadTab('file');
+        CBS.toast('تم التسجيل بنجاح! الملف جاهز للرفع في تبويب رفع ملف', '', 'success');
+      };
+      mediaRecorder.start(1000);
+
+      document.getElementById('startRecordBtn').style.display = 'none';
+      if (mode === 'screen') {
+        const flipBtn = document.getElementById('flipCameraBtn');
+        if (flipBtn) flipBtn.style.display = 'none';
+      }
+      document.getElementById('stopRecordBtn').style.display = 'inline-flex';
+      document.getElementById('recordTimer').style.display = 'block';
+      const statusText = document.getElementById('recordStatusText');
+      if (statusText) statusText.innerHTML = '<i class="ri-record-circle-fill" style="color:#ef4444; animation:pulse 1s infinite;"></i> جاري التسجيل المباشر الآن... تحدث بوضوح';
+      
+      recordStartTime = Date.now();
+      if (recordTimerInterval) clearInterval(recordTimerInterval);
+      recordTimerInterval = setInterval(() => {
+        const s = Math.floor((Date.now() - recordStartTime) / 1000);
+        const timerEl = document.getElementById('recordTimer');
+        if (timerEl) timerEl.textContent = `${String(Math.floor(s/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`;
+      }, 1000);
+
+      const modeEl = document.getElementById('recordMode');
+      if (modeEl) modeEl.disabled = true;
+
+    } catch(err) {
+      console.error(err);
+      if (err.name === 'NotAllowedError') {
+        CBS.toast('تم رفض الإذن. يرجى السماح بالوصول للكاميرا والميكروفون من إعدادات الهاتف.', '', 'error');
+      } else if (mode === 'screen' || mode === 'both') {
+        CBS.toast('تسجيل الشاشة غير مدعوم في هذا الجهاز أو المتصفح. جرّب نمط الكاميرا فقط.', '', 'error');
+      } else {
+        CBS.toast('فشل بدء التسجيل — تأكد من إعطاء صلاحية الكاميرا والميكروفون', '', 'error');
+      }
+      startLiveStudioPreview();
+    }
+  }
+
+  function stopBrowserRecord() {
+    if (mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
+    currentCamStream = null;
+    const startBtn = document.getElementById('startRecordBtn');
+    const stopBtn = document.getElementById('stopRecordBtn');
+    if (startBtn) startBtn.style.display = 'inline-flex';
+    if (stopBtn) stopBtn.style.display = 'none';
+    
+    const modeEl = document.getElementById('recordMode');
+    const mode = modeEl ? modeEl.value : 'camera';
+    if (mode === 'camera' || mode === 'both') {
+      const flipBtn = document.getElementById('flipCameraBtn');
+      if (flipBtn) flipBtn.style.display = 'inline-flex';
+    }
+
+    const timerEl = document.getElementById('recordTimer');
+    if (timerEl) timerEl.style.display = 'none';
+    if (modeEl) modeEl.disabled = false;
+    
+    if (canvasInterval) { cancelAnimationFrame(canvasInterval); canvasInterval = null; }
+    if (recordTimerInterval) clearInterval(recordTimerInterval);
+    
+    activeStreams.forEach(stream => stream.getTracks().forEach(t => t.stop()));
+    activeStreams = [];
+    
+    const preview = document.getElementById('recordPreview');
+    if (preview && preview.srcObject) { preview.srcObject = null; }
+  }
+
+  // ===== Chunked Resumable Upload =====
+  const CHUNK_SIZE = 5 * 1024 * 1024; // 5MB
+  let currentUploadId = null;
+  let isUploading = false;
+
+  async function startUpload() {
+    const title = document.getElementById('videoTitle').value.trim();
+    const subject = document.getElementById('videoSubject').value;
+    
+    // Get selected batches based on user role
+    let batches = [];
+    if (user.roles.includes('leader') && !user.roles.includes('dean') && !user.roles.includes('doctor')) {
+      // Leader auto-assigns their own batch
+      const batchId = CBS.getBatchId();
+      if (batchId) batches.push(batchId);
+    } else {
+      // Doctor/Dean gets from checkboxes
+      const checkedBoxes = document.querySelectorAll('input[name="batchCheck"]:checked');
+      batches = Array.from(checkedBoxes).map(cb => cb.value);
+    }
+
+    if (!title) { CBS.toast('عنوان المحاضرة مطلوب', '', 'error'); return; }
+    if (!subject) { CBS.toast('اختر المادة', '', 'error'); return; }
+    if (batches.length === 0) { CBS.toast('اختر دفعة واحدة على الأقل (أو تأكد من حسابك)', '', 'error'); return; }
+    if (!selectedFile) { CBS.toast('اختر ملف فيديو أو سجّل من المتصفح', '', 'error'); return; }
+
+    document.getElementById('uploadBtn').disabled = true;
+    isUploading = true;
+    const totalChunks = Math.ceil(selectedFile.size / CHUNK_SIZE);
+
+    // Show progress
+    const ps = document.getElementById('progressSection');
+    ps.classList.add('active');
+    document.getElementById('processingMsg').style.display = 'none';
+    document.getElementById('doneMsg').style.display = 'none';
+
+    try {
+      // Step 1: Init upload
+      const initRes = await fetch(API_BASE + '/api/videos/init-upload', {
+        method: 'POST',
+        headers: CBS._getHeaders({ 'Content-Type': 'application/json' }),
+        body: JSON.stringify({
+          title,
+          description: document.getElementById('videoDesc').value.trim(),
+          subject,
+          batches,
+          fileName: selectedFile.name,
+          fileSize: selectedFile.size,
+          totalChunks,
+          mimeType: selectedFile.type
+        })
+      });
+      const initData = await initRes.json();
+      if (!initData.success) throw new Error(initData.message);
+      currentUploadId = initData.uploadId;
+
+      // Step 2: Check for resumable chunks
+      let uploadedChunks = [];
+      try {
+        const statusRes = await CBS.apiGet(`/api/videos/upload-status/${currentUploadId}`);
+        const statusData = await statusRes.json();
+        if (statusData.success) uploadedChunks = statusData.uploadedChunks || [];
+      } catch(e) {}
+
+      // Step 3: Upload chunks
+      let successCount = uploadedChunks.length;
+      updateProgress(successCount, totalChunks);
+
+      for (let i = 0; i < totalChunks; i++) {
+        if (uploadedChunks.includes(i)) continue; // skip already uploaded
+
+        const start = i * CHUNK_SIZE;
+        const end = Math.min(start + CHUNK_SIZE, selectedFile.size);
+        const chunk = selectedFile.slice(start, end);
+
+        let retries = 0;
+        const maxRetries = 5;
+        while (retries < maxRetries) {
+          try {
+        // رفع القطعة باستخدام XHR للحصول على تقدم حقيقي بالبايت
+        const baseProgress = (successCount / totalChunks) * 100;
+        await new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('POST', API_BASE + `/api/videos/upload-chunk/${currentUploadId}`);
+          xhr.setRequestHeader('Authorization', 'Bearer ' + CBS.getToken());
+
+          xhr.upload.onprogress = (evt) => {
+            if (evt.lengthComputable) {
+              const chunkPct = (evt.loaded / evt.total) * (1 / totalChunks) * 100;
+              const totalPct = Math.min(99, baseProgress + chunkPct);
+              document.getElementById('progressBar').style.width = totalPct.toFixed(1) + '%';
+              document.getElementById('progressBar').textContent = Math.round(totalPct) + '%';
+              document.getElementById('progressSpeed').textContent =
+                `${formatBytes(evt.loaded)} / ${formatBytes(evt.total)}`;
+            }
+          };
+
+          xhr.onload = () => {
+            try {
+              const res = JSON.parse(xhr.responseText);
+              if (res.success) { resolve(res); }
+              else reject(new Error(res.message || 'خطأ في الرفع'));
+            } catch { reject(new Error('استجابة غير صالحة')); }
+          };
+          xhr.onerror = () => reject(new Error('خطأ في الشبكة'));
+
+          const formData = new FormData();
+          formData.append('chunk', chunk, `chunk-${i}`);
+          formData.append('chunkIndex', i);
+          xhr.send(formData);
+        });
+        successCount++;
+        updateProgress(successCount, totalChunks);
+        break;
+          } catch (err) {
+            retries++;
+            if (retries >= maxRetries) throw new Error(`فشل رفع القطعة ${i} بعد ${maxRetries} محاولات`);
+            // Wait before retry (exponential backoff)
+            await new Promise(r => setTimeout(r, 1000 * Math.pow(2, retries)));
+            updateStatusBadge('uploading', `إعادة المحاولة (${retries})...`);
+          }
+        }
+      }
+
+      // Step 4: Finalize
+      updateStatusBadge('processing', 'جاري دمج الملف...');
+      const finalRes = await fetch(API_BASE + `/api/videos/finalize/${currentUploadId}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + CBS.getToken() }
+      });
+      const finalData = await finalRes.json();
+      if (!finalData.success) throw new Error(finalData.message);
+
+      // Show processing state
+      document.getElementById('processingMsg').style.display = 'block';
+      updateStatusBadge('processing', 'معالجة');
+
+      // Poll for completion
+      pollVideoStatus(finalData.videoId);
+
+    } catch (err) {
+      CBS.toast(err.message || 'فشل الرفع', '', 'error');
+      updateStatusBadge('failed', 'فشل');
+      document.getElementById('uploadBtn').disabled = false;
+    }
+    isUploading = false;
+  }
+
+  function updateProgress(done, total) {
+    const pct = Math.round((done / total) * 100);
+    document.getElementById('progressBar').style.width = pct + '%';
+    document.getElementById('progressBar').textContent = pct + '%';
+    document.getElementById('progressDetail').textContent = `${done} / ${total} قطعة`;
+  }
+
+  function updateStatusBadge(status, text) {
+    const badge = document.getElementById('statusBadge');
+    badge.className = `status-badge ${status}`;
+    document.getElementById('statusText').textContent = text;
+  }
+
+  async function pollVideoStatus(videoId) {
+    let failCount = 0;
+    const interval = setInterval(async () => {
+      try {
+        const res = await CBS.apiGet(`/api/videos/status/${videoId}`);
+        const data = await CBS.readJson(res);
+        if (data.success && data.video.status === 'ready') {
+          clearInterval(interval);
+          document.getElementById('processingMsg').style.display = 'none';
+          document.getElementById('doneMsg').style.display = 'block';
+          updateStatusBadge('ready', 'جاهز');
+        } else if (data.success && data.video.status === 'failed') {
+          clearInterval(interval);
+          updateStatusBadge('failed', 'فشل المعالجة');
+          CBS.toast('فشلت معالجة الفيديو', '', 'error');
+        }
+        failCount = 0; // reset on success
+      } catch(e) {
+        failCount++;
+        if (failCount >= 5) {
+          clearInterval(interval);
+          CBS.toast('انقطع الاتصال أثناء متابعة المعالجة. تحقق من المكتبة المرئية لاحقاً.', '', 'error');
+        }
+      }
+    }, 5000);
+  }
+
+  // Warn before leaving during upload
+  window.addEventListener('beforeunload', (e) => {
+    if (isUploading) { e.preventDefault(); e.returnValue = ''; }
+  });
+
+  // ===== Manage Videos =====
+  async function loadMyVideos() {
+    const el = document.getElementById('myVideosList');
+    el.innerHTML = '<div class="spinner" style="margin:20px auto;"></div>';
+    try {
+      const res = await CBS.apiGet('/api/videos?mine=true');
+      const data = await CBS.readJson(res);
+      if (!data.videos || !data.videos.length) {
+        el.innerHTML = '<div style="text-align:center; padding:24px; color:var(--text-muted);">لا توجد محاضرات مرفوعة.</div>';
+        return;
+      }
+      el.innerHTML = data.videos.map(v => `
+        <div style="display:flex; align-items:center; gap:16px; padding:12px; border:1px solid var(--border); border-radius:var(--radius-md); background:var(--bg-main);">
+          <div style="flex:1;">
+            <div style="font-weight:700;">${CBS.escapeHTML(v.title)}</div>
+            <div style="font-size:0.8rem; color:var(--text-muted);">
+              ${CBS.formatDate(v.createdAt)} | الحالة: ${v.status} | المشاهدات: ${v.views || 0}
+            </div>
+          </div>
+          <div style="display:flex; gap:8px;">
+            <button class="btn btn-primary" style="padding:6px 10px; font-size:0.8rem;" onclick="openEditModal('${v._id}')"><i class="ri-edit-line"></i> تعديل</button>
+            <button class="btn btn-danger" style="padding:6px 10px; font-size:0.8rem;" onclick="deleteVideo('${v._id}')"><i class="ri-delete-bin-line"></i></button>
+          </div>
+        </div>
+      `).join('');
+    } catch(e) {
+      el.innerHTML = '<div style="text-align:center; color:var(--danger);">خطأ في التحميل</div>';
+    }
+  }
+
+  async function deleteVideo(id) {
+    if(!confirm('تأكيد حذف المحاضرة نهائياً؟')) return;
+    try {
+      const res = await CBS.apiDelete(`/api/videos/${id}`);
+      if(res.ok) { CBS.toast('تم الحذف', '', 'success'); loadMyVideos(); }
+    } catch(e) {}
+  }
+
+  async function openEditModal(id) {
+    try {
+      const res = await CBS.apiGet(`/api/videos/${id}`);
+      const data = await res.json();
+      if(!data.success) return;
+      const v = data.video;
+      
+      document.getElementById('editVideoId').value = v._id;
+      document.getElementById('editTitle').value = v.title;
+      document.getElementById('editDesc').value = v.description || '';
+      
+      const chContainer = document.getElementById('chaptersEditor');
+      chContainer.innerHTML = '';
+      const chapters = v.chapters || [];
+      if (chapters.length === 0) addChapterRow();
+      else chapters.forEach(ch => addChapterRow(ch.title, ch.time));
+
+      document.getElementById('editModal').style.display = 'flex';
+    } catch(e) {}
+  }
+
+  function closeEditModal() {
+    document.getElementById('editModal').style.display = 'none';
+  }
+
+  function addChapterRow(title = '', time = '') {
+    const div = document.createElement('div');
+    div.style.display = 'flex'; div.style.gap = '8px'; div.className = 'chapter-row';
+    div.innerHTML = `
+      <input type="text" class="form-control ch-title" placeholder="عنوان الفصل (مثال: المقدمة)" value="${title}" style="flex:2;">
+      <input type="number" class="form-control ch-time" placeholder="الثانية (مثال: 120)" value="${time}" style="flex:1;" min="0">
+      <button class="btn btn-danger" onclick="this.parentElement.remove()" style="padding:8px;"><i class="ri-close-line"></i></button>
+    `;
+    document.getElementById('chaptersEditor').appendChild(div);
+  }
+
+  async function saveVideoEdits() {
+    const id = document.getElementById('editVideoId').value;
+    const title = document.getElementById('editTitle').value.trim();
+    const description = document.getElementById('editDesc').value.trim();
+    
+    // Parse chapters
+    const chapters = [];
+    document.querySelectorAll('.chapter-row').forEach(row => {
+      const t = row.querySelector('.ch-title').value.trim();
+      const s = parseInt(row.querySelector('.ch-time').value);
+      if (t && !isNaN(s) && s >= 0) chapters.push({ title: t, time: s });
+    });
+
+    try {
+      // Update metadata
+      await CBS.apiPut(`/api/videos/${id}`, { title, description });
+      // Update chapters
+      await CBS.apiPut(`/api/videos/${id}/chapters`, { chapters });
+      
+      CBS.toast('تم حفظ التغييرات بنجاح', '', 'success');
+      closeEditModal();
+      loadMyVideos();
+    } catch(e) {
+      CBS.toast('فشل الحفظ', '', 'error');
+    }
+  }
+</script>
+</body>
+</html>
+
+

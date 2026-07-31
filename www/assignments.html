@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0d3b66">
+  <link rel="manifest" href="/manifest.json">
+  <title>الواجبات | كلية تقنية المعلومات</title>
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css?v=2026073125">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026073125">
+  <style>
+    .filter-tab { padding:5px 14px; border-radius:20px; border:1.5px solid var(--border); background:transparent; color:var(--text-muted); cursor:pointer; font-size:0.8rem; font-family:inherit; transition:all 0.2s; }
+    .filter-tab.active, .filter-tab:hover { background:var(--primary); color:#fff; border-color:var(--primary); }
+
+    /* ── Assignment Items (timeline style) ── */
+    .asgn-item {
+      background: var(--bg-card);
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      border-right: 3px solid transparent;
+      padding: 12px 14px;
+      margin-bottom: 8px;
+      cursor: pointer;
+      display: flex;
+      align-items: flex-start;
+      gap: 12px;
+      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
+      position: relative;
+    }
+    .asgn-item:hover { transform:translateY(-1px); box-shadow:0 4px 14px rgba(0,0,0,0.08); }
+    .asgn-item:active { transform:scale(0.99); }
+
+    .asgn-item.status-active   { border-right-color: #f59e0b; }
+    .asgn-item.status-completed, .asgn-item.status-graded { border-right-color: #10b981; }
+    .asgn-item.status-expired  { border-right-color: #ef4444; }
+
+    .asgn-icon {
+      width: 36px; height: 36px;
+      border-radius: 10px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+      flex-shrink: 0;
+    }
+    .asgn-icon.ic-active   { background:rgba(245,158,11,.12); color:#d97706; }
+    .asgn-icon.ic-completed, .asgn-icon.ic-graded { background:rgba(16,185,129,.12); color:#10b981; }
+    .asgn-icon.ic-expired  { background:rgba(239,68,68,.12); color:#ef4444; }
+    .asgn-icon.ic-default  { background:var(--bg-main); color:var(--text-muted); }
+
+    .asgn-body { flex:1; min-width:0; }
+    .asgn-title { font-size:0.88rem; font-weight:700; color:var(--text-main); margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .asgn-subject { font-size:0.75rem; color:var(--text-muted); margin-bottom:5px; }
+    .asgn-meta { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+    .asgn-date { font-size:0.72rem; color:var(--text-light); display:flex; align-items:center; gap:3px; }
+    .asgn-badge { font-size:0.68rem; font-weight:700; padding:2px 8px; border-radius:20px; }
+    .asgn-badge.b-active   { background:rgba(245,158,11,.12); color:#d97706; }
+    .asgn-badge.b-completed, .asgn-badge.b-graded { background:rgba(16,185,129,.12); color:#10b981; }
+    .asgn-badge.b-expired  { background:rgba(239,68,68,.12); color:#ef4444; }
+    .asgn-badge.b-default  { background:var(--bg-main); color:var(--text-muted); }
+  </style>
+
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+</head>
+<body>
+
+<header class="main-header">
+  <div class="header-brand">
+    <img src="/assets/logo.png" class="header-logo" alt="Logo">
+    <div class="header-title-group">
+      <strong>كلية تقنية المعلومات</strong>
+      <small>الواجبات والتكاليف</small>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="CBS.logout()" title="خروج"><i class="ri-logout-box-r-line"></i></button>
+  </div>
+</header>
+
+<div class="page-content">
+
+  <!-- Welcome Banner -->
+  <div class="welcome-banner" style="background: linear-gradient(135deg,#f59e0b,#d97706,#b45309);">
+    <div class="welcome-banner-icon-wrap">
+      <i class="ri-task-line welcome-banner-icon"></i>
+    </div>
+    <div class="welcome-banner-body">
+      <h2>الواجبات والتكاليف</h2>
+      <p>تصفح ومتابعة حالة جميع الواجبات المطلوبة</p>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-bar">
+    <div class="stat-item">
+      <i class="ri-file-list-3-line" style="color:var(--warning)"></i>
+      <div class="stat-item-body">
+        <div class="stat-num" id="statTotal">-</div>
+        <div class="stat-label">إجمالي</div>
+      </div>
+    </div>
+    <div class="stat-item">
+      <i class="ri-checkbox-circle-line" style="color:var(--success)"></i>
+      <div class="stat-item-body">
+        <div class="stat-num" id="statDone">-</div>
+        <div class="stat-label">مكتمل</div>
+      </div>
+    </div>
+    <div class="stat-item">
+      <i class="ri-time-line" style="color:var(--danger)"></i>
+      <div class="stat-item-body">
+        <div class="stat-num" id="statPending">-</div>
+        <div class="stat-label">متبقي</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Assignments List -->
+  <div class="section-divider">
+    <i class="ri-file-list-3-line"></i>
+    <span>قائمة الواجبات</span>
+  </div>
+
+  <!-- زر الإضافة يظهر للكادر فقط -->
+  <div id="addAssignmentWrap" style="display:none;margin-bottom:16px;">
+    <button class="btn btn-primary" onclick="CBS.openModal('assignmentModal')">
+      <i class="ri-add-line"></i> إضافة واجب جديد
+    </button>
+  </div>
+
+  <!-- Filter Tabs -->
+  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
+    <button class="filter-tab active" onclick="filterAssignments('all', this)">الكل</button>
+    <button class="filter-tab" onclick="filterAssignments('active', this)">نشط</button>
+    <button class="filter-tab" onclick="filterAssignments('completed', this)">تم التسليم</button>
+    <button class="filter-tab" onclick="filterAssignments('expired', this)">منتهي</button>
+  </div>
+
+  <div id="assignmentsList">
+    <div class="loading-state">
+      <div class="uib-loader dark"><div class="half"></div><div class="half"></div></div>
+      <p>جاري تحميل الواجبات...</p>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast-container"></div>
+
+<!-- Add/Edit Assignment Modal -->
+<div class="modal-overlay" id="assignmentModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 class="modal-title">إضافة واجب جديد</h3>
+      <button class="modal-close" onclick="CBS.closeModal('assignmentModal')"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body">
+      <form id="assignmentForm">
+        <div class="form-group">
+          <label>اسم الواجب</label>
+          <input type="text" id="assignName" required placeholder="أدخل اسم الواجب">
+        </div>
+        <div class="form-group">
+          <label>المقرر</label>
+          <select id="assignSubject" required>
+            <option value="">اختر المقرر</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>نوع التكليف</label>
+          <select id="assignType" required>
+            <option value="exercise">تمرين</option>
+            <option value="research">بحث</option>
+            <option value="project">مشروع</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>تاريخ الانتهاء</label>
+          <input type="date" id="assignDeadline" required>
+        </div>
+        <div class="form-group">
+          <label>وقت التسليم</label>
+          <input type="time" id="assignDueTime" value="23:59">
+        </div>
+        <div class="form-group">
+          <label>ملف التكليف</label>
+          <input type="file" id="assignFile" required>
+        </div>
+        <div class="form-group">
+          <label>الوصف</label>
+          <textarea id="assignDesc" placeholder="أدخل وصف الواجب"></textarea>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="CBS.closeModal('assignmentModal')">إلغاء</button>
+      <button class="btn btn-primary" onclick="saveAssignment()">حفظ</button>
+    </div>
+  </div>
+</div>
+
+<footer class="main-footer">
+  حقوق النشر &copy; <span id="year"></span> جامعة النصر التقنية &nbsp;|&nbsp; تطوير: ضياء الدين إبراهيم
+</footer>
+
+<script src="/js/app.js?v=2026073125"></script>
+<script src="/js/socket-client.js?v=2026073125" defer></script>
+<script>
+  CBS.init();
+
+  const user = CBS.getUser();
+  const isAdmin = CBS.hasRole(['dean', 'doctor', 'leader', 'admin'], user);
+  if (isAdmin) {
+    const wrap = document.getElementById('addAssignmentWrap');
+    if (wrap) wrap.style.display = 'block';
+  }
+
+  // Load assignments
+  let allAssignments = [];
+
+  const statusMap = {
+    active:    { label: 'نشط',        cls: 'active',    icon: 'ri-time-line' },
+    completed: { label: 'تم التسليم', cls: 'completed', icon: 'ri-checkbox-circle-line' },
+    graded:    { label: 'تم التقييم', cls: 'graded',    icon: 'ri-medal-line' },
+    expired:   { label: 'منتهي',      cls: 'expired',   icon: 'ri-close-circle-line' }
+  };
+
+  /* نموذج Assignment لا يحتوي حقل status ولا deadline؛ الحالة تُشتق من dueDate + تسليم الطالب */
+  let mySubmissions = {};   // assignmentId -> submission
+
+  function dueMoment(a) {
+    if (!a.dueDate) return null;
+    const d = new Date(a.dueDate);
+    if (isNaN(d)) return null;
+    const [h, m] = String(a.dueTime || '23:59').split(':');
+    d.setHours(parseInt(h, 10) || 23, parseInt(m, 10) || 59, 59, 999);
+    return d;
+  }
+
+  function assignmentStatus(a) {
+    const sub = mySubmissions[a._id];
+    if (sub) return sub.status === 'graded' ? 'graded' : 'completed';
+    const due = dueMoment(a);
+    if (due && due.getTime() < Date.now()) return 'expired';
+    return 'active';
+  }
+
+  function renderAssignments(list) {
+    const container = document.getElementById('assignmentsList');
+    if (!list.length) {
+      container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:2rem">لا توجد واجبات في هذه الفئة</p>';
+      return;
+    }
+    container.innerHTML = list.map(function(a) {
+      const st = statusMap[assignmentStatus(a)];
+      const deadline = a.dueDate ? new Date(a.dueDate).toLocaleDateString('ar-SD', {day:'numeric',month:'short',year:'numeric'}) : '-';
+      return `<div class="asgn-item status-${st.cls}" onclick="location.href='/submit-assignment.html?id=${a._id}'">
+        <div class="asgn-icon ic-${st.cls}"><i class="${st.icon}"></i></div>
+        <div class="asgn-body">
+          <div class="asgn-title">${CBS.escapeHTML(a.title || a.name || 'واجب')}</div>
+          <div class="asgn-subject">${CBS.escapeHTML((a.subject && a.subject.name) || a.subjectName || '')}</div>
+          <div class="asgn-meta">
+            <span class="asgn-date"><i class="ri-calendar-line"></i> ${deadline}</span>
+            <span class="asgn-badge b-${st.cls}">${st.label}</span>
+          </div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  function filterAssignments(type, btn) {
+    document.querySelectorAll('.filter-tab').forEach(function(b) { b.classList.remove('active'); });
+    if (btn) btn.classList.add('active');
+    const safeList = Array.isArray(allAssignments) ? allAssignments : [];
+    if (type === 'all') {
+      renderAssignments(safeList);
+    } else if (type === 'completed') {
+      renderAssignments(safeList.filter(function(a) {
+        const s = assignmentStatus(a);
+        return s === 'completed' || s === 'graded';
+      }));
+    } else {
+      renderAssignments(safeList.filter(function(a) { return assignmentStatus(a) === type; }));
+    }
+  }
+
+  (async () => {
+    const container = document.getElementById('assignmentsList');
+    CBS.showLoading('assignmentsList', 'جاري التحميل...', 'skeleton-list');
+    try {
+      const res = await CBS.apiGet('/api/assignments');
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      const list = data.data?.assignments || data.assignments || (Array.isArray(data.data) ? data.data : (Array.isArray(data) ? data : []));
+      allAssignments = Array.isArray(list) ? list : [];
+
+      // تسليمات الطالب الحالي لاشتقاق حالة كل واجب (الكادر لا يملك تسليمات فتبقى فارغة)
+      try {
+        const subRes = await CBS.apiGet('/api/submissions/my-submissions');
+        if (subRes && subRes.ok) {
+          const subData = await subRes.json();
+          const subs = subData.data?.submissions || subData.submissions || [];
+          subs.forEach(function(s) {
+            const aid = s.assignment && (s.assignment._id || s.assignment);
+            if (aid) mySubmissions[aid] = s;
+          });
+        }
+      } catch {}
+
+      document.getElementById('statTotal').textContent = allAssignments.length;
+      const done = allAssignments.filter(function(a) {
+        const s = assignmentStatus(a);
+        return s === 'completed' || s === 'graded';
+      }).length;
+      document.getElementById('statDone').textContent = done;
+      document.getElementById('statPending').textContent = allAssignments.length - done;
+
+      if (!allAssignments.length) {
+        container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:2rem">لا توجد واجبات حالياً</p>';
+        return;
+      }
+
+      renderAssignments(allAssignments);
+    } catch(err) {
+      console.warn('Assignments load error:', err);
+      container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:2rem">تعذر تحميل الواجبات</p>';
+    }
+  })();
+
+  // Load subjects for modal
+  (async () => {
+    try {
+      const res = await CBS.apiGet('/api/subjects');
+      if (res && res.ok) {
+        const _data = await res.json();
+        const subjects = _data.data?.subjects || _data.subjects || _data.data || (Array.isArray(_data) ? _data : []);
+        const sel = document.getElementById('assignSubject');
+        if (sel) {
+          subjects.forEach(s => {
+            const o = document.createElement('option');
+            o.value = s._id;
+            o.textContent = s.name;
+            sel.appendChild(o);
+          });
+        }
+      }
+    } catch {}
+  })();
+
+  async function saveAssignment() {
+    const title   = document.getElementById('assignName').value.trim();
+    const subject = document.getElementById('assignSubject').value;
+    const dueDate = document.getElementById('assignDeadline').value;
+    const file    = document.getElementById('assignFile').files[0];
+
+    if (!title || !subject || !dueDate) {
+      CBS.toast('العنوان والمقرر وتاريخ الانتهاء مطلوبة', '', 'error');
+      return;
+    }
+    if (!file) {
+      CBS.toast('يجب رفع ملف التكليف', '', 'error');
+      return;
+    }
+
+    // المسار يستخدم multer، لذلك لا يمكن استعمال CBS.apiPost (يرسل JSON دائماً)
+    const form = new FormData();
+    form.append('title', title);
+    form.append('subject', subject);
+    form.append('type', document.getElementById('assignType').value);
+    form.append('dueDate', dueDate);
+    form.append('dueTime', document.getElementById('assignDueTime').value || '23:59');
+    form.append('description', document.getElementById('assignDesc').value);
+    form.append('file', file);
+
+    const headers = { Authorization: 'Bearer ' + CBS.getToken() };
+    const batchId = CBS.getBatchId();
+    if (batchId) headers['x-batch-id'] = batchId;
+
+    try {
+      const res = await fetch('/api/assignments', { method: 'POST', headers, body: form });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok) {
+        CBS.toast('تم حفظ الواجب بنجاح', '', 'success');
+        CBS.closeModal('assignmentModal');
+        location.reload();
+      } else {
+        CBS.toast(data.message || 'حدث خطأ', '', 'error');
+      }
+    } catch {
+      CBS.toast('خطأ في الاتصال', '', 'error');
+    }
+  }
+</script>
+</body>
+</html>
+

@@ -1,0 +1,260 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>لوحة المتصدرين | كلية تقنية المعلومات</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Al-Nasr CBS">
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <link rel="stylesheet" href="/css/style.css?v=2026073125">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026073125">
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
+  <style>
+    .leaderboard-banner {
+      background: linear-gradient(135deg, #f59e0b, #d97706, #b45309);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-lg);
+      position: relative;
+      overflow: hidden;
+    }
+    .leaderboard-banner::after {
+      content: '\f22f';
+      font-family: 'remixicon';
+      font-style: normal;
+      font-size: 8rem;
+      position: absolute;
+      left: -20px;
+      bottom: -30px;
+      opacity: 0.15;
+    }
+    .top-podium {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 18px;
+      align-items: flex-end;
+    }
+    @media (max-width: 600px) {
+      .top-podium { grid-template-columns: 1fr; }
+    }
+    .podium-card {
+      background: var(--bg-card);
+      border-radius: 12px;
+      padding: 14px;
+      text-align: center;
+      border: 1.5px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.18s;
+    }
+    .podium-card:hover { transform: translateY(-2px); }
+    .podium-1 { border-color: #fbbf24; background: linear-gradient(to bottom, rgba(251,191,36,0.1), transparent); transform: scale(1.05); }
+    .podium-2 { border-color: #94a3b8; }
+    .podium-3 { border-color: #d97706; }
+    .podium-rank {
+      font-size: 1.2rem;
+      font-weight: 900;
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      margin-bottom: 8px;
+    }
+    .rank-1 { background: #fbbf24; color: #000; }
+    .rank-2 { background: #94a3b8; color: #fff; }
+    .rank-3 { background: #d97706; color: #fff; }
+    .podium-name { font-weight: 700; font-size: 0.85rem; color: var(--text-main); margin-bottom: 4px; }
+    .podium-points { font-weight: 700; color: #f59e0b; font-size: 0.95rem; }
+
+    .ranking-list {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .ranking-item {
+      background: var(--bg-card);
+      border-radius: 10px;
+      padding: 10px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border: 1px solid var(--border);
+      transition: background 0.15s;
+    }
+    .ranking-item.current-user {
+      border-color: var(--primary);
+      background: var(--primary-light);
+      font-weight: 700;
+    }
+    .ranking-left { display: flex; align-items: center; gap: 16px; }
+    .rank-number { font-weight: 800; font-size: 1.1rem; color: var(--text-muted); width: 30px; text-align: center; }
+    .user-info .name { color: var(--text-main); font-size: 1rem; }
+    .user-info .batch { font-size: 0.8rem; color: var(--text-muted); }
+    .points-badge {
+      background: rgba(245, 158, 11, 0.15);
+      color: #d97706;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+  </style>
+</head>
+<body>
+
+<header class="main-header">
+  <div class="header-brand">
+    <button class="btn-icon" onclick="CBS.goHome()" title="رجوع"><i class="ri-arrow-right-line"></i></button>
+    <div class="header-title-group">
+      <strong>كلية تقنية المعلومات</strong>
+      <small>لوحة الشرف والمتصدرين</small>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="CBS.logout()" title="خروج"><i class="ri-logout-box-r-line"></i></button>
+  </div>
+</header>
+
+<div class="page-content">
+  <div class="leaderboard-banner">
+    <div>
+      <h2 style="font-size:1.6rem;font-weight:900;margin-bottom:8px">لوحة المتصدرين ونقاط التميز</h2>
+      <p style="opacity:0.9;font-size:0.95rem">يتم احتساب النقاط تلقائياً بناءً على الالتزام بالحضور، تسليم الواجبات، وحل الاختبارات</p>
+    </div>
+  </div>
+
+  </div>
+
+  <div style="margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;">
+    <h3 style="font-size:1.2rem;font-weight:800;color:var(--text-main);display:flex;align-items:center;gap:8px">
+      <i class="ri-list-ordered-2" style="color:var(--primary)"></i> ترتيب الطلاب
+    </h3>
+    <select id="filterBatch" class="form-control" style="width: auto; padding: 4px 12px; font-size: 0.9rem; border-radius: 20px;" onchange="loadLeaderboard()">
+      <option value="">كل الدفعات</option>
+    </select>
+  </div>
+
+  <div id="loading" class="loading-state">
+    <div class="uib-loader dark"><div class="half"></div><div class="half"></div></div>
+    <p>جاري جلب ترتيب الطلاب...</p>
+  </div>
+
+  <div id="content" style="display:none">
+    <!-- المراكز الثلاثة الأولى -->
+    <div id="podium" class="top-podium"></div>
+
+    <div id="rankingList" class="ranking-list"></div>
+  </div>
+</div>
+
+<footer class="main-footer">
+  حقوق النشر &copy; <span id="year"></span> جامعة النصر التقنية
+</footer>
+
+<div id="toast-container"></div>
+<script src="/js/app.js?v=2026073125"></script>
+<script>
+  CBS.init();
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  async function loadLeaderboard() {
+    try {
+      const batchFilter = document.getElementById('filterBatch') ? document.getElementById('filterBatch').value : '';
+      const url = batchFilter ? `/api/leaderboard?limit=50&batch=${batchFilter}` : '/api/leaderboard?limit=50';
+      const res = await CBS.apiGet(url);
+      if (!res.ok) throw new Error('فشل التحميل');
+      const data = await res.json();
+      
+      const leaderboard = data.data?.leaderboard || data.leaderboard || [];
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('content').style.display = 'block';
+
+      if (!leaderboard.length) {
+        document.getElementById('content').innerHTML = '<p style="text-align:center;padding:3rem;color:var(--text-muted)">لا توجد بيانات متصدرين حتى الآن</p>';
+        return;
+      }
+
+      // ترتيب أول 3 طلاب
+      const top3 = leaderboard.slice(0, 3);
+      const podiumEl = document.getElementById('podium');
+      let podiumHTML = '';
+      
+      const ranksClass = ['rank-1', 'rank-2', 'rank-3'];
+      const podiumClass = ['podium-1', 'podium-2', 'podium-3'];
+      const medals = ['<i class="ri-vip-crown-fill"></i>', '<i class="ri-medal-fill"></i>', '<i class="ri-medal-fill"></i>'];
+
+      top3.forEach((item, i) => {
+        podiumHTML += `
+          <div class="podium-card ${podiumClass[i] || ''}">
+            <div class="podium-rank ${ranksClass[i] || ''}">${medals[i]}</div>
+            <div class="podium-name">${CBS.escapeHTML(item.name)}</div>
+            <div style="font-size:0.8rem;color:var(--text-muted);margin-bottom:8px">${CBS.escapeHTML(item.batch?.name || 'طالب')}</div>
+            <div class="podium-points">${item.points || 0} نقطة</div>
+          </div>
+        `;
+      });
+      podiumEl.innerHTML = podiumHTML;
+
+      // بقية الترتيب
+      const listEl = document.getElementById('rankingList');
+      let listHTML = '';
+      leaderboard.forEach(item => {
+        listHTML += `
+          <div class="ranking-item ${item.isCurrentUser ? 'current-user' : ''}">
+            <div class="ranking-left">
+              <span class="rank-number">#${item.rank}</span>
+              <div class="user-info">
+                <div class="name">${CBS.escapeHTML(item.name)} ${item.isCurrentUser ? '<span style="color:var(--primary);font-size:0.8rem">(أنت)</span>' : ''}</div>
+                <div class="batch">${CBS.escapeHTML(item.batch?.name || '')}</div>
+              </div>
+            </div>
+            <div class="points-badge">
+              <i class="ri-star-fill"></i>
+              <span>${item.points || 0}</span>
+            </div>
+          </div>
+        `;
+      });
+      listEl.innerHTML = listHTML;
+
+    } catch (e) {
+      document.getElementById('loading').innerHTML = '<p style="color:var(--danger)">حدث خطأ أثناء تحميل لوحة المتصدرين</p>';
+    }
+  }
+
+  async function loadBatches() {
+    try {
+      const res = await CBS.apiGet('/api/batches');
+      const data = await res.json();
+      if (res.ok && data.batches) {
+        const select = document.getElementById('filterBatch');
+        if (select) {
+          select.innerHTML = '<option value="">كل الدفعات</option>' + 
+            data.batches.map(b => `<option value="${b._id}">${CBS.escapeHTML(b.name)}</option>`).join('');
+        }
+      }
+    } catch(e) {}
+  }
+
+  loadBatches();
+  loadLeaderboard();
+</script>
+<script>document.addEventListener('cbs:refresh',e=>{e.preventDefault();loadLeaderboard().finally(()=>e.detail.done());});</script>
+</body>
+</html>
+
+
+

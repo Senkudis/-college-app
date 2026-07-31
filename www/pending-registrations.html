@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>طلبات التسجيل المعلقة | كلية تقنية المعلومات</title>
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css?v=2026073125">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026073125">
+
+  <style>
+    .pending-card {
+      background: var(--bg-card);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      border-radius: 16px;
+      padding: 16px;
+      margin-bottom: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+    }
+    .pending-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+    }
+    .pending-title {
+      font-size: 1rem;
+      font-weight: 800;
+      color: var(--text-main);
+    }
+    .pending-meta {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 4px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .pending-actions {
+      display: flex;
+      gap: 8px;
+      margin-top: 14px;
+      flex-wrap: wrap;
+    }
+    .btn-wa {
+      background: #22c55e;
+      color: #fff;
+      border: none;
+      padding: 8px 14px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-approve {
+      background: #10b981;
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .btn-reject {
+      background: #ef4444;
+      color: #fff;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 10px;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+  </style>
+</head>
+<body>
+
+<header class="main-header">
+  <div class="header-brand">
+    <img src="/assets/logo.png" class="header-logo" alt="Logo">
+    <div class="header-title-group">
+      <strong>كلية تقنية المعلومات</strong>
+      <small>طلبات التسجيل المعلقة</small>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="CBS.logout()" title="خروج"><i class="ri-logout-box-r-line"></i></button>
+  </div>
+</header>
+
+<div class="page-content">
+
+  <!-- Welcome Banner -->
+  <div class="welcome-banner" style="background: linear-gradient(135deg,#f59e0b,#d97706,#b45309);">
+    <div class="welcome-banner-icon-wrap">
+      <i class="ri-user-received-line welcome-banner-icon"></i>
+    </div>
+    <div class="welcome-banner-body">
+      <h2>مراجعة طلبات التسجيل المعلقة</h2>
+      <p>قبول الطلاب أو رفضهم مع إمكانية الترحيب وإرسال التنبيه عبر الواتساب</p>
+    </div>
+  </div>
+
+  <!-- Actions Bar -->
+  <div style="display: flex; justify-content: space-between; align-items: center; background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 12px 16px; margin-bottom: 16px; flex-wrap: wrap; gap: 10px;">
+    <div style="display: flex; align-items: center; gap: 10px;">
+      <input type="checkbox" id="selectAll" onchange="toggleSelectAll(this.checked)" style="width: 20px; height: 20px; cursor: pointer;">
+      <label for="selectAll" style="font-weight: 800; cursor: pointer; font-size: 0.9rem;">تحديد الكل (<span id="pendingCount">0</span> طالب)</label>
+    </div>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+      <button class="btn-approve" onclick="bulkApprove()"><i class="ri-checkbox-circle-line"></i> قبول المحددين</button>
+      <button class="btn-reject" onclick="bulkReject()"><i class="ri-close-circle-line"></i> رفض المحددين</button>
+      <button class="btn-approve" onclick="copyAllEmails()" style="background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4);"><i class="ri-file-copy-line"></i> نسخ الإيميلات</button>
+    </div>
+  </div>
+
+  <div style="margin-bottom: 12px; position: relative;">
+    <i class="ri-search-line" style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+    <input type="text" id="searchPendingInput" class="form-control" placeholder="ابحث بالاسم أو البريد الإلكتروني..." style="padding-right: 40px; width: 100%; border-radius: 20px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-main);" oninput="searchPending(this.value)">
+  </div>
+
+  <div id="pendingList">
+    <div class="loading-state" style="text-align: center; padding: 40px; color: var(--text-muted);">
+      <p>جاري تحميل طلبات التسجيل...</p>
+    </div>
+  </div>
+
+</div>
+
+<footer class="main-footer">
+  حقوق النشر &copy; <span id="year"></span> كلية تقنية المعلومات
+</footer>
+
+<script src="/js/app.js?v=2026073125"></script>
+<script>
+  CBS.init({ requireRoles: ['dean', 'admin', 'leader'] });
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  let _requests = [];
+
+  async function loadRequests() {
+    const list = document.getElementById('pendingList');
+    list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);"><i class="ri-loader-4-line" style="font-size:2rem;animation:spin 1s linear infinite;"></i><p style="margin-top:10px;">جاري تحميل الطلبات المعلقة...</p></div>';
+
+    try {
+      const res = await CBS.apiGet('/api/users/pending-registrations');
+      const json = await res.json();
+      const pUsers = json.data?.pendingUsers || json.pendingUsers;
+      if (res.ok && pUsers) {
+        _requests = pUsers;
+        document.getElementById('pendingCount').textContent = _requests.length;
+
+        if (!_requests.length) {
+          list.innerHTML = '<div style="text-align:center;padding:50px 20px;color:var(--text-muted);"><i class="ri-checkbox-circle-line" style="font-size:3rem;color:#10b981;display:block;margin-bottom:10px;"></i><h3>لا توجد طلبات تسجيل معلقة حالياً</h3><p style="font-size:0.85rem;margin-top:4px;">جميع طلبات الانضمام تمت مراجعتها وقبولها</p></div>';
+          return;
+        }
+
+        list.innerHTML = _requests.map(u => {
+          const batchName = u.batch ? (u.batch.name || u.batch) : 'غير محدد';
+          let cleanPhone = (u.phone || '').replace(/[^0-9]/g, '');
+          if (cleanPhone.startsWith('0')) {
+            cleanPhone = '249' + cleanPhone.slice(1);
+          }
+
+          const waMsg = `مرحباً بك الطالب/ة: *${u.name}* 🎓\n` +
+            `تهانينا! تم قبول طلب تسجيلك وانضمامك بنجاح إلى منصة كلية تقنية المعلومات.\n\n` +
+            `📋 *بيانات تسجيل الدخول الخاصة بك:*\n` +
+            `🔹 *البريد الإلكتروني:* ${u.email}\n` +
+            `🔹 *كلمة المرور الأولية:* 123456\n` +
+            `🔹 *الدفعة الدراسية:* ${batchName}\n\n` +
+            `🔒 *ملاحظة هامة:* عند أول تسجيل دخول لك، سيطلب منك النظام تلقائياً تعيين كلمة مرور جديدة خاصة بك لحماية حسابك.\n\n` +
+            `🔗 *الدخول عبر تطبيق الأندرويد (رابط التحميل):*\nhttps://play.google.com/apps/testing/com.elnasrcsit.cbs\n\n` +
+            `🔗 *الدخول عبر متصفح الويب (للآيفون والكمبيوتر):*\n${CBS.publicBaseUrl()}/login.html\n\n` +
+            `نتمنى لك رحلة دراسية مكللة بالنجاح والتوفيق! ✨`;
+
+          const waUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(waMsg)}` : '#';
+
+          return `
+            <div class="pending-card">
+              <div class="pending-header" style="flex-wrap:wrap">
+                <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap;flex:1">
+                  <input type="checkbox" class="cb-item" value="${u._id}" data-email="${CBS.escapeHTML(u.email || '')}" style="width:18px;height:18px;cursor:pointer;flex-shrink:0">
+                  <div>
+                    <div class="pending-title">${CBS.escapeHTML(u.name)}</div>
+                    <div class="pending-meta">
+                      <span><i class="ri-mail-line"></i> ${CBS.escapeHTML(u.email)}</span>
+                      ${u.phone ? `<span><i class="ri-whatsapp-line" style="color:#22c55e"></i> ${CBS.escapeHTML(u.phone)}</span>` : ''}
+                      <span><i class="ri-group-line"></i> ${CBS.escapeHTML(batchName)}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div class="pending-actions">
+                ${cleanPhone ? `
+                  <a href="${waUrl}" target="_blank" class="btn-wa">
+                    <i class="ri-whatsapp-line"></i> إرسال عبر الواتساب
+                  </a>
+                ` : ''}
+                <button class="btn-approve" onclick="approveOne('${u._id}')">
+                  <i class="ri-check-line"></i> قبول الطالب
+                </button>
+                <button class="btn-reject" onclick="rejectOne('${u._id}')">
+                  <i class="ri-close-line"></i> رفض وحذف
+                </button>
+              </div>
+            </div>`;
+        }).join('');
+      }
+    } catch (e) {
+      list.innerHTML = '<div style="text-align:center;padding:40px;color:var(--text-muted);">تعذر تحميل الطلبات المعلقة</div>';
+    }
+  }
+
+  function toggleSelectAll(checked) {
+    document.querySelectorAll('.cb-item').forEach(cb => {
+      const card = cb.closest('.pending-card');
+      if (card && card.style.display !== 'none') {
+        cb.checked = checked;
+      } else {
+        cb.checked = false;
+      }
+    });
+  }
+
+  function searchPending(query) {
+    const q = query.toLowerCase().trim();
+    const cards = document.querySelectorAll('#pendingList .pending-card');
+    let hasVisible = false;
+    cards.forEach(card => {
+      const text = card.innerText.toLowerCase();
+      if (text.includes(q)) {
+        card.style.display = '';
+        hasVisible = true;
+      } else {
+        card.style.display = 'none';
+        const cb = card.querySelector('.cb-item');
+        if (cb) cb.checked = false;
+      }
+    });
+    
+    document.getElementById('selectAll').checked = false;
+    
+    let emptyState = document.getElementById('searchEmptyState');
+    if (!hasVisible && cards.length > 0) {
+      if (!emptyState) {
+        emptyState = document.createElement('div');
+        emptyState.id = 'searchEmptyState';
+        emptyState.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:2rem">لا توجد طلبات تطابق بحثك</p>';
+        document.getElementById('pendingList').appendChild(emptyState);
+      }
+      emptyState.style.display = 'block';
+    } else if (emptyState) {
+      emptyState.style.display = 'none';
+    }
+  }
+
+  function getSelected() {
+    return Array.from(document.querySelectorAll('.cb-item:checked')).map(cb => cb.value);
+  }
+
+  async function bulkApprove() {
+    const ids = getSelected();
+    if (!ids.length) { CBS.toast('اختر طالباً واحداً على الأقل للقبول', '', 'warning'); return; }
+    if (!confirm(`هل تريد قبول ${ids.length} من الطلاب المحددين؟`)) return;
+
+    try {
+      const res = await CBS.apiPost('/api/users/approve-registrations', { userIds: ids });
+      if (res.ok) {
+        CBS.toast('تم قبول الطلاب بنجاح', '', 'success');
+        loadRequests();
+      }
+    } catch { CBS.toast('خطأ في الاتصال', '', 'error'); }
+  }
+
+  async function bulkReject() {
+    const ids = getSelected();
+    if (!ids.length) { CBS.toast('اختر طالباً واحداً على الأقل للرفض', '', 'warning'); return; }
+    if (!confirm(`هل أنت تأكد من رفض وحذف ${ids.length} من الطلبات المحددة؟`)) return;
+
+    try {
+      const res = await CBS.apiPost('/api/users/reject-registrations', { userIds: ids });
+      if (res.ok) {
+        CBS.toast('تم رفض الطلبات وحذفها', '', 'success');
+        loadRequests();
+      }
+    } catch { CBS.toast('خطأ في الاتصال', '', 'error'); }
+  }
+
+  async function approveOne(id) {
+    try {
+      const res = await CBS.apiPost('/api/users/approve-registrations', { userIds: [id] });
+      if (res.ok) {
+        CBS.toast('تم قبول الطالب بنجاح', '', 'success');
+        loadRequests();
+      }
+    } catch { CBS.toast('خطأ في الاتصال', '', 'error'); }
+  }
+
+  async function rejectOne(id) {
+    if (!confirm('هل تريد رفض وحذف هذا الطالب؟')) return;
+    try {
+      const res = await CBS.apiPost('/api/users/reject-registrations', { userIds: [id] });
+      if (res.ok) {
+        CBS.toast('تم رفض الطالب وحذفه', '', 'success');
+        loadRequests();
+      }
+    } catch { CBS.toast('خطأ في الاتصال', '', 'error'); }
+  }
+
+  function copyAllEmails() {
+    const cbs = Array.from(document.querySelectorAll('.cb-item:checked'));
+    if (!cbs.length) {
+      CBS.toast('الرجاء تحديد طلب واحد على الأقل لنسخ إيميله', '', 'warning');
+      return;
+    }
+    const emails = cbs.map(cb => cb.dataset.email).filter(e => e && e !== '-').join(', ');
+    navigator.clipboard.writeText(emails).then(() => {
+      CBS.toast('تم نسخ الإيميلات بنجاح!', '', 'success');
+    }).catch(() => {
+      prompt('فشل النسخ التلقائي، انسخ الإيميلات من هنا:', emails);
+    });
+  }
+
+  loadRequests();
+</script>
+</body>
+</html>

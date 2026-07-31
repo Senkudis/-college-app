@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>إدارة المقررات | كلية تقنية المعلومات</title>
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css?v=2026073125">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026073125">
+  <style>
+    .subjects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 16px;
+    }
+    .subject-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+      transition: var(--transition);
+    }
+    .subject-item:hover { box-shadow: var(--shadow-md); border-color: var(--primary); }
+    .subject-item-name  { font-weight: 700; font-size: 1rem; color: var(--text-main); margin-bottom: 6px; }
+    .subject-item-meta  { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+    .subject-item-acts  { display: flex; gap: 8px; }
+    .subject-item-acts .btn { flex: 1; padding: 8px 12px; font-size: 0.83rem; }
+  </style>
+
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+</head>
+<body>
+
+<header class="main-header">
+  <div class="header-brand">
+    <img src="/assets/logo.png" class="header-logo" alt="الشعار">
+    <div class="header-title-group">
+      <strong>كلية تقنية المعلومات</strong>
+      <small>إدارة المقررات</small>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="CBS.goHome()" title="الرئيسية"><i class="ri-home-4-line"></i></button>
+  </div>
+</header>
+
+<div class="page-content">
+
+    <!-- Welcome Banner -->
+    <div class="welcome-banner" style="background: linear-gradient(135deg,#f59e0b,#d97706,#b45309);">
+      <div class="welcome-banner-icon-wrap">
+        <i class="ri-book-line welcome-banner-icon"></i>
+      </div>
+      <div class="welcome-banner-body">
+        <h2>إدارة المقررات</h2>
+        <p>إدارة بيانات جميع المقررات الأكاديمية</p>
+      </div>
+    </div>
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon"><i class="ri-book-open-line"></i></div>
+      <div>
+        <div class="page-title">إدارة المقررات الأكاديمية</div>
+        <div class="page-subtitle" id="subCount">جاري التحميل...</div>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="addBtn">
+      <i class="ri-add-line"></i> إضافة مقرر
+    </button>
+  </div>
+
+  <div class="controls-bar">
+    <div class="search-wrapper">
+      <i class="ri-search-line"></i>
+      <input type="text" class="search-input" id="searchBox" placeholder="البحث باسم أو مستوى المقرر...">
+    </div>
+  </div>
+
+  <div id="alertMsg" class="alert"></div>
+  <div class="subjects-grid" id="subjectsGrid"></div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="subjectModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">إضافة مقرر جديد</span>
+      <button class="modal-close" onclick="CBS.closeModal('subjectModal')"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body">
+      <div id="modalAlert" class="alert"></div>
+      <div class="form-group">
+        <label class="form-label">اسم المقرر</label>
+        <div class="input-wrapper">
+          <i class="input-icon ri-book-line"></i>
+          <input class="form-control" type="text" id="subjectName" placeholder="أدخل اسم المقرر">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">المستوى الأكاديمي</label>
+        <div class="input-wrapper">
+          <i class="input-icon ri-graduation-cap-line"></i>
+          <input class="form-control" type="text" id="subjectLevel" placeholder="مثال: المستوى الأول">
+        </div>
+      </div>
+      <div class="form-group" id="doctorFormGroup" style="display: none;">
+        <label class="form-label">أستاذ المادة (الدكتور)</label>
+        <div class="input-wrapper">
+          <i class="input-icon ri-user-voice-line"></i>
+          <select class="form-control" id="subjectDoctor">
+            <option value="">-- يتم التحميل --</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">الدفعات المستهدفة</label>
+        <div id="subjectBatchesList" style="display: flex; flex-direction: column; gap: 8px; max-height: 150px; overflow-y: auto; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card);">
+          <!-- Checkboxes will be loaded here -->
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="CBS.closeModal('subjectModal')">إلغاء</button>
+      <button class="btn btn-primary" id="saveBtn" onclick="saveSubject()">
+        <i class="ri-save-line"></i> حفظ
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<footer class="main-footer">
+  جميع الحقوق محفوظة &copy; <span id="year"></span> النظام الجامعي المتكامل
+</footer>
+
+<script src="/js/app.js?v=2026073125"></script>
+<script src="/js/socket-client.js?v=2026073125" defer></script>
+<script>
+  CBS.init({ requireRoles: ['dean', 'doctor', 'admin'] });
+
+  let allSubjects = [], allDoctors = [], editingId = null;
+  const isDean = CBS.getUser().roles && (CBS.getUser().roles.includes('dean') || CBS.getUser().roles.includes('admin'));
+
+  // جلب قائمة الدكاترة إذا كان المستخدم عميداً
+  if (isDean) {
+    document.getElementById('doctorFormGroup').style.display = 'block';
+    loadDoctors();
+  }
+
+  async function loadDoctors() {
+    try {
+      const res = await CBS.apiGet('/api/users/doctors');
+      const data = await CBS.readJson(res);
+      if (data.success && data.doctors) {
+        allDoctors = data.doctors;
+        const select = document.getElementById('subjectDoctor');
+        select.innerHTML = '<option value="">-- اختر أستاذ المادة --</option>' + 
+          allDoctors.map(d => `<option value="${d._id}">${CBS.escapeHTML(d.name)}</option>`).join('');
+      }
+    } catch (e) {
+      console.error('Failed to load doctors:', e);
+    }
+  }
+
+  async function loadSubjects() {
+    CBS.showLoading('subjectsGrid', 'جاري تحميل المقررات...');
+    try {
+      const res  = await CBS.apiGet('/api/subjects');
+      const _resData = await CBS.readJson(res);
+      allSubjects = _resData.data?.subjects || _resData.subjects || _resData.data || _resData || [];
+      if (!Array.isArray(allSubjects)) allSubjects = [];
+      document.getElementById('subCount').textContent = `${allSubjects.length} مقرراً دراسياً`;
+      render(allSubjects);
+    } catch {
+      CBS.showAlert('alertMsg', 'خطأ في الاتصال بالخادم', 'danger');
+    }
+  }
+
+  async function loadAllBatches() {
+    try {
+      const res = await CBS.apiGet('/api/batches');
+      const data = await res.json();
+      if (res.ok && data.batches) {
+        const container = document.getElementById('subjectBatchesList');
+        if (container) {
+          container.innerHTML = data.batches.map(b => `
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+              <input type="checkbox" name="subjectBatches" value="${b._id}">
+              <span>${CBS.escapeHTML(b.name)}</span>
+            </label>
+          `).join('');
+        }
+      }
+    } catch (e) {
+      console.error('Failed to load batches:', e);
+    }
+  }
+
+  // Load batches on page load
+  loadAllBatches();
+
+  function render(list) {
+    if (!list.length) { CBS.showEmpty('subjectsGrid', 'لا توجد مقررات', 'ri-book-open-line'); return; }
+    document.getElementById('subjectsGrid').innerHTML = list.map(s => {
+      let batchBadge = '';
+      if (s.batches && s.batches.length > 0) {
+        batchBadge = `<span class="badge" style="background:var(--bg-hover);color:var(--text-main);"><i class="ri-group-line"></i> ${s.batches.length} دفعات</span>`;
+      }
+      return `
+      <div class="subject-item">
+        <div class="subject-item-name">${CBS.escapeHTML(s.name)}</div>
+        <div class="subject-item-meta">
+          <span class="badge badge-primary"><i class="ri-graduation-cap-line"></i> ${CBS.escapeHTML(s.level)}</span>
+          ${s.doctor ? `<span class="badge badge-accent"><i class="ri-user-voice-line"></i> ${CBS.escapeHTML(s.doctor.name)}</span>` : ''}
+          ${batchBadge}
+        </div>
+        <div class="subject-item-acts">
+          <button class="btn btn-secondary" onclick="openEdit('${s._id}')"><i class="ri-pencil-line"></i> تعديل</button>
+          <button class="btn btn-danger"    onclick="deleteSubject('${s._id}')"><i class="ri-delete-bin-line"></i> حذف</button>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  document.getElementById('addBtn').onclick = () => {
+    editingId = null;
+    document.getElementById('modalTitle').textContent = 'إضافة مقرر جديد';
+    document.getElementById('subjectName').value  = '';
+    document.getElementById('subjectLevel').value = '';
+    if (isDean) document.getElementById('subjectDoctor').value = '';
+    
+    // Clear batches selection
+    document.querySelectorAll('input[name="subjectBatches"]').forEach(cb => cb.checked = false);
+    
+    CBS.hideAlert('modalAlert');
+    CBS.openModal('subjectModal');
+  };
+
+  function openEdit(id) {
+    const s = allSubjects.find(x => x._id === id);
+    if (!s) return;
+    editingId = id;
+    document.getElementById('modalTitle').textContent = 'تعديل المقرر';
+    document.getElementById('subjectName').value  = s.name;
+    document.getElementById('subjectLevel').value = s.level;
+    if (isDean && s.doctor) {
+      document.getElementById('subjectDoctor').value = s.doctor._id || s.doctor;
+    } else if (isDean) {
+      document.getElementById('subjectDoctor').value = '';
+    }
+    
+    // Set batches selection
+    const sBatches = s.batches ? s.batches.map(b => b._id || b) : [];
+    document.querySelectorAll('input[name="subjectBatches"]').forEach(cb => {
+      cb.checked = sBatches.includes(cb.value);
+    });
+
+    CBS.hideAlert('modalAlert');
+    CBS.openModal('subjectModal');
+  }
+
+  async function saveSubject() {
+    const name  = document.getElementById('subjectName').value.trim();
+    const level = document.getElementById('subjectLevel').value.trim();
+    let doctor = undefined;
+    if (isDean) {
+      doctor = document.getElementById('subjectDoctor').value;
+      if (!doctor) {
+        CBS.showAlert('modalAlert', 'يرجى اختيار أستاذ المادة', 'danger');
+        return;
+      }
+    }
+    
+    if (!name || !level) { CBS.showAlert('modalAlert', 'يرجى تعبئة جميع الحقول', 'danger'); return; }
+
+    // Collect batches
+    const selectedBatches = Array.from(document.querySelectorAll('input[name="subjectBatches"]:checked')).map(cb => cb.value);
+
+    document.getElementById('saveBtn').disabled = true;
+    const method = editingId ? 'PUT' : 'POST';
+    const url    = editingId ? `/api/subjects/${editingId}` : '/api/subjects';
+    try {
+      const payload = { name, level, batches: selectedBatches };
+      if (doctor) payload.doctor = doctor;
+      
+      const res = await CBS.apiPost(url, payload, method);
+      if (!res.ok) { const e = await res.json(); CBS.showAlert('modalAlert', e.message || 'حدث خطأ', 'danger'); return; }
+      CBS.toast(editingId ? 'تم تعديل المقرر' : 'تمت إضافة المقرر', '', 'success');
+      CBS.closeModal('subjectModal');
+      loadSubjects();
+    } catch { CBS.showAlert('modalAlert', 'خطأ في الاتصال بالخادم', 'danger'); }
+    document.getElementById('saveBtn').disabled = false;
+  }
+
+  async function deleteSubject(id) {
+    const s = allSubjects.find(x => x._id === id);
+    if (!confirm(`تأكيد حذف المقرر "${s?.name}"؟`)) return;
+    const res = await CBS.apiDelete(`/api/subjects/${id}`);
+    if (res.ok) { CBS.toast('تم حذف المقرر', '', 'success'); loadSubjects(); }
+    else CBS.toast('فشل الحذف', '', 'error');
+  }
+
+  document.getElementById('searchBox').addEventListener('input', e => {
+    const q = e.target.value.toLowerCase();
+    render(allSubjects.filter(s => s.name.toLowerCase().includes(q) || s.level.toLowerCase().includes(q)));
+  });
+
+  loadSubjects();
+</script>
+</body>
+</html>
+
+

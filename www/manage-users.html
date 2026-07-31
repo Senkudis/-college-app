@@ -1,0 +1,504 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0d3b66">
+  <link rel="manifest" href="/manifest.json">
+  <title>إدارة المستخدمين | كلية تقنية المعلومات</title>
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css?v=2026073125">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026073125">
+
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <style>
+    /* ===== Compact User Cards for Mobile ===== */
+    #usersList .card {
+      margin-bottom: 10px;
+      padding: 13px 14px;
+    }
+    .user-card-avatar {
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: white;
+      font-weight: 700;
+      flex-shrink: 0;
+      font-size: 1rem;
+    }
+    .user-card-actions {
+      display: flex;
+      gap: 6px;
+      margin-top: 10px;
+      justify-content: flex-end;
+    }
+    .btn-xs {
+      padding: 5px 10px;
+      font-size: 0.76rem;
+      border-radius: 8px;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+    }
+    @media (max-width: 480px) {
+      .user-card-actions { margin-top: 8px; }
+      .btn-xs { padding: 5px 8px; font-size: 0.72rem; }
+    }
+  </style>
+</head>
+<body>
+
+<header class="main-header">
+  <div class="header-brand">
+    <img src="/assets/logo.png" class="header-logo" alt="Logo">
+    <div class="header-title-group">
+      <strong>كلية تقنية المعلومات</strong>
+      <small>إدارة المستخدمين</small>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="CBS.logout()" title="خروج"><i class="ri-logout-box-r-line"></i></button>
+  </div>
+</header>
+
+<div class="page-content">
+
+  <!-- Welcome Banner -->
+  <div class="welcome-banner" style="background: linear-gradient(135deg,#2563eb,#1d4ed8,#1e40af);">
+    <div class="welcome-banner-icon-wrap">
+      <i class="ri-team-line welcome-banner-icon"></i>
+    </div>
+    <div class="welcome-banner-body">
+      <h2>إدارة المستخدمين</h2>
+      <p>إضافة وتعديل وحذف حسابات المستخدمين</p>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-bar">
+    <div class="stat-item">
+      <i class="ri-team-line"></i>
+      <div class="stat-item-body">
+        <div class="stat-num" id="statTotal">-</div>
+        <div class="stat-label">الإجمالي</div>
+      </div>
+    </div>
+    <div class="stat-item">
+      <i class="ri-user-star-line" style="color:var(--warning)"></i>
+      <div class="stat-item-body">
+        <div class="stat-num" id="statDoctors">-</div>
+        <div class="stat-label">أساتذة</div>
+      </div>
+    </div>
+    <div class="stat-item">
+      <i class="ri-graduation-cap-line" style="color:var(--success)"></i>
+      <div class="stat-item-body">
+        <div class="stat-num" id="statStudents">-</div>
+        <div class="stat-label">طلاب</div>
+      </div>
+    </div>
+    <div class="stat-item">
+      <i class="ri-user-shared-line" style="color:#f59e0b"></i>
+      <div class="stat-item-body">
+        <div class="stat-num" id="statPending">0</div>
+        <div class="stat-label">طلبات معلقة</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Add User Button & Pending Link -->
+  <div style="margin-bottom:1rem; display: flex; gap: 8px; flex-wrap: wrap;">
+    <button class="btn btn-primary" onclick="CBS.openModal('userModal')">
+      <i class="ri-user-add-line"></i> إضافة مستخدم جديد
+    </button>
+    <a href="/pending-registrations.html" class="btn btn-secondary" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4); text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+      <i class="ri-user-received-line"></i> إدارة طلبات التسجيل المعلقة
+    </a>
+    <button class="btn btn-secondary" onclick="copyAllEmails()" style="background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4);">
+      <i class="ri-file-copy-line"></i> نسخ إيميلات المستخدمين
+    </button>
+  </div>
+
+  <!-- Users List -->
+  <div class="section-divider" style="display:flex; justify-content:space-between; align-items:center;">
+    <div>
+      <i class="ri-team-line"></i>
+      <span>قائمة المستخدمين المعتمدين</span>
+    </div>
+    <select id="filterBatch" class="form-control" style="width: auto; padding: 4px 12px; font-size: 0.9rem; border-radius: 20px;" onchange="loadUsers()">
+      <option value="">كل الدفعات</option>
+    </select>
+  </div>
+
+  <div style="display:flex; flex-direction:column; gap:12px; margin-bottom: 12px; padding: 0 4px;">
+    <!-- Search Bar -->
+    <div style="position: relative;">
+      <i class="ri-search-line" style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+      <input type="text" id="searchUserInput" class="form-control" placeholder="ابحث بالاسم، البريد الإلكتروني، أو الصلاحية..." style="padding-right: 40px; width: 100%; border-radius: 20px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-main);" oninput="searchUsers(this.value)">
+    </div>
+    
+    <label style="display:flex; align-items:center; gap:6px; cursor:pointer; font-size:0.85rem; font-weight:700; color:var(--text-main);">
+      <input type="checkbox" id="selectAllUsers" onchange="toggleSelectAllUsers(this.checked)" style="width:16px;height:16px;cursor:pointer;">
+      تحديد الكل
+    </label>
+  </div>
+
+  <div id="usersList">
+    <div class="loading-state">
+      <div class="uib-loader dark"><div class="half"></div><div class="half"></div></div>
+      <p>جاري تحميل المستخدمين...</p>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast-container"></div>
+
+<!-- Add/Edit User Modal -->
+<div class="modal-overlay" id="userModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 class="modal-title" id="modalTitle">إضافة مستخدم جديد</h3>
+      <button class="modal-close" onclick="CBS.closeModal('userModal')"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body">
+      <form id="userForm">
+        <input type="hidden" id="editUserId">
+        <div class="form-group">
+          <label>الاسم الكامل</label>
+          <input type="text" id="userName" required placeholder="أدخل الاسم الكامل">
+        </div>
+        <div class="form-group">
+          <label>البريد الإلكتروني</label>
+          <input type="email" id="userEmail" required placeholder="example@email.com">
+        </div>
+        <div class="form-group">
+          <label>كلمة المرور</label>
+          <input type="password" id="userPass" placeholder="أدخل كلمة المرور">
+        </div>
+        <div class="form-group">
+          <label>الصلاحية</label>
+          <select id="userRole" required>
+            <option value="student">طالب</option>
+            <option value="leader">قائد دفعة</option>
+            <option value="doctor">أستاذ</option>
+            <option value="dean">عميد</option>
+            <option value="admin">مسؤول النظام</option>
+          </select>
+        </div>
+        <div class="form-group" id="batchFormGroup">
+          <label>الدفعة</label>
+          <select id="userBatch">
+            <option value="">غير محدد</option>
+            <!-- Batches will be loaded here -->
+          </select>
+        </div>
+        <div class="form-group" id="batchesFormGroup" style="display: none;">
+          <label>الدفعات (لأستاذ المادة)</label>
+          <div id="userBatchesList" style="display: flex; flex-direction: column; gap: 8px; max-height: 150px; overflow-y: auto; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card);">
+            <!-- Checkboxes will be loaded here -->
+          </div>
+        </div>
+      </form>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-secondary" onclick="CBS.closeModal('userModal')">إلغاء</button>
+      <button class="btn btn-primary" id="saveUserBtn" onclick="saveUser()">حفظ</button>
+    </div>
+  </div>
+</div>
+
+<footer class="main-footer">
+  حقوق النشر &copy; <span id="year"></span> جامعة النصر التقنية &nbsp;|&nbsp; تطوير: ضياء الدين إبراهيم
+</footer>
+
+<script src="/js/app.js?v=2026073125"></script>
+<script src="/js/socket-client.js?v=2026073125" defer></script>
+<script>
+  CBS.init({ requireRoles: ['dean', 'admin'] });
+
+  const roleLabels = { dean: 'عميد', admin: 'مسؤول النظام', doctor: 'أستاذ', leader: 'قائد دفعة', student: 'طالب' };
+  const roleColors = { dean: 'badge-danger', admin: 'badge-danger', doctor: 'badge-warning', leader: 'badge-primary', student: 'badge-success' };
+
+  let batchesLoaded = false;
+  async function loadBatches() {
+    if (batchesLoaded) return;
+    try {
+      const res = await CBS.apiGet('/api/batches');
+      const data = await res.json();
+      if (res.ok && data.batches) {
+        const select = document.getElementById('userBatch');
+        select.innerHTML = '<option value="">غير محدد</option>' + 
+          data.batches.map(b => `<option value="${b._id}">${CBS.escapeHTML(b.name)}</option>`).join('');
+        
+        const filterSelect = document.getElementById('filterBatch');
+        if (filterSelect) {
+          filterSelect.innerHTML = '<option value="">كل الدفعات</option>' + 
+            data.batches.map(b => `<option value="${b._id}">${CBS.escapeHTML(b.name)}</option>`).join('');
+        }
+        
+        // Load checkboxes
+        const batchesList = document.getElementById('userBatchesList');
+        if (batchesList) {
+          batchesList.innerHTML = data.batches.map(b => `
+            <label style="display:flex;align-items:center;gap:8px;cursor:pointer;">
+              <input type="checkbox" name="doctorBatches" value="${b._id}">
+              <span>${CBS.escapeHTML(b.name)}</span>
+            </label>
+          `).join('');
+        }
+        
+        batchesLoaded = true;
+      }
+    } catch (e) { console.error('Failed to load batches', e); }
+  }
+
+  // Toggle batch/batches visibility based on role
+  document.getElementById('userRole').addEventListener('change', function(e) {
+    const role = e.target.value;
+    if (role === 'doctor') {
+      document.getElementById('batchFormGroup').style.display = 'none';
+      document.getElementById('batchesFormGroup').style.display = 'block';
+    } else {
+      document.getElementById('batchFormGroup').style.display = 'block';
+      document.getElementById('batchesFormGroup').style.display = 'none';
+    }
+  });
+
+  async function loadUsers() {
+    const container = document.getElementById('usersList');
+    container.innerHTML = '<div class="loading-state"><div class="uib-loader dark"><div class="half"></div><div class="half"></div></div><p>جاري التحميل...</p></div>';
+    await loadBatches();
+    
+    const batchFilter = document.getElementById('filterBatch') ? document.getElementById('filterBatch').value : '';
+    const url = batchFilter ? `/api/users?batch=${batchFilter}&limit=1000` : '/api/users?limit=1000';
+
+    try {
+      const res = await CBS.apiGet(url);
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      const users = data.users || data;
+
+      document.getElementById('statTotal').textContent = users.length || 0;
+      document.getElementById('statDoctors').textContent = users.filter(u => u.roles?.includes('doctor')).length || 0;
+      document.getElementById('statStudents').textContent = users.filter(u => u.roles?.includes('student')).length || 0;
+
+      if (!users.length) {
+        container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:2rem">لا يوجد مستخدمون مطابقون</p>';
+        return;
+      }
+
+      container.innerHTML = users.map(u => {
+        const role = u.roles?.[0] || 'student';
+        const initial = CBS.escapeHTML((u.name || '?')[0]);
+        let batchBadge = '';
+        let batchesDataAttr = '';
+        if (role === 'doctor') {
+          const docBatches = u.batches && u.batches.length ? u.batches.map(b => b.name || b.code || b).join(', ') : 'لا يوجد';
+          batchBadge = `<span class="badge" style="background:var(--bg-hover);color:var(--text-main);font-size:0.75rem;margin-right:8px; border:1px solid var(--border)" title="${CBS.escapeHTML(docBatches)}">مواد لـ ${u.batches?.length || 0} دفعات</span>`;
+          batchesDataAttr = u.batches ? JSON.stringify(u.batches.map(b => String(b._id || b))).replace(/"/g, '&quot;') : '[]';
+        } else {
+          batchBadge = u.batch && u.batch.name ? `<span class="badge" style="background:var(--bg-hover);color:var(--text-main);font-size:0.75rem;margin-right:8px; border:1px solid var(--border)">${CBS.escapeHTML(u.batch.name)}</span>` : '';
+        }
+        const batchId = u.batch ? (u.batch._id || u.batch) : '';
+        
+        return `
+          <div class="card" style="margin-bottom:10px;padding:13px 14px">
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              <input type="checkbox" class="cb-user" value="${CBS.escapeHTML(u.email || '')}" style="width:18px;height:18px;cursor:pointer;flex-shrink:0">
+              <div class="user-card-avatar" style="flex-shrink:0">${initial}</div>
+              <div style="flex:1;min-width:0">
+                <div style="font-weight:700;font-size:0.88rem;color:var(--text-primary);display:flex;align-items:center;flex-wrap:wrap;gap:4px">
+                  ${CBS.escapeHTML(u.name || '-')}
+                  ${batchBadge}
+                </div>
+                <div style="font-size:0.76rem;color:var(--text-muted);margin-top:1px">${CBS.escapeHTML(u.email || '-')}</div>
+              </div>
+              <span class="badge ${roleColors[role] || 'badge-info'}" style="font-size:0.72rem;padding:4px 8px">${roleLabels[role] || CBS.escapeHTML(role)}</span>
+            </div>
+            <div class="user-card-actions">
+              <button class="btn btn-ghost btn-xs" data-id="${u._id}" data-name="${CBS.escapeHTML(u.name)}" data-email="${CBS.escapeHTML(u.email)}" data-role="${role}" data-batch="${batchId}" data-batches="${batchesDataAttr}" onclick="editUser(this.dataset.id,this.dataset.name,this.dataset.email,this.dataset.role,this.dataset.batch,this.dataset.batches)">
+                <i class="ri-edit-line"></i> تعديل
+              </button>
+              <button class="btn btn-danger btn-xs" data-id="${u._id}" onclick="deleteUser(this.dataset.id)">
+                <i class="ri-delete-bin-line"></i>
+              </button>
+            </div>
+          </div>`;
+      }).join('');
+    } catch {
+      container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:2rem">تعذر تحميل المستخدمين</p>';
+    }
+  }
+
+  function editUser(id, name, email, role, batch, batchesStr) {
+    document.getElementById('modalTitle').textContent = 'تعديل المستخدم';
+    document.getElementById('editUserId').value = id;
+    document.getElementById('userName').value = name;
+    document.getElementById('userEmail').value = email;
+    document.getElementById('userRole').value = role;
+    document.getElementById('userBatch').value = batch || '';
+    
+    // Trigger role change logic
+    document.getElementById('userRole').dispatchEvent(new Event('change'));
+    
+    // Check doctor batches
+    let docBatches = [];
+    try {
+      const parsed = JSON.parse(batchesStr || '[]');
+      docBatches = Array.isArray(parsed) ? parsed.map(b => String(b._id || b)) : [];
+    } catch(e){}
+    document.querySelectorAll('input[name="doctorBatches"]').forEach(cb => {
+      cb.checked = docBatches.includes(String(cb.value));
+    });
+
+    document.getElementById('userPass').placeholder = 'اتركه فارغاً للإبقاء على كلمة المرور الحالية';
+    CBS.openModal('userModal');
+  }
+
+  async function saveUser() {
+    const id = document.getElementById('editUserId').value;
+    const role = document.getElementById('userRole').value;
+    const name = document.getElementById('userName').value.trim();
+    const email = document.getElementById('userEmail').value.trim();
+    const pass = document.getElementById('userPass').value;
+
+    // Validation
+    if (!name) { CBS.toast('يرجى إدخال الاسم', '', 'error'); return; }
+    if (!email) { CBS.toast('يرجى إدخال البريد الإلكتروني', '', 'error'); return; }
+    if (!id && !pass) { CBS.toast('يرجى إدخال كلمة المرور للمستخدم الجديد', '', 'error'); return; }
+    if (!id && pass.length < 6) { CBS.toast('كلمة المرور يجب أن تكون 6 أحرف على الأقل', '', 'error'); return; }
+
+    const body = { name, email, roles: [role] };
+    
+    if (role === 'doctor') {
+      const selectedBatches = Array.from(document.querySelectorAll('input[name="doctorBatches"]:checked')).map(cb => cb.value);
+      body.batches = selectedBatches;
+      body.batch = null;
+    } else {
+      const batchVal = document.getElementById('userBatch').value;
+      if (batchVal) body.batch = batchVal;
+      body.batches = [];
+    }
+
+    if (pass) body.password = pass;
+
+    const saveBtn = document.getElementById('saveUserBtn');
+    if (saveBtn) { saveBtn.disabled = true; saveBtn.textContent = 'جاري الحفظ...'; }
+
+    try {
+      const res = id
+        ? await CBS.apiPost('/api/users/' + id, body, 'PUT')
+        : await CBS.apiPost('/api/auth/register', { ...body, password: pass });
+      
+      if (res.ok) {
+        CBS.toast(id ? 'تم تحديث المستخدم' : 'تم إضافة المستخدم', '', 'success');
+        CBS.closeModal('userModal');
+        document.getElementById('userForm').reset();
+        document.getElementById('editUserId').value = '';
+        loadUsers();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        CBS.toast(err.message || 'حدث خطأ، يرجى المحاولة مجدداً', '', 'error');
+      }
+    } catch {
+      CBS.toast('خطأ في الاتصال بالخادم', '', 'error');
+    } finally {
+      if (saveBtn) { saveBtn.disabled = false; saveBtn.textContent = 'حفظ'; }
+    }
+  }
+
+  async function deleteUser(id) {
+    if (!confirm('هل تريد حذف هذا المستخدم؟')) return;
+    try {
+      const res = await CBS.apiDelete('/api/users/' + id);
+      if (res.ok) {
+        CBS.toast('تم حذف المستخدم', '', 'success');
+        loadUsers();
+      } else {
+        CBS.toast('فشل حذف المستخدم', '', 'error');
+      }
+    } catch {
+      CBS.toast('خطأ في الاتصال', '', 'error');
+    }
+  }
+
+  function copyAllEmails() {
+    const cbs = Array.from(document.querySelectorAll('.cb-user:checked'));
+    if (!cbs.length) {
+      CBS.toast('الرجاء تحديد مستخدم واحد على الأقل لنسخ إيميله', '', 'warning');
+      return;
+    }
+    const emails = cbs.map(cb => cb.value).filter(e => e && e !== '-').join(', ');
+    navigator.clipboard.writeText(emails).then(() => {
+      CBS.toast('تم نسخ الإيميلات بنجاح!', '', 'success');
+    }).catch(() => {
+      prompt('فشل النسخ التلقائي، انسخ الإيميلات من هنا:', emails);
+    });
+  }
+
+  function toggleSelectAllUsers(checked) {
+    document.querySelectorAll('.cb-user').forEach(cb => {
+      // Only select visible checkboxes
+      const card = cb.closest('.card');
+      if (card && card.style.display !== 'none') {
+        cb.checked = checked;
+      } else {
+        cb.checked = false;
+      }
+    });
+  }
+
+  function searchUsers(query) {
+    const q = query.toLowerCase().trim();
+    const cards = document.querySelectorAll('#usersList .card');
+    let hasVisible = false;
+    cards.forEach(card => {
+      const text = card.innerText.toLowerCase();
+      if (text.includes(q)) {
+        card.style.display = '';
+        hasVisible = true;
+      } else {
+        card.style.display = 'none';
+        const cb = card.querySelector('.cb-user');
+        if(cb) cb.checked = false;
+      }
+    });
+    
+    // Uncheck selectAll if searching
+    document.getElementById('selectAllUsers').checked = false;
+    
+    // Show empty state if no match
+    let emptyState = document.getElementById('searchEmptyState');
+    if (!hasVisible && cards.length > 0) {
+      if (!emptyState) {
+        emptyState = document.createElement('div');
+        emptyState.id = 'searchEmptyState';
+        emptyState.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:2rem">لا يوجد مستخدمون يطابقون بحثك</p>';
+        document.getElementById('usersList').appendChild(emptyState);
+      }
+      emptyState.style.display = 'block';
+    } else if (emptyState) {
+      emptyState.style.display = 'none';
+    }
+  }
+
+  async function initAll() {
+    await loadUsers();
+  }
+
+  initAll();
+</script>
+</body>
+</html>
+
+

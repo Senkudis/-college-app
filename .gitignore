@@ -1,0 +1,56 @@
+# ===== Environment =====
+.env
+.env.local
+.env.production
+
+# ===== Node =====
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# ===== OS =====
+.DS_Store
+Thumbs.db
+
+# ===== Uploads =====
+# ملفات المستخدمين الحقيقية (تكليفات الدكاترة وتسليمات الطلاب) — بيانات
+# شخصية ولا علاقة لها بالكود، ولا يجوز أن تدخل سجل الإصدارات إطلاقاً.
+uploads/
+!uploads/.gitkeep
+
+# ===== IDE =====
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# ===== Logs =====
+*.log
+err_tmp.txt
+err.tmp
+err.txt
+
+# ===== Capacitor =====
+android/.gradle/
+android/build/
+android/app/build/
+android/captures/
+android/.externalNativeBuild/
+# نسخة مولَّدة من www/ ينتجها `npx cap copy` (14 ميجابايت) — مصدرها www/ نفسه
+android/app/src/main/assets/public/
+android/app/src/main/assets/capacitor.config.json
+android/app/src/main/assets/capacitor.plugins.json
+android/local.properties
+
+# ===== Firebase Service Account Keys (NEVER commit these!) =====
+*-firebase-adminsdk-*.json
+firebase-adminsdk*.json
+google-services-private.json
+service-account*.json
+
+# ===== Misc =====
+scratch/
+test_extract/
+test_deploy/
+*.zip

@@ -1,0 +1,575 @@
+﻿﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>مشاهدة المحاضرة | كلية تقنية المعلومات</title>
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css?v=2026073125">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026073125">
+  <style>
+    .watch-layout { display: grid; grid-template-columns: 1fr; gap: 24px; }
+
+    /* ===== Custom Video Player ===== */
+    .player-wrap {
+      background: #000; border-radius: var(--radius-xl); overflow: hidden;
+      position: relative; box-shadow: 0 8px 32px rgba(0,0,0,0.3);
+    }
+    .player-wrap video { width: 100%; display: block; max-height: 70vh; background: #000; }
+    .player-wrap audio { width: 100%; display: block; }
+
+    .player-controls {
+      position: absolute; bottom: 0; left: 0; right: 0;
+      background: linear-gradient(transparent, rgba(0,0,0,0.85));
+      padding: 16px 16px 12px; display: flex; flex-direction: column; gap: 8px;
+      opacity: 0; transition: opacity 0.3s;
+    }
+    .player-wrap:hover .player-controls { opacity: 1; }
+
+    .player-seekbar {
+      width: 100%; height: 6px; border-radius: 3px;
+      -webkit-appearance: none; appearance: none;
+      background: rgba(255,255,255,0.3); cursor: pointer; outline: none;
+    }
+    .player-seekbar::-webkit-slider-thumb {
+      -webkit-appearance: none; width: 14px; height: 14px;
+      border-radius: 50%; background: #a855f7; cursor: pointer;
+    }
+
+    .player-btns {
+      display: flex; align-items: center; gap: 10px; color: white; font-size: 0.85rem;
+    }
+    .player-btns button {
+      background: none; border: none; color: white;
+      font-size: 1.1rem; cursor: pointer; padding: 4px 6px;
+      border-radius: 6px; transition: 0.15s;
+    }
+    .player-btns button:hover { background: rgba(255,255,255,0.15); }
+    .player-btns .spacer { flex: 1; }
+
+    .speed-select {
+      background: rgba(255,255,255,0.15); color: white;
+      border: none; padding: 4px 8px; border-radius: 6px;
+      font-size: 0.8rem; cursor: pointer;
+    }
+    .speed-select option { color: #000; }
+
+    /* ===== Video Info ===== */
+    .video-info-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-xl); padding: 24px;
+    }
+    .video-info-title { font-size: 1.3rem; font-weight: 800; margin-bottom: 8px; color: var(--text-main); }
+    .video-info-meta { font-size: 0.85rem; color: var(--text-muted); display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 16px; }
+
+    .download-btns { display: flex; gap: 10px; flex-wrap: wrap; }
+    .dl-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 10px 18px; border-radius: var(--radius-md);
+      font-weight: 700; font-size: 0.85rem; text-decoration: none;
+      transition: var(--transition); border: 2px solid;
+    }
+    .dl-btn.low { background: var(--primary-light); color: var(--primary); border-color: var(--primary); }
+    .dl-btn.low:hover { background: var(--primary); color: white; }
+    .dl-btn.audio { background: var(--success-bg); color: var(--success); border-color: var(--success); }
+    .dl-btn.audio:hover { background: var(--success); color: white; }
+    .dl-btn.original { background: var(--bg-main); color: var(--text-muted); border-color: var(--border); }
+    .dl-btn.original:hover { background: var(--text-muted); color: white; }
+
+    .mode-toggle {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 8px 16px; border-radius: 20px; cursor: pointer;
+      font-size: 0.85rem; font-weight: 700;
+      background: var(--bg-main); border: 2px solid var(--border);
+      color: var(--text-main); transition: var(--transition);
+    }
+    .mode-toggle.active { background: var(--primary); color: white; border-color: var(--primary); }
+
+    /* ===== Q&A Section ===== */
+    .qa-section {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-xl); padding: 24px;
+    }
+    .qa-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+    .qa-header h3 { margin: 0; font-size: 1.1rem; }
+
+    .qa-form { display: flex; gap: 8px; margin-bottom: 20px; align-items: flex-start; }
+    .qa-form textarea {
+      flex: 1; padding: 10px 14px; border: 2px solid var(--border);
+      border-radius: var(--radius-md); background: var(--bg-main);
+      color: var(--text-main); font-family: 'Cairo', sans-serif;
+      font-size: 0.9rem; resize: vertical; min-height: 44px; max-height: 120px;
+    }
+
+    .qa-timestamp-badge {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: var(--primary-light); color: var(--primary);
+      padding: 4px 10px; border-radius: 12px;
+      font-size: 0.75rem; font-weight: 700; cursor: pointer;
+      transition: var(--transition); white-space: nowrap;
+    }
+    .qa-timestamp-badge:hover { background: var(--primary); color: white; }
+
+    .qa-comment {
+      padding: 14px; border-bottom: 1px solid var(--border);
+      transition: background 0.2s;
+    }
+    .qa-comment:last-child { border-bottom: none; }
+    .qa-comment:hover { background: var(--bg-main); }
+    .qa-comment-header { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; flex-wrap: wrap; }
+    .qa-comment-author { font-weight: 700; font-size: 0.85rem; }
+    .qa-comment-date { font-size: 0.75rem; color: var(--text-muted); }
+    .qa-comment-text { font-size: 0.9rem; line-height: 1.6; color: var(--text-main); }
+    .qa-comment-delete {
+      background: none; border: none; color: var(--danger);
+      cursor: pointer; font-size: 0.8rem; padding: 2px 6px; border-radius: 4px;
+    }
+
+    .sort-tabs { display: flex; gap: 0; border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
+    .sort-tab {
+      padding: 6px 14px; font-size: 0.8rem; cursor: pointer;
+      background: var(--bg-main); color: var(--text-muted); border: none;
+      font-weight: 600; transition: var(--transition);
+    }
+    .sort-tab.active { background: var(--primary); color: white; }
+
+    @media (max-width: 768px) {
+      .download-btns { flex-direction: column; }
+      .qa-form { flex-direction: column; }
+      .player-controls { opacity: 1; }
+    }
+  </style>
+
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+</head>
+<body>
+
+<header class="main-header">
+  <div class="header-brand">
+    <img src="/assets/logo.png" class="header-logo" alt="Logo">
+    <div class="header-title-group">
+      <strong>كلية تقنية المعلومات</strong>
+      <small id="headerSub">مشاهدة المحاضرة</small>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="location.href='/video-library.html'" title="المكتبة"><i class="ri-video-line"></i></button>
+    <button class="btn-icon" onclick="CBS.goHome()" title="الرئيسية"><i class="ri-home-4-line"></i></button>
+  </div>
+</header>
+
+<div class="page-content">
+  <div class="watch-layout">
+
+    <!-- Video Player -->
+    <div id="networkStatus" style="display:none; background:var(--danger); color:white; padding:8px; text-align:center; border-radius:var(--radius-md) var(--radius-md) 0 0; font-size:0.85rem; font-weight:bold;">
+      <i class="ri-wifi-off-line"></i> اتصال الإنترنت ضعيف أو منقطع. سيتم استئناف التشغيل تلقائياً عند عودة الاتصال.
+    </div>
+    <div class="player-wrap" id="playerWrap" style="border-top-left-radius:0; border-top-right-radius:0;">
+      <video id="mainVideo" playsinline preload="metadata"></video>
+      <audio id="mainAudio" preload="metadata" style="display:none;"></audio>
+      <div class="player-controls" id="playerControls">
+        <input type="range" class="player-seekbar" id="seekbar" value="0" min="0" max="100" step="0.1">
+        <div class="player-btns">
+          <button onclick="togglePlay()" id="playBtn" title="تشغيل"><i class="ri-play-fill"></i></button>
+          <span id="timeDisplay">0:00 / 0:00</span>
+          <button onclick="skip(-10)" title="رجوع 10 ثواني"><i class="ri-replay-10-line"></i></button>
+          <button onclick="skip(10)" title="تقديم 10 ثواني"><i class="ri-forward-10-line"></i></button>
+          <div class="spacer"></div>
+          <select class="speed-select" id="speedSelect" onchange="setSpeed(this.value)">
+            <option value="0.5">0.5x</option>
+            <option value="0.75">0.75x</option>
+            <option value="1" selected>1x</option>
+            <option value="1.25">1.25x</option>
+            <option value="1.5">1.5x</option>
+            <option value="2">2x</option>
+          </select>
+          <button onclick="togglePiP()" title="صورة في صورة (PiP)"><i class="ri-picture-in-picture-line"></i></button>
+          <button onclick="toggleFullscreen()" title="ملء الشاشة"><i class="ri-fullscreen-line"></i></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Video Info + Downloads -->
+    <div class="video-info-card">
+      <div class="video-info-title" id="videoTitle">جاري التحميل...</div>
+      <div class="video-info-meta">
+        <span id="videoSubject"></span>
+        <span id="videoUploader"></span>
+        <span id="videoDate"></span>
+        <span id="videoDuration"></span>
+        <span id="videoViews"><i class="ri-eye-line"></i> 0 مشاهدة</span>
+      </div>
+      <div id="videoDesc" style="font-size:0.9rem; color:var(--text-muted); margin-bottom:16px;"></div>
+      
+      <div id="chaptersContainer" style="display:none; margin-bottom:16px; padding:12px; background:var(--bg-main); border-radius:var(--radius-md);">
+        <h4 style="margin:0 0 8px 0; font-size:0.95rem;"><i class="ri-list-ordered-2"></i> فصول المحاضرة</h4>
+        <div id="chaptersList" style="display:flex; flex-direction:column; gap:6px;"></div>
+      </div>
+
+      <div style="display:flex; align-items:center; gap:12px; flex-wrap:wrap; margin-bottom:16px;">
+        <span class="mode-toggle" id="podcastMode" onclick="togglePodcastMode()">
+          <i class="ri-headphone-line"></i> وضع البودكاست (صوت فقط)
+        </span>
+        <span class="mode-toggle" id="qualityToggle" onclick="toggleQuality()">
+          <i class="ri-hd-line"></i> <span id="qualityLabel">جودة أصلية</span>
+        </span>
+      </div>
+
+      <div class="download-btns" id="downloadBtns"></div>
+    </div>
+
+    <!-- Timestamped Q&A -->
+    <div class="qa-section">
+      <div class="qa-header">
+        <h3><i class="ri-question-answer-line"></i> أسئلة ونقاش</h3>
+        <div class="sort-tabs">
+          <button class="sort-tab active" onclick="sortComments('date', this)">الأحدث</button>
+          <button class="sort-tab" onclick="sortComments('time', this)">حسب التوقيت</button>
+        </div>
+      </div>
+
+      <div class="qa-form">
+        <textarea id="commentInput" placeholder="اكتب سؤالك أو ملاحظتك..." rows="2"></textarea>
+        <div style="display:flex; flex-direction:column; gap:6px;">
+          <span class="qa-timestamp-badge" id="currentTimeBadge" onclick="document.getElementById('mainVideo').pause()">
+            <i class="ri-time-line"></i> <span id="capturedTime">0:00</span>
+          </span>
+          <button class="btn btn-primary" style="padding:8px 16px; font-size:0.85rem; white-space:nowrap;" onclick="postComment()">
+            <i class="ri-send-plane-fill"></i> إرسال
+          </button>
+        </div>
+      </div>
+
+      <div id="commentsList"></div>
+    </div>
+
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<footer class="main-footer">حقوق النشر &copy; <span id="year"></span> جامعة النصر التقنية</footer>
+
+<script src="/js/app.js?v=2026073125"></script>
+<script src="/js/socket-client.js?v=2026073125" defer></script>
+<script>
+  CBS.init();
+  const user = CBS.getUser();
+  const videoId = new URLSearchParams(location.search).get('id');
+  if (!videoId) { location.href = '/video-library.html'; }
+
+  const video = document.getElementById('mainVideo');
+  const audio = document.getElementById('mainAudio');
+  const seekbar = document.getElementById('seekbar');
+
+  let videoData = null;
+  let isPodcastMode = false;
+  let isLowQuality = false;
+  let activeMedia = video; // current playing element
+  let commentSort = 'date';
+  const tkn = CBS.getToken(); // for media URLs that can't use Authorization header
+
+  // ===== Load Video Data =====
+  async function loadVideo() {
+    try {
+      const res = await CBS.apiGet(`/api/videos/${videoId}`);
+      const data = await CBS.readJson(res);
+      if (!data.success || !data.video) { CBS.toast('الفيديو غير موجود', '', 'error'); return; }
+      videoData = data.video;
+
+      document.getElementById('videoTitle').textContent = videoData.title;
+      document.getElementById('headerSub').textContent = videoData.title;
+      document.title = `${videoData.title} | كلية تقنية المعلومات`;
+
+      if (videoData.subject) document.getElementById('videoSubject').innerHTML = `<i class="ri-book-open-line"></i> ${CBS.escapeHTML(videoData.subject.name || '')}`;
+      if (videoData.uploadedBy) document.getElementById('videoUploader').innerHTML = `<i class="ri-user-voice-line"></i> ${CBS.escapeHTML(videoData.uploadedBy.name || '')}`;
+      if (videoData.createdAt) document.getElementById('videoDate').innerHTML = `<i class="ri-calendar-line"></i> ${CBS.formatDate(videoData.createdAt)}`;
+      if (videoData.duration) document.getElementById('videoDuration').innerHTML = `<i class="ri-time-line"></i> ${fmtDur(videoData.duration)}`;
+      if (videoData.views !== undefined) document.getElementById('videoViews').innerHTML = `<i class="ri-eye-line"></i> ${videoData.views} مشاهدة`;
+      if (videoData.commentsCount !== undefined) {
+         const ccEl = document.getElementById('videoCommentsCount');
+         if (ccEl) ccEl.innerHTML = `<i class="ri-chat-1-line"></i> ${videoData.commentsCount} تعليق`;
+         else {
+             const vViews = document.getElementById('videoViews');
+             if (vViews) vViews.insertAdjacentHTML('afterend', `<span id="videoCommentsCount" style="background:var(--bg-input); padding:4px 10px; border-radius:20px; color:var(--text-main); font-weight:700;"><i class="ri-chat-1-line"></i> ${videoData.commentsCount} تعليق</span>`);
+         }
+      }
+      if (videoData.description) document.getElementById('videoDesc').textContent = videoData.description;
+
+      // Render chapters
+      if (videoData.chapters && videoData.chapters.length > 0) {
+        document.getElementById('chaptersContainer').style.display = 'block';
+        document.getElementById('chaptersList').innerHTML = videoData.chapters.map((ch, i) => `
+          <div style="display:flex; justify-content:space-between; padding:6px 10px; background:rgba(0,0,0,0.05); border-radius:4px; cursor:pointer; transition:0.2s;" onmouseover="this.style.background='var(--primary-light)'" onmouseout="this.style.background='rgba(0,0,0,0.05)'" onclick="seekTo(${ch.time})">
+            <span style="font-weight:600; font-size:0.85rem;"><span style="color:var(--primary); margin-left:4px;">${i+1}.</span> ${CBS.escapeHTML(ch.title)}</span>
+            <span class="qa-timestamp-badge" style="margin:0;"><i class="ri-play-circle-line"></i> ${fmtDur(ch.time)}</span>
+          </div>
+        `).join('');
+      }
+
+      // Restore saved progress (Resume play)
+      const savedTime = localStorage.getItem(`cbs_video_progress_${videoId}`);
+      if (savedTime && !isNaN(savedTime) && savedTime < videoData.duration - 5) {
+        CBS.toast(`تم استئناف المشاهدة من ${fmtDur(Math.floor(savedTime))}`, '', 'info');
+        // Wait for metadata to be loaded before seeking
+        video.addEventListener('loadedmetadata', function onLoadedMeta() {
+          video.currentTime = parseFloat(savedTime);
+          video.removeEventListener('loadedmetadata', onLoadedMeta);
+        });
+      }
+
+      // Set video source (append token as query param since <video> can't send Auth header)
+      video.src = API_BASE + `/api/videos/${videoId}/stream/original?token=${tkn}`;
+
+      // Build download buttons
+      let dlHtml = '';
+      if (videoData.hasLowRes) dlHtml += `<a href="${API_BASE}/api/videos/${videoId}/download/low?token=${tkn}" class="dl-btn low"><i class="ri-download-line"></i> تحميل 360p <small>(${fmtSize(videoData.lowSize)})</small></a>`;
+      if (videoData.hasAudio) dlHtml += `<a href="${API_BASE}/api/videos/${videoId}/download/audio?token=${tkn}" class="dl-btn audio"><i class="ri-headphone-line"></i> تحميل الصوت <small>(${fmtSize(videoData.audioSize)})</small></a>`;
+      if (videoData.hasOriginal) dlHtml += `<a href="${API_BASE}/api/videos/${videoId}/download/original?token=${tkn}" class="dl-btn original"><i class="ri-download-cloud-line"></i> النسخة الأصلية <small>(${fmtSize(videoData.originalSize)})</small></a>`;
+      document.getElementById('downloadBtns').innerHTML = dlHtml || '<span style="color:var(--text-muted);">لا تتوفر ملفات للتحميل بعد</span>';
+
+      if (!videoData.hasLowRes) document.getElementById('qualityToggle').style.display = 'none';
+      if (!videoData.hasAudio) document.getElementById('podcastMode').style.display = 'none';
+
+    } catch(e) { CBS.toast('فشل تحميل الفيديو', '', 'error'); }
+  }
+
+  // ===== Player Controls =====
+  function togglePlay() {
+    if (activeMedia.paused) { activeMedia.play(); document.getElementById('playBtn').innerHTML = '<i class="ri-pause-fill"></i>'; }
+    else { activeMedia.pause(); document.getElementById('playBtn').innerHTML = '<i class="ri-play-fill"></i>'; }
+  }
+
+  function skip(sec) { activeMedia.currentTime = Math.max(0, activeMedia.currentTime + sec); }
+
+  function setSpeed(val) { activeMedia.playbackRate = parseFloat(val); }
+
+  function toggleFullscreen() {
+    const wrap = document.getElementById('playerWrap');
+    if (!document.fullscreenElement) wrap.requestFullscreen?.();
+    else document.exitFullscreen?.();
+  }
+
+  async function togglePiP() {
+    try {
+      if (document.pictureInPictureElement) {
+        await document.exitPictureInPicture();
+      } else if (activeMedia === video && document.pictureInPictureEnabled) {
+        await video.requestPictureInPicture();
+      } else {
+        CBS.toast('صورة في صورة غير مدعومة حالياً', '', 'error');
+      }
+    } catch (e) {
+      CBS.toast('تعذر تشغيل وضع صورة في صورة', '', 'error');
+    }
+  }
+
+  // Register view count on first play
+  let viewCounted = false;
+  async function registerView() {
+    if (viewCounted) return;
+    viewCounted = true;
+    try { await CBS.apiPost(`/api/videos/${videoId}/view`); } catch(e) {}
+  }
+
+  // Save progress and network auto-resume
+  video.addEventListener('timeupdate', () => {
+    if (!video.duration) return;
+    seekbar.value = (video.currentTime / video.duration) * 100;
+    document.getElementById('timeDisplay').textContent = `${fmtDur(Math.floor(video.currentTime))} / ${fmtDur(Math.floor(video.duration))}`;
+    document.getElementById('capturedTime').textContent = fmtDur(Math.floor(video.currentTime));
+    // Save progress
+    if (video.currentTime > 5 && video.currentTime % 5 < 1) {
+      localStorage.setItem(`cbs_video_progress_${videoId}`, video.currentTime);
+    }
+  });
+
+  audio.addEventListener('timeupdate', () => {
+    if (!audio.duration) return;
+    seekbar.value = (audio.currentTime / audio.duration) * 100;
+    document.getElementById('timeDisplay').textContent = `${fmtDur(Math.floor(audio.currentTime))} / ${fmtDur(Math.floor(audio.duration))}`;
+    document.getElementById('capturedTime').textContent = fmtDur(Math.floor(audio.currentTime));
+  });
+
+  seekbar.addEventListener('input', () => {
+    if (activeMedia.duration) activeMedia.currentTime = (seekbar.value / 100) * activeMedia.duration;
+  });
+
+  video.addEventListener('play', () => { document.getElementById('playBtn').innerHTML = '<i class="ri-pause-fill"></i>'; registerView(); });
+  video.addEventListener('pause', () => { document.getElementById('playBtn').innerHTML = '<i class="ri-play-fill"></i>'; });
+  audio.addEventListener('play', () => { document.getElementById('playBtn').innerHTML = '<i class="ri-pause-fill"></i>'; registerView(); });
+  audio.addEventListener('pause', () => { document.getElementById('playBtn').innerHTML = '<i class="ri-play-fill"></i>'; });
+
+  // Network offline handling
+  let wasPlayingBeforeOffline = false;
+  window.addEventListener('offline', () => {
+    document.getElementById('networkStatus').style.display = 'block';
+    wasPlayingBeforeOffline = !activeMedia.paused;
+  });
+  window.addEventListener('online', () => {
+    document.getElementById('networkStatus').style.display = 'none';
+    if (wasPlayingBeforeOffline) {
+      activeMedia.play().catch(() => {});
+    }
+  });
+
+  // ===== Podcast Mode =====
+  function togglePodcastMode() {
+    isPodcastMode = !isPodcastMode;
+    const btn = document.getElementById('podcastMode');
+    btn.classList.toggle('active', isPodcastMode);
+
+    if (isPodcastMode) {
+      const currentTime = video.currentTime;
+      video.pause(); video.style.display = 'none';
+      audio.src = API_BASE + `/api/videos/${videoId}/stream/audio?token=${tkn}`;
+      audio.style.display = 'block';
+      audio.currentTime = currentTime;
+      audio.play().catch(() => {});
+      activeMedia = audio;
+      document.getElementById('playerControls').style.position = 'relative';
+      document.getElementById('playerControls').style.opacity = '1';
+      document.getElementById('playerControls').style.background = 'var(--bg-card)';
+    } else {
+      const currentTime = audio.currentTime;
+      audio.pause(); audio.style.display = 'none';
+      video.style.display = 'block';
+      video.currentTime = currentTime;
+      video.play().catch(() => {});
+      activeMedia = video;
+      document.getElementById('playerControls').style.position = '';
+      document.getElementById('playerControls').style.opacity = '';
+      document.getElementById('playerControls').style.background = '';
+    }
+  }
+
+  // ===== Quality Toggle =====
+  function toggleQuality() {
+    isLowQuality = !isLowQuality;
+    const btn = document.getElementById('qualityToggle');
+    btn.classList.toggle('active', isLowQuality);
+    document.getElementById('qualityLabel').textContent = isLowQuality ? 'جودة 360p (توفير بيانات)' : 'جودة أصلية';
+    const currentTime = video.currentTime;
+    const wasPlaying = !video.paused;
+    video.src = API_BASE + `/api/videos/${videoId}/stream/${isLowQuality ? 'low' : 'original'}?token=${tkn}`;
+    video.currentTime = currentTime;
+    if (wasPlaying) video.play().catch(() => {});
+  }
+
+  // ===== Timestamped Q&A =====
+  let allComments = [];
+
+  async function loadComments() {
+    try {
+      const res = await CBS.apiGet(`/api/videos/${videoId}/comments?sort=${commentSort}`);
+      const data = await CBS.readJson(res);
+      allComments = data.success ? data.comments : [];
+      renderComments();
+    } catch(e) {}
+  }
+
+  function renderComments() {
+    const el = document.getElementById('commentsList');
+    if (!allComments.length) {
+      el.innerHTML = '<div style="text-align:center; padding:24px; color:var(--text-muted);"><i class="ri-chat-3-line" style="font-size:2rem; display:block; margin-bottom:8px;"></i>لا توجد أسئلة بعد — كن أول من يسأل!</div>';
+      return;
+    }
+    el.innerHTML = allComments.map(c => {
+      const authorName = typeof c.author === 'object' ? (c.author?.name || 'مستخدم') : 'مستخدم';
+      const isOwn = (typeof c.author === 'object' ? c.author?._id : c.author) === user.id;
+      const isAdmin = user.roles && (user.roles.includes('doctor') || user.roles.includes('dean'));
+      return `
+      <div class="qa-comment">
+        <div class="qa-comment-header">
+          <span class="qa-comment-author">${escapeHTML(authorName)}</span>
+          ${c.timestamp !== null && c.timestamp !== undefined ? `
+            <span class="qa-timestamp-badge" onclick="seekTo(${c.timestamp})">
+              <i class="ri-play-circle-line"></i> ${fmtDur(Math.floor(c.timestamp))}
+            </span>` : ''}
+          <span class="qa-comment-date">${CBS.formatDateTime(c.createdAt)}</span>
+          ${isOwn || isAdmin ? `<button class="qa-comment-delete" onclick="deleteComment('${c._id}')"><i class="ri-delete-bin-line"></i></button>` : ''}
+        </div>
+        <div class="qa-comment-text">${escapeHTML(c.text)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  async function postComment() {
+    const text = document.getElementById('commentInput').value.trim();
+    if (!text) { CBS.toast('اكتب سؤالك أولاً', '', 'error'); return; }
+
+    const timestamp = activeMedia.currentTime || 0;
+    try {
+      const res = await CBS.apiPost(`/api/videos/${videoId}/comments`, { text, timestamp });
+      const data = await CBS.readJson(res);
+      if (data.success) {
+        document.getElementById('commentInput').value = '';
+        loadComments();
+        CBS.toast('تم إرسال السؤال', '', 'success');
+      } else {
+        CBS.toast(data.message || 'فشل الإرسال', '', 'error');
+      }
+    } catch(e) { CBS.toast('فشل الإرسال', '', 'error'); }
+  }
+
+  async function deleteComment(id) {
+    if (!confirm('حذف هذا التعليق؟')) return;
+    try {
+      const res = await CBS.apiDelete(`/api/videos/comments/${id}`);
+      if (res.ok) { loadComments(); CBS.toast('تم الحذف', '', 'success'); }
+    } catch(e) {}
+  }
+
+  function seekTo(seconds) {
+    activeMedia.currentTime = seconds;
+    activeMedia.play().catch(() => {});
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  function sortComments(sort, btn) {
+    commentSort = sort;
+    document.querySelectorAll('.sort-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    loadComments();
+  }
+
+  // ===== Utilities =====
+  function fmtDur(secs) {
+    if (!secs || isNaN(secs)) return '0:00';
+    const h = Math.floor(secs / 3600);
+    const m = Math.floor((secs % 3600) / 60);
+    const s = secs % 60;
+    if (h > 0) return `${h}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+    return `${m}:${String(s).padStart(2,'0')}`;
+  }
+
+  function fmtSize(bytes) {
+    if (!bytes) return '';
+    const k = 1024, sizes = ['B', 'KB', 'MB', 'GB'];
+    const i = Math.floor(Math.log(bytes) / Math.log(k));
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i];
+  }
+
+  function escapeHTML(str) {
+    return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // Keyboard shortcuts
+  document.addEventListener('keydown', (e) => {
+    if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'INPUT') return;
+    if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
+    if (e.code === 'ArrowRight') skip(-5);
+    if (e.code === 'ArrowLeft') skip(5);
+    if (e.code === 'KeyF') toggleFullscreen();
+  });
+
+  loadVideo();
+  loadComments();
+</script>
+</body>
+</html>
+
+

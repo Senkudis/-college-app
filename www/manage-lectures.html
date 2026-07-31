@@ -1,0 +1,773 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>إدارة المحاضرات | كلية تقنية المعلومات</title>
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css?v=2026073125">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026073125">
+  <style>
+    .lectures-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 12px;
+    }
+    @media (max-width: 480px) {
+      .lectures-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .lecture-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 14px;
+      box-shadow: var(--shadow-sm);
+      transition: var(--transition);
+      border-top: 3px solid var(--primary);
+    }
+    .lecture-card:hover { box-shadow: var(--shadow-md); }
+    .lecture-title { font-weight: 700; font-size: 1rem; color: var(--text-main); margin-bottom: 6px; }
+    .lecture-subject { font-size: 0.78rem; color: var(--text-muted); margin-bottom: 10px; display:flex; align-items:center; gap:5px; }
+    .lecture-links { display: flex; flex-direction: column; gap: 6px; margin-bottom: 10px; }
+    .llink {
+      display: flex; align-items: center; gap: 7px;
+      padding: 6px 10px; border-radius: var(--radius-md);
+      font-size: 0.78rem; font-weight: 600; text-decoration: none;
+      transition: var(--transition);
+    }
+    .llink.video { background: var(--danger-bg); color: var(--danger); }
+    .llink.video:hover { background:var(--danger); color:white; }
+    .llink.file  { background: var(--success-bg); color: var(--success); }
+    .llink.file:hover  { background:var(--success); color:white; }
+    .lecture-footer { border-top: 1px dashed var(--border); padding-top: 10px; display:flex; justify-content:flex-end; }
+
+    /* ── Batch Upload ───────────────────── */
+    .batch-file-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; max-height: 320px; overflow-y: auto; }
+    .batch-file-item {
+      background: var(--bg-secondary); border: 1px solid var(--border);
+      border-radius: 10px; padding: 10px 12px;
+      display: flex; flex-direction: column; gap: 5px;
+    }
+    .batch-file-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+    .batch-file-name { font-size: 0.8rem; font-weight: 700; color: var(--text-main); flex: 1; word-break: break-all; }
+    .batch-file-size { font-size: 0.7rem; color: var(--text-muted); flex-shrink: 0; }
+    .batch-file-status { font-size: 0.7rem; font-weight: 700; flex-shrink: 0; }
+    .batch-file-status.pending { color: var(--text-muted); }
+    .batch-file-status.uploading { color: var(--primary); }
+    .batch-file-status.done { color: var(--success); }
+    .batch-file-status.error { color: var(--danger); }
+    .batch-progress-bar {
+      height: 4px; background: var(--border); border-radius: 99px; overflow: hidden;
+    }
+    .batch-progress-fill {
+      height: 100%; width: 0%; border-radius: 99px;
+      background: linear-gradient(90deg, var(--primary), var(--accent));
+      transition: width .2s;
+    }
+    .batch-overall { margin-top: 12px; padding: 10px; background: var(--bg-secondary); border-radius: 10px; }
+    .batch-overall-text { font-size: 0.78rem; font-weight: 700; color: var(--text-main); text-align: center; margin-bottom: 6px; }
+    .batch-overall-bar { height: 6px; background: var(--border); border-radius: 99px; overflow: hidden; }
+    .batch-overall-fill { height: 100%; width: 0%; border-radius: 99px; background: linear-gradient(90deg, var(--success), #10b981); transition: width .3s; }
+    .batch-remove-btn {
+      background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.85rem; padding: 2px;
+    }
+    .btn-header-group { display: flex; gap: 6px; flex-wrap: wrap; }
+  </style>
+
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+</head>
+<body>
+
+<header class="main-header">
+  <div class="header-brand">
+    <img src="/assets/logo.png" class="header-logo" alt="الشعار">
+    <div class="header-title-group">
+      <strong>كلية تقنية المعلومات</strong>
+      <small>إدارة المحاضرات</small>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="CBS.goHome()" title="الرئيسية"><i class="ri-home-4-line"></i></button>
+  </div>
+</header>
+
+<div class="page-content">
+
+    <!-- Welcome Banner -->
+    <div class="welcome-banner" style="background: linear-gradient(135deg,#ef4444,#dc2626,#b91c1c);">
+      <div class="welcome-banner-icon-wrap">
+        <i class="ri-video-line welcome-banner-icon"></i>
+      </div>
+      <div class="welcome-banner-body">
+        <h2>إدارة المحاضرات</h2>
+        <p>رفع ومشاركة المحاضرات المرئية والمرفقات</p>
+      </div>
+    </div>
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon"><i class="ri-slideshow-3-line"></i></div>
+      <div>
+        <div class="page-title">إدارة المحاضرات</div>
+        <div class="page-subtitle" id="lectureCount">جاري التحميل...</div>
+      </div>
+    </div>
+    <div class="btn-header-group">
+      <button class="btn btn-primary" id="addBtn">
+        <i class="ri-add-line"></i> إضافة محاضرة
+      </button>
+      <button class="btn btn-ghost" id="batchBtn" onclick="openBatchModal()">
+        <i class="ri-upload-cloud-2-line"></i> رفع دفعي
+      </button>
+    </div>
+  </div>
+
+  <div class="controls-bar">
+    <div class="search-wrapper">
+      <i class="ri-search-line"></i>
+      <input type="text" class="search-input" id="searchBox" placeholder="ابحث بعنوان المحاضرة...">
+    </div>
+    <!-- الترتيب رقم داخل المادة الواحدة، فاختيار مادة شرط لتفعيل أزرار الترتيب -->
+    <select class="form-control" id="filterSubject" onchange="loadLectures()" style="max-width:260px;">
+      <option value="">كل المواد (للعرض فقط)</option>
+    </select>
+  </div>
+
+  <div id="orderHint" style="display:none; background:var(--primary-light); color:var(--primary);
+       border-radius:var(--radius-md); padding:10px 14px; margin-bottom:14px; font-size:0.85rem; font-weight:600;">
+    <i class="ri-information-line"></i>
+    اختر مادة محددة من القائمة أعلاه لتتمكن من ترتيب محاضراتها.
+  </div>
+
+  <div id="alertMsg" class="alert"></div>
+  <div class="lectures-grid" id="lecturesGrid"></div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="lectureModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title">إضافة محاضرة جديدة</span>
+      <button class="modal-close" onclick="CBS.closeModal('lectureModal')"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body">
+      <div id="modalAlert" class="alert"></div>
+      <div class="form-group">
+        <label class="form-label">عنوان المحاضرة *</label>
+        <div class="input-wrapper"><i class="input-icon ri-text"></i>
+          <input class="form-control" type="text" id="lTitle" placeholder="أدخل عنوان المحاضرة">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">المقرر</label>
+        <div class="input-wrapper"><i class="input-icon ri-book-open-line"></i>
+          <select class="form-control" id="lSubject">
+            <option value="">اختر المقرر</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">رابط الفيديو (اختياري)</label>
+        <div class="input-wrapper"><i class="input-icon ri-youtube-line"></i>
+          <input class="form-control" type="url" id="lVideoUrl" placeholder="https://...">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">رفع ملف (اختياري)</label>
+        <input class="form-control" type="file" id="lFile">
+        <div id="lectureUploadProgress" style="display:none; margin-top:8px;">
+          <div style="height:6px; background:var(--border); border-radius:999px; overflow:hidden;">
+            <div id="lectureProgressBar" style="height:100%; width:0%; background:linear-gradient(90deg,var(--primary),var(--accent)); border-radius:999px; transition:width 0.2s;"></div>
+          </div>
+          <div style="display:flex;justify-content:space-between;font-size:0.75rem;color:var(--text-muted);margin-top:4px;">
+            <span id="lectureProgressText">0%</span>
+            <span id="lectureProgressBytes"></span>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="CBS.closeModal('lectureModal')">إلغاء</button>
+      <button class="btn btn-primary" id="saveBtn" onclick="addLecture()">
+        <i class="ri-upload-cloud-line"></i> رفع المحاضرة
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Batch Upload Modal ═══ -->
+<div class="modal-overlay" id="batchModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title"><i class="ri-upload-cloud-2-line" style="margin-left:6px"></i>رفع عدة محاضرات</span>
+      <button class="modal-close" onclick="CBS.closeModal('batchModal')"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body">
+      <div id="batchAlert" class="alert"></div>
+      <div class="form-group">
+        <label class="form-label">المقرر *</label>
+        <div class="input-wrapper"><i class="input-icon ri-book-open-line"></i>
+          <select class="form-control" id="batchSubject">
+            <option value="">اختر المقرر</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">اختر الملفات <span style="font-size:.72rem;color:var(--text-muted)">(يمكنك اختيار عدة ملفات مرة واحدة)</span></label>
+        <input class="form-control" type="file" id="batchFiles" multiple>
+      </div>
+      <div class="batch-file-list" id="batchFileList"></div>
+      <div class="batch-overall" id="batchOverall" style="display:none">
+        <div class="batch-overall-text" id="batchOverallText">0 / 0</div>
+        <div class="batch-overall-bar"><div class="batch-overall-fill" id="batchOverallFill"></div></div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="CBS.closeModal('batchModal')">إلغاء</button>
+      <button class="btn btn-primary" id="batchSaveBtn" onclick="startBatchUpload()">
+        <i class="ri-upload-cloud-2-line"></i> بدء الرفع
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ Edit/Rename Lecture Modal ═══ -->
+<div class="modal-overlay" id="editLectureModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title"><i class="ri-edit-line" style="margin-left:6px"></i>تعديل المحاضرة / إعادة التسمية</span>
+      <button class="modal-close" onclick="CBS.closeModal('editLectureModal')"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body">
+      <div id="editModalAlert" class="alert"></div>
+      <input type="hidden" id="editLectureId">
+      <div class="form-group">
+        <label class="form-label">عنوان المحاضرة *</label>
+        <div class="input-wrapper"><i class="input-icon ri-edit-2-line"></i>
+          <input class="form-control" type="text" id="editLTitle" placeholder="أدخل العنوان الجديد للمحاضرة">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">رابط يوتيوب / الفيديو (اختياري)</label>
+        <div class="input-wrapper"><i class="input-icon ri-video-line"></i>
+          <input class="form-control" type="url" id="editLVideoUrl" placeholder="https://youtube.com/watch?v=...">
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="CBS.closeModal('editLectureModal')">إلغاء</button>
+      <button class="btn btn-primary" id="editSaveBtn" onclick="saveEditLecture()">
+        <i class="ri-save-line"></i> حفظ التعديلات
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<footer class="main-footer">
+  جميع الحقوق محفوظة © <span id="year"></span> النظام الجامعي المتكامل
+</footer>
+
+<script src="/js/app.js?v=2026073125"></script>
+<script src="/js/socket-client.js?v=2026073125" defer></script>
+<script>
+  CBS.init({ requireRoles: ['dean', 'doctor', 'leader', 'admin'] });
+  let allLectures = [];
+
+  async function loadSubjects() {
+    try {
+      const res  = await CBS.apiGet('/api/subjects');
+      const _resData = await CBS.readJson(res);
+      const list = _resData.data?.subjects || _resData.subjects || _resData.data || _resData;
+      const options = list.map(s => {
+        let batchName = '';
+        if (s.batches && s.batches.length > 0) {
+          batchName = ' (' + s.batches.map(b => CBS.escapeHTML(b.name)).join(' و ') + ')';
+        }
+        return `<option value="${CBS.escapeHTML(s._id)}">${CBS.escapeHTML(s.name)}${batchName}</option>`;
+      }).join('');
+
+      document.getElementById('lSubject').innerHTML =
+        '<option value="">اختر المقرر</option>' + options;
+      // نفس القائمة تُغذّي فلتر العرض أعلى الصفحة
+      document.getElementById('filterSubject').innerHTML =
+        '<option value="">كل المواد (للعرض فقط)</option>' + options;
+    } catch(e) {}
+  }
+
+  async function loadLectures() {
+    CBS.showLoading('lecturesGrid', 'جاري تحميل المحاضرات...');
+    try {
+      const subjectId = document.getElementById('filterSubject').value;
+      const url = subjectId ? `/api/lectures?subject=${encodeURIComponent(subjectId)}` : '/api/lectures';
+      const res  = await CBS.apiGet(url);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || 'فشل تحميل المحاضرات');
+      // بدون هذا الفحص كان رد الخطأ (كائن) يمر بصمت فيظهر "undefined محاضرة"
+      // ثم قائمة فارغة، بدل رسالة الخطأ الحقيقية
+      allLectures = Array.isArray(data) ? data : (data.lectures || data.data || []);
+      document.getElementById('lectureCount').textContent = `${allLectures.length} محاضرة`;
+      // التلميح يظهر فقط عند عرض كل المواد (حيث الترتيب معطّل)
+      document.getElementById('orderHint').style.display = subjectId ? 'none' : 'block';
+      render(allLectures);
+    } catch(e) { CBS.showAlert('alertMsg', e.message || 'فشل تحميل المحاضرات', 'danger'); }
+  }
+
+  const subjectNameOf = l =>
+    (typeof l.subject === 'object' ? l.subject?.name : null) || 'مادة غير محددة';
+  const subjectIdOf = l =>
+    String(typeof l.subject === 'object' ? (l.subject?._id || '') : (l.subject || ''));
+
+  function render(list) {
+    if (!list.length) { CBS.showEmpty('lecturesGrid', 'لا توجد محاضرات', 'ri-slideshow-line'); return; }
+    const user = CBS.getUser();
+    const userId = user._id || user.id;
+    const canManageAll = user.roles?.includes('dean') || user.roles?.includes('admin');
+    // الترتيب متاح فقط داخل مادة واحدة — لا معنى لترتيب عالمي عبر المواد
+    const singleSubject = !!document.getElementById('filterSubject').value;
+
+    /* نُجمّع حسب المادة: العرض المسطّح كان يخلط محاضرات المواد ببعضها
+       فيبدو الترتيب عشوائياً للمستخدم. */
+    const groups = [];
+    list.forEach(l => {
+      const id = subjectIdOf(l);
+      let g = groups.find(x => x.id === id);
+      if (!g) { g = { id, name: subjectNameOf(l), items: [] }; groups.push(g); }
+      g.items.push(l);
+    });
+
+    const cardsHtml = (items) => items.map((l, index) => {
+      const canManage = canManageAll || String(l.uploadedBy?._id || l.uploadedBy || '') === String(userId || '');
+      return `
+      <div class="lecture-card" id="lec-card-${l._id}">
+        <div class="lecture-title">
+          <span style="display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;
+                       border-radius:6px;background:var(--primary-light);color:var(--primary);
+                       font-size:0.75rem;font-weight:800;margin-left:6px;">${index + 1}</span>
+          ${CBS.escapeHTML(l.title)}
+        </div>
+        <div class="lecture-subject"><i class="ri-book-open-line"></i>${CBS.escapeHTML(typeof l.subject === 'object' ? l.subject?.name : (l.subject || 'غير محددة'))}</div>
+        <div class="lecture-links">
+          ${l.videoUrl ? `<a href="${CBS.escapeHTML(l.videoUrl)}" target="_blank" rel="noopener noreferrer" class="llink video"><i class="ri-play-circle-line"></i> مشاهدة الفيديو</a>` : ''}
+          ${l.file ? `<a href="${API_BASE}/uploads/lectures/${l.file}" target="_blank" class="llink file"><i class="ri-download-cloud-line"></i> تحميل الملف</a>` : ''}
+          ${!l.videoUrl && !l.file ? '<span style="font-size:0.8rem;color:var(--text-muted)">لا توجد مرفقات</span>' : ''}
+        </div>
+        ${canManage ? `
+        <div class="lecture-footer" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
+          <div class="reorder-btns" style="display:flex; gap:4px; align-items:center;">
+            <button class="btn btn-ghost" style="padding:4px 8px; font-size:0.85rem;"
+              onclick="moveLecture('${l._id}', -1)"
+              ${(!singleSubject || index === 0) ? 'disabled' : ''}
+              title="${singleSubject ? 'تقديم لأعلى' : 'اختر مادة محددة أولاً'}"><i class="ri-arrow-up-s-line"></i></button>
+            <button class="btn btn-ghost" style="padding:4px 8px; font-size:0.85rem;"
+              onclick="moveLecture('${l._id}', 1)"
+              ${(!singleSubject || index === items.length - 1) ? 'disabled' : ''}
+              title="${singleSubject ? 'تأخير لأسفل' : 'اختر مادة محددة أولاً'}"><i class="ri-arrow-down-s-line"></i></button>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <button class="btn btn-secondary" style="padding:6px 12px; font-size:0.78rem;" onclick="openEditModal('${l._id}')">
+              <i class="ri-edit-line"></i> تعديل
+            </button>
+            <button class="btn btn-danger" style="padding:6px 12px; font-size:0.78rem;" onclick="deleteLecture('${l._id}')">
+              <i class="ri-delete-bin-line"></i> حذف
+            </button>
+          </div>
+        </div>` : ''}
+      </div>`;
+    }).join('');
+
+    /* مادة واحدة: شبكة بسيطة. عدة مواد: عنوان لكل مادة فوق محاضراتها،
+       ليتضح للمستخدم أن الترقيم يبدأ من جديد داخل كل مادة. */
+    const grid = document.getElementById('lecturesGrid');
+    if (groups.length === 1) {
+      grid.className = 'lectures-grid';
+      grid.innerHTML = cardsHtml(groups[0].items);
+      return;
+    }
+
+    grid.className = '';
+    grid.innerHTML = groups.map(g => `
+      <div style="margin-bottom:26px;">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;
+                    padding-bottom:8px;border-bottom:2px solid var(--border);">
+          <i class="ri-book-open-line" style="color:var(--primary)"></i>
+          <span style="font-weight:800;color:var(--text-main);">${CBS.escapeHTML(g.name)}</span>
+          <span style="font-size:0.78rem;color:var(--text-muted);">(${g.items.length} محاضرة)</span>
+        </div>
+        <div class="lectures-grid">${cardsHtml(g.items)}</div>
+      </div>`).join('');
+  }
+
+  function openEditModal(id) {
+    const lecture = allLectures.find(l => String(l._id) === String(id));
+    if (!lecture) return;
+    document.getElementById('editLectureId').value = lecture._id;
+    document.getElementById('editLTitle').value = lecture.title || '';
+    document.getElementById('editLVideoUrl').value = lecture.videoUrl || '';
+    CBS.hideAlert('editModalAlert');
+    CBS.openModal('editLectureModal');
+  }
+
+  async function saveEditLecture() {
+    const id = document.getElementById('editLectureId').value;
+    const title = document.getElementById('editLTitle').value.trim();
+    const videoUrl = document.getElementById('editLVideoUrl').value.trim();
+
+    if (!title) {
+      CBS.showAlert('editModalAlert', 'عنوان المحاضرة مطلوب', 'danger');
+      return;
+    }
+
+    const btn = document.getElementById('editSaveBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> جاري الحفظ...';
+
+    try {
+      const res = await CBS.apiPut(`/api/lectures/${id}`, { title, videoUrl });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'فشل حفظ التعديلات');
+
+      CBS.toast('تم تحديث المحاضرة بنجاح', '', 'success');
+      CBS.closeModal('editLectureModal');
+      loadLectures();
+    } catch(e) {
+      CBS.showAlert('editModalAlert', e.message || 'فشل الاتصال', 'danger');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ri-save-line"></i> حفظ التعديلات';
+    }
+  }
+
+  async function moveLecture(id, dir) {
+    /* كانت الدالة تُبدّل داخل القائمة المختلطة كلها، فتنقل المحاضرة أحياناً
+       عبر مادة أخرى، ثم ترسل معرّفات كل المواد للخادم فيُعيد ترقيمها عالمياً.
+       الآن نعمل داخل مادة واحدة فقط. */
+    const current = allLectures.find(l => String(l._id) === String(id));
+    if (!current) return;
+
+    const subjectId = subjectIdOf(current);
+    const siblings = allLectures.filter(l => subjectIdOf(l) === subjectId);
+    const idx = siblings.findIndex(l => String(l._id) === String(id));
+    if (idx < 0 || idx + dir < 0 || idx + dir >= siblings.length) return;
+
+    // تبديل موضعي داخل المادة، ثم إعادة بناء القائمة الكاملة بنفس ترتيب المواد
+    [siblings[idx], siblings[idx + dir]] = [siblings[idx + dir], siblings[idx]];
+    let cursor = 0;
+    allLectures = allLectures.map(l => subjectIdOf(l) === subjectId ? siblings[cursor++] : l);
+    render(allLectures);
+
+    try {
+      // نرسل معرّفات هذه المادة فقط — الخادم يرفض الخلط بين المواد
+      const res = await CBS.apiPost('/api/lectures/reorder', {
+        lectureIds: siblings.map(l => l._id)
+      });
+      const data = await CBS.readJson(res, 'تعذر حفظ الترتيب الجديد');
+      CBS.toast('تم تحديث ترتيب المحاضرات', data.message || '', 'success');
+    } catch(e) {
+      CBS.toast('تعذر حفظ الترتيب', e.message || '', 'error');
+      loadLectures();   // نعود لحالة الخادم الصحيحة
+    }
+  }
+
+  document.getElementById('addBtn').onclick = () => {
+    ['lTitle','lVideoUrl'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('lSubject').value = '';
+    document.getElementById('lFile').value    = '';
+    CBS.hideAlert('modalAlert');
+    CBS.openModal('lectureModal');
+  };
+
+  async function addLecture() {
+    const title    = document.getElementById('lTitle').value.trim();
+    const subjectId = document.getElementById('lSubject').value;
+    const videoUrl  = document.getElementById('lVideoUrl').value.trim();
+    const file      = document.getElementById('lFile').files[0];
+
+    if (!title) { CBS.showAlert('modalAlert', 'عنوان المحاضرة مطلوب', 'danger'); return; }
+
+    const btn = document.getElementById('saveBtn');
+    const originalBtnHtml = btn.innerHTML;
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> جاري الرفع... يرجى الانتظار';
+    
+    // إخفاء التنبيهات السابقة وإظهار تنبيه معلوماتي
+    CBS.showAlert('modalAlert', 'جاري رفع المحاضرة والملفات المرفقة... لا تقم بإغلاق الصفحة.', 'warning');
+
+    const form = new FormData();
+    form.append('title',    title);
+    form.append('subject',  subjectId);
+    form.append('videoUrl', videoUrl);
+    if (file) form.append('file', file);
+
+    const headers = { Authorization: 'Bearer ' + CBS.getToken() };
+    const batchId = CBS.getBatchId();
+    if (batchId) headers['x-batch-id'] = batchId;
+
+    document.getElementById('lectureUploadProgress').style.display = file ? 'block' : 'none';
+
+    try {
+      await new Promise((resolve, reject) => {
+        const xhr = new XMLHttpRequest();
+        xhr.open('POST', API_BASE + '/api/lectures');
+        xhr.setRequestHeader('Authorization', 'Bearer ' + CBS.getToken());
+        if (batchId) xhr.setRequestHeader('x-batch-id', batchId);
+
+        xhr.upload.onprogress = (evt) => {
+          if (evt.lengthComputable && file) {
+            const pct = Math.round((evt.loaded / evt.total) * 100);
+            document.getElementById('lectureProgressBar').style.width = pct + '%';
+            document.getElementById('lectureProgressText').textContent = pct + '%';
+            const fmt = (b) => b > 1048576 ? (b/1048576).toFixed(1)+' MB' : (b/1024).toFixed(0)+' KB';
+            document.getElementById('lectureProgressBytes').textContent = fmt(evt.loaded)+' / '+fmt(evt.total);
+          }
+        };
+        xhr.onload = () => {
+          try {
+            const res = JSON.parse(xhr.responseText);
+            if (xhr.status >= 200 && xhr.status < 300) resolve(res);
+            else reject(new Error(res.message || 'حدث خطأ'));
+          } catch { reject(new Error('استجابة غير صالحة')); }
+        };
+        xhr.onerror = () => reject(new Error('خطأ في الاتصال'));
+        xhr.send(form);
+      });
+
+      CBS.toast('تمت إضافة المحاضرة بنجاح', '', 'success');
+      CBS.closeModal('lectureModal');
+      loadLectures();
+    } catch(e) {
+      CBS.showAlert('modalAlert', e.message || 'خطأ في الاتصال', 'danger');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = originalBtnHtml;
+      document.getElementById('lectureUploadProgress').style.display = 'none';
+      document.getElementById('lectureProgressBar').style.width = '0%';
+    }
+  }
+
+  async function deleteLecture(id) {
+    if (!confirm('تأكيد حذف هذه المحاضرة؟')) return;
+    const res = await CBS.apiDelete(`/api/lectures/${id}`);
+    if (res.ok) { CBS.toast('تم الحذف', '', 'success'); loadLectures(); }
+    else CBS.toast('فشل الحذف', '', 'error');
+  }
+
+  document.getElementById('searchBox').addEventListener('input', e => {
+    const q = e.target.value.toLowerCase();
+    render(allLectures.filter(l => l.title.toLowerCase().includes(q)));
+  });
+
+  loadSubjects();
+  loadLectures();
+
+  // ═══════════════════════════════════════════════════════════
+  //  BATCH UPLOAD
+  // ═══════════════════════════════════════════════════════════
+
+  let batchSelectedFiles = [];
+
+  function openBatchModal() {
+    batchSelectedFiles = [];
+    document.getElementById('batchFiles').value = '';
+    document.getElementById('batchFileList').innerHTML = '';
+    document.getElementById('batchOverall').style.display = 'none';
+    CBS.hideAlert('batchAlert');
+
+    // مزامنة قائمة المقررات مع dropdown الأصلي
+    const orig = document.getElementById('lSubject');
+    const bSel = document.getElementById('batchSubject');
+    bSel.innerHTML = orig.innerHTML;
+
+    const btn = document.getElementById('batchSaveBtn');
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ri-upload-cloud-2-line"></i> بدء الرفع';
+
+    CBS.openModal('batchModal');
+  }
+
+  // تسمية المحاضرة من اسم الملف (بإزالة الامتداد وتحويل _ و - لمسافات)
+  function titleFromFilename(name) {
+    return name.replace(/\.[^/.]+$/, '').replace(/[-_]+/g, ' ').trim();
+  }
+
+  function fmtSize(b) {
+    if (b > 1048576) return (b / 1048576).toFixed(1) + ' MB';
+    return (b / 1024).toFixed(0) + ' KB';
+  }
+
+  // عند اختيار ملفات
+  document.getElementById('batchFiles').addEventListener('change', (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+
+    const newItems = files.map(f => ({
+      file: f,
+      title: titleFromFilename(f.name),
+      videoUrl: ''
+    }));
+
+    batchSelectedFiles = [...batchSelectedFiles, ...newItems];
+    renderBatchFileList();
+  });
+
+  function saveCurrentInputs() {
+    batchSelectedFiles.forEach((item, i) => {
+      const titleEl = document.getElementById(`bf-title-${i}`);
+      const vidEl = document.getElementById(`bf-vid-${i}`);
+      if (titleEl) item.title = titleEl.value;
+      if (vidEl) item.videoUrl = vidEl.value;
+    });
+  }
+
+  function renderBatchFileList() {
+    const list = document.getElementById('batchFileList');
+    if (!batchSelectedFiles.length) {
+      list.innerHTML = '';
+      return;
+    }
+    list.innerHTML = batchSelectedFiles.map((item, i) => `
+      <div class="batch-file-item" id="bf-${i}" style="display:flex; flex-direction:column; gap:8px;">
+        <div class="batch-file-top">
+          <span class="batch-file-name" style="font-weight:700;"><i class="ri-file-line" style="margin-left:4px"></i>${CBS.escapeHTML(item.file.name)}</span>
+          <span class="batch-file-size">${fmtSize(item.file.size)}</span>
+          <div style="display:flex; gap:4px; margin-right:auto; align-items:center;">
+             <button class="batch-remove-btn" style="color:var(--text-main);" onclick="moveBatchFile(${i}, -1)" ${i===0?'disabled':''} title="لأعلى"><i class="ri-arrow-up-s-line"></i></button>
+             <button class="batch-remove-btn" style="color:var(--text-main);" onclick="moveBatchFile(${i}, 1)" ${i===batchSelectedFiles.length-1?'disabled':''} title="لأسفل"><i class="ri-arrow-down-s-line"></i></button>
+             <button class="batch-remove-btn" onclick="removeBatchFile(${i})" title="إزالة"><i class="ri-close-circle-line"></i></button>
+          </div>
+          <span class="batch-file-status pending" id="bf-status-${i}">في الانتظار</span>
+        </div>
+        <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 8px;">
+          <input type="text" id="bf-title-${i}" value="${CBS.escapeHTML(item.title)}" onchange="updateBatchItem(${i}, 'title', this.value)" class="form-control" style="font-size:0.8rem; padding:6px 10px;" placeholder="عنوان المحاضرة (مطلوب)">
+          <input type="url" id="bf-vid-${i}" value="${CBS.escapeHTML(item.videoUrl)}" onchange="updateBatchItem(${i}, 'videoUrl', this.value)" class="form-control" style="font-size:0.8rem; padding:6px 10px;" placeholder="رابط يوتيوب (اختياري)">
+        </div>
+        <div class="batch-progress-bar"><div class="batch-progress-fill" id="bf-prog-${i}"></div></div>
+      </div>
+    `).join('');
+  }
+
+  function updateBatchItem(idx, key, val) {
+    if(batchSelectedFiles[idx]) batchSelectedFiles[idx][key] = val;
+  }
+
+  function moveBatchFile(idx, dir) {
+    saveCurrentInputs();
+    if (idx + dir < 0 || idx + dir >= batchSelectedFiles.length) return;
+    const temp = batchSelectedFiles[idx];
+    batchSelectedFiles[idx] = batchSelectedFiles[idx + dir];
+    batchSelectedFiles[idx + dir] = temp;
+    renderBatchFileList();
+  }
+
+  function removeBatchFile(idx) {
+    saveCurrentInputs();
+    batchSelectedFiles.splice(idx, 1);
+    renderBatchFileList();
+  }
+
+  // رفع ملف واحد عبر XHR مع تقدم
+  function uploadOneFile(item, subjectId, index) {
+    return new Promise((resolve, reject) => {
+      const titleEl = document.getElementById(`bf-title-${index}`);
+      const vidEl   = document.getElementById(`bf-vid-${index}`);
+      const customTitle = titleEl ? titleEl.value.trim() : item.title;
+      const customVid   = vidEl ? vidEl.value.trim() : item.videoUrl;
+
+      const form = new FormData();
+      form.append('title', customTitle || titleFromFilename(item.file.name));
+      form.append('subject', subjectId);
+      form.append('videoUrl', customVid);
+      form.append('file', item.file);
+
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', API_BASE + '/api/lectures');
+      xhr.setRequestHeader('Authorization', 'Bearer ' + CBS.getToken());
+      const batchId = CBS.getBatchId();
+      if (batchId) xhr.setRequestHeader('x-batch-id', batchId);
+
+      const statusEl = document.getElementById(`bf-status-${index}`);
+      const progEl   = document.getElementById(`bf-prog-${index}`);
+      if (statusEl) { statusEl.textContent = 'جاري الرفع...'; statusEl.className = 'batch-file-status uploading'; }
+
+      xhr.upload.onprogress = (evt) => {
+        if (evt.lengthComputable && progEl) {
+          progEl.style.width = Math.round((evt.loaded / evt.total) * 100) + '%';
+        }
+      };
+
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          if (statusEl) { statusEl.textContent = 'تم'; statusEl.className = 'batch-file-status done'; }
+          if (progEl) progEl.style.width = '100%';
+          resolve();
+        } else {
+          let msg = 'خطأ';
+          try { msg = JSON.parse(xhr.responseText).message || msg; } catch {}
+          if (statusEl) { statusEl.textContent = 'خطأ: ' + msg; statusEl.className = 'batch-file-status error'; }
+          reject(new Error(msg));
+        }
+      };
+      xhr.onerror = () => {
+        if (statusEl) { statusEl.textContent = 'خطأ اتصال'; statusEl.className = 'batch-file-status error'; }
+        reject(new Error('خطأ في الاتصال'));
+      };
+      xhr.send(form);
+    });
+  }
+
+  async function startBatchUpload() {
+    const subjectId = document.getElementById('batchSubject').value;
+    if (!subjectId) { CBS.showAlert('batchAlert', 'يرجى اختيار المقرر أولاً', 'danger'); return; }
+    if (!batchSelectedFiles.length) { CBS.showAlert('batchAlert', 'يرجى اختيار ملف واحد على الأقل', 'danger'); return; }
+
+    const btn = document.getElementById('batchSaveBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> جاري الرفع...';
+
+    CBS.showAlert('batchAlert', 'جاري رفع المحاضرات... لا تغلق الصفحة.', 'warning');
+
+    const overall   = document.getElementById('batchOverall');
+    const overallText = document.getElementById('batchOverallText');
+    const overallFill = document.getElementById('batchOverallFill');
+    overall.style.display = 'block';
+
+    const total = batchSelectedFiles.length;
+    let done = 0, failed = 0;
+
+    for (let i = 0; i < total; i++) {
+      overallText.textContent = `${done + 1} / ${total} — جاري رفع: ${batchSelectedFiles[i].file.name}`;
+      overallFill.style.width = Math.round((done / total) * 100) + '%';
+
+      try {
+        await uploadOneFile(batchSelectedFiles[i], subjectId, i);
+        done++;
+      } catch(e) {
+        failed++;
+        done++;
+      }
+    }
+
+    overallFill.style.width = '100%';
+    const successCount = total - failed;
+    overallText.textContent = `اكتمل: ${successCount} ناجح${failed ? ` — ${failed} فشل` : ''}`;
+
+    CBS.showAlert('batchAlert',
+      `تم رفع ${successCount} من ${total} محاضرة بنجاح ${failed ? `(${failed} فشل)` : ''}`,
+      failed ? 'warning' : 'success'
+    );
+
+    btn.disabled = false;
+    btn.innerHTML = '<i class="ri-upload-cloud-2-line"></i> بدء الرفع';
+    CBS.toast(`تم رفع ${successCount} محاضرة بنجاح`, '', 'success');
+    loadLectures();
+  }
+</script>
+</body>
+</html>
+
+

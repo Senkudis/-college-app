@@ -1,0 +1,367 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0d3b66">
+  <link rel="manifest" href="/manifest.json">
+  <title>لوحة الإدارة | كلية تقنية المعلومات</title>
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css?v=2026073125">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026073125">
+
+
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+</head>
+<body>
+
+<header class="main-header">
+  <div class="header-brand">
+    <img src="/assets/logo.png" class="header-logo" alt="Logo">
+    <div class="header-title-group">
+      <strong>كلية تقنية المعلومات</strong>
+      <small>لوحة التحكم الإدارية</small>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" style="position:relative" onclick="location.href='/manage-notifications.html'" title="الإشعارات">
+      <i class="ri-notification-3-line"></i>
+      <span class="bnav-badge" id="notifBadge" style="display:none;top:-2px;right:-2px;position:absolute"></span>
+    </button>
+    <button class="btn-icon" onclick="CBS.logout()" title="خروج"><i class="ri-logout-box-r-line"></i></button>
+  </div>
+</header>
+
+
+
+<div class="page-content">
+
+  <!-- Welcome Banner -->
+  <div class="welcome-banner" style="background: linear-gradient(135deg,#dc2626,#b91c1c,#991b1b);">
+    <div class="welcome-banner-icon-wrap">
+      <i class="ri-shield-star-line welcome-banner-icon"></i>
+    </div>
+    <div class="welcome-banner-body">
+      <h2>لوحة التحكم الإدارية</h2>
+      <p>إدارة شاملة للمستخدمين والدفعات والمقررات</p>
+    </div>
+  </div>
+
+  <!-- Admin Stats -->
+  <div class="stats-bar">
+    <div class="stat-item">
+      <i class="ri-team-line"></i>
+      <div class="stat-item-body">
+        <div class="stat-num" id="statUsers">-</div>
+        <div class="stat-label">المستخدمين</div>
+      </div>
+    </div>
+    <div class="stat-item">
+      <i class="ri-book-line"></i>
+      <div class="stat-item-body">
+        <div class="stat-num" id="statSubjects">-</div>
+        <div class="stat-label">المقررات</div>
+      </div>
+    </div>
+    <div class="stat-item">
+      <i class="ri-group-line"></i>
+      <div class="stat-item-body">
+        <div class="stat-num" id="statBatches">-</div>
+        <div class="stat-label">الدفعات</div>
+      </div>
+    </div>
+    <div class="stat-item">
+      <i class="ri-money-dollar-circle-line"></i>
+      <div class="stat-item-body">
+        <div class="stat-num" id="statOverdue">-</div>
+        <div class="stat-label">متأخرات مالية</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- إدارة المستخدمين والبيانات -->
+  <div class="section-divider">
+    <i class="ri-settings-3-line"></i>
+    <span>إدارة النظام</span>
+  </div>
+
+  <div class="dash-grid">
+    <div class="dash-card" onclick="location.href='/pending-registrations.html'" style="border: 1px solid rgba(245, 158, 11, 0.4); background: rgba(245, 158, 11, 0.08);">
+      <div class="dash-card-icon warning" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b;"><i class="ri-user-received-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title">طلبات التسجيل المعلقة</span>
+        <span class="subtitle">مراجعة وقبول الطلبات والواتساب</span>
+      </div>
+    </div>
+    <div class="dash-card" onclick="location.href='/manage-users.html'">
+      <div class="dash-card-icon primary"><i class="ri-team-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title">إدارة المستخدمين</span>
+        <span class="subtitle">إضافة وتعديل الحسابات المعتمدة</span>
+      </div>
+    </div>
+    <div class="dash-card" onclick="location.href='/manage-batches.html'">
+      <div class="dash-card-icon success"><i class="ri-group-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title">إدارة الدفعات</span>
+        <span class="subtitle">تنظيم الدفعات الأكاديمية</span>
+      </div>
+    </div>
+    <div class="dash-card" onclick="location.href='/manage-subjects.html'">
+      <div class="dash-card-icon warning"><i class="ri-book-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title">إدارة المقررات</span>
+        <span class="subtitle">إضافة وتحرير المواد</span>
+      </div>
+    </div>
+    <div class="dash-card" onclick="location.href='/manage-lectures.html'">
+      <div class="dash-card-icon danger"><i class="ri-video-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title">إدارة المحاضرات</span>
+        <span class="subtitle">رفع ومتابعة المحاضرات</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- العمليات -->
+  <div class="section-divider">
+    <i class="ri-dashboard-3-line"></i>
+    <span>العمليات الأكاديمية</span>
+  </div>
+
+  <div class="dash-grid">
+    <div class="dash-card" onclick="location.href='/manage-attendance.html'">
+      <div class="dash-card-icon success"><i class="ri-calendar-check-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title">الحضور والغياب</span>
+        <span class="subtitle">تسجيل ومتابعة الحضور</span>
+      </div>
+    </div>
+    <div class="dash-card" onclick="location.href='/assignments.html'">
+      <div class="dash-card-icon warning"><i class="ri-file-list-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title">إدارة الواجبات</span>
+        <span class="subtitle">إنشاء ومراجعة التكاليف</span>
+      </div>
+    </div>
+    <div class="dash-card" onclick="location.href='/manage-submissions.html'">
+      <div class="dash-card-icon primary"><i class="ri-stack-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title">تسليمات الطلاب</span>
+        <span class="subtitle">مراجعة وتقييم التسليمات</span>
+      </div>
+    </div>
+    <div class="dash-card" onclick="location.href='/manage-notifications.html'">
+      <div class="dash-card-icon info"><i class="ri-megaphone-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title">الإشعارات</span>
+        <span class="subtitle">إرسال التنبيهات والتعاميم</span>
+      </div>
+    </div>
+    <div class="dash-card" onclick="location.href='/financials.html'">
+      <div class="dash-card-icon primary"><i class="ri-money-dollar-circle-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title">الرسوم المالية</span>
+        <span class="subtitle">إدارة المدفوعات والأقساط</span>
+      </div>
+    </div>
+    <div class="dash-card" onclick="location.href='/reports.html'">
+      <div class="dash-card-icon danger"><i class="ri-bar-chart-box-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title">التقارير</span>
+        <span class="subtitle">إحصائيات وتحليلات شاملة</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- إدارة الدفعة المحددة -->
+  <div class="section-divider">
+    <i class="ri-focus-3-line"></i>
+    <span>إدارة دفعة محددة</span>
+  </div>
+
+  <!-- قائمة اختيار الدفعة النشطة (يشير إليها نص البطاقة أدناه) -->
+  <div class="card" style="padding:16px 20px;margin-bottom:16px;">
+    <label class="form-label" for="batchSwitcherSelect" style="display:block;margin-bottom:8px;font-weight:700;">
+      <i class="ri-layout-grid-line"></i> الدفعة النشطة
+    </label>
+    <select class="form-control" id="batchSwitcherSelect" onchange="onBatchSwitch(this.value)">
+      <option value="">-- اختر الدفعة --</option>
+    </select>
+  </div>
+
+  <div class="dash-grid">
+    <div class="dash-card" id="batchDetailsCard" onclick="goToBatchDetails()" style="background: linear-gradient(135deg,#7c3aed,#4f46e5); color: white; border: none; box-shadow: 0 8px 20px -4px rgba(124,58,237,0.4);">
+      <div class="dash-card-icon" style="background: rgba(255,255,255,0.2); color: white;"><i class="ri-dashboard-3-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title" style="color:white; font-weight: bold;">إدارة الدفعة الأكاديمية</span>
+        <span class="subtitle" style="color:rgba(255,255,255,0.8);" id="activeBatchName">اختر دفعة من القائمة أعلاه</span>
+      </div>
+    </div>
+    <div class="dash-card" onclick="location.href='/batch-selector.html'">
+      <div class="dash-card-icon success"><i class="ri-refresh-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title">تبديل الدفعة</span>
+        <span class="subtitle">اختر دفعة أكاديمية للإدارة</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- أدوات الكلية -->
+  <div class="section-divider">
+    <i class="ri-book-read-line"></i>
+    <span>محتوى الكلية والطلاب</span>
+  </div>
+
+  <div class="dash-grid">
+    <div class="dash-card" onclick="location.href='/video-library.html'">
+      <div class="dash-card-icon danger"><i class="ri-play-circle-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title">المكتبة المرئية</span>
+        <span class="subtitle">مشاهدة ومراجعة المحاضرات</span>
+      </div>
+    </div>
+    <div class="dash-card" onclick="location.href='/calendar.html'">
+      <div class="dash-card-icon success"><i class="ri-calendar-event-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title">التقويم الأكاديمي</span>
+        <span class="subtitle">مواعيد وفعاليات الدفعات</span>
+      </div>
+    </div>
+    <div class="dash-card" onclick="location.href='/quizzes.html'">
+      <div class="dash-card-icon primary"><i class="ri-question-answer-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title">الاختبارات الإلكترونية</span>
+        <span class="subtitle">تصفح نماذج الاختبارات</span>
+      </div>
+    </div>
+    <div class="dash-card" onclick="location.href='/leaderboard.html'">
+      <div class="dash-card-icon warning"><i class="ri-trophy-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title">لوحة المتصدرين</span>
+        <span class="subtitle">أداء الطلاب والمنافسة</span>
+      </div>
+    </div>
+    <div class="dash-card" onclick="location.href='/admin-content.html'">
+      <div class="dash-card-icon" style="background:rgba(13,59,102,.12);color:#0d3b66"><i class="ri-layout-masonry-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title">المحتوى العام</span>
+        <span class="subtitle">أخبار ومعرض صفحة الاستقبال</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast-container"></div>
+
+<footer class="main-footer">
+  حقوق النشر &copy; <span id="year"></span> جامعة النصر التقنية &nbsp;|&nbsp; تطوير: ضياء الدين إبراهيم
+</footer>
+
+<script src="/js/app.js?v=2026073125"></script>
+<script src="/js/socket-client.js?v=2026073125" defer></script>
+<script>
+  CBS.init({ requireRoles: ['dean', 'admin'] });
+
+  /* ===== إدارة الدفعة النشطة =====
+     هذه الدوال كانت محذوفة بينما بقيت الأزرار التي تستدعيها، فكان الضغط على
+     بطاقة "إدارة الدفعة الأكاديمية" يرمي ReferenceError ولا يحدث شيء. */
+  let _allBatches = [];
+
+  async function loadBatchSwitcher() {
+    try {
+      const res  = await CBS.apiGet('/api/batches');
+      const data = await CBS.readJson(res, 'تعذر تحميل الدفعات');
+      _allBatches = data.batches || data.data || (Array.isArray(data) ? data : []);
+      const select = document.getElementById('batchSwitcherSelect');
+      if (!select) return;
+      const activeId = CBS.getBatchId();
+      select.innerHTML = '<option value="">-- اختر الدفعة --</option>';
+      _allBatches.forEach(b => {
+        const opt = document.createElement('option');
+        opt.value = b._id;
+        opt.textContent = b.name + (b.code ? ' (' + b.code + ')' : '');
+        if (b._id === activeId) opt.selected = true;
+        select.appendChild(opt);
+      });
+      updateActiveBatchDisplay();
+    } catch (e) {
+      console.warn('loadBatchSwitcher:', e.message);
+      CBS.showToast(e.message || 'تعذر تحميل الدفعات', 'danger');
+    }
+  }
+
+  function updateActiveBatchDisplay() {
+    const activeBatchId = CBS.getBatchId();
+    const batch  = _allBatches.find(b => b._id === activeBatchId);
+    const nameEl = document.getElementById('activeBatchName');
+    if (!nameEl) return;
+    nameEl.textContent = batch
+      ? batch.name + (batch.code ? ' - ' + batch.code : '')
+      : 'اختر دفعة من القائمة أعلاه';
+  }
+
+  function onBatchSwitch(batchId) {
+    if (batchId) localStorage.setItem('cbs_active_batch_id', batchId);
+    else localStorage.removeItem('cbs_active_batch_id');
+    updateActiveBatchDisplay();
+  }
+
+  function goToBatchDetails() {
+    const batchId = CBS.getBatchId();
+    if (!batchId) {
+      CBS.showToast('يرجى اختيار دفعة من القائمة أعلاه أولاً', 'warning');
+      return;
+    }
+    location.href = '/admin_batch_details.html?batch=' + encodeURIComponent(batchId);
+  }
+
+  // ===== جلب إحصائيات لوحة الإدارة =====
+  async function loadStats() {
+    try {
+      const [usersRes, subjectsRes, batchesRes, overdueRes] = await Promise.allSettled([
+        CBS.apiGet('/api/users'),
+        CBS.apiGet('/api/subjects'),
+        CBS.apiGet('/api/batches'),
+        CBS.apiGet('/api/financials/overdue-report')
+      ]);
+      if (usersRes.status === 'fulfilled' && usersRes.value.ok) {
+        const data = await usersRes.value.json();
+        const users = data.users || data;
+        document.getElementById('statUsers').textContent = Array.isArray(users) ? users.length : (data.pagination?.total || '-');
+      }
+      if (subjectsRes.status === 'fulfilled' && subjectsRes.value.ok) {
+        const data = await subjectsRes.value.json();
+        const subjects = data.data?.subjects || data.subjects || data;
+        document.getElementById('statSubjects').textContent = Array.isArray(subjects) ? subjects.length : (data.data?.pagination?.total || '-');
+      }
+      if (batchesRes.status === 'fulfilled' && batchesRes.value.ok) {
+        const data = await batchesRes.value.json();
+        const batches = data.batches || data;
+        document.getElementById('statBatches').textContent = Array.isArray(batches) ? batches.length : '-';
+      }
+      if (overdueRes.status === 'fulfilled' && overdueRes.value.ok) {
+        const data = await overdueRes.value.json();
+        const overdueCount = data.data?.totalOverdueStudents ?? data.totalOverdueStudents ?? '-';
+        document.getElementById('statOverdue').textContent = overdueCount;
+      }
+    } catch {}
+  }
+
+  // تشغيل كل شيء
+  loadBatchSwitcher();
+  loadStats();
+  setInterval(loadStats, 60000);
+
+  document.getElementById('year').textContent = new Date().getFullYear();
+</script>
+</body>
+</html>
+
+

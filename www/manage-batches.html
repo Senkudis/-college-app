@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>إدارة الدفعات | كلية تقنية المعلومات</title>
+  <link rel="stylesheet" href="/css/style.css?v=2026073125">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026073125">
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
+  <style>
+    .batches-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 14px;
+    }
+
+    .batch-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      transition: var(--transition);
+    }
+
+    .batch-item::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      left: 0;
+      height: 4px;
+      background: var(--item-color);
+    }
+
+    .batch-item:hover {
+      box-shadow: var(--shadow-md);
+      transform: translateY(-3px);
+    }
+
+    .batch-title {
+      font-size: 1.05rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 3px;
+    }
+
+    .batch-code {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.8rem;
+      font-weight: 600;
+      background: var(--bg-main);
+      color: var(--text-muted);
+      margin-bottom: 16px;
+    }
+
+    .batch-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+
+    .status-active {
+      color: var(--success);
+    }
+
+    .status-archived {
+      color: var(--text-muted);
+    }
+
+    .batch-acts {
+      display: flex;
+      gap: 6px;
+      margin-top: 14px;
+    }
+
+    .batch-acts .btn {
+      flex: 1;
+      padding: 7px 6px;
+      font-size: 0.8rem;
+    }
+
+    .color-picker {
+      display: flex;
+      gap: 10px;
+      margin-top: 8px;
+      flex-wrap: wrap;
+    }
+
+    .color-option {
+      width: 36px;
+      height: 36px;
+      border-radius: 50%;
+      cursor: pointer;
+      border: 2px solid transparent;
+      transition: transform 0.2s;
+    }
+
+    .color-option:hover {
+      transform: scale(1.1);
+    }
+
+    .color-option.selected {
+      border-color: var(--text-main);
+      box-shadow: 0 0 0 2px var(--bg-card), 0 0 0 4px var(--text-main);
+    }
+  </style>
+
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+</head>
+
+<body>
+
+  <header class="main-header">
+    <div class="header-brand">
+      <img src="/assets/logo.png" class="header-logo" alt="الشعار">
+      <div class="header-title-group">
+        <strong>كلية تقنية المعلومات</strong>
+        <small>النظام الجامعي المتكامل</small>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-icon" onclick="CBS.goHome()" title="الرئيسية"><i class="ri-home-4-line"></i></button>
+    </div>
+  </header>
+
+  <div class="page-content">
+
+    <!-- Welcome Banner -->
+    <div class="welcome-banner" style="background: linear-gradient(135deg,#2563eb,#1d4ed8,#1e40af);">
+      <div class="welcome-banner-icon-wrap">
+        <i class="ri-group-line welcome-banner-icon"></i>
+      </div>
+      <div class="welcome-banner-body">
+        <h2>إدارة الدفعات</h2>
+        <p>إدارة وتتبع الدفعات الأكاديمية</p>
+      </div>
+    </div>
+    <div class="page-header">
+      <div class="page-header-left">
+        <div class="page-icon" style="background:var(--primary); color:white;"><i class="ri-group-line"></i></div>
+        <div>
+          <div class="page-title">إدارة الدفعات الأكاديمية</div>
+          <div class="page-subtitle">إنشاء وتعديل وإدارة جميع الدفعات بالكلية</div>
+        </div>
+      </div>
+      <button class="btn btn-primary" onclick="openAddModal()">
+        <i class="ri-add-line"></i> إضافة دفعة جديدة
+      </button>
+    </div>
+
+    <div id="alertMsg" class="alert"></div>
+
+    <div id="loading" style="text-align:center; padding:40px; display:none;">
+      <div class="spinner"></div>
+    </div>
+
+    <div class="batches-grid" id="batchesGrid"></div>
+  </div>
+
+  <!-- Modal -->
+  <div class="modal-overlay" id="batchModal">
+    <div class="modal-box">
+      <div class="modal-header">
+        <span class="modal-title" id="modalTitle">إضافة دفعة</span>
+        <button class="modal-close" onclick="CBS.closeModal('batchModal')"><i class="ri-close-line"></i></button>
+      </div>
+      <div class="modal-body">
+        <div id="modalAlert" class="alert"></div>
+        <input type="hidden" id="editId">
+
+        <div class="form-group">
+          <label class="form-label">اسم الدفعة *</label>
+          <div class="input-wrapper"><i class="input-icon ri-text"></i>
+            <input class="form-control" type="text" id="batchName" placeholder="مثال: الدفعة 2024">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">رمز الدفعة (كود فريد) *</label>
+          <div class="input-wrapper"><i class="input-icon ri-barcode-box-line"></i>
+            <input class="form-control" type="text" id="batchCode" placeholder="مثال: B24">
+          </div>
+          <small style="color:var(--text-muted); display:block; margin-top:4px;">يرجى كتابة رمز مميز للدفعة لسهولة التعرف عليها</small>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">كود الدعوة للتسجيل الذاتي (Invite Code)</label>
+          <div class="input-wrapper"><i class="input-icon ri-key-2-line"></i>
+            <input class="form-control" type="text" id="batchInviteCode" placeholder="مثال: IT2026 أو B24">
+          </div>
+          <small style="color:var(--text-muted); display:block; margin-top:4px;">أي طالب يدخل هذا الكود في صفحة التسجيل سينضم لهذه الدفعة تلقائياً</small>
+        </div>
+
+        <div class="form-group" id="statusGroup" style="display:none;">
+          <label class="form-label">حالة الدفعة</label>
+          <select class="form-control" id="batchStatus">
+            <option value="active">نشط (مفتوح)</option>
+            <option value="archived">مؤرشف (مغلق)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">تحديد اللون التعريفي</label>
+          <div class="color-picker" id="colorPicker">
+            <!-- Colors generated by JS -->
+          </div>
+          <input type="hidden" id="batchColor" value="#6366f1">
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="CBS.closeModal('batchModal')">إلغاء</button>
+        <button class="btn btn-primary" id="saveBtn" onclick="saveBatch()">
+          <i class="ri-save-line"></i> حفظ الدفعة
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <div id="toast-container"></div>
+
+  <script src="/js/app.js?v=2026073125"></script>
+  <script src="/js/socket-client.js?v=2026073125" defer></script>
+  <script>
+    CBS.init({ requireRoles: ['dean', 'leader', 'admin'] });
+    const user = CBS.getUser();
+
+    const PALETTE = [
+      '#6366f1', // Indigo
+      '#3b82f6', // Blue
+      '#10b981', // Emerald
+      '#8b5cf6', // Violet
+      '#ec4899', // Pink
+      '#f59e0b', // Amber
+      '#ef4444', // Red
+      '#0ea5e9', // Sky
+      '#14b8a6', // Teal
+      '#f97316'  // Orange
+    ];
+
+    let batches = [];
+
+    function renderColorPicker(selectedColor = '#6366f1') {
+      const container = document.getElementById('colorPicker');
+      document.getElementById('batchColor').value = selectedColor;
+
+      container.innerHTML = PALETTE.map(color => `
+      <div class="color-option ${color === selectedColor ? 'selected' : ''}" 
+           style="background-color: ${color}"
+           onclick="selectColor('${color}')"></div>
+    `).join('');
+    }
+
+    function selectColor(color) {
+      document.getElementById('batchColor').value = color;
+      renderColorPicker(color);
+    }
+
+    async function loadBatches() {
+      document.getElementById('loading').style.display = 'block';
+      document.getElementById('batchesGrid').innerHTML = '';
+
+      try {
+        const res = await CBS.apiGet('/api/batches');
+        const data = await CBS.readJson(res);
+        batches = Array.isArray(data) ? data : (data.batches || []);
+        renderBatches();
+      } catch (e) {
+        CBS.showAlert('alertMsg', 'خطأ أثناء الاتصال بالخادم', 'error');
+      } finally {
+        document.getElementById('loading').style.display = 'none';
+      }
+    }
+
+    function renderBatches() {
+      const grid = document.getElementById('batchesGrid');
+      if (batches.length === 0) {
+        grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--text-muted);">لا توجد دفعات مسجلة حالياً</div>`;
+        return;
+      }
+
+      grid.innerHTML = batches.map(b => `
+      <div class="batch-item" style="--item-color: ${b.themeColor}">
+        <div class="batch-title">${CBS.escapeHTML(b.name)}</div>
+        <div class="batch-code"><i class="ri-barcode-box-line"></i> الرمز: ${CBS.escapeHTML(b.code)}</div>
+        <div class="batch-code" style="color: #38bdf8; font-size: 0.78rem; margin-top: 2px;"><i class="ri-key-2-line"></i> كود الدعوة: <b>${CBS.escapeHTML(b.inviteCode || b.code)}</b></div>
+        
+        <div class="batch-status ${b.status === 'active' ? 'status-active' : 'status-archived'}" style="margin-top: 6px;">
+          <i class="ri-checkbox-circle-fill"></i> ${b.status === 'active' ? 'نشط' : 'مؤرشف'}
+        </div>
+        
+        <div class="batch-acts">
+          <button class="btn btn-secondary" onclick="openEditModal('${b._id}')"><i class="ri-pencil-line"></i> تعديل</button>
+          <a href="/dashboard.html?batch=${b._id}" class="btn" style="background:var(--bg-main);" onclick="CBS.toast('جاري فتح لوحة تحكم الدفعة...')">لوحة التحكم</a>
+        </div>
+      </div>
+    `).join('');
+    }
+
+    function openAddModal() {
+      document.getElementById('modalTitle').textContent = 'إضافة دفعة جديدة';
+      document.getElementById('editId').value = '';
+      document.getElementById('batchName').value = '';
+      document.getElementById('batchCode').value = '';
+      document.getElementById('batchInviteCode').value = '';
+      document.getElementById('statusGroup').style.display = 'none';
+
+      // Pick random color from palette
+      const randomColor = PALETTE[Math.floor(Math.random() * PALETTE.length)];
+      renderColorPicker(randomColor);
+
+      CBS.hideAlert('modalAlert');
+      CBS.openModal('batchModal');
+    }
+
+    function openEditModal(id) {
+      const batch = batches.find(b => b._id === id);
+      if (!batch) return;
+
+      document.getElementById('modalTitle').textContent = 'تعديل بيانات الدفعة';
+      document.getElementById('editId').value = batch._id;
+      document.getElementById('batchName').value = batch.name;
+      document.getElementById('batchCode').value = batch.code;
+      document.getElementById('batchInviteCode').value = batch.inviteCode || '';
+
+      document.getElementById('statusGroup').style.display = 'block';
+      document.getElementById('batchStatus').value = batch.status;
+
+      renderColorPicker(batch.themeColor);
+
+      CBS.hideAlert('modalAlert');
+      CBS.openModal('batchModal');
+    }
+
+    async function saveBatch() {
+      const id = document.getElementById('editId').value;
+      const name = document.getElementById('batchName').value.trim();
+      const code = document.getElementById('batchCode').value.trim();
+      const inviteCode = document.getElementById('batchInviteCode').value.trim();
+      const themeColor = document.getElementById('batchColor').value;
+      const status = document.getElementById('batchStatus').value;
+
+      if (!name || !code) {
+        CBS.showAlert('modalAlert', 'اسم الدفعة والكود حقول مطلوبة', 'error');
+        return;
+      }
+
+      const payload = { name, code, inviteCode, themeColor, status: id ? status : 'active' };
+      const method = id ? 'PUT' : 'POST';
+      const url = id ? `/api/batches/${id}` : '/api/batches';
+
+      document.getElementById('saveBtn').disabled = true;
+      try {
+        const res = await CBS.apiPost(url, payload, method);
+        const data = await CBS.readJson(res);
+
+        if (!data.success) throw new Error(data.message);
+
+        CBS.toast(id ? 'تم تعديل البيانات بنجاح' : 'تم إضافة الدفعة بنجاح', '', 'success');
+        CBS.closeModal('batchModal');
+        loadBatches();
+      } catch (e) {
+        CBS.showAlert('modalAlert', e.message || 'حدث خطأ غير متوقع', 'error');
+      } finally {
+        document.getElementById('saveBtn').disabled = false;
+      }
+    }
+
+    // Load on start
+    loadBatches();
+  </script>
+</body>
+
+</html>

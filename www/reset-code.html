@@ -1,0 +1,148 @@
+﻿﻿﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>التحقق من الكود | كلية تقنية المعلومات</title>
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css?v=2026073125">
+  <style>
+    body { display:flex; flex-direction:column; align-items:center; justify-content:center; min-height:100vh; background:linear-gradient(135deg,#0d3b66,#1e6091); }
+    .auth-card { background:var(--bg-card); border-radius:var(--radius-xl); box-shadow:var(--shadow-xl); width:90%; max-width:440px; padding:40px; text-align:center; }
+    .auth-logo { width:64px; height:64px; border-radius:50%; background:var(--primary-light); display:flex; align-items:center; justify-content:center; margin:0 auto 18px; }
+    .auth-logo img { width:46px; height:46px; object-fit:contain; }
+    .auth-title { font-size:1.3rem; font-weight:800; color:var(--text-main); margin-bottom:6px; }
+    .auth-sub { font-size:0.85rem; color:var(--text-muted); margin-bottom:24px; line-height:1.5; }
+    .code-inputs { display:flex; justify-content:center; gap:10px; margin:20px 0; }
+    .code-box {
+      width:50px; height:58px;
+      text-align:center; font-size:1.4rem; font-weight:700;
+      border:2px solid var(--border); border-radius:var(--radius-md);
+      background:var(--bg-input); color:var(--text-main);
+      font-family:'Cairo',sans-serif; outline:none; transition:var(--transition);
+    }
+    .code-box:focus { border-color:var(--primary); box-shadow:0 0 0 4px var(--primary-light); }
+    .countdown { font-size:0.8rem; color:var(--text-muted); margin:8px 0; }
+    .resend-link { font-size:0.85rem; color:var(--primary); cursor:pointer; margin-top:10px; display:inline-block; }
+    .resend-link.off { color:var(--text-muted); cursor:default; }
+    .footer-note { margin-top:24px; font-size:0.78rem; color:rgba(255,255,255,0.6); }
+  </style>
+
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+</head>
+<body>
+
+<div class="auth-card">
+  <div class="auth-logo"><img src="/assets/logo.png" alt="Logo"></div>
+  <div class="auth-title">أدخل كود التحقق</div>
+  <div class="auth-sub">تم إرسال كود من 6 أرقام إلى بريدك الإلكتروني<br>الكود صالح لمدة 20 دقيقة</div>
+
+  <div id="alertMsg" class="alert"></div>
+
+  <div class="code-inputs" id="codeInputs">
+    <input class="code-box" type="text" maxlength="1" inputmode="numeric">
+    <input class="code-box" type="text" maxlength="1" inputmode="numeric">
+    <input class="code-box" type="text" maxlength="1" inputmode="numeric">
+    <input class="code-box" type="text" maxlength="1" inputmode="numeric">
+    <input class="code-box" type="text" maxlength="1" inputmode="numeric">
+    <input class="code-box" type="text" maxlength="1" inputmode="numeric">
+  </div>
+
+  <button class="btn btn-primary" id="verifyBtn" onclick="verifyCode()" style="width:100%;" disabled>
+    <span class="spinner" id="spinner" style="display:none;"></span>
+    <span id="btnText">التحقق من الكود</span>
+  </button>
+
+  <div class="countdown" id="countdown"></div>
+  <div>
+    <span class="resend-link" id="resendLink" onclick="resendCode()">إعادة إرسال الكود</span>
+  </div>
+
+  <div style="margin-top:16px;">
+    <a href="/forgot-password.html" class="btn btn-ghost" style="width:100%;">
+      <i class="ri-home-4-line"></i> العودة للخطوة السابقة
+    </a>
+  </div>
+</div>
+
+<div class="footer-note">جميع الحقوق محفوظة © <span id="year"></span> النظام الجامعي المتكامل</div>
+
+<script src="/js/app.js?v=2026073125"></script>
+<script>
+  CBS.setYear(); CBS.initDarkMode();
+
+  const params = new URLSearchParams(location.search);
+  const email  = params.get('email');
+  if (!email) location.href = '/forgot-password.html';
+
+  const boxes = document.querySelectorAll('.code-box');
+  let canResend = true, resendTimer;
+
+  boxes.forEach((box, i) => {
+    box.addEventListener('input', e => {
+      e.target.value = e.target.value.replace(/\D/g, '');
+      if (e.target.value && i < boxes.length - 1) boxes[i+1].focus();
+      document.getElementById('verifyBtn').disabled = !Array.from(boxes).every(b => b.value);
+    });
+    box.addEventListener('keydown', e => {
+      if (e.key === 'Backspace' && !e.target.value && i > 0) boxes[i-1].focus();
+    });
+  });
+
+  async function verifyCode() {
+    const code = Array.from(boxes).map(b => b.value).join('');
+    CBS.hideAlert('alertMsg');
+    if (code.length !== 6) return;
+
+    const btn = document.getElementById('verifyBtn');
+    btn.disabled = true;
+    document.getElementById('spinner').style.display = 'block';
+    document.getElementById('btnText').textContent = 'جاري التحقق...';
+
+    try {
+      const res  = await fetch(API_BASE + '/api/auth/verify-reset-code', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email,code}) });
+      const data = await res.json();
+      btn.disabled = false;
+      document.getElementById('spinner').style.display = 'none';
+      document.getElementById('btnText').textContent = 'التحقق من الكود';
+
+      if (!res.ok) { CBS.showAlert('alertMsg', data.message || 'الكود غير صحيح', 'danger'); return; }
+      CBS.showAlert('alertMsg', 'تم التحقق بنجاح! جاري التحويل...', 'success');
+      setTimeout(() => { location.href = `/new-password.html?tempToken=${encodeURIComponent(data.tempToken)}`; }, 1500);
+    } catch {
+      btn.disabled = false;
+      document.getElementById('spinner').style.display = 'none';
+      document.getElementById('btnText').textContent = 'التحقق من الكود';
+      CBS.showAlert('alertMsg', 'خطأ في الاتصال بالخادم', 'danger');
+    }
+  }
+
+  async function resendCode() {
+    if (!canResend) return;
+    try {
+      const res  = await fetch(API_BASE + '/api/auth/resend-reset-code', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({email}) });
+      const data = await res.json();
+      if (!res.ok) { CBS.showAlert('alertMsg', data.message || 'حدث خطأ', 'warning'); startCountdown(); return; }
+      CBS.showAlert('alertMsg', 'تم إرسال الكود بنجاح', 'success');
+      startCountdown();
+    } catch { CBS.showAlert('alertMsg', 'خطأ في الاتصال', 'danger'); }
+  }
+
+  function startCountdown() {
+    canResend = false; let s = 30;
+    const link = document.getElementById('resendLink');
+    const cd   = document.getElementById('countdown');
+    link.classList.add('off');
+    clearInterval(resendTimer);
+    resendTimer = setInterval(() => {
+      cd.textContent = `يمكنك الإرسال بعد ${s} ثانية`;
+      if (--s < 0) { clearInterval(resendTimer); canResend = true; link.classList.remove('off'); cd.textContent = ''; }
+    }, 1000);
+  }
+</script>
+</body>
+</html>
+
+

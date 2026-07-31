@@ -1,0 +1,968 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0d3b66">
+  <link rel="manifest" href="/manifest.json">
+  <title>حسابي | كلية تقنية المعلومات</title>
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css?v=2026073125">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026073125">
+  <style>
+    /* ── Profile Hero ── */
+    .profile-hero {
+      background: linear-gradient(135deg, #0d3b66 0%, #1a5c9a 50%, #2176c7 100%);
+      border-radius: 20px;
+      padding: 36px 20px 28px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 20px;
+      box-shadow: 0 8px 32px rgba(13, 59, 102, 0.35);
+    }
+    .profile-hero::before {
+      content: '';
+      position: absolute;
+      top: -40px; right: -40px;
+      width: 160px; height: 160px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.06);
+    }
+    .profile-hero::after {
+      content: '';
+      position: absolute;
+      bottom: -30px; left: -20px;
+      width: 120px; height: 120px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.04);
+    }
+    .profile-avatar {
+      width: 88px;
+      height: 88px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, #f59e0b, #ef4444);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.2rem;
+      font-weight: 800;
+      color: #fff;
+      border: 4px solid rgba(255,255,255,0.35);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+      position: relative;
+      z-index: 1;
+      flex-shrink: 0;
+    }
+    .profile-avatar-online {
+      position: absolute;
+      bottom: 6px;
+      left: 6px;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: #22c55e;
+      border: 2.5px solid #fff;
+    }
+    .profile-hero-name {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #fff;
+      text-align: center;
+      position: relative;
+      z-index: 1;
+      line-height: 1.3;
+    }
+    .profile-hero-email {
+      font-size: 0.82rem;
+      color: rgba(255,255,255,0.72);
+      text-align: center;
+      position: relative;
+      z-index: 1;
+    }
+    .profile-role-badge {
+      padding: 5px 16px;
+      border-radius: 20px;
+      background: rgba(255,255,255,0.18);
+      color: #fff;
+      font-size: 0.8rem;
+      font-weight: 600;
+      backdrop-filter: blur(6px);
+      border: 1px solid rgba(255,255,255,0.25);
+      position: relative;
+      z-index: 1;
+      letter-spacing: 0.4px;
+    }
+    /* ── Info Cards ── */
+    .profile-card {
+      background: var(--bg-card, #fff);
+      border: 1px solid var(--border, #e5e7eb);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+      transition: box-shadow 0.2s;
+    }
+    .profile-card:hover { box-shadow: 0 4px 24px rgba(0,0,0,0.10); }
+    .profile-card-header {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border, #e5e7eb);
+    }
+    .profile-card-icon {
+      width: 38px;
+      height: 38px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--primary, #0d3b66), #2176c7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 1.1rem;
+      flex-shrink: 0;
+    }
+    .profile-card-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: var(--text-primary, #1a1a2e);
+    }
+    .profile-field {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 0;
+      border-bottom: 1px solid var(--border, #e5e7eb);
+    }
+    .profile-field:last-child { border-bottom: none; padding-bottom: 0; }
+    .profile-field:first-child { padding-top: 0; }
+    .profile-field-label {
+      font-size: 0.78rem;
+      color: var(--text-muted, #6b7280);
+      min-width: 90px;
+      flex-shrink: 0;
+    }
+    .profile-field-value {
+      font-size: 0.88rem;
+      font-weight: 600;
+      color: var(--text-primary, #1a1a2e);
+      flex: 1;
+    }
+    .profile-field i { color: var(--primary, #0d3b66); font-size: 1rem; flex-shrink: 0; }
+    /* ── Quick Actions ── */
+    .quick-actions-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 10px;
+      margin-bottom: 14px;
+    }
+    .quick-action-btn {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      padding: 16px 8px;
+      border-radius: 14px;
+      background: var(--bg-card, #fff);
+      border: 1px solid var(--border, #e5e7eb);
+      cursor: pointer;
+      transition: all 0.22s;
+      text-decoration: none;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .quick-action-btn:hover, .quick-action-btn:active {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(13,59,102,0.15);
+      border-color: var(--primary, #0d3b66);
+    }
+    .quick-action-btn i { font-size: 1.5rem; color: var(--primary, #0d3b66); }
+    .quick-action-btn span { font-size: 0.75rem; font-weight: 600; color: var(--text-primary, #1a1a2e); text-align: center; }
+    /* ── Logout Button ── */
+    .profile-logout-btn {
+      width: 100%;
+      padding: 15px;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #ef4444, #dc2626);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      border: none;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+      margin-top: 8px;
+      margin-bottom: 24px;
+      box-shadow: 0 4px 16px rgba(239,68,68,0.30);
+      transition: all 0.22s;
+      font-family: inherit;
+    }
+    .profile-logout-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(239,68,68,0.40);
+    }
+    .profile-logout-btn:active { transform: translateY(0); }
+    /* ── Section Label ── */
+    .profile-section-label {
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--text-muted, #6b7280);
+      text-transform: uppercase;
+      letter-spacing: 0.8px;
+      margin-bottom: 10px;
+      margin-top: 4px;
+      padding-right: 4px;
+    }
+    /* ── Batch Chip ── */
+    .batch-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: linear-gradient(135deg, rgba(13,59,102,0.1), rgba(33,118,199,0.1));
+      border: 1px solid rgba(13,59,102,0.2);
+      color: var(--primary, #0d3b66);
+      border-radius: 20px;
+      padding: 4px 12px;
+      font-size: 0.78rem;
+      font-weight: 600;
+    }
+    /* ── Dark Mode Overrides ── */
+    body.dark .profile-card, [data-theme="dark"] .profile-card,
+    body.dark .quick-action-btn, [data-theme="dark"] .quick-action-btn {
+      background: #1E293B !important;
+      border-color: rgba(255,255,255,0.08) !important;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.3) !important;
+    }
+    body.dark .quick-action-btn span, [data-theme="dark"] .quick-action-btn span,
+    body.dark .profile-card-title, [data-theme="dark"] .profile-card-title,
+    body.dark .profile-field-value, [data-theme="dark"] .profile-field-value {
+      color: #F8FAFC !important;
+    }
+    body.dark .profile-field-label, [data-theme="dark"] .profile-field-label,
+    body.dark .profile-section-label, [data-theme="dark"] .profile-section-label {
+      color: #94A3B8 !important;
+    }
+    body.dark .batch-chip, [data-theme="dark"] .batch-chip {
+      background: rgba(59, 130, 246, 0.15) !important;
+      border-color: rgba(59, 130, 246, 0.3) !important;
+      color: #60A5FA !important;
+    }
+  </style>
+
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <!-- إصدار مثبَّت v13 ليطابق @simplewebauthn/server على الخادم -->
+  <script src="/vendor/simplewebauthn.umd.min.js"></script>
+  <script src="/vendor/qrcode.min.js"></script>
+</head>
+<body>
+
+<header class="main-header">
+  <div class="header-brand">
+    <img src="/assets/logo.png" class="header-logo" alt="Logo">
+    <div class="header-title-group">
+      <strong>كلية تقنية المعلومات</strong>
+      <small>حسابي</small>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي">
+      <i class="ri-moon-line" id="themeIcon"></i>
+    </button>
+  </div>
+</header>
+
+<div class="page-content">
+
+  <!-- ── Hero / Avatar Card ── -->
+  <div class="profile-hero">
+    <div class="profile-avatar" id="profileAvatar" style="position:relative">
+      <span id="avatarInitial">؟</span>
+      <span class="profile-avatar-online"></span>
+    </div>
+    <div class="profile-hero-name" id="profileName">جاري التحميل...</div>
+    <div class="profile-hero-email" id="profileEmail"></div>
+    <div class="profile-role-badge" id="profileRoleBadge">—</div>
+  </div>
+
+  <!-- ── Digital Student ID Card ── -->
+  <div class="profile-section-label">بطاقة الهوية الأكاديمية الرقمية</div>
+  <div class="student-id-card" id="studentIdCard">
+    <div class="id-card-header">
+      <div class="id-card-brand">
+        <img src="/assets/logo.png" class="id-card-logo" alt="Logo">
+        <div class="id-card-title">
+          <strong>جامعة النصر التقنية</strong>
+          <small>كلية تقنية المعلومات</small>
+        </div>
+      </div>
+      <div class="id-card-badge" id="idCardRoleBadge">طالب</div>
+    </div>
+    <div class="id-card-body">
+      <div class="id-card-info">
+        <div class="id-card-name" id="idCardName">-</div>
+        <div class="id-card-meta"><i class="ri-user-star-line"></i> الرقم الجامعي: <span id="idCardStudentId">-</span></div>
+        <div class="id-card-meta"><i class="ri-mail-line"></i> البريد: <span id="idCardEmail">-</span></div>
+        <div class="id-card-meta"><i class="ri-group-line"></i> الدفعة: <span id="idCardBatch">-</span></div>
+      </div>
+      <div class="id-card-qr-box" title="رمز QR للتحقق الأكاديمي">
+        <!-- دقة الكانفاس أعلى من حجم العرض حتى تبقى وحدات الرمز حادة وقابلة للمسح -->
+        <canvas id="idCardQRCanvas" width="264" height="264" style="width:90px;height:90px;display:block;"></canvas>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── My Level Card ── -->
+  <div class="profile-section-label">مستواي</div>
+  <div class="profile-card">
+    <div class="profile-card-header">
+      <div class="profile-card-icon"><i class="ri-vip-crown-line"></i></div>
+      <div class="profile-card-title">نقاط الخبرة (XP)</div>
+    </div>
+    <div style="margin: 10px 0;">
+      <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
+        <span style="font-weight:700; color:var(--text-primary);">المستوى <span id="levelLabel">1</span></span>
+        <span style="font-size:0.85rem; color:var(--text-muted);"><span id="xpCount">0</span> / <span id="xpNext">100</span> XP</span>
+      </div>
+      <div style="height:10px; background:var(--border, #e5e7eb); border-radius:5px; overflow:hidden;">
+        <div id="xpProgress" style="height:100%; width:0%; background:linear-gradient(135deg, #f59e0b, #facc15); transition:width 0.5s ease-out;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Personal Info Card ── -->
+  <div class="profile-section-label">البيانات الشخصية</div>
+  <div class="profile-card">
+    <div class="profile-card-header">
+      <div class="profile-card-icon"><i class="ri-user-3-line"></i></div>
+      <div class="profile-card-title">معلومات الحساب</div>
+    </div>
+    <div class="profile-field">
+      <i class="ri-account-circle-line"></i>
+      <div class="profile-field-label">الاسم الكامل</div>
+      <div class="profile-field-value" id="infoName">—</div>
+    </div>
+    <div class="profile-field">
+      <i class="ri-mail-line"></i>
+      <div class="profile-field-label">البريد الإلكتروني</div>
+      <div class="profile-field-value" id="infoEmail">—</div>
+    </div>
+    <div class="profile-field">
+      <i class="ri-shield-user-line"></i>
+      <div class="profile-field-label">الصلاحية</div>
+      <div class="profile-field-value" id="infoRole">—</div>
+    </div>
+    <div class="profile-field">
+      <i class="ri-fingerprint-line"></i>
+      <div class="profile-field-label">المعرّف</div>
+      <div class="profile-field-value" id="infoId" style="font-size:0.75rem;word-break:break-all;color:var(--text-muted)">—</div>
+    </div>
+  </div>
+
+  <!-- ── Batch Info Card ── -->
+  <div class="profile-section-label">معلومات الدفعة</div>
+  <div class="profile-card">
+    <div class="profile-card-header">
+      <div class="profile-card-icon"><i class="ri-graduation-cap-line"></i></div>
+      <div class="profile-card-title">الدفعة الدراسية</div>
+    </div>
+    <div class="profile-field">
+      <i class="ri-layout-grid-line"></i>
+      <div class="profile-field-label">رقم الدفعة</div>
+      <div class="profile-field-value">
+        <span class="batch-chip">
+          <i class="ri-bookmark-line"></i>
+          <span id="batchLabel">غير محدد</span>
+        </span>
+      </div>
+    </div>
+    <div class="profile-field">
+      <i class="ri-calendar-event-line"></i>
+      <div class="profile-field-label">آخر دخول</div>
+      <div class="profile-field-value" id="infoLastSeen">—</div>
+    </div>
+  </div>
+
+  <!-- ── Quick Actions ── -->
+  <div class="profile-section-label">روابط سريعة</div>
+  <div class="quick-actions-grid">
+    <a class="quick-action-btn" id="qaBtnSubjects" href="/subjects.html">
+      <i class="ri-book-2-line"></i>
+      <span>المواد</span>
+    </a>
+    <a class="quick-action-btn" id="qaBtnAssignments" href="/assignments.html">
+      <i class="ri-task-line"></i>
+      <span>الواجبات</span>
+    </a>
+    <a class="quick-action-btn" id="qaBtnNotifications" href="/notifications.html">
+      <i class="ri-notification-3-line"></i>
+      <span>التنبيهات</span>
+    </a>
+    <a class="quick-action-btn" id="qaBtnFinancials" href="/financials.html">
+      <i class="ri-money-dollar-circle-line"></i>
+      <span>الرسوم</span>
+    </a>
+    <a class="quick-action-btn" id="qaBtnDashboard" href="/dashboard.html">
+      <i class="ri-home-5-line"></i>
+      <span>الرئيسية</span>
+    </a>
+    <a class="quick-action-btn" id="qaBtnLectures" href="/calendar.html">
+      <i class="ri-video-line"></i>
+      <span>المحاضرات</span>
+    </a>
+  </div>
+
+  <!-- ── Settings ── -->
+  <div class="profile-section-label">الإعدادات</div>
+  <div class="profile-card">
+    <div class="profile-field" style="justify-content: space-between; cursor: pointer;" onclick="toggleDarkModeUI()">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <i class="ri-moon-line"></i>
+        <div class="profile-field-label" style="font-size: 0.88rem; font-weight: 600; color: var(--text-primary);">الوضع الليلي</div>
+      </div>
+      <div>
+        <input type="checkbox" id="darkModeCheckbox" style="transform: scale(1.2); pointer-events: none;">
+      </div>
+    </div>
+    <div class="profile-field" style="justify-content: center; padding: 15px 0 0 0;">
+      <button id="setupBiometricBtn" onclick="setupBiometric()" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); padding: 10px 20px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 8px; width: 100%; justify-content: center;">
+        <i class="ri-fingerprint-line" style="font-size: 1.1rem; color: var(--primary);"></i> إعداد الدخول بالبصمة
+      </button>
+    </div>
+    <div class="profile-field" style="justify-content: center; padding: 15px 0;">
+      <button id="pushNotifBtn" onclick="enablePushNotifs()" style="background: var(--primary, #0d3b66); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 8px; width: 100%; justify-content: center;">
+        <i class="ri-notification-badge-line" style="color: #fff; font-size: 1.1rem;"></i> تفعيل إشعارات الدفع
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Logout ── -->
+  <button class="profile-logout-btn" id="logoutBtn" onclick="CBS.logout()">
+    <i class="ri-logout-box-r-line"></i>
+    تسجيل الخروج
+  </button>
+
+  <!-- ── Account Deletion (Google Play Compliance) ── -->
+  <button class="profile-logout-btn" id="deleteAccountBtn" onclick="requestAccountDeletion()" style="background: transparent; color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); box-shadow: none; margin-top: -10px; margin-bottom: 30px;">
+    <i class="ri-user-unfollow-line"></i>
+    طلب حذف الحساب
+  </button>
+
+</div>
+
+<div id="toast-container"></div>
+
+<footer class="main-footer">
+  جميع الحقوق محفوظة &copy; <span id="year"></span> النظام الجامعي المتكامل
+</footer>
+
+<script src="/js/app.js?v=2026073125"></script>
+<script src="/js/socket-client.js?v=2026073125" defer></script>
+<script>
+  CBS.init();
+
+  // Year
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  // Guard
+  const user = CBS.getUser();
+  if (!user || !user.roles) { location.href = '/index.html'; }
+
+  // Batch
+  const batchId = (typeof CBS.getBatchId === 'function' ? CBS.getBatchId() : null)
+                  || localStorage.getItem('cbs_active_batch_id');
+  const bp = batchId ? '?batch=' + batchId : '';
+
+  // XP Gamification Calculation
+  (async function() {
+    try {
+      let totalXP = 0;
+      const user = CBS.getUser();
+      const isStudentOrLeader = user && user.roles && (user.roles.includes('student') || user.roles.includes('leader'));
+      
+      if (isStudentOrLeader) {
+        const assignRes = await CBS.apiGet('/api/submissions/my-submissions').catch(() => null);
+        if (assignRes && assignRes.ok) {
+          const assignJson = await assignRes.json();
+          const assignments = assignJson.data?.submissions || assignJson.submissions || (Array.isArray(assignJson) ? assignJson : []);
+          const completed = assignments.filter(a => a && (a.status === 'reviewed' || a.status === 'graded')).length;
+          totalXP += completed * 50;
+        }
+        
+        const attendRes = await CBS.apiGet('/api/attendance/history').catch(() => null);
+        if (attendRes && attendRes.ok) {
+          const attendJson = await attendRes.json();
+          const attendance = attendJson.data || attendJson.history || (Array.isArray(attendJson) ? attendJson : []);
+          const present = attendance.filter(a => a && a.status === 'present').length;
+          totalXP += present * 10;
+        }
+      }
+      
+      const level = Math.floor(totalXP / 100) + 1;
+      const currentLevelXP = totalXP % 100;
+      
+      document.getElementById('xpCount').textContent = totalXP;
+      document.getElementById('levelLabel').textContent = level;
+      document.getElementById('xpNext').textContent = (level * 100);
+      document.getElementById('xpProgress').style.width = currentLevelXP + '%';
+    } catch(e) {
+      console.warn("Failed to load XP", e);
+    }
+  })();
+
+  // Hero
+  const name = user.name || user.username || 'مستخدم';
+  const initial = name.trim().charAt(0);
+  document.getElementById('avatarInitial').textContent = initial;
+  document.getElementById('profileName').textContent = name;
+  document.getElementById('profileEmail').textContent = user.email || '';
+
+  // Role label
+  let roleLabel = '—';
+  if (typeof CBS.roleLabel === 'function') {
+    roleLabel = CBS.roleLabel(user.roles && user.roles[0] ? user.roles[0] : '');
+  } else {
+    const roleMap = { student:'طالب', doctor:'دكتور', dean:'عميد', leader:'قائد مجموعة' };
+    roleLabel = roleMap[user.roles && user.roles[0]] || (user.roles && user.roles[0]) || 'مستخدم';
+  }
+  document.getElementById('profileRoleBadge').textContent = roleLabel;
+
+  // Digital Student ID Card Population & QR Code Generation
+  document.getElementById('idCardName').textContent = name;
+  document.getElementById('idCardEmail').textContent = user.email || '—';
+  document.getElementById('idCardStudentId').textContent = user.studentId || (user._id ? user._id.substring(0, 10) : '—');
+  document.getElementById('idCardRoleBadge').textContent = roleLabel;
+  document.getElementById('idCardBatch').textContent = '...';
+
+  const qrPayload = JSON.stringify({
+    sys: 'CBS_IT_COLLEGE',
+    uid: user._id || user.id,
+    name: name,
+    email: user.email,
+    role: user.roles ? user.roles[0] : 'student'
+  });
+  if (typeof CBS.renderQRCode === 'function') {
+    CBS.renderQRCode('idCardQRCanvas', qrPayload);
+  }
+
+  // Info fields
+  document.getElementById('infoName').textContent  = name;
+  document.getElementById('infoEmail').textContent = user.email || '—';
+  document.getElementById('infoRole').textContent  = roleLabel;
+  document.getElementById('infoId').textContent    = user._id || user.id || '—';
+
+  // Batch — جلب الاسم الحقيقي من API
+  (async function loadBatchName() {
+    let batchName = null;
+    try {
+      // محاولة 1: user.batch كـ object مع name (يحدث إذا كان السيرفر populate البيانات)
+      if (user.batch && typeof user.batch === 'object' && user.batch.name) {
+        batchName = user.batch.name;
+      }
+
+      // محاولة 2: batchId من localStorage → جلب من API
+      if (!batchName && batchId) {
+        const res = await CBS.apiGet('/api/batches/' + batchId).catch(() => null);
+        if (res && res.ok) {
+          const data = await res.json();
+          const b = data.batch || data.data?.batch || data;
+          if (b && b.name) batchName = b.name;
+        }
+      }
+
+      // محاولة 3: user.batch كـ string (ObjectId) → جلب من API
+      if (!batchName && user.batch && typeof user.batch === 'string') {
+        const res = await CBS.apiGet('/api/batches/' + user.batch).catch(() => null);
+        if (res && res.ok) {
+          const data = await res.json();
+          const b = data.batch || data.data?.batch || data;
+          if (b && b.name) batchName = b.name;
+        }
+      }
+
+      // محاولة 4: جلب قائمة الدفعات كلها والمقارنة
+      if (!batchName) {
+        const searchId = batchId || (typeof user.batch === 'string' ? user.batch : null);
+        if (searchId) {
+          const listRes = await CBS.apiGet('/api/batches').catch(() => null);
+          if (listRes && listRes.ok) {
+            const listData = await listRes.json();
+            const batches = listData.batches || listData.data?.batches || (Array.isArray(listData) ? listData : []);
+            const found = batches.find(b => (b._id || b.id) === searchId);
+            if (found) batchName = found.name || found.batchName;
+          }
+        }
+      }
+    } catch(e) { /* silent */ }
+
+    const displayName = batchName || 'غير محدد';
+    document.getElementById('idCardBatch').textContent = displayName;
+    document.getElementById('batchLabel').textContent  = displayName;
+  })();
+
+  document.getElementById('infoLastSeen').textContent =
+    user.lastLogin
+      ? new Date(user.lastLogin).toLocaleDateString('ar-EG', { year:'numeric', month:'long', day:'numeric' })
+      : 'غير متاح';
+
+  // Role-based Quick Actions filtering
+
+  const primaryRole = typeof CBS.getPrimaryRole === 'function' ? CBS.getPrimaryRole(user) : (user.roles && user.roles[0]);
+  const isDoctorUser = primaryRole === 'doctor' || (user.roles && user.roles.includes('doctor') && !user.roles.includes('dean'));
+  const isDeanUser = primaryRole === 'dean' || (user.roles && user.roles.includes('dean'));
+
+  const isLeaderUser = primaryRole === 'leader' || (user.roles && user.roles.includes('leader') && !user.roles.includes('dean') && !user.roles.includes('doctor'));
+
+  const quickGrid = document.querySelector('.quick-actions-grid');
+  if (quickGrid) {
+    if (isDoctorUser) {
+      quickGrid.innerHTML = `
+        <a class="quick-action-btn" id="qaBtnDashboard" href="/dashboard.html">
+          <i class="ri-home-5-line"></i>
+          <span>الرئيسية</span>
+        </a>
+        <a class="quick-action-btn" id="qaBtnSubjects" href="/subjects.html">
+          <i class="ri-book-2-line"></i>
+          <span>المواد</span>
+        </a>
+        <a class="quick-action-btn" id="qaBtnLectures" href="/manage-lectures.html">
+          <i class="ri-video-line"></i>
+          <span>المحاضرات</span>
+        </a>
+        <a class="quick-action-btn" id="qaBtnSubmissions" href="/manage-submissions.html">
+          <i class="ri-stack-line"></i>
+          <span>التسليمات</span>
+        </a>
+        <a class="quick-action-btn" id="qaBtnNotifications" href="/manage-notifications.html">
+          <i class="ri-megaphone-line"></i>
+          <span>الإشعارات</span>
+        </a>
+        <a class="quick-action-btn" id="qaBtnStudio" href="/creator-studio.html">
+          <i class="ri-magic-line"></i>
+          <span>الاستوديو</span>
+        </a>
+      `;
+    } else if (isLeaderUser) {
+      quickGrid.innerHTML = `
+        <a class="quick-action-btn" id="qaBtnDashboard" href="/dashboard.html">
+          <i class="ri-home-5-line"></i>
+          <span>الرئيسية</span>
+        </a>
+        <a class="quick-action-btn" id="qaBtnSubjects" href="/subjects.html">
+          <i class="ri-book-2-line"></i>
+          <span>المواد</span>
+        </a>
+        <a class="quick-action-btn" id="qaBtnQuizzes" href="/quizzes.html">
+          <i class="ri-question-answer-line"></i>
+          <span>الاختبارات</span>
+        </a>
+        <a class="quick-action-btn" id="qaBtnLectures" href="/manage-lectures.html">
+          <i class="ri-video-line"></i>
+          <span>المحاضرات</span>
+        </a>
+        <a class="quick-action-btn" id="qaBtnAttendance" href="/manage-attendance.html">
+          <i class="ri-calendar-check-line"></i>
+          <span>الحضور</span>
+        </a>
+        <a class="quick-action-btn" id="qaBtnNotifications" href="/manage-notifications.html">
+          <i class="ri-megaphone-line"></i>
+          <span>الإشعارات</span>
+        </a>
+      `;
+    } else if (isDeanUser) {
+      const qaBtnFinancials = document.getElementById('qaBtnFinancials');
+      if (qaBtnFinancials && qaBtnFinancials.querySelector('span')) {
+        qaBtnFinancials.querySelector('span').textContent = 'إدارة الخزينة';
+      }
+    }
+  }
+
+  // Attach batch param to quick-action links
+  if (batchId) {
+    ['qaBtnSubjects','qaBtnAssignments','qaBtnNotifications','qaBtnFinancials','qaBtnDashboard','qaBtnLectures','qaBtnSubmissions','qaBtnStudio','qaBtnQuizzes','qaBtnAttendance'].forEach(function(id) {
+      var el = document.getElementById(id);
+      if (el) {
+        var href = el.getAttribute('href');
+        if (href && href !== '#' && !href.includes('batch=')) {
+          el.setAttribute('href', href + bp);
+        }
+      }
+    });
+  }
+
+  // Avatar gradient (name-hash-based)
+  var gradients = [
+    'linear-gradient(135deg,#f59e0b,#ef4444)',
+    'linear-gradient(135deg,#7c3aed,#4f46e5)',
+    'linear-gradient(135deg,#0ea5e9,#0d3b66)',
+    'linear-gradient(135deg,#10b981,#065f46)',
+    'linear-gradient(135deg,#f43f5e,#9f1239)',
+    'linear-gradient(135deg,#8b5cf6,#ec4899)',
+  ];
+  var nameHash = name.split('').reduce(function(acc, c){ return acc + c.charCodeAt(0); }, 0);
+  document.getElementById('profileAvatar').style.background = gradients[nameHash % gradients.length];
+
+  // Feature 4: Dark Mode Toggle Logic
+  function toggleDarkModeUI() {
+    if (typeof CBS !== 'undefined' && CBS.toggleDark) {
+      CBS.toggleDark();
+    }
+    document.getElementById('darkModeCheckbox').checked = document.body.classList.contains('dark');
+  }
+  if (localStorage.getItem('darkMode') === 'true') {
+    document.getElementById('darkModeCheckbox').checked = true;
+  }
+
+  // Feature 5: Push Notifications Logic
+  async function enablePushNotifs() {
+    const isNative = !!(window.Capacitor?.isNativePlatform?.());
+    if (isNative) {
+      if (window.Capacitor?.Plugins?.PushNotifications) {
+        try {
+          let status = await window.Capacitor.Plugins.PushNotifications.checkPermissions();
+          if (status.receive !== 'granted') {
+            status = await window.Capacitor.Plugins.PushNotifications.requestPermissions();
+          }
+          if (status.receive === 'granted') {
+            await window.Capacitor.Plugins.PushNotifications.register();
+          }
+        } catch(e) {
+          console.warn('Native Push Notifications register error', e);
+        }
+      }
+      if (window.CBS && window.CBS.toast) CBS.toast('تم تفعيل إذن الإشعارات بنجاح داخل التطبيق', '', 'success');
+      
+      const btn = document.getElementById('pushNotifBtn');
+      if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.style.cursor = 'default';
+        btn.innerHTML = '<i class="ri-check-line" style="color: #fff; font-size: 1.1rem;"></i> مفعلة';
+      }
+      return;
+    }
+
+    if (!('Notification' in window)) {
+      if (window.CBS && window.CBS.toast) CBS.toast('إشعارات الدفع غير مدعومة في هذا المتصفح', '', 'error');
+      else alert('إشعارات الدفع غير مدعومة في هذا المتصفح');
+      return;
+    }
+    // اشتراك فعلي في Web Push (يطلب الإذن داخلياً ويحفظ الاشتراك في الخادم)
+    const ok = await CBS.enableWebPush();
+    if (ok) {
+      CBS.toast('تم التفعيل', 'ستصلك الإشعارات الآن حتى والتطبيق مغلق.', 'success');
+      const btn = document.getElementById('pushNotifBtn');
+      if (btn) {
+        btn.disabled = true;
+        btn.style.opacity = '0.6';
+        btn.style.cursor = 'default';
+        btn.innerHTML = '<i class="ri-check-line" style="color: #fff; font-size: 1.1rem;"></i> مفعلة';
+      }
+    } else if (Notification.permission === 'denied') {
+      CBS.toast('مرفوضة', 'الإشعارات محظورة من إعدادات المتصفح. فعّلها من إعدادات الموقع.', 'error');
+    } else {
+      // على iOS يجب تثبيت التطبيق للشاشة الرئيسية أولاً حتى تعمل الإشعارات
+      const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      const standalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
+      if (isIOS && !standalone) {
+        CBS.toast('خطوة مطلوبة', 'أضف التطبيق إلى الشاشة الرئيسية أولاً (زر المشاركة ← إضافة إلى الشاشة الرئيسية)، ثم فعّل الإشعارات.', 'info', 8000);
+      } else {
+        CBS.toast('تعذّر التفعيل', 'الإشعارات غير متاحة على هذا الجهاز حالياً.', 'error');
+      }
+    }
+  }
+
+  if (('Notification' in window && Notification.permission === 'granted') || !!(window.Capacitor?.isNativePlatform?.())) {
+    const btn = document.getElementById('pushNotifBtn');
+    if (btn) {
+      btn.disabled = true;
+      btn.style.opacity = '0.6';
+      btn.style.cursor = 'default';
+      btn.innerHTML = '<i class="ri-check-line" style="color: #fff; font-size: 1.1rem;"></i> مفعلة';
+    }
+  }
+
+  // Feature 6: Biometric Setup Logic
+  async function setupBiometric() {
+    const btn = document.getElementById('setupBiometricBtn');
+    const originalText = btn.innerHTML;
+
+    try {
+      const isNative = !!(window.Capacitor?.isNativePlatform?.());
+      const nativeBio = isNative ? (window.Capacitor?.Plugins?.NativeBiometric || window.CapacitorCustomPlugins?.NativeBiometric || window.NativeBiometric) : null;
+
+      if (nativeBio) {
+        const isAvailable = await nativeBio.isAvailable();
+        if(!isAvailable.isAvailable) throw new Error('مستشعر البصمة غير متوفر أو غير مفعّل في إعدادات هاتف الخاص بك');
+
+        // The native plugin protects credentials with the device biometric.
+        // Build a custom prompt to avoid window.prompt blocking the webview.
+        const password = await new Promise(resolve => {
+          const div = document.createElement('div');
+          div.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);backdrop-filter:blur(3px);z-index:9999;display:flex;align-items:center;justify-content:center;';
+          div.innerHTML = `
+            <div style="background:var(--bg-card, #fff);padding:24px;border-radius:16px;width:85%;max-width:350px;text-align:center;box-shadow:0 10px 25px rgba(0,0,0,0.2);">
+              <h3 style="margin-bottom:10px;color:var(--text-primary, #333);font-size:1.2rem;">تأكيد الهوية</h3>
+              <p style="margin-bottom:15px;color:var(--text-secondary, #666);font-size:0.9rem;">أدخل كلمة المرور الخاصة بحسابك لتفعيل البصمة على هذا الجهاز.</p>
+              <input type="password" id="customPromptPass" style="width:100%;padding:12px;border:1px solid var(--border, #ccc);border-radius:8px;margin-bottom:20px;background:var(--bg-body, #fff);color:var(--text-primary, #333);" placeholder="كلمة المرور" />
+              <div style="display:flex;gap:10px;">
+                <button id="customPromptCancel" style="flex:1;padding:12px;border:none;background:var(--border, #e5e7eb);color:var(--text-primary, #333);border-radius:8px;font-weight:bold;">إلغاء</button>
+                <button id="customPromptOk" style="flex:1;padding:12px;border:none;background:var(--primary, #2563eb);color:#fff;border-radius:8px;font-weight:bold;">موافق</button>
+              </div>
+            </div>
+          `;
+          document.body.appendChild(div);
+          const passInput = document.getElementById('customPromptPass');
+          passInput.focus();
+          document.getElementById('customPromptCancel').onclick = () => { document.body.removeChild(div); resolve(null); };
+          document.getElementById('customPromptOk').onclick = () => { document.body.removeChild(div); resolve(passInput.value); };
+        });
+
+        if (password === null) return;
+        if (!password) throw new Error('كلمة المرور مطلوبة لتفعيل البصمة');
+
+        try {
+          await nativeBio.verifyIdentity({
+            reason: 'الرجاء تأكيد هويتك بالبصمة أو الوجه',
+            title: 'إعداد البصمة',
+          });
+        } catch(e) {
+          throw new Error('تم إلغاء عملية البصمة أو الفشل في قراءتها');
+        }
+
+        const resVerify = await CBS.apiPost('/api/auth/login', { email: user.email, password });
+        if (!resVerify.ok) throw new Error('كلمة المرور غير صحيحة');
+
+        const cleanEmail = user.email.toLowerCase().trim();
+        const safeAlias = 'cbs_' + cleanEmail.replace(/[^a-z0-9]/g, '');
+        await nativeBio.setCredentials({
+          username: cleanEmail,
+          password,
+          server: safeAlias
+        });
+        localStorage.setItem('biometricEnabled:' + cleanEmail, 'true');
+        localStorage.setItem('biometricEnabled:' + user.email, 'true');
+        btn.innerHTML = '<i class="ri-check-line" style="color: #10b981; font-size: 1.1rem;"></i> تم إعداد البصمة — اضغط لإعادة الإعداد';
+        btn.style.opacity = '0.85';
+        CBS.toast('نجاح', 'تم تفعيل الدخول بالبصمة لهذا الحساب على هذا الجهاز.', 'success');
+        return;
+      }
+
+      if (!window.SimpleWebAuthnBrowser) {
+        if (window.CBS && window.CBS.toast) CBS.toast('جهازك لا يدعم هذه الخاصية', '', 'error');
+        return;
+      }
+      
+      btn.innerHTML = '<div class="spinner spinner-dark" style="width:16px;height:16px;border-width:2px;border-top-color:#0d3b66"></div> جاري الإعداد...';
+      btn.disabled = true;
+
+      const { platformAuthenticatorIsAvailable, startRegistration } = SimpleWebAuthnBrowser;
+      
+      const isAvailable = await Promise.race([
+        platformAuthenticatorIsAvailable(),
+        new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
+      ]);
+
+      if (!isAvailable) {
+        throw new Error('جهازك أو متصفحك لا يدعم البصمة');
+      }
+
+      const resOptions = await CBS.apiGet('/api/auth/webauthn/register/generate');
+      if (!resOptions.ok) throw new Error('فشل توليد خيارات البصمة');
+      const options = await resOptions.json();
+
+      // v13 يتطلب { optionsJSON }؛ نحتفظ بالتوافق الخلفي مع الإصدارات الأقدم
+      let attResp;
+      try {
+        attResp = await startRegistration({ optionsJSON: options });
+      } catch (sigErr) {
+        if (sigErr instanceof TypeError || /optionsJSON|required/i.test(sigErr.message || '')) {
+          attResp = await startRegistration(options);
+        } else {
+          throw sigErr;
+        }
+      }
+      
+      const resVerify = await CBS.apiPost('/api/auth/webauthn/register/verify', attResp);
+      if (resVerify.ok) {
+        localStorage.setItem('biometricEnabled:' + user.email, 'true');
+        btn.innerHTML = '<i class="ri-check-line" style="color: #10b981; font-size: 1.1rem;"></i> تم إعداد البصمة بنجاح';
+        btn.style.opacity = '0.8';
+        if (window.CBS && window.CBS.toast) CBS.toast('نجاح', 'تم تفعيل الدخول السريع بالبصمة!', 'success');
+      } else {
+        throw new Error('فشل التحقق من الخادم');
+      }
+      
+    } catch (err) {
+      console.warn('Biometric setup failed or cancelled:', err);
+      const btn = document.getElementById('setupBiometricBtn');
+      if (btn) {
+        btn.innerHTML = originalText || '<i class="ri-fingerprint-line" style="font-size: 1.1rem; color: var(--primary);"></i> إعداد الدخول بالبصمة';
+        btn.disabled = false;
+      }
+      
+      if (window.CBS && window.CBS.toast) {
+        CBS.toast('تنبيه', err.message === 'جهازك أو متصفحك لا يدعم البصمة' ? err.message : 'تم إلغاء العملية أو فشل الإعداد', 'error');
+      }
+    }
+  }
+
+  (async () => {
+    if (localStorage.getItem('biometricEnabled:' + user.email) !== 'true') return;
+    const bBtn = document.getElementById('setupBiometricBtn');
+    if (!bBtn) return;
+
+    // على التطبيق: العلامة وحدها لا تكفي — نتأكد أن البيانات محفوظة فعلاً على الجهاز
+    const isNative = !!(window.Capacitor?.isNativePlatform?.());
+    const nativeBio = isNative ? (window.Capacitor?.Plugins?.NativeBiometric || window.CapacitorCustomPlugins?.NativeBiometric || window.NativeBiometric) : null;
+    if (nativeBio) {
+      const cleanEmail = user.email.toLowerCase().trim();
+      const safeAlias = 'cbs_' + cleanEmail.replace(/[^a-z0-9]/g, '');
+      try {
+        const cred = await nativeBio.getCredentials({ server: safeAlias });
+        if (!cred || !cred.password) throw new Error('empty');
+      } catch (e) {
+        // علامة قديمة وبيانات مفقودة — ننظفها ونترك الزر متاحاً لإعادة الإعداد
+        localStorage.removeItem('biometricEnabled:' + cleanEmail);
+        localStorage.removeItem('biometricEnabled:' + user.email);
+        return;
+      }
+    }
+    bBtn.innerHTML = '<i class="ri-check-line" style="color: #10b981; font-size: 1.1rem;"></i> تم إعداد البصمة — اضغط لإعادة الإعداد';
+    bBtn.style.opacity = '0.85';
+  })();
+
+  /* ===== طلب حذف الحساب (متطلب Google Play) =====
+     الزر كان موجوداً والدالة غير معرَّفة إطلاقاً، فلا يحدث شيء عند الضغط —
+     وهذا وحده كفيل برفض المراجعة لأن Google تتحقق من عمل مسار الحذف.
+     الخادم ينفّذ حذفاً ناعماً (تعطيل الحساب) عبر POST /api/users/request-deletion. */
+  async function requestAccountDeletion() {
+    const btn = document.getElementById('deleteAccountBtn');
+    if (!confirm('سيتم إرسال طلب حذف حسابك وتعطيله فوراً، ولن تتمكن من تسجيل الدخول بعدها.\n\nهل أنت متأكد؟')) return;
+    // تأكيد ثانٍ لأن الإجراء غير قابل للتراجع من داخل التطبيق
+    if (!confirm('تأكيد أخير: سيُعطَّل حسابك الآن. للاستعادة يلزم التواصل مع إدارة الكلية.')) return;
+
+    const original = btn ? btn.innerHTML : '';
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ri-loader-4-line"></i> جاري إرسال الطلب...'; }
+    try {
+      const res  = await CBS.apiPost('/api/users/request-deletion', {});
+      const data = await CBS.readJson(res, 'تعذر إرسال طلب الحذف');
+      CBS.toast('تم إرسال الطلب', data.message || 'تم تعطيل حسابك', 'success');
+      setTimeout(() => CBS.logout(false), 2500);
+    } catch (err) {
+      if (btn) { btn.disabled = false; btn.innerHTML = original; }
+      CBS.toast('تعذر إرسال الطلب', err.message || 'حاول مرة أخرى', 'error');
+    }
+  }
+</script>
+</body>
+</html>
+

@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <title>Google Play Assets Generator</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Al-Nasr CBS">
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <style>
+    body { font-family: sans-serif; padding: 40px; background: #f0f2f5; text-align: center; }
+    .card { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); max-width: 600px; margin: 0 auto; }
+    button { background: #00875a; color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 8px; cursor: pointer; margin-top: 20px; }
+    button:hover { background: #006644; }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <h2>أداة تجهيز صور متجر Google Play</h2>
+    <p>هذه الأداة صممتها لك خصيصاً لتقوم بتحويل الشعار الخاص بك إلى المقاسات الدقيقة التي يطلبها جوجل بلاي لتجنب رسالة "غير متوافقة".</p>
+    <p>المقاسات التي سيتم استخراجها:</p>
+    <ul style="text-align: right; display: inline-block;">
+      <li><b>رمز التطبيق (App Icon):</b> 512x512 بكسل</li>
+      <li><b>الرسم المميز (Feature Graphic):</b> 1024x500 بكسل</li>
+    </ul>
+    <br>
+    
+    <button onclick="generate()">تحميل الصور المطابقة لشروط جوجل</button>
+    <br><br>
+    <img id="sourceImage" src="/assets/logo.png" style="max-width: 150px; display:none;" crossorigin="anonymous">
+  </div>
+
+  <script>
+    function generate() {
+      const img = document.getElementById('sourceImage');
+      
+      // 1. App Icon (512x512)
+      const canvasIcon = document.createElement('canvas');
+      canvasIcon.width = 512;
+      canvasIcon.height = 512;
+      const ctxIcon = canvasIcon.getContext('2d');
+      // Draw background
+      ctxIcon.fillStyle = '#0f172a';
+      ctxIcon.fillRect(0, 0, 512, 512);
+      // Draw image in center
+      const iconSize = 380;
+      ctxIcon.drawImage(img, (512-iconSize)/2, (512-iconSize)/2, iconSize, iconSize);
+      
+      // 2. Feature Graphic (1024x500)
+      const canvasFeature = document.createElement('canvas');
+      canvasFeature.width = 1024;
+      canvasFeature.height = 500;
+      const ctxFeature = canvasFeature.getContext('2d');
+      // Draw background
+      ctxFeature.fillStyle = '#0f172a';
+      ctxFeature.fillRect(0, 0, 1024, 500);
+      // Draw some decorative background elements
+      ctxFeature.fillStyle = '#1e293b';
+      ctxFeature.beginPath(); ctxFeature.arc(1024, 250, 400, 0, Math.PI*2); ctxFeature.fill();
+      ctxFeature.beginPath(); ctxFeature.arc(0, 0, 200, 0, Math.PI*2); ctxFeature.fill();
+      
+      // Draw image
+      const fSize = 250;
+      ctxFeature.drawImage(img, (1024-fSize)/2, 60, fSize, fSize);
+      
+      // Add text
+      ctxFeature.fillStyle = '#ffffff';
+      ctxFeature.font = 'bold 48px sans-serif';
+      ctxFeature.textAlign = 'center';
+      ctxFeature.fillText('كلية النصر لتقنية المعلومات', 512, 380);
+      ctxFeature.font = '24px sans-serif';
+      ctxFeature.fillStyle = '#94a3b8';
+      ctxFeature.fillText('النظام الجامعي المتكامل', 512, 430);
+
+      // Trigger Downloads
+      downloadCanvas(canvasIcon, 'app-icon-512x512.png');
+      setTimeout(() => downloadCanvas(canvasFeature, 'feature-graphic-1024x500.png'), 500);
+    }
+
+    function downloadCanvas(canvas, filename) {
+      const link = document.createElement('a');
+      link.download = filename;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+    }
+  </script>
+</body>
+</html>

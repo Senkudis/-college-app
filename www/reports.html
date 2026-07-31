@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="theme-color" content="#0d3b66">
+  <link rel="manifest" href="/manifest.json">
+  <title>التقارير والإحصائيات</title>
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css?v=2026073125">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026073125">
+  <style>
+    html, body {
+      overflow-x: hidden;
+      width: 100%;
+    }
+    .reports-wrap {
+      max-width: 1100px;
+      width: 100%;
+      margin: auto;
+      padding: 24px 16px 105px;
+      box-sizing: border-box;
+      overflow-x: hidden;
+    }
+    .reports-hero {
+      padding: 24px;
+      border-radius: 22px;
+      color: #fff;
+      background: linear-gradient(125deg, #10b981, #059669, #047857);
+      box-shadow: 0 14px 35px rgba(16, 185, 129, 0.22);
+      margin-bottom: 22px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .reports-hero-text h1 { margin: 6px 0; font-size: clamp(1.4rem, 3vw, 2rem); font-weight: 900; }
+    .reports-hero-text p { margin: 0; color: #d1fae5; font-size: 0.9rem; }
+    
+    .export-btns {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .btn-export {
+      border: 1px solid rgba(255, 255, 255, 0.5);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+      font: inherit;
+      font-weight: 700;
+      padding: 10px 16px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      backdrop-filter: blur(6px);
+      transition: background 0.2s;
+    }
+    .btn-export:hover {
+      background: rgba(255, 255, 255, 0.35);
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 14px;
+      margin-bottom: 22px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .kpi-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px 12px;
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+      min-width: 0;
+      word-break: break-word;
+    }
+    .kpi-card i {
+      font-size: 1.8rem;
+      color: var(--primary);
+      margin-bottom: 8px;
+      display: block;
+    }
+    .kpi-value {
+      font-size: 1.6rem;
+      font-weight: 900;
+      color: var(--text-primary);
+      margin: 4px 0;
+    }
+    .kpi-label {
+      color: var(--text-muted);
+      font-size: 0.82rem;
+      font-weight: 600;
+    }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 15px;
+      margin-bottom: 22px;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .chart-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: var(--shadow-sm);
+      min-width: 0;
+      min-height: 0;
+      overflow: hidden;
+      width: 100%;
+      box-sizing: border-box;
+    }
+    .chart-wrapper {
+      position: relative;
+      height: 250px;
+      width: 100%;
+    }
+    .chart-container h3 {
+      margin-top: 0;
+      margin-bottom: 15px;
+      color: var(--text-primary);
+      font-size: 1rem;
+    }
+
+    .data-table-container {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      padding: 18px;
+      box-shadow: var(--shadow-sm);
+      width: 100%;
+      max-width: 100%;
+      box-sizing: border-box;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .data-table {
+      width: 100%;
+      border-collapse: collapse;
+      text-align: right;
+    }
+    .data-table th, .data-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      color: var(--text-primary);
+      font-size: 0.88rem;
+      word-break: break-word;
+      overflow-wrap: anywhere;
+    }
+    .data-table th {
+      font-weight: 700;
+      color: var(--text-muted);
+      background: var(--bg-input);
+      white-space: nowrap;
+    }
+    .data-table tr:last-child td {
+      border-bottom: none;
+    }
+    .cell-email {
+      direction: ltr;
+      text-align: right;
+      font-family: monospace;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      word-break: break-all;
+      overflow-wrap: anywhere;
+      max-width: 200px;
+    }
+    
+    @media (max-width: 900px) {
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 12px; }
+      .charts-grid { grid-template-columns: 1fr; }
+    }
+
+    @media (max-width: 600px) {
+      .reports-wrap { padding: 14px 12px 90px; }
+      .reports-hero {
+        padding: 18px 16px;
+        flex-direction: column;
+        align-items: stretch;
+        text-align: center;
+        gap: 14px;
+        border-radius: 18px;
+      }
+      .export-btns { width: 100%; justify-content: space-between; }
+      .btn-export { flex: 1; justify-content: center; font-size: 0.82rem; padding: 10px 8px; }
+      
+      .kpi-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
+      .kpi-card { padding: 14px 8px; border-radius: 14px; }
+      .kpi-card i { font-size: 1.5rem; margin-bottom: 4px; }
+      .kpi-value { font-size: 1.35rem; }
+      .kpi-label { font-size: 0.76rem; }
+
+      .data-table-container { padding: 14px 10px; border-radius: 14px; }
+      .data-table th, .data-table td { padding: 10px 8px; font-size: 0.8rem; }
+      .cell-email { max-width: 130px; font-size: 0.74rem; }
+    }
+  </style>
+  <!-- مكتبات الواجهة الأمامية للتصدير والرسوم البيانية -->
+  <script src="/vendor/chart.umd.min.js"></script>
+  <script src="/vendor/xlsx.full.min.js"></script>
+
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+</head>
+<body>
+
+  <header class="main-header">
+    <div class="header-brand">
+      <img src="/assets/logo.png" class="header-logo" alt="شعار">
+      <div class="header-title-group">
+        <strong>التقارير والإحصائيات</strong>
+        <small>تحليل الأداء الشامل</small>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-icon" onclick="CBS.toggleDark()"><i class="ri-moon-line" id="themeIcon"></i></button>
+      <button class="btn-icon" onclick="history.back()"><i class="ri-arrow-go-back-line"></i></button>
+    </div>
+  </header>
+
+  <main class="reports-wrap" id="printable-area">
+
+    <!-- ترويسة تظهر في ملف الـ PDF فقط (البانر الملون يُستبعد من التصدير) -->
+    <div class="pdf-only" style="text-align:center;border-bottom:3px solid #0d3b66;padding-bottom:14px;margin-bottom:18px;">
+      <h2 style="color:#0d3b66;margin:0 0 4px;font-size:1.4rem;">تقرير الأداء الشامل</h2>
+      <div style="color:#94a3b8;font-size:0.85rem;">
+        كلية تقنية المعلومات — جامعة النصر التقنية · <span id="pdfDate"></span>
+      </div>
+    </div>
+
+    <section class="reports-hero" data-html2canvas-ignore="true">
+      <div class="reports-hero-text">
+        <small><i class="ri-bar-chart-box-line"></i> لوحة البيانات</small>
+        <h1>نظرة عامة على الأداء</h1>
+        <p>إحصائيات تفاعلية محدثة في الوقت الفعلي.</p>
+      </div>
+      <div class="export-btns" id="exportBtns" style="display: none;">
+        <button class="btn-export" onclick="exportExcel()"><i class="ri-file-excel-2-line"></i> تصدير Excel</button>
+        <button class="btn-export" onclick="exportPDF()"><i class="ri-file-pdf-2-line"></i> تصدير PDF</button>
+      </div>
+    </section>
+
+    <!-- مؤشرات الأداء الرئيسية KPI -->
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <i class="ri-group-line"></i>
+        <div class="kpi-value" id="kpiStudents">0</div>
+        <div class="kpi-label">إجمالي الطلاب</div>
+      </div>
+      <div class="kpi-card">
+        <i class="ri-calendar-check-line" style="color:var(--success)"></i>
+        <div class="kpi-value" id="kpiAttendance" style="color:var(--success)">0%</div>
+        <div class="kpi-label">معدل الحضور</div>
+      </div>
+      <div class="kpi-card">
+        <i class="ri-vidicon-line" style="color:var(--danger)"></i>
+        <div class="kpi-value" id="kpiViews" style="color:var(--danger)">0</div>
+        <div class="kpi-label">مشاهدات المحاضرات</div>
+      </div>
+      <div class="kpi-card">
+        <i class="ri-award-line" style="color:var(--warning)"></i>
+        <div class="kpi-value" id="kpiQuizzes" style="color:var(--warning)">0</div>
+        <div class="kpi-label">تسليمات الاختبارات</div>
+      </div>
+    </section>
+
+    <!-- الرسوم البيانية -->
+    <section class="charts-grid">
+      <div class="chart-container">
+        <h3>معدل الحضور في آخر 7 أيام</h3>
+        <div class="chart-wrapper">
+          <canvas id="attendanceChart"></canvas>
+        </div>
+      </div>
+      <div class="chart-container">
+        <h3>تفاعل النظام</h3>
+        <div class="chart-wrapper">
+          <canvas id="engagementChart"></canvas>
+        </div>
+      </div>
+    </section>
+
+    <!-- جدول البيانات المفصلة -->
+    <section class="data-table-container">
+      <h3>أداء الطلاب</h3>
+      <table class="data-table" id="studentsTable">
+        <thead>
+          <tr>
+            <th>الاسم</th>
+            <th>البريد الإلكتروني</th>
+            <th>الدفعة</th>
+            <th>معدل الحضور</th>
+          </tr>
+        </thead>
+        <tbody id="tableBody">
+          <tr><td colspan="4" style="text-align:center;">جاري تحميل البيانات...</td></tr>
+        </tbody>
+      </table>
+    </section>
+
+  </main>
+
+  <div id="toast-container"></div>
+  <script src="/js/app.js?v=2026073125"></script>
+<script src="/js/socket-client.js?v=2026073125" defer></script>
+  <script>
+    if (CBS.init({ requireRoles: ['dean', 'admin'] })) {
+      document.getElementById('pdfDate').textContent = new Date().toLocaleDateString('ar-EG');
+      loadReports();
+    }
+
+    async function loadReports() {
+      try {
+        const res = await CBS.apiGet('/api/reports/summary');
+        const data = await res.json();
+        
+        if (!res.ok) throw new Error(data.message || 'حدث خطأ');
+        
+        const r = data.data;
+
+        // تحديث أرقام KPI
+        document.getElementById('kpiStudents').innerText = r.totalStudents || 0;
+        document.getElementById('kpiAttendance').innerText = (r.avgAttendance || 0) + '%';
+        document.getElementById('kpiViews').innerText = r.videoViews || 0;
+        document.getElementById('kpiQuizzes').innerText = r.totalQuizzes || 0;
+
+        // رسم المخطط الخطي (الحضور)
+        if (window.attChart) {
+          try { window.attChart.destroy(); } catch(e){}
+          window.attChart = null;
+        }
+        const chartDataArr = Array.isArray(r.attendanceChartData) ? r.attendanceChartData : [];
+        const ctxAtt = document.getElementById('attendanceChart')?.getContext('2d');
+        if (ctxAtt && typeof Chart !== 'undefined') {
+          const attLabels = chartDataArr.map(d => d.date || '');
+          const attData = chartDataArr.map(d => d.rate || 0);
+          
+          window.attChart = new Chart(ctxAtt, {
+            type: 'line',
+            data: {
+              labels: attLabels.length ? attLabels : ['لا توجد بيانات'],
+              datasets: [{
+                label: 'نسبة الحضور (%)',
+                data: attData.length ? attData : [0],
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                tension: 0.4,
+                fill: true
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: true,
+              aspectRatio: 2.2,
+              resizeDelay: 200,
+              plugins: { legend: { display: false } },
+              animation: { duration: 300 }
+            }
+          });
+        }
+
+        // رسم المخطط الدائري (التفاعل)
+        if (window.engChart) {
+          try { window.engChart.destroy(); } catch(e){}
+          window.engChart = null;
+        }
+        const ctxEng = document.getElementById('engagementChart')?.getContext('2d');
+        if (ctxEng && typeof Chart !== 'undefined') {
+          window.engChart = new Chart(ctxEng, {
+            type: 'doughnut',
+            data: {
+              labels: ['تسجيل دخول', 'مشاهدات', 'اختبارات'],
+              datasets: [{
+                data: [r.logins || 0, r.videoViews || 0, r.totalQuizzes || 0],
+                backgroundColor: ['#4f46e5', '#ef4444', '#f59e0b']
+              }]
+            },
+            options: {
+              responsive: true,
+              maintainAspectRatio: true,
+              aspectRatio: 1.6,
+              resizeDelay: 200,
+              plugins: { legend: { position: 'bottom' } },
+              animation: { duration: 300 }
+            }
+          });
+        }
+
+        // تعبئة الجدول (تجهيز حتى 100 طالب لتجنب التجميد)
+        const tbody = document.getElementById('tableBody');
+        const studentsList = Array.isArray(r.studentsTable) ? r.studentsTable : [];
+        if (!studentsList.length) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">لا توجد بيانات متاحة</td></tr>';
+        } else {
+          tbody.innerHTML = studentsList.slice(0, 100).map(s => `
+            <tr>
+              <td data-label="الاسم" style="font-weight:700;">${CBS.escapeHTML(s.name || '')}</td>
+              <td data-label="البريد الإلكتروني" class="cell-email">${CBS.escapeHTML(s.email || '')}</td>
+              <td data-label="الدفعة"><span style="background:var(--bg-input);padding:3px 9px;border-radius:10px;font-size:0.78rem;font-weight:600;display:inline-block;">${CBS.escapeHTML(s.batchName || 'عامة')}</span></td>
+              <td data-label="معدل الحضور"><span style="display:inline-block;padding:3px 10px;border-radius:10px;font-size:0.8rem;font-weight:800;background:${(s.attendanceRate || 0) > 75 ? 'rgba(22,163,74,0.14)' : ((s.attendanceRate || 0) > 50 ? 'rgba(217,119,6,0.14)' : 'rgba(220,38,38,0.14)')};color:${(s.attendanceRate || 0) > 75 ? '#16a34a' : ((s.attendanceRate || 0) > 50 ? '#d97706' : '#dc2626')};">
+                ${s.attendanceRate || 0}%
+              </span></td>
+            </tr>
+          `).join('');
+        }
+
+        // إظهار أزرار التصدير بعد اكتمال التحميل
+        document.getElementById('exportBtns').style.display = 'flex';
+
+      } catch (err) {
+        CBS.toast('تعذر تحميل التقارير', err.message, 'error');
+      }
+    }
+
+    // تصدير Excel باستخدام SheetJS
+    function exportExcel() {
+      const table = document.getElementById("studentsTable");
+      const wb = XLSX.utils.table_to_book(table, { sheet: "تقرير الطلاب" });
+      const isNative = !!(window.Capacitor?.isNativePlatform?.());
+      if (isNative && window.Capacitor?.Plugins?.Filesystem) {
+        // داخل التطبيق: التنزيل المباشر لا يعمل في WebView — نحفظ ونشارك
+        const base64 = XLSX.write(wb, { bookType: 'xlsx', type: 'base64' });
+        CBS.saveFileNative('college_report.xlsx', base64)
+          .then(() => CBS.toast("نجاح", "اختر أين تحفظ الملف", "success"))
+          .catch(() => CBS.toast("خطأ", "فشل تصدير ملف Excel", "error"));
+        return;
+      }
+      XLSX.writeFile(wb, "college_report.xlsx");
+      CBS.toast("نجاح", "تم تصدير ملف Excel بنجاح", "success");
+    }
+
+    // تصدير PDF — يمر عبر CBS.exportPdf الذي يرسم المحتوى بعرض A4 ثابت وألوان
+    // فاتحة، فيخرج الملف صحيحاً على الهاتف بدل عمود ضيق بخلفية سوداء.
+    function exportPDF() {
+      CBS.exportPdfWithFeedback(document.getElementById('printable-area'), {
+        filename: 'college_report.pdf'
+      });
+    }
+  </script>
+</body>
+</html>
+
+

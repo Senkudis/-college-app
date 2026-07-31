@@ -1,0 +1,193 @@
+﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>اختيار الدفعة الدراسية (العميد) | كلية تقنية المعلومات</title>
+  <link rel="stylesheet" href="/css/style.css?v=2026073125">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026073125">
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet"/>
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+      background: var(--bg-body);
+    }
+    .selector-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    .selector-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .selector-header h1 {
+      font-size: 2rem;
+      margin-bottom: 10px;
+      color: var(--text-main);
+    }
+    .selector-header p {
+      color: var(--text-muted);
+    }
+    .batches-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 20px;
+      width: 100%;
+      max-width: 1000px;
+    }
+    .batch-card {
+      background: var(--bg-card);
+      border: 2px solid transparent;
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    .batch-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+    }
+    .batch-icon {
+      font-size: 3rem;
+      margin-bottom: 16px;
+    }
+    .batch-title {
+      font-size: 1.25rem;
+      font-weight: 700;
+      margin-bottom: 8px;
+      color: var(--text-main);
+    }
+    .batch-code {
+      display: inline-block;
+      padding: 4px 12px;
+      background: rgba(0,0,0,0.05);
+      border-radius: 50px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
+    
+    .spinner-wrap {
+      display: flex; justify-content: center; align-items: center; padding: 50px;
+    }
+  </style>
+
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+</head>
+<body>
+
+  <!-- Topbar -->
+  <header class="main-header">
+    <div class="header-brand">
+      <img src="/assets/logo.png" class="header-logo" alt="شعار كلية تقنية المعلومات">
+      <div class="header-title-group">
+        <strong>كلية تقنية المعلومات</strong>
+        <small>كلية تقنية المعلومات</small>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+      <button class="btn-icon" onclick="CBS.logout()" title="تسجيل الخروج"><i class="ri-logout-box-r-line"></i></button>
+    </div>
+  </header>
+
+  <div class="selector-container">
+    <div class="selector-header">
+      <h1>اختيار الدفعة الدراسية</h1>
+      <p>حدد الدفعة التي تريد إدارتها للدخول إلى لوحة التحكم الخاصة بها</p>
+    </div>
+
+
+
+    <div id="loading" class="spinner-wrap">
+      <div class="spinner"></div>
+    </div>
+
+    <div class="batches-grid" id="batchesGrid" style="display: none;">
+      <!-- Batches will be rendered here -->
+    </div>
+  </div>
+
+  <footer class="main-footer">جميع الحقوق محفوظة &copy; <span id="year"></span> النظام الجامعي المتكامل</footer>
+
+  <script src="/js/app.js?v=2026073125"></script>
+<script src="/js/socket-client.js?v=2026073125" defer></script>
+  <script>
+    CBS.init();
+    const user = CBS.getUser();
+    
+    // Students and Leaders don't need to select a batch, they go straight to dashboard
+    if (user && user.roles && (user.roles.includes('student') || user.roles.includes('leader'))) {
+      location.replace('/dashboard.html');
+    }
+
+    async function loadBatches() {
+      try {
+        const res = await CBS.apiGet('/api/batches?status=active');
+        const data = await CBS.readJson(res);
+        
+        document.getElementById('loading').style.display = 'none';
+        const grid = document.getElementById('batchesGrid');
+        grid.style.display = 'grid';
+
+        const batchArray = Array.isArray(data) ? data : (data.batches || data.data?.batches || data.data || []);
+
+        if (batchArray.length === 0) {
+          grid.innerHTML = '<div style="grid-column: 1/-1; text-align:center; padding: 40px; color: var(--text-muted);">لا توجد دفعات نشطة في النظام حالياً أو غير معينة لحسابك. تواصل مع الإدارة.</div>';
+          return;
+        }
+
+        // إذا كان لدى الدكتور أو العميد دفعة واحدة فقط متاحة، يمكن اختيارها والانتقال إليها تلقائياً
+        if (batchArray.length === 1 && !new URLSearchParams(window.location.search).get('force')) {
+          const singleBatch = batchArray[0];
+          const singleId = singleBatch._id || singleBatch.id;
+          if (singleId && singleId !== 'undefined' && singleId !== 'null') {
+            selectBatch(singleId, singleBatch.themeColor || '#2563eb');
+            return;
+          }
+        }
+
+        grid.innerHTML = batchArray.map(batch => {
+          const bId = batch._id || batch.id;
+          const bColor = batch.themeColor || '#2563eb';
+          const bName = CBS.escapeHTML(batch.name || 'دفعة بدون اسم');
+          const bCode = CBS.escapeHTML(batch.code || '');
+          return `
+          <div class="batch-card" style="border-color: ${bColor};" onclick="selectBatch('${bId}', '${bColor}')">
+            <div class="batch-icon" style="color: ${bColor};"><i class="ri-group-line"></i></div>
+            <div class="batch-title">${bName}</div>
+            <div class="batch-code">${bCode}</div>
+          </div>
+        `}).join('');
+
+      } catch (err) {
+        document.getElementById('loading').innerHTML = '<div style="color:var(--danger);">خطأ في الاتصال بالخادم عند تحميل الدفعات</div>';
+      }
+    }
+
+    function selectBatch(batchId, themeColor) {
+      if (!batchId || batchId === 'undefined' || batchId === 'null' || batchId === '[object Object]') {
+        alert('خطأ: معرف الدفعة غير صالح. يرجى إعادة تحديث الصفحة.');
+        return;
+      }
+      localStorage.setItem('cbs_active_batch_color', themeColor || '#2563eb');
+      localStorage.setItem('cbs_active_batch_id', batchId);
+      location.replace(`/dashboard.html?batch=${batchId}`);
+    }
+
+    window.onload = loadBatches;
+  </script>
+</body>
+</html>
+

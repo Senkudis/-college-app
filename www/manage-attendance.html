@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>إدارة الحضور | كلية تقنية المعلومات</title>
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css?v=2026073125">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026073125">
+  <style>
+    .setup-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: var(--shadow-md);
+      display: flex;
+      gap: 16px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+      margin-bottom: 24px;
+    }
+    .setup-card .form-group { flex: 1; min-width: 200px; }
+
+    .attendance-list {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      overflow: hidden;
+      box-shadow: var(--shadow-md);
+    }
+
+    .student-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 16px 24px;
+      border-bottom: 1px solid var(--border);
+      transition: background 0.2s;
+    }
+    .student-row:last-child { border-bottom: none; }
+    .student-row.present { background: var(--success-bg); }
+    .student-row.absent  { background: var(--danger-bg); }
+
+    .student-name  { font-weight: 600; color: var(--text-main); }
+    .student-email { font-size: 0.8rem; color: var(--text-muted); margin-top: 2px; }
+
+    .att-btns { display: flex; gap: 8px; }
+    .att-btn {
+      padding: 7px 18px;
+      border: 2px solid var(--border);
+      border-radius: 20px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 0.85rem;
+      background: transparent;
+      color: var(--text-muted);
+      font-family: 'Cairo', sans-serif;
+      transition: var(--transition);
+    }
+    .att-btn.present.active { background: var(--success); border-color: var(--success); color: white; }
+    .att-btn.absent.active  { background: var(--danger);  border-color: var(--danger);  color: white; }
+    .att-btn.present:hover  { border-color: var(--success); color: var(--success); }
+    .att-btn.absent:hover   { border-color: var(--danger);  color: var(--danger);  }
+
+    .save-bar {
+      display: none;
+      justify-content: center;
+      margin-top: 24px;
+    }
+
+    @media (max-width: 600px) {
+      .student-row { flex-direction: column; gap: 12px; align-items: flex-start; }
+      .att-btns { width: 100%; }
+      .att-btn  { flex: 1; text-align: center; }
+    }
+  </style>
+
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+</head>
+<body>
+
+<header class="main-header">
+  <div class="header-brand">
+    <img src="/assets/logo.png" class="header-logo" alt="الشعار">
+    <div class="header-title-group">
+      <strong>كلية تقنية المعلومات</strong>
+      <small>النظام الجامعي المتكامل</small>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="CBS.goHome()" title="الرئيسية"><i class="ri-home-4-line"></i></button>
+  </div>
+</header>
+
+<div class="page-content">
+
+    <!-- Welcome Banner -->
+    <div class="welcome-banner" style="background: linear-gradient(135deg,#10b981,#059669,#047857);">
+      <div class="welcome-banner-icon-wrap">
+        <i class="ri-calendar-check-line welcome-banner-icon"></i>
+      </div>
+      <div class="welcome-banner-body">
+        <h2>تسجيل الحضور</h2>
+        <p>إدارة حضور وغياب الطلاب في المحاضرات</p>
+      </div>
+    </div>
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon"><i class="ri-calendar-check-line"></i></div>
+      <div>
+        <div class="page-title">إدارة الحضور والغياب</div>
+        <div class="page-subtitle">اختر المقرر لتسجيل الحضور</div>
+      </div>
+    </div>
+    <a href="/attendance-history.html" class="btn btn-secondary">
+      <i class="ri-history-line"></i> سجل الحضور
+    </a>
+  </div>
+
+  <div class="setup-card">
+    <div class="form-group">
+      <label class="form-label">المقرر الدراسي</label>
+      <div class="input-wrapper">
+        <i class="input-icon ri-book-open-line"></i>
+        <select class="form-control" id="subjectSelect">
+          <option value="">اختر المقرر</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">تاريخ المحاضرة</label>
+      <div class="input-wrapper">
+        <i class="input-icon ri-calendar-line"></i>
+        <input class="form-control" type="date" id="attDate">
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="loadStudents()">
+      <i class="ri-play-circle-line"></i> بدء التحضير
+    </button>
+  </div>
+
+  <div id="alertMsg" class="alert"></div>
+
+  <div id="searchAttContainer" style="display:none; margin-bottom: 16px; position: relative;">
+    <i class="ri-search-line" style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+    <input type="text" id="searchAttInput" class="form-control" placeholder="ابحث عن طالب بالاسم أو الإيميل..." style="padding-right: 40px; width: 100%; border-radius: 20px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-main);" oninput="searchAttendance(this.value)">
+  </div>
+
+  <div class="attendance-list" id="attList" style="display:none;"></div>
+
+  <div class="save-bar" id="saveBar">
+    <button class="btn btn-primary" style="padding:14px 40px; font-size:1rem;" onclick="saveAttendance()">
+      <i class="ri-save-line"></i> حفظ كشف الحضور
+    </button>
+    <button class="btn btn-secondary" onclick="exportAttendanceExcel()"><i class="ri-file-excel-2-line"></i> تصدير Excel</button>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<footer class="main-footer">
+  جميع الحقوق محفوظة © <span id="year"></span> النظام الجامعي المتكامل
+</footer>
+
+<script src="/js/app.js?v=2026073125"></script>
+<script src="/js/socket-client.js?v=2026073125" defer></script>
+<script>
+  CBS.init({ requireRoles: ['dean', 'doctor', 'leader', 'admin'] });
+
+  document.getElementById('attDate').valueAsDate = new Date();
+
+  let students = [], attStatus = {};
+
+  async function loadSubjectsList() {
+    try {
+      const res  = await CBS.apiGet('/api/subjects');
+      const _resData = await CBS.readJson(res);
+      const list = _resData.data?.subjects || _resData.subjects || _resData.data || _resData;
+      const sel  = document.getElementById('subjectSelect');
+      sel.innerHTML = '<option value="">اختر المقرر</option>' +
+        list.map(s => {
+          let batchName = '';
+          if (s.batches && s.batches.length > 0) {
+            batchName = ' (' + s.batches.map(b => b.name).join(' و ') + ')';
+          }
+          return `<option value="${s._id}">${CBS.escapeHTML(s.name)}${CBS.escapeHTML(batchName)}</option>`;
+        }).join('');
+    } catch { CBS.toast('خطأ في تحميل المقررات', '', 'error'); }
+  }
+
+  async function loadStudents() {
+    const subjectId = document.getElementById('subjectSelect').value;
+    if (!subjectId) { CBS.showAlert('alertMsg', 'يرجى اختيار المقرر أولاً', 'warning'); return; }
+    CBS.hideAlert('alertMsg');
+
+    CBS.showLoading('attList', 'جاري تحميل قائمة الطلاب...');
+    document.getElementById('attList').style.display = 'block';
+    document.getElementById('saveBar').style.display = 'none';
+
+    try {
+      const res = await CBS.apiGet(`/api/attendance/students?subject=${subjectId}`);
+      if (!res.ok) throw new Error();
+      students = await res.json();
+      attStatus = {};
+      renderStudents();
+      document.getElementById('saveBar').style.display = 'flex';
+      document.getElementById('searchAttContainer').style.display = 'block';
+      document.getElementById('searchAttInput').value = ''; // reset search
+    } catch {
+      CBS.showAlert('alertMsg', 'حدث خطأ أثناء الاتصال بالخادم', 'danger');
+    }
+  }
+
+  function renderStudents() {
+    const list = document.getElementById('attList');
+    if (!students.length) {
+      CBS.showEmpty('attList', 'لا يوجد طلاب مسجلين في هذا المقرر', 'ri-group-line');
+      return;
+    }
+    list.innerHTML = students.map(s => {
+      const st = attStatus[s._id] || 'absent';
+      const batchCode = (s.batch && s.batch.code) ? ` <span class="batch-code" style="font-size:0.75rem; background:var(--border); padding:2px 8px; border-radius:12px; margin-right:8px;">${CBS.escapeHTML(s.batch.code)}</span>` : '';
+      return `
+        <div class="student-row ${st}" id="row-${s._id}">
+          <div>
+            <div class="student-name" style="display:flex; align-items:center;">${CBS.escapeHTML(s.name)}${batchCode}</div>
+            <div class="student-email">${CBS.escapeHTML(s.email || '')}</div>
+          </div>
+          <div class="att-btns">
+            <button class="att-btn present ${st === 'present' ? 'active' : ''}"
+                    onclick="setStatus('${s._id}','present')">حاضر</button>
+            <button class="att-btn absent  ${st === 'absent'  ? 'active' : ''}"
+                    onclick="setStatus('${s._id}','absent')">غائب</button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  function setStatus(id, status) {
+    attStatus[id] = status;
+    const row = document.getElementById(`row-${id}`);
+    row.className = `student-row ${status}`;
+    row.querySelectorAll('.att-btn').forEach(b => b.classList.remove('active'));
+    row.querySelector(`.att-btn.${status}`).classList.add('active');
+  }
+
+  function searchAttendance(query) {
+    const q = query.toLowerCase().trim();
+    const rows = document.querySelectorAll('#attList .student-row');
+    rows.forEach(row => {
+      const text = row.innerText.toLowerCase();
+      row.style.display = text.includes(q) ? 'flex' : 'none';
+    });
+  }
+
+  async function saveAttendance() {
+    const subject = document.getElementById('subjectSelect').value;
+    const date    = document.getElementById('attDate').value;
+    if (!subject || !date) { CBS.showAlert('alertMsg', 'تأكد من اختيار المقرر والتاريخ', 'warning'); return; }
+
+    const records = students.map(s => ({ student: s._id, status: attStatus[s._id] || 'absent' }));
+    try {
+      const payload = { subject, date, students: records };
+
+      // بلا إنترنت: نحفظ العملية محلياً لترفع تلقائياً عند عودة الاتصال
+      if (!navigator.onLine) {
+        CBS.enqueueOfflineTask('attendance', payload);
+        CBS.vibrate(25);
+        clearAttendanceForm();
+        return;
+      }
+
+      const res = await CBS.apiPost('/api/attendance', payload);
+      if (res.ok) {
+        CBS.toast('تم حفظ سجل الحضور بنجاح', '', 'success');
+        CBS.vibrate(25);
+        clearAttendanceForm();
+      } else {
+        const err = await res.json().catch(() => ({}));
+        CBS.showAlert('alertMsg', err.message || 'خطأ في عملية الحفظ', 'danger');
+      }
+    } catch (e) {
+      // فشل الشبكة أثناء الإرسال: لا نُضيّع عمل المستخدم — نُدرجه في الطابور
+      CBS.enqueueOfflineTask('attendance', { subject, date, students: records });
+      clearAttendanceForm();
+    }
+  }
+
+  function clearAttendanceForm() {
+    attStatus = {};
+    document.getElementById('attList').style.display = 'none';
+    document.getElementById('saveBar').style.display = 'none';
+  }
+
+  function exportAttendanceExcel() {
+    if (!students || !students.length) { CBS.toast('لا توجد بيانات للتصدير', '', 'warning'); return; }
+    const subjectEl = document.getElementById('subjectSelect');
+    const dateEl = document.getElementById('attDate');
+    const subjectName = subjectEl.options[subjectEl.selectedIndex]?.text || 'حضور';
+    const dateVal = dateEl?.value || new Date().toISOString().slice(0,10);
+    // Build temp table
+    const div = document.createElement('div');
+    div.style.cssText = 'position:fixed;top:0;left:-9999px;opacity:0;pointer-events:none;';
+    div.innerHTML = `<table id="__attExportTable">
+      <thead><tr><th>#</th><th>اسم الطالب</th><th>البريد الإلكتروني</th><th>الحالة</th></tr></thead>
+      <tbody>${students.map((s,i)=>`<tr><td>${i+1}</td><td>${CBS.escapeHTML(s.name||'')}</td><td>${CBS.escapeHTML(s.email||'')}</td><td>${attStatus[s._id]==='present'?'حاضر':'غائب'}</td></tr>`).join('')}</tbody>
+    </table>`;
+    document.body.appendChild(div);
+    CBS.exportTableToExcel('__attExportTable', `Attendance_${subjectName}_${dateVal}.xlsx`);
+    div.remove();
+  }
+
+  loadSubjectsList();
+</script>
+</body>
+</html>
+
+

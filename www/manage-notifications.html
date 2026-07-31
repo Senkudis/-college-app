@@ -1,0 +1,319 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>إدارة التنبيهات | كلية تقنية المعلومات</title>
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css?v=2026073125">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026073125">
+  <style>
+    .notif-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      gap: 16px;
+    }
+    .notif-item {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+      border-right: 4px solid var(--primary);
+      transition: var(--transition);
+    }
+    .notif-item:hover { box-shadow: var(--shadow-md); }
+    .notif-item.emergency { border-right-color: var(--danger); background: var(--danger-bg); }
+    .notif-item-title { font-weight: 700; font-size: 1rem; color: var(--text-main); margin-bottom: 8px; }
+    .notif-item.emergency .notif-item-title { color: var(--danger); }
+    .notif-item-body { font-size: 0.88rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 14px; }
+    .notif-item-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
+    .notif-item-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 12px; border-top: 1px dashed var(--border); }
+    .notif-sender { font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 5px; }
+    #batchSelectGroup { display: none; }
+  </style>
+
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+</head>
+<body>
+
+<header class="main-header">
+  <div class="header-brand">
+    <img src="/assets/logo.png" class="header-logo" alt="الشعار">
+    <div class="header-title-group">
+      <strong>كلية تقنية المعلومات</strong>
+      <small>إدارة التنبيهات</small>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="CBS.goHome()" title="الرئيسية"><i class="ri-home-4-line"></i></button>
+  </div>
+</header>
+
+<div class="page-content">
+
+    <!-- Welcome Banner -->
+    <div class="welcome-banner" style="background: linear-gradient(135deg,#06b6d4,#0891b2,#0e7490);">
+      <div class="welcome-banner-icon-wrap">
+        <i class="ri-megaphone-line welcome-banner-icon"></i>
+      </div>
+      <div class="welcome-banner-body">
+        <h2>إدارة التنبيهات</h2>
+        <p>إرسال وإدارة الإشعارات للطلاب والأقسام</p>
+      </div>
+    </div>
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon"><i class="ri-megaphone-line"></i></div>
+      <div>
+        <div class="page-title">إدارة التنبيهات والإشعارات</div>
+        <div class="page-subtitle">نظام الإشعارات الشامل</div>
+      </div>
+    </div>
+    <button class="btn btn-primary" id="addBtn">
+      <i class="ri-add-line"></i> إرسال تنبيه
+    </button>
+  </div>
+
+  <div id="alertMsg" class="alert"></div>
+  <div class="notif-grid" id="notifGrid"></div>
+</div>
+
+<!-- Modal -->
+<div class="modal-overlay" id="notifModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title">إرسال تنبيه جديد</span>
+      <button class="modal-close" onclick="CBS.closeModal('notifModal')"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body">
+      <div id="modalAlert" class="alert"></div>
+
+      <!-- اختيار الدفعة — يظهر فقط للعميد والدكتور -->
+      <div class="form-group" id="batchSelectGroup">
+        <label class="form-label">إرسال إلى دفعة <span style="color:var(--danger)">*</span></label>
+        <div class="input-wrapper">
+          <i class="input-icon ri-team-line"></i>
+          <select class="form-control" id="nBatch">
+            <option value="">-- اختر الدفعة --</option>
+          </select>
+        </div>
+        <small style="color:var(--text-muted);font-size:0.8rem;margin-top:4px;display:block;">
+          <i class="ri-mail-send-line"></i> سيصل الإشعار والإيميل فقط لأعضاء الدفعة المختارة
+        </small>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">عنوان التنبيه</label>
+        <div class="input-wrapper">
+          <i class="input-icon ri-text"></i>
+          <input class="form-control" type="text" id="nTitle" placeholder="أدخل العنوان" maxlength="100">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">نص التنبيه</label>
+        <textarea class="form-control" id="nMessage" placeholder="أدخل رسالة التنبيه" maxlength="500" rows="4"></textarea>
+      </div>
+      <div class="form-group">
+        <label class="form-label">نوع التنبيه</label>
+        <div class="input-wrapper">
+          <i class="input-icon ri-alert-line"></i>
+          <select class="form-control" id="nType">
+            <option value="normal">عادي</option>
+            <option value="emergency">طارئ وعاجل</option>
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="CBS.closeModal('notifModal')">إلغاء</button>
+      <button class="btn btn-primary" id="saveBtn" onclick="addNotif()">
+        <i class="ri-send-plane-line"></i> إرسال
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<footer class="main-footer">
+  جميع الحقوق محفوظة © <span id="year"></span> النظام الجامعي المتكامل
+</footer>
+
+<script src="/js/app.js?v=2026073125"></script>
+<script src="/js/socket-client.js?v=2026073125" defer></script>
+<script>
+  CBS.init({ requireRoles: ['dean', 'doctor', 'leader', 'admin'] });
+
+  const user = CBS.getUser();
+
+  let allNotifs  = [];
+  let allBatches = [];
+
+  // ===== تحميل الدفعات المتاحة =====
+  async function loadUserBatches() {
+    // الليدر دفعته ثابتة — لا نعرض القائمة
+    if (user.roles?.includes('leader')) return;
+
+    try {
+      const res = await CBS.apiGet('/api/batches?status=active');
+      if (!res.ok) return;
+      const _data = await res.json();
+      const bList = _data.batches || _data.data?.batches || _data.data || (Array.isArray(_data) ? _data : []);
+      if (!bList.length) return;
+
+      allBatches = bList;
+      const select = document.getElementById('nBatch');
+      if (select) {
+        select.innerHTML = '<option value="">-- كل الدفعات (عام) --</option>';
+        allBatches.forEach(b => {
+          const opt = document.createElement('option');
+          opt.value = b._id;
+          opt.textContent = b.name + (b.code ? ` (${b.code})` : '');
+          select.appendChild(opt);
+        });
+      }
+
+      // إظهار الحقل للعميد والدكتور
+      document.getElementById('batchSelectGroup').style.display = 'block';
+
+      // تعيين الدفعة الحالية تلقائياً إن وُجدت
+      const currentBatch = CBS.getBatchId();
+      if (currentBatch) select.value = currentBatch;
+
+    } catch(e) {
+      console.error('Batch load error:', e);
+    }
+  }
+
+  async function loadNotifs() {
+    CBS.showLoading('notifGrid', 'جاري تحميل التنبيهات...');
+    try {
+      const res = await CBS.apiGet('/api/notifications/manage');
+      const data = await CBS.readJson(res);
+      allNotifs = data.data || [];
+      render();
+    } catch { CBS.showAlert('alertMsg', 'فشل تحميل التنبيهات', 'danger'); }
+  }
+
+  function getBatchName(batchId) {
+    if (!batchId) return null;
+    const id = batchId?._id || batchId;
+    const b = allBatches.find(b => b._id === id);
+    return b ? b.name : null;
+  }
+
+  function render() {
+    if (!allNotifs.length) {
+      CBS.showEmpty('notifGrid', 'لا توجد تنبيهات', 'ri-notification-off-line');
+      return;
+    }
+    document.getElementById('notifGrid').innerHTML = allNotifs.map(n => {
+      const sender = n.createdBy?.name || 'النظام';
+      const typeMap = { normal: ['badge-primary','عادي'], emergency: ['badge-danger','طارئ'] };
+      const [cls, label] = typeMap[n.type] || typeMap.normal;
+      const batchName = getBatchName(n.batch);
+      return `
+        <div class="notif-item ${n.type === 'emergency' ? 'emergency' : ''}">
+          <div class="notif-item-title">${CBS.escapeHTML(n.title)}</div>
+          <div class="notif-item-body">${CBS.escapeHTML(n.message)}</div>
+          <div class="notif-item-meta">
+            <span class="badge ${cls}">${label}</span>
+            ${batchName
+              ? `<span class="badge badge-accent"><i class="ri-team-line"></i> ${batchName}</span>`
+              : `<span class="badge badge-accent"><i class="ri-global-line"></i> عام</span>`}
+            <span class="badge badge-accent"><i class="ri-time-line"></i> ${CBS.formatDate(n.createdAt)}</span>
+          </div>
+          <div class="notif-item-footer">
+            <span class="notif-sender"><i class="ri-user-line"></i>${sender}</span>
+            <button class="btn btn-danger" style="padding:6px 14px;font-size:0.8rem;" onclick="deleteNotif('${n._id}')">
+              <i class="ri-delete-bin-line"></i> حذف
+            </button>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  document.getElementById('addBtn').onclick = () => {
+    ['nTitle','nMessage'].forEach(id => document.getElementById(id).value = '');
+    document.getElementById('nType').value = 'normal';
+    const currentBatch = CBS.getBatchId();
+    if (currentBatch) document.getElementById('nBatch').value = currentBatch;
+    CBS.hideAlert('modalAlert');
+    CBS.openModal('notifModal');
+  };
+
+  async function addNotif() {
+    const title   = document.getElementById('nTitle').value.trim();
+    const message = document.getElementById('nMessage').value.trim();
+    const type    = document.getElementById('nType').value;
+
+    // التحقق من اختيار الدفعة للعميد والدكتور
+    const batchEl = document.getElementById('nBatch');
+    let selectedBatch = null;
+
+    // اختيار الدفعة اختياري: إذا أُدخلت دفعة تُرسل لها، وإذا تُركت (عام لكل الدفعات) تُرسل للكل
+    if (batchEl && batchEl.value) {
+      selectedBatch = batchEl.value;
+    }
+
+    if (!title || !message) {
+      CBS.showAlert('modalAlert', 'العنوان والرسالة مطلوبان', 'danger');
+      return;
+    }
+    if (title.length > 100) {
+      CBS.showAlert('modalAlert', 'العنوان يجب أن يكون أقل من 100 حرف', 'warning');
+      return;
+    }
+    if (message.length > 500) {
+      CBS.showAlert('modalAlert', 'الرسالة يجب أن تكون أقل من 500 حرف', 'warning');
+      return;
+    }
+
+    const saveBtn = document.getElementById('saveBtn');
+    saveBtn.disabled = true;
+
+    try {
+      // إرسال الدفعة عبر query param — يأخذ الأولوية على x-batch-id في الهيدر
+      const url = selectedBatch
+        ? `/api/notifications?batch=${selectedBatch}`
+        : '/api/notifications';
+
+      const res  = await CBS.apiPost(url, { title, message, type });
+      const data = await res.json();
+      if (!res.ok) {
+        CBS.showAlert('modalAlert', data.error || data.message || 'حدث خطأ', 'danger');
+        return;
+      }
+      CBS.toast('تم إرسال التنبيه بنجاح', 'سيصل الإيميل لأعضاء الدفعة خلال لحظات', 'success');
+      CBS.closeModal('notifModal');
+      loadNotifs();
+    } catch {
+      CBS.showAlert('modalAlert', 'خطأ في الاتصال', 'danger');
+    }
+
+    saveBtn.disabled = false;
+  }
+
+  async function deleteNotif(id) {
+    if (!confirm('تأكيد حذف هذا التنبيه؟')) return;
+    const res = await CBS.apiDelete(`/api/notifications/${id}`);
+    if (res.ok) {
+      CBS.toast('تم حذف التنبيه', '', 'success');
+      allNotifs = allNotifs.filter(n => n._id !== id);
+      render();
+    } else {
+      CBS.toast('فشل الحذف', '', 'error');
+    }
+  }
+
+  // تحميل الدفعات أولاً ثم التنبيهات
+  loadUserBatches().then(() => loadNotifs());
+</script>
+</body>
+</html>
+
+

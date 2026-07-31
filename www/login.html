@@ -1,0 +1,1261 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>تسجيل الدخول | كلية تقنية المعلومات</title>
+  <meta name="description" content="صفحة تسجيل الدخول لنظام كلية تقنية المعلومات - النظام الجامعي المتكامل">
+  <link href="/vendor/fonts/cairo.css" rel="stylesheet">
+  <link rel="stylesheet" href="/vendor/remixicon/remixicon.css">
+  <!-- إصدار مثبَّت v13 ليطابق @simplewebauthn/server على الخادم — الأحدث غير المثبَّت كسر البصمة سابقاً -->
+  <script src="/vendor/simplewebauthn.umd.min.js"></script>
+  <script src="/js/app.js?v=2026073125"></script>
+
+  <style>
+    @font-face {
+      font-family: 'CustomHeadingFont';
+      src: url('fonts/heading-font.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'CustomBodyFont';
+      src: url('fonts/body-font.otf') format('opentype');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      min-height: 100vh;
+      font-family: 'CustomBodyFont', sans-serif;
+      background: #051527;
+      color: white;
+      overflow-x: hidden;
+    }
+
+    h1, h2, h3, .logo-title, .card-heading h1, .news-ticker-badge {
+      font-family: 'CustomHeadingFont', sans-serif;
+    }
+
+    /* ===== شريط الأخبار العلوي الفاخر والمتقن ===== */
+    .news-ticker-bar {
+      position: relative;
+      z-index: 10;
+      width: 92%;
+      max-width: 480px;
+      margin: 18px auto 8px;
+      background: linear-gradient(135deg, rgba(13, 40, 72, 0.9) 0%, rgba(7, 29, 58, 0.95) 100%);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      border-radius: 16px;
+      backdrop-filter: blur(12px);
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.35), 0 0 15px rgba(245, 158, 11, 0.1);
+      cursor: pointer;
+      transition: transform 0.25s ease, border-color 0.25s ease, box-shadow 0.25s ease;
+    }
+    .news-ticker-bar:hover {
+      transform: translateY(-2px);
+      border-color: #F59E0B;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45), 0 0 20px rgba(245, 158, 11, 0.2);
+    }
+    .news-ticker-badge {
+      background: linear-gradient(135deg, #F59E0B, #D97706);
+      color: #00123A;
+      font-size: 0.8rem;
+      font-weight: 900;
+      padding: 5px 10px;
+      border-radius: 8px;
+      white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      flex-shrink: 0;
+      box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+    }
+    .news-ticker-divider {
+      width: 1px;
+      height: 22px;
+      background: rgba(255, 255, 255, 0.15);
+      flex-shrink: 0;
+    }
+    .news-ticker-slider {
+      flex: 1;
+      overflow: hidden;
+      height: 36px;
+      position: relative;
+    }
+    .news-ticker-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      height: 100%;
+      position: absolute;
+      inset: 0;
+      opacity: 0;
+      transform: translateY(100%);
+      transition: opacity 0.4s ease, transform 0.4s ease;
+      pointer-events: none;
+    }
+    .news-ticker-item.active {
+      opacity: 1;
+      transform: translateY(0);
+      pointer-events: auto;
+    }
+    .news-ticker-img {
+      width: 32px;
+      height: 32px;
+      border-radius: 8px;
+      object-fit: cover;
+      flex-shrink: 0;
+      background: rgba(255,255,255,0.1);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+    }
+    .news-ticker-title {
+      font-size: 0.95rem;
+      font-weight: 700;
+      color: #ffffff;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      flex: 1;
+    }
+    .news-ticker-action {
+      background: rgba(245, 158, 11, 0.15);
+      color: #F59E0B;
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
+      flex-shrink: 0;
+      border: 1px solid rgba(245, 158, 11, 0.25);
+      transition: background 0.2s;
+    }
+    .news-ticker-bar:hover .news-ticker-action {
+      background: #F59E0B;
+      color: #00123A;
+    }
+
+    /* ===== الخلفية ===== */
+    .bg {
+      position: fixed;
+      inset: 0;
+      background: linear-gradient(145deg, #051527 0%, #0d2848 50%, #071d3a 100%);
+      z-index: 0;
+    }
+
+    .bg-orb {
+      position: absolute;
+      border-radius: 50%;
+      filter: blur(80px);
+      opacity: 0.25;
+      animation: orbFloat 8s ease-in-out infinite;
+    }
+
+    .bg-orb-1 {
+      width: 400px;
+      height: 400px;
+      background: #2563eb;
+      top: -100px;
+      right: -80px;
+      animation-delay: 0s;
+    }
+
+    .bg-orb-2 {
+      width: 300px;
+      height: 300px;
+      background: #06b6d4;
+      bottom: -80px;
+      left: -60px;
+      animation-delay: -4s;
+    }
+
+    .bg-orb-3 {
+      width: 200px;
+      height: 200px;
+      background: #7c3aed;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      animation-delay: -2s;
+    }
+
+    @keyframes orbFloat {
+      0%, 100% { transform: scale(1) translate(0, 0); }
+      33% { transform: scale(1.1) translate(20px, -20px); }
+      66% { transform: scale(0.95) translate(-15px, 15px); }
+    }
+
+    /* ===== صفحة تسجيل الدخول ===== */
+    .login-page {
+      position: relative;
+      z-index: 1;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 16px;
+    }
+
+    /* ===== قسم الشعار ===== */
+    .logo-section {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 20px;
+      animation: slideDown 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+
+    @keyframes slideDown {
+      from { opacity: 0; transform: translateY(-30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .logo-ring {
+      position: relative;
+      width: 72px;
+      height: 72px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .logo-ring::before {
+      content: '';
+      position: absolute;
+      inset: -3px;
+      border-radius: 50%;
+      background: conic-gradient(from 0deg, #2563eb, #06b6d4, #2563eb);
+      animation: rotateBorder 3s linear infinite;
+    }
+
+    @keyframes rotateBorder {
+      to { transform: rotate(360deg); }
+    }
+
+    .logo-ring::after {
+      content: '';
+      position: absolute;
+      inset: 2px;
+      border-radius: 50%;
+      background: #0d2848;
+    }
+
+    .logo-img {
+      width: 50px;
+      height: 50px;
+      object-fit: contain;
+      border-radius: 50%;
+      position: relative;
+      z-index: 1;
+      filter: drop-shadow(0 0 8px rgba(37, 99, 235, 0.5));
+    }
+
+    .logo-title {
+      font-size: 1.1rem;
+      font-weight: 800;
+      text-align: center;
+      color: white;
+      line-height: 1.3;
+    }
+
+    .logo-sub {
+      font-size: 0.78rem;
+      color: rgba(148, 196, 255, 0.7);
+      text-align: center;
+      margin-top: -6px;
+    }
+
+    /* ===== بطاقة تسجيل الدخول ===== */
+    .login-card {
+      width: 100%;
+      max-width: 360px;
+      background: rgba(255, 255, 255, 0.06);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 20px;
+      padding: 24px 20px;
+      box-shadow:
+        0 24px 64px rgba(0, 0, 0, 0.4),
+        0 0 0 1px rgba(255, 255, 255, 0.05) inset,
+        0 1px 0 rgba(255, 255, 255, 0.1) inset;
+      animation: slideUp 0.7s cubic-bezier(0.34, 1.56, 0.64, 1) 0.15s both;
+    }
+
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(30px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    .card-heading {
+      margin-bottom: 18px;
+      text-align: center;
+    }
+
+    .card-heading h1 {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: white;
+      margin-bottom: 4px;
+    }
+
+    .card-heading p {
+      font-size: 0.78rem;
+      color: rgba(148, 196, 255, 0.65);
+    }
+
+    /* ===== Alert ===== */
+    .login-alert {
+      display: none;
+      align-items: center;
+      gap: 9px;
+      padding: 11px 14px;
+      border-radius: 12px;
+      font-size: 0.83rem;
+      margin-bottom: 16px;
+      animation: fadeIn 0.3s ease;
+    }
+
+    .login-alert.show {
+      display: flex;
+    }
+
+    .la-error {
+      background: rgba(239, 68, 68, 0.15);
+      border: 1px solid rgba(239, 68, 68, 0.3);
+      color: #fca5a5;
+    }
+
+    .la-success {
+      background: rgba(16, 185, 129, 0.15);
+      border: 1px solid rgba(16, 185, 129, 0.3);
+      color: #6ee7b7;
+    }
+
+    .la-warn {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.3);
+      color: #fcd34d;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(-6px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+
+    /* ===== حقول الإدخال ===== */
+    .form-group {
+      margin-bottom: 16px;
+    }
+
+    .form-label {
+      display: none;
+    }
+
+    .input-wrap {
+      position: relative;
+    }
+
+    .input-wrap input {
+      width: 100%;
+      padding: 20px 40px 8px 12px;
+      background: rgba(255, 255, 255, 0.07);
+      border: 1.5px solid rgba(255, 255, 255, 0.12);
+      border-radius: 10px;
+      font-family: 'Cairo', sans-serif;
+      font-size: 0.9rem;
+      color: white;
+      outline: none;
+      transition: all 0.25s;
+      -webkit-appearance: none;
+      appearance: none;
+    }
+
+    .floating-label {
+      position: absolute;
+      top: 50%;
+      right: 40px;
+      transform: translateY(-50%);
+      color: rgba(255, 255, 255, 0.6);
+      pointer-events: none;
+      transition: 0.25s ease all;
+      font-size: 0.85rem;
+    }
+
+    .input-wrap input:focus ~ .floating-label,
+    .input-wrap input:not(:placeholder-shown) ~ .floating-label {
+      top: 12px;
+      font-size: 0.7rem;
+      color: #2563eb;
+      font-weight: 600;
+    }
+
+    .input-wrap input::placeholder {
+      color: rgba(255, 255, 255, 0.3);
+    }
+
+    .input-wrap input:focus {
+      border-color: #2563eb;
+      background: rgba(37, 99, 235, 0.1);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+    }
+
+    .i-start {
+      position: absolute;
+      right: 14px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: rgba(148, 196, 255, 0.6);
+      font-size: 1.1rem;
+      pointer-events: none;
+    }
+
+    .i-end {
+      position: absolute;
+      left: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: rgba(255, 255, 255, 0.35);
+      font-size: 1.1rem;
+      cursor: pointer;
+      padding: 4px;
+      transition: color 0.2s;
+    }
+
+    .i-end:hover {
+      color: #93c5fd;
+    }
+
+    /* ===== صف تذكرني ===== */
+    .remember-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 20px;
+      margin-top: -4px;
+    }
+
+    .remember-check {
+      display: flex;
+      align-items: center;
+      gap: 7px;
+      font-size: 0.82rem;
+      color: rgba(255, 255, 255, 0.55);
+      cursor: pointer;
+      user-select: none;
+    }
+
+    .remember-check input[type="checkbox"] {
+      width: 15px;
+      height: 15px;
+      accent-color: #2563eb;
+      cursor: pointer;
+    }
+
+    .forgot-link {
+      font-size: 0.82rem;
+      color: #93c5fd;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+
+    .forgot-link:hover {
+      color: white;
+    }
+
+    /* ===== زر تسجيل الدخول ===== */
+    .btn-login {
+      width: 100%;
+      padding: 12px;
+      background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+      color: white;
+      border: none;
+      border-radius: 10px;
+      font-family: 'Cairo', sans-serif;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      transition: all 0.25s;
+      box-shadow: 0 4px 20px rgba(37, 99, 235, 0.4);
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .btn-login:hover:not(:disabled) {
+      background: linear-gradient(135deg, #1d4ed8 0%, #1e40af 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 8px 28px rgba(37, 99, 235, 0.5);
+    }
+
+    .btn-login:active:not(:disabled) {
+      transform: scale(0.97);
+    }
+
+    .btn-login:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* مؤشر التحميل داخل الزر */
+    .btn-loader {
+      --uib-size: 20px;
+      --uib-color: white;
+      --uib-speed: 1.5s;
+      --uib-bg-opacity: .2;
+      display: none;
+      position: relative;
+      height: var(--uib-size);
+      width: var(--uib-size);
+      transform: rotate(45deg);
+      animation: uib-rotate calc(var(--uib-speed) * 2) ease-in-out infinite;
+    }
+
+    .btn-loader .h {
+      --uib-half-size: calc(var(--uib-size) * 0.435);
+      position: absolute;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: var(--uib-half-size);
+      height: var(--uib-half-size);
+      overflow: hidden;
+      isolation: isolate;
+    }
+
+    .btn-loader .h:first-child {
+      top: 8.25%;
+      left: 8.25%;
+      border-radius: 50% 50% calc(var(--uib-size)/15);
+    }
+
+    .btn-loader .h:last-child {
+      bottom: 8.25%;
+      right: 8.25%;
+      transform: rotate(180deg);
+      align-self: flex-end;
+      border-radius: 50% 50% calc(var(--uib-size)/15);
+    }
+
+    .btn-loader .h:last-child::after {
+      animation-delay: calc(var(--uib-speed) * -1);
+    }
+
+    .btn-loader .h::before {
+      content: '';
+      height: 100%;
+      width: 100%;
+      position: absolute;
+      top: 0;
+      left: 0;
+      background-color: var(--uib-color);
+      opacity: var(--uib-bg-opacity);
+      border-radius: inherit;
+    }
+
+    .btn-loader .h::after {
+      content: '';
+      position: relative;
+      z-index: 1;
+      display: block;
+      background-color: var(--uib-color);
+      height: 100%;
+      transform: rotate(45deg) translate(-3%, 50%) scaleX(1.2);
+      width: 100%;
+      transform-origin: bottom right;
+      border-radius: 0 0 calc(var(--uib-size)/20) 0;
+      animation: uib-flow calc(var(--uib-speed)*2) linear infinite both;
+    }
+
+    @keyframes uib-flow {
+      0% { transform: rotate(45deg) translate(-3%, 50%) scaleX(1.2); }
+      30% { transform: rotate(45deg) translate(115%, 50%) scaleX(1.2); }
+      30.001%, 50% { transform: rotate(0deg) translate(-85%, -85%) scaleX(1); }
+      80%, 100% { transform: rotate(0deg) translate(0%, 0%) scaleX(1); }
+    }
+
+    @keyframes uib-rotate {
+      0%, 30% { transform: rotate(45deg); }
+      50%, 80% { transform: rotate(225deg); }
+      100% { transform: rotate(405deg); }
+    }
+
+    /* ===== التذييل ===== */
+    .login-footer {
+      margin-top: 20px;
+      text-align: center;
+      font-size: 0.73rem;
+      color: rgba(255, 255, 255, 0.2);
+      animation: slideUp 0.7s ease 0.3s both;
+    }
+
+    /* ===== الفاصل ===== */
+    .card-divider {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 18px 0;
+    }
+
+    .card-divider span {
+      height: 1px;
+      flex: 1;
+      background: rgba(255, 255, 255, 0.1);
+    }
+
+    .card-divider small {
+      font-size: 0.73rem;
+      color: rgba(255, 255, 255, 0.25);
+      white-space: nowrap;
+    }
+  </style>
+
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+</head>
+
+<body>
+
+  <!-- الخلفية -->
+  <div class="bg">
+    <div class="bg-orb bg-orb-1"></div>
+    <div class="bg-orb bg-orb-2"></div>
+    <div class="bg-orb bg-orb-3"></div>
+  </div>
+
+  <div class="login-page">
+
+    <!-- شريط أحدث الأخبار المنزلق -->
+    <div id="loginNewsTicker" class="news-ticker-bar" onclick="window.location.href='/welcome.html#news'" style="display:none;">
+      <div class="news-ticker-badge"><i class="ri-notification-3-line"></i> الأخبار</div>
+      <div class="news-ticker-divider"></div>
+      <div class="news-ticker-slider" id="tickerSliderContainer">
+        <!-- يتم التعبئة ديناميكياً -->
+      </div>
+      <div class="news-ticker-action">عرض <i class="ri-arrow-left-s-line"></i></div>
+    </div>
+
+    <!-- الشعار -->
+    <div class="logo-section">
+      <div class="logo-ring">
+        <img src="/assets/logo.png" class="logo-img" alt="Logo"
+          onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2280%22%3E🎓%3C/text%3E%3C/svg%3E'">
+      </div>
+      <div class="logo-title">كلية تقنية المعلومات</div>
+      <div class="logo-sub">النظام الجامعي المتكامل</div>
+    </div>
+
+    <!-- بطاقة الدخول -->
+    <div class="login-card">
+      <div class="card-heading">
+        <h1>تسجيل الدخول</h1>
+        <p>أدخل بيانات حسابك للمتابعة</p>
+      </div>
+
+      <div class="login-alert la-error" id="alertError"></div>
+      <div class="login-alert la-success" id="alertSuccess"></div>
+      <div class="login-alert la-warn" id="alertWarn"></div>
+
+      <form onsubmit="event.preventDefault(); login();">
+        <div class="form-group">
+          <div class="input-wrap">
+            <input type="email" id="email" name="email" placeholder=" " autocomplete="email username" inputmode="email" autocorrect="on" spellcheck="true" required>
+            <label class="floating-label">البريد الإلكتروني</label>
+            <i class="ri-mail-line i-start"></i>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div class="input-wrap">
+            <input type="password" id="password" name="password" placeholder=" " autocomplete="current-password" required>
+            <label class="floating-label">كلمة المرور</label>
+            <i class="ri-lock-password-line i-start"></i>
+            <i class="ri-eye-off-line i-end" id="togglePass" onclick="togglePass()"></i>
+          </div>
+        </div>
+
+        <div class="remember-row">
+          <label class="remember-check">
+            <input type="checkbox" id="rememberMe"> تذكرني
+          </label>
+          <a href="/forgot-password.html" class="forgot-link">نسيت كلمة المرور؟</a>
+        </div>
+
+        <button type="submit" class="btn-login" id="loginBtn">
+          <div class="btn-loader" id="btnLoader">
+            <div class="h"></div>
+            <div class="h"></div>
+          </div>
+          <span id="btnText">تسجيل الدخول</span>
+          <i class="ri-arrow-left-line" id="btnArrow"></i>
+        </button>
+
+        <button type="button" class="btn-login" id="bioBtn" style="margin-top: 12px; background: rgba(255, 255, 255, 0.1); border: 1px solid rgba(255,255,255,0.2); box-shadow: none;" onclick="biometricLogin()">
+          <i class="ri-fingerprint-line"></i>
+          <span>تسجيل الدخول بالبصمة أو الوجه</span>
+        </button>
+      </form>
+
+      <div class="card-divider">
+        <span></span><small>نظام كلية تقنية المعلومات</small><span></span>
+      </div>
+
+      <a href="/register.html" style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 10px; margin-bottom: 6px; padding: 11px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; color: #6ee7b7; font-size: 0.85rem; font-weight: 700; text-decoration: none; transition: all 0.2s ease;">
+        <i class="ri-user-add-line" style="font-size: 1.1rem; color: #34d399;"></i>
+        <span>تسجيل طالب جديد (مع كود الدعوة)</span>
+      </a>
+
+      <a href="/welcome.html" style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 6px; padding: 11px; background: rgba(37, 99, 235, 0.15); border: 1px solid rgba(37, 99, 235, 0.3); border-radius: 12px; color: #93c5fd; font-size: 0.85rem; font-weight: 700; text-decoration: none; transition: all 0.2s ease;">
+        <i class="ri-newspaper-line" style="font-size: 1.1rem; color: #60a5fa;"></i>
+        <span>تصفح الأخبار والفعاليات العامة</span>
+      </a>
+    </div>
+
+    <div class="login-footer" style="padding-bottom: 20px;">
+      جميع الحقوق محفوظة © <span id="year"></span> النظام الجامعي المتكامل<br>
+      <a href="/privacy.html" style="color: rgba(255,255,255,0.6); text-decoration: none; font-size: 0.8rem; margin-top: 5px; display: inline-block; transition: 0.2s;">سياسة الخصوصية</a>
+    </div>
+  </div>
+
+  <script>
+    document.getElementById('year').textContent = new Date().getFullYear();
+
+    // التحقق من وجود جلسة نشطة — نحوّل حسب الدور، مثل ما يحدث بعد الدخول تماماً
+    if (localStorage.getItem('token')) {
+      let u = {};
+      try { u = JSON.parse(localStorage.getItem('user') || '{}'); } catch (e) {}
+      if (u.firstLogin) window.location.replace('/force-change-password.html');
+      else if (u.roles?.some(r => ['admin', 'dean'].includes(r))) window.location.replace('/admin_dashboard.html');
+      else window.location.replace('/dashboard.html');
+    }
+
+    // إظهار زر البصمة فقط عندما يكون منطقياً:
+    // - متصفح غير آمن: مخفي (البصمة مستحيلة)
+    // - تطبيق بدون أي حساب مفعّل بصمته على هذا الجهاز: مخفي (الضغط سيفشل حتماً)
+    setTimeout(() => {
+      const bioBtn = document.getElementById('bioBtn');
+      if (!bioBtn) return;
+      const isNative = !!(window.Capacitor?.isNativePlatform?.());
+      if (!isNative && !window.isSecureContext) { bioBtn.style.display = 'none'; return; }
+      if (isNative) {
+        const hasBio = Object.keys(localStorage).some(k => k.startsWith('biometricEnabled:') && localStorage.getItem(k) === 'true');
+        if (!hasBio) bioBtn.style.display = 'none';
+      }
+    }, 1000);
+    // تحميل البريد المحفوظ
+    const savedEmail = localStorage.getItem('rememberedEmail');
+    if (savedEmail) {
+      document.getElementById('email').value = savedEmail;
+      document.getElementById('rememberMe').checked = true;
+    }
+
+    /* ===== اقتراحات البريد داخل الصفحة =====
+       كيبورد أندرويد يخفي شريط الاقتراحات لحقول email بحكم النظام،
+       لذا نعرض اقتراحاتنا بأنفسنا: سجل الإيميلات المستخدمة + تكملة النطاق */
+    const EMAIL_DOMAINS = ['gmail.com', 'hotmail.com', 'outlook.com', 'yahoo.com', 'icloud.com'];
+    function getEmailHistory() {
+      try { return JSON.parse(localStorage.getItem('emailHistory') || '[]'); } catch (e) { return []; }
+    }
+    function saveEmailToHistory(em) {
+      const clean = em.toLowerCase().trim();
+      if (!clean) return;
+      const list = getEmailHistory().filter(x => x !== clean);
+      list.unshift(clean);
+      localStorage.setItem('emailHistory', JSON.stringify(list.slice(0, 5)));
+    }
+    (function initEmailSuggest() {
+      const input = document.getElementById('email');
+      const wrap = input.closest('.input-wrap');
+      if (!wrap) return;
+      // نزرع البريد المحفوظ سابقاً في السجل أول مرة
+      if (savedEmail && !getEmailHistory().length) saveEmailToHistory(savedEmail);
+
+      const box = document.createElement('div');
+      box.style.cssText = 'position:absolute;top:calc(100% + 4px);right:0;left:0;background:#12335c;border:1px solid rgba(255,255,255,0.18);border-radius:12px;overflow:hidden;z-index:60;display:none;box-shadow:0 10px 24px rgba(0,0,0,0.4);';
+      wrap.style.position = 'relative';
+      wrap.appendChild(box);
+
+      function buildSuggestions(val) {
+        const v = val.toLowerCase().trim();
+        const items = getEmailHistory().filter(x => !v || x.startsWith(v));
+        const at = v.indexOf('@');
+        if (at > 0) {
+          const local = v.slice(0, at), dom = v.slice(at + 1);
+          EMAIL_DOMAINS.filter(d => d.startsWith(dom)).forEach(d => {
+            const full = local + '@' + d;
+            if (!items.includes(full)) items.push(full);
+          });
+        }
+        return items.filter(x => x !== v).slice(0, 5);
+      }
+
+      function render() {
+        const items = buildSuggestions(input.value);
+        box.innerHTML = '';
+        if (!items.length) { box.style.display = 'none'; return; }
+        items.forEach(x => {
+          const row = document.createElement('div');
+          row.textContent = x;
+          row.style.cssText = 'padding:11px 14px;cursor:pointer;font-size:0.9rem;color:#e8eefc;text-align:left;direction:ltr;border-bottom:1px solid rgba(255,255,255,0.07);';
+          // pointerdown قبل blur حتى لا تُغلق القائمة قبل التقاط الضغطة
+          row.addEventListener('pointerdown', (e) => {
+            e.preventDefault();
+            input.value = x;
+            box.style.display = 'none';
+            document.getElementById('password').focus();
+          });
+          box.appendChild(row);
+        });
+        box.style.display = 'block';
+      }
+
+      input.addEventListener('input', render);
+      input.addEventListener('focus', render);
+      input.addEventListener('blur', () => setTimeout(() => { box.style.display = 'none'; }, 150));
+    })();
+
+    function togglePass() {
+      const inp = document.getElementById('password');
+      const icon = document.getElementById('togglePass');
+      if (inp.type === 'password') {
+        inp.type = 'text';
+        icon.className = 'ri-eye-line i-end';
+      } else {
+        inp.type = 'password';
+        icon.className = 'ri-eye-off-line i-end';
+      }
+    }
+
+    function showAlert(type, msg) {
+      hideAlerts();
+      const map = { error: 'alertError', success: 'alertSuccess', warn: 'alertWarn' };
+      const icons = { error: 'ri-error-warning-fill', success: 'ri-checkbox-circle-fill', warn: 'ri-lock-2-fill' };
+      const el = document.getElementById(map[type]);
+      el.innerHTML = `<i class="${icons[type]}"></i> ${msg}`;
+      el.classList.add('show');
+    }
+
+    function hideAlerts() {
+      ['alertError', 'alertSuccess', 'alertWarn'].forEach(id =>
+        document.getElementById(id).classList.remove('show'));
+    }
+
+    function setLoading(loading) {
+      const btn = document.getElementById('loginBtn');
+      const loader = document.getElementById('btnLoader');
+      const text = document.getElementById('btnText');
+      const arrow = document.getElementById('btnArrow');
+      btn.disabled = loading;
+      loader.style.display = loading ? 'block' : 'none';
+      text.textContent = loading ? 'جاري التحقق...' : 'تسجيل الدخول';
+      arrow.style.display = loading ? 'none' : '';
+    }
+
+    function getNativeBiometric() {
+      if (typeof window === 'undefined') return null;
+      const isNative = !!(window.Capacitor?.isNativePlatform?.());
+      if (!isNative) return null;
+      return window.Capacitor?.Plugins?.NativeBiometric || window.CapacitorCustomPlugins?.NativeBiometric || window.NativeBiometric || null;
+    }
+
+    async function biometricLogin() {
+      const email = document.getElementById('email').value.trim();
+      if (!email) {
+        showAlert('warn', 'الرجاء كتابة البريد الإلكتروني أولاً ثم الضغط على زر البصمة');
+        document.getElementById('email').focus();
+        return;
+      }
+      
+      hideAlerts();
+      setLoading(true);
+
+      try {
+        const safeBaseUrl = (typeof API_BASE !== 'undefined' && API_BASE !== 'undefined') ? API_BASE : '';
+        
+        // --- NATIVE BIOMETRIC HANDLING (CAPACITOR MOBILE APP) ---
+        const nativeBio = getNativeBiometric();
+        if (nativeBio) {
+          try {
+            const bioCheck = await nativeBio.isAvailable();
+            if (!bioCheck.isAvailable) {
+              setLoading(false);
+              showAlert('error', 'مستشعر البصمة غير متوفر أو غير مفعّل في هاتف الخاص بك.');
+              return;
+            }
+            const cleanEmail = email.toLowerCase().trim();
+            const safeAlias = 'cbs_' + cleanEmail.replace(/[^a-z0-9]/g, '');
+            
+            // نتحقق من وجود بيانات محفوظة قبل طلب البصمة، حتى لا يبصم المستخدم ثم نفشل
+            let result;
+            try {
+              result = await nativeBio.getCredentials({ server: safeAlias });
+            } catch(e) {
+              try {
+                result = await nativeBio.getCredentials({ server: 'kedwebcbs_' + cleanEmail });
+              } catch(e2) {
+                try {
+                  result = await nativeBio.getCredentials({ server: 'kedwebcbs_' + email });
+                } catch(e3) {
+                  result = null;
+                }
+              }
+            }
+
+            if (!result || !result.password) {
+              // علامة التفعيل قديمة والبيانات غير موجودة على هذا الجهاز — ننظفها ليعاد الإعداد
+              localStorage.removeItem('biometricEnabled:' + cleanEmail);
+              localStorage.removeItem('biometricEnabled:' + email);
+              setLoading(false);
+              showAlert('error', 'البصمة غير مفعلة لهذا الحساب على هذا الجهاز. سجّل الدخول بكلمة المرور مرة واحدة وسيتم تفعيلها تلقائياً.');
+              return;
+            }
+
+            try {
+              await nativeBio.verifyIdentity({
+                reason: 'الرجاء مسح البصمة لتسجيل الدخول',
+                title: 'الدخول بالبصمة',
+              });
+            } catch(e) {
+              setLoading(false);
+              showAlert('error', 'تم إلغاء قراءة البصمة أو فشلت عملية التحقق.');
+              return;
+            }
+
+            const password = result.password;
+            
+            const res = await fetch(safeBaseUrl + '/api/auth/login', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ email, password })
+            });
+            const data = await res.json();
+            setLoading(false);
+
+            if (res.ok) {
+              localStorage.setItem('rememberedEmail', email);
+              saveEmailToHistory(email);
+              localStorage.setItem('token', data.token);
+              localStorage.setItem('user', JSON.stringify(data.user));
+              showAlert('success', 'تم تسجيل الدخول بالبصمة بنجاح! جاري التحويل...');
+              setTimeout(() => {
+                const user = data.user;
+                if (user.firstLogin) window.location.href = '/force-change-password.html';
+                else if (user.roles?.some(r => ['admin', 'dean'].includes(r))) window.location.href = '/admin_dashboard.html';
+                else window.location.href = '/dashboard.html';
+              }, 1000);
+            } else {
+              showAlert('error', data.message || 'فشل تسجيل الدخول بالبصمة');
+            }
+            return;
+          } catch(err) {
+            setLoading(false);
+            console.warn('NativeBiometric getCredentials failed', err);
+            showAlert('error', 'تم إلغاء قراءة البصمة أو أنها غير مفعلة لهذا الحساب. يرجى الدخول بكلمة المرور وتفعيلها من الملف الشخصي.');
+            return;
+          }
+        }
+
+        // --- WEBAUTHN HANDLING (WEB BROWSER) ---
+        const resOptions = await fetch(safeBaseUrl + '/api/auth/webauthn/login/generate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email })
+        });
+        
+        const optionsData = await resOptions.json();
+
+        if (!resOptions.ok) {
+          setLoading(false);
+          showAlert('error', optionsData.message || 'لا توجد بصمات مسجلة لهذا الحساب');
+          return;
+        }
+
+        const { startAuthentication, platformAuthenticatorIsAvailable } = SimpleWebAuthnBrowser;
+        
+        const isAvailable = await Promise.race([
+          platformAuthenticatorIsAvailable(),
+          new Promise((_, reject) => setTimeout(() => reject(new Error('timeout')), 3000))
+        ]);
+
+        if (!isAvailable) {
+          if (!window.isSecureContext) {
+            throw new Error('البصمة تتطلب اتصال آمن (HTTPS) أو استخدام التطبيق.');
+          }
+          throw new Error('جهازك أو متصفحك لا يدعم البصمة');
+        }
+
+        // v13 يتطلب { optionsJSON }؛ نحتفظ بالتوافق الخلفي مع الإصدارات الأقدم
+        let attResp;
+        try {
+          attResp = await startAuthentication({ optionsJSON: optionsData });
+        } catch (sigErr) {
+          if (sigErr instanceof TypeError || /optionsJSON|required/i.test(sigErr.message || '')) {
+            attResp = await startAuthentication(optionsData);
+          } else {
+            throw sigErr;
+          }
+        }
+
+        const resVerify = await fetch(safeBaseUrl + '/api/auth/webauthn/login/verify', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, response: attResp })
+        });
+        
+        const verifyData = await resVerify.json();
+        setLoading(false);
+
+        // الخادم يلفّ الرد داخل data عبر دالة success() — ندعم الشكلين للأمان
+        const vpayload = verifyData.data || verifyData;
+        if (resVerify.ok && vpayload.token && vpayload.user) {
+          localStorage.setItem('rememberedEmail', email);
+              saveEmailToHistory(email);
+          localStorage.setItem('token', vpayload.token);
+          localStorage.setItem('user', JSON.stringify(vpayload.user));
+          showAlert('success', 'تم تسجيل الدخول بالبصمة بنجاح! جاري التحويل...');
+
+          setTimeout(() => {
+            const user = vpayload.user;
+            if (user.firstLogin) window.location.href = '/force-change-password.html';
+            else if (user.roles?.some(r => ['admin', 'dean'].includes(r))) window.location.href = '/admin_dashboard.html';
+            else window.location.href = '/dashboard.html';
+          }, 1000);
+        } else {
+          showAlert('error', verifyData.message || 'فشلت عملية التحقق من البصمة');
+        }
+      } catch (err) {
+        setLoading(false);
+        console.warn('Biometric auth failed:', err);
+        const isNative = !!(window.Capacitor?.isNativePlatform?.());
+        if (err.message === 'timeout' || isNative) {
+          showAlert('error', 'البصمة غير متوفرة أو لم تفعلها بعد. قم بالدخول باستخدام كلمة المرور وتفعيلها.');
+        } else {
+          showAlert('error', err.message === 'جهازك أو متصفحك لا يدعم البصمة' ? err.message : 'تم إلغاء الدخول أو جهازك غير مهيأ للبصمة');
+        }
+      }
+    }
+
+    /* ===== عرض تفعيل البصمة بعد أول دخول ناجح (متصفح/آيفون) =====
+       داخل تطبيق أندرويد التفعيل تلقائي، لكن على الويب يحتاج موافقة المستخدم —
+       نعرضها مرة واحدة فقط لأن أغلب المستخدمين لا يعرفون بوجود الميزة */
+    async function offerBiometricSetup(email) {
+      try {
+        if (localStorage.getItem('passkeyPrompted') === 'true') return;
+        if (getNativeBiometric()) return; // التطبيق يفعّلها تلقائياً
+        if (!window.SimpleWebAuthnBrowser || !window.isSecureContext) return;
+
+        const available = await Promise.race([
+          SimpleWebAuthnBrowser.platformAuthenticatorIsAvailable(),
+          new Promise(r => setTimeout(() => r(false), 2000))
+        ]);
+        if (!available) return;
+
+        localStorage.setItem('passkeyPrompted', 'true');
+
+        const wants = await new Promise(resolve => {
+          const div = document.createElement('div');
+          div.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.65);backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:20px;';
+          div.innerHTML = `
+            <div style="background:#12335c;border:1px solid rgba(255,255,255,0.18);border-radius:18px;padding:28px 22px;max-width:340px;width:100%;text-align:center;box-shadow:0 16px 40px rgba(0,0,0,0.5);">
+              <i class="ri-fingerprint-line" style="font-size:3rem;color:#60a5fa;"></i>
+              <h3 style="color:#fff;margin:12px 0 6px;font-size:1.15rem;">تفعيل الدخول بالبصمة؟</h3>
+              <p style="color:rgba(255,255,255,0.75);font-size:0.85rem;margin:0 0 20px;line-height:1.7;">ادخل مستقبلاً بلمسة واحدة (بصمة أو وجه) بدون كتابة كلمة المرور.</p>
+              <div style="display:flex;gap:10px;">
+                <button id="bioOfferLater" style="flex:1;padding:12px;border:1px solid rgba(255,255,255,0.25);background:transparent;color:#e8eefc;border-radius:10px;font-weight:700;font-family:inherit;cursor:pointer;">لاحقاً</button>
+                <button id="bioOfferYes" style="flex:1;padding:12px;border:none;background:#2563eb;color:#fff;border-radius:10px;font-weight:700;font-family:inherit;cursor:pointer;">تفعيل الآن</button>
+              </div>
+            </div>`;
+          document.body.appendChild(div);
+          document.getElementById('bioOfferLater').onclick = () => { div.remove(); resolve(false); };
+          document.getElementById('bioOfferYes').onclick = () => { div.remove(); resolve(true); };
+        });
+        if (!wants) return;
+
+        const resOptions = await CBS.apiGet('/api/auth/webauthn/register/generate');
+        if (!resOptions.ok) return;
+        const options = await resOptions.json();
+
+        let attResp;
+        try {
+          attResp = await SimpleWebAuthnBrowser.startRegistration({ optionsJSON: options });
+        } catch (sigErr) {
+          if (sigErr instanceof TypeError || /optionsJSON|required/i.test(sigErr.message || '')) {
+            attResp = await SimpleWebAuthnBrowser.startRegistration(options);
+          } else {
+            throw sigErr;
+          }
+        }
+
+        const resVerify = await CBS.apiPost('/api/auth/webauthn/register/verify', attResp);
+        if (resVerify.ok) {
+          localStorage.setItem('biometricEnabled:' + email, 'true');
+          showAlert('success', 'تم تفعيل الدخول بالبصمة بنجاح! جاري التحويل...');
+        }
+      } catch (e) {
+        // رفض أو إلغاء أو عدم دعم — لا نعطل مسار الدخول بأي شكل
+        console.warn('Biometric offer skipped:', e);
+      }
+    }
+
+    async function login() {
+      const email = document.getElementById('email').value.trim();
+      const password = document.getElementById('password').value;
+      const remember = document.getElementById('rememberMe').checked;
+
+      hideAlerts();
+      if (!email || !password) { showAlert('error', 'الرجاء ملء جميع الحقول'); return; }
+
+      setLoading(true);
+
+      try {
+        const safeBaseUrl = (typeof API_BASE !== 'undefined' && API_BASE !== 'undefined') ? API_BASE : '';
+        const res = await fetch(safeBaseUrl + '/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, password })
+        });
+        const data = await res.json();
+        setLoading(false);
+
+        if (!res.ok) {
+          if (res.status === 423) showAlert('warn', data.message || 'حسابك محظور مؤقتاً');
+          else if (res.status === 429) showAlert('warn', 'محاولات كثيرة، حاول بعد 5 دقائق');
+          else if (res.status === 403) showAlert('warn', 'حسابك غير مفعل، تواصل مع الإدارة');
+          else if (res.status === 401) showAlert('error', 'البريد الإلكتروني أو كلمة المرور غير صحيحة');
+          else {
+            let msg = data.message || 'حدث خطأ غير متوقع';
+            if (data.remainingAttempts !== undefined) msg += ` · المحاولات المتبقية: ${data.remainingAttempts}`;
+            showAlert('error', msg);
+          }
+          return;
+        }
+
+        // نحترم خيار "تذكرني": حفظ البريد فقط عند تفعيله
+        if (remember) {
+          localStorage.setItem('rememberedEmail', email);
+          saveEmailToHistory(email);
+        } else {
+          localStorage.removeItem('rememberedEmail');
+        }
+
+        localStorage.setItem('token', data.token);
+        if (data.refreshToken) localStorage.setItem('refreshToken', data.refreshToken);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        showAlert('success', 'تم تسجيل الدخول بنجاح! جاري التحويل...');
+
+        const nativeBio = getNativeBiometric();
+        if (nativeBio) {
+          try {
+            const biometryAvailable = await nativeBio.isAvailable();
+            if (biometryAvailable.isAvailable) {
+              const cleanEmail = email.toLowerCase().trim();
+              const safeAlias = 'cbs_' + cleanEmail.replace(/[^a-z0-9]/g, '');
+              await nativeBio.setCredentials({
+                username: cleanEmail,
+                password: password,
+                server: safeAlias
+              });
+              localStorage.setItem('biometricEnabled:' + cleanEmail, 'true');
+              localStorage.setItem('biometricEnabled:' + email, 'true');
+              // نخبر المستخدم أن البصمة صارت جاهزة — أغلبهم لا يعرف بوجود الميزة
+              showAlert('success', 'تم تسجيل الدخول، وتم تفعيل الدخول بالبصمة لهذا الجهاز تلقائياً! جاري التحويل...');
+            }
+          } catch (e) {
+            console.warn('Could not save native biometrics credentials', e);
+          }
+        }
+
+        const redirect = () => {
+          const user = data.user;
+          if (user.firstLogin) window.location.href = '/force-change-password.html';
+          else if (user.roles?.some(r => ['admin', 'dean'].includes(r))) window.location.href = '/admin_dashboard.html';
+          else window.location.href = '/dashboard.html';
+        };
+        setTimeout(async () => {
+          // على المتصفح/الآيفون: نعرض تفعيل البصمة مرة واحدة (المستخدم الملزم بتغيير كلمة مروره يُتجاوز)
+          if (!data.user.firstLogin) await offerBiometricSetup(email);
+          redirect();
+        }, 1000);
+
+      } catch (err) {
+        setLoading(false);
+        showAlert('error', 'خطأ في الاتصال بالخادم، تحقق من اتصالك بالإنترنت');
+      }
+    }
+
+    // === جلب وتحريك شريط الأخبار العلوي ===
+    async function initLoginNewsTicker() {
+      const tickerBar = document.getElementById('loginNewsTicker');
+      const container = document.getElementById('tickerSliderContainer');
+      if (!tickerBar || !container) return;
+
+      try {
+        const _IS_CAPACITOR_NATIVE = !!(window.Capacitor?.isNativePlatform?.());
+        const safeBaseUrl = _IS_CAPACITOR_NATIVE ? 'https://elnasrcsit.website' : ((typeof API_BASE !== 'undefined' && API_BASE !== 'undefined') ? API_BASE : '');
+        const res = await fetch(safeBaseUrl + '/api/public/news?limit=5');
+        const data = await res.json();
+        
+        const newsList = data.data?.news || data.news || (Array.isArray(data.data) ? data.data : []);
+        
+        if (res.ok && Array.isArray(newsList) && newsList.length > 0) {
+          container.innerHTML = '';
+          newsList.forEach((item, idx) => {
+            let imgUrl = item.imageUrl || '';
+            if (imgUrl && !imgUrl.startsWith('http') && !imgUrl.startsWith('data:')) {
+              imgUrl = safeBaseUrl + imgUrl;
+            }
+            const imgHtml = imgUrl ? `<img src="${imgUrl}" class="news-ticker-img" alt="صورة الخبر" onerror="this.style.display='none'" />` : `<div class="news-ticker-img" style="display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,0.15);"><i class="ri-newspaper-line" style="font-size:0.95rem;color:#F59E0B;"></i></div>`;
+            const activeClass = idx === 0 ? 'active' : '';
+            
+            container.innerHTML += `
+              <div class="news-ticker-item ${activeClass}">
+                ${imgHtml}
+                <span class="news-ticker-title">${CBS.escapeHTML ? CBS.escapeHTML(item.title) : item.title}</span>
+              </div>
+            `;
+          });
+
+          tickerBar.style.display = 'flex';
+
+          // التدوير التلقائي للأخبار كل 3.5 ثوانٍ
+          let currentIndex = 0;
+          const items = container.querySelectorAll('.news-ticker-item');
+          if (items.length > 1) {
+            setInterval(() => {
+              items[currentIndex].classList.remove('active');
+              currentIndex = (currentIndex + 1) % items.length;
+              items[currentIndex].classList.add('active');
+            }, 3500);
+          }
+        }
+      } catch (err) {
+        console.warn('News ticker initialization skipped:', err);
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', initLoginNewsTicker);
+  </script>
+</body>
+</html>

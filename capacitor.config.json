@@ -1,0 +1,28 @@
+{
+    "appId":  "com.elnasrcsit.cbs",
+    "appName":  "كلية التقنية",
+    "webDir":  "www",
+    "android":  {
+                    "allowMixedContent":  true,
+                    "_comment_captureInput":  "يجب أن يبقى false: هذا الخيار لالتقاط لوحات المفاتيح العتادية، وتفعيله يمنع الـIME من رؤية النص فتختفي اقتراحات لوحة المفاتيح والتصحيح التلقائي ويصعب تحرير الحقول",
+                    "captureInput":  false,
+                    "webContentsDebuggingEnabled":  false
+                },
+    "plugins":  {
+                    "SplashScreen":  {
+                                         "launchShowDuration":  800,
+                                         "backgroundColor":  "#0d3b66",
+                                         "showSpinner":  false,
+                                         "androidSplashResourceName":  "splash",
+                                         "splashFullScreen":  false,
+                                         "splashImmersive":  false
+                                     },
+                    "PushNotifications":  {
+                                              "presentationOptions":  [
+                                                                          "badge",
+                                                                          "sound",
+                                                                          "alert"
+                                                                      ]
+                                          }
+                }
+}

@@ -1,0 +1,47 @@
+[
+  {
+    "category": "HTML/JS ID Mismatch",
+    "file": "attendance-history.html",
+    "detail": "JS calls getElementById(\"reportOverlay\") but ID \"reportOverlay\" is not found in HTML structure"
+  },
+  {
+    "category": "HTML/JS ID Mismatch",
+    "file": "subject.html",
+    "detail": "JS calls getElementById(\"bottomNavContainer\") but ID \"bottomNavContainer\" is not found in HTML structure"
+  },
+  {
+    "category": "HTML/JS ID Mismatch",
+    "file": "subject.html",
+    "detail": "JS calls getElementById(\"subjectTitle\") but ID \"subjectTitle\" is not found in HTML structure"
+  },
+  {
+    "category": "HTML/JS ID Mismatch",
+    "file": "subject.html",
+    "detail": "JS calls getElementById(\"subjectTitle\") but ID \"subjectTitle\" is not found in HTML structure"
+  },
+  {
+    "category": "HTML/JS ID Mismatch",
+    "file": "subject.html",
+    "detail": "JS calls getElementById(\"subjectTitle\") but ID \"subjectTitle\" is not found in HTML structure"
+  },
+  {
+    "category": "HTML/JS ID Mismatch",
+    "file": "subject.html",
+    "detail": "JS calls getElementById(\"subjectTitle\") but ID \"subjectTitle\" is not found in HTML structure"
+  },
+  {
+    "category": "HTML/JS ID Mismatch",
+    "file": "subject.html",
+    "detail": "JS calls getElementById(\"subjectTitle\") but ID \"subjectTitle\" is not found in HTML structure"
+  },
+  {
+    "category": "HTML/JS ID Mismatch",
+    "file": "subject.html",
+    "detail": "JS calls getElementById(\"subjectTitle\") but ID \"subjectTitle\" is not found in HTML structure"
+  },
+  {
+    "category": "HTML/JS ID Mismatch",
+    "file": "subject.html",
+    "detail": "JS calls getElementById(\"subjectTitle\") but ID \"subjectTitle\" is not found in HTML structure"
+  }
+]

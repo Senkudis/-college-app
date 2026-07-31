@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>تسليم التكليفات | كلية تقنية المعلومات</title>
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css?v=2026073125">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026073125">
+  <style>
+    .tabs-bar {
+      display: flex; gap: 6px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 6px;
+      margin-bottom: 24px; box-shadow: var(--shadow-sm);
+    }
+    .tab-item {
+      flex: 1; padding: 10px; border-radius: var(--radius-md);
+      text-align: center; font-weight: 600; font-size: 0.9rem;
+      cursor: pointer; color: var(--text-muted); transition: var(--transition);
+      border: none; background: transparent; font-family: 'Cairo', sans-serif;
+    }
+    .tab-item.active { background: var(--primary); color: white; box-shadow: 0 4px 12px rgba(37,99,235,0.3); }
+    .tab-item:not(.active):hover { background: var(--bg-hover); color: var(--text-main); }
+
+    .assign-list { display: flex; flex-direction: column; gap: 14px; }
+    .assign-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 20px;
+      box-shadow: var(--shadow-sm); transition: var(--transition);
+      border-right: 4px solid var(--primary);
+    }
+    .assign-card:hover { box-shadow: var(--shadow-md); }
+    .assign-card.submitted { border-right-color: var(--success); }
+    .assign-card.late      { border-right-color: var(--danger); }
+
+    .assign-head  { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
+    .assign-title { font-weight: 700; font-size: 1.05rem; color: var(--text-main); }
+    .assign-meta  { font-size: 0.83rem; color: var(--text-muted); display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 12px; }
+    .assign-meta span { display: flex; align-items: center; gap: 4px; }
+
+    .time-box {
+      padding: 10px 14px; border-radius: var(--radius-md);
+      font-size: 0.83rem; margin-bottom: 12px;
+      display: flex; align-items: center; gap: 8px;
+    }
+    .time-box.ok   { background: var(--success-bg); color: var(--success); }
+    .time-box.warn { background: var(--warning-bg); color: var(--warning); }
+    .time-box.late { background: var(--danger-bg);  color: var(--danger);  }
+
+    .assign-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+
+    /* Submitted list */
+    .sub-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); padding: 20px;
+      box-shadow: var(--shadow-sm); margin-bottom: 14px;
+      border-right: 4px solid var(--accent);
+    }
+    .sub-card.graded   { border-right-color: var(--success); }
+    .sub-card.reviewed { border-right-color: var(--primary); }
+    .grade-big { font-size: 2rem; font-weight: 800; color: var(--primary); margin: 8px 0; }
+    .feedback-box { background: var(--bg-hover); border-radius: var(--radius-md); padding: 12px; font-size: 0.88rem; margin-top: 10px; }
+  </style>
+
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+</head>
+<body>
+
+<header class="main-header">
+  <div class="header-brand">
+    <img src="/assets/logo.png" class="header-logo" alt="Logo">
+    <div class="header-title-group">
+      <strong>كلية تقنية المعلومات</strong>
+      <small>تسليم التكليفات</small>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="CBS.goHome()" title="الرئيسية"><i class="ri-home-4-line"></i></button>
+  </div>
+</header>
+
+<div class="page-content">
+
+    <!-- Welcome Banner -->
+    <div class="welcome-banner" style="background: linear-gradient(135deg,#f59e0b,#d97706,#b45309);">
+      <div class="welcome-banner-icon-wrap">
+        <i class="ri-upload-2-line welcome-banner-icon"></i>
+      </div>
+      <div class="welcome-banner-body">
+        <h2>تسليم التكليفات</h2>
+        <p>رفع الأبحاث والمشاريع الدراسية</p>
+      </div>
+    </div>
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon"><i class="ri-upload-cloud-2-line"></i></div>
+      <div>
+        <div class="page-title">التكليفات المطلوبة</div>
+        <div class="page-subtitle">راجع المطلوب وقم بتسليم أعمالك</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tabs-bar">
+    <button class="tab-item active" onclick="switchTab('pending', this)"><i class="ri-time-line"></i> مطلوب التسليم</button>
+    <button class="tab-item" onclick="switchTab('submitted', this)"><i class="ri-checkbox-circle-line"></i> تم التسليم</button>
+  </div>
+
+  <div id="alertMsg" class="alert"></div>
+  <div id="mainList"></div>
+</div>
+
+<!-- Submit Modal -->
+<div class="modal-overlay" id="submitModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title" id="modalTitle">تسليم التكليف</span>
+      <button class="modal-close" onclick="CBS.closeModal('submitModal')"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body">
+      <div id="modalDetails" style="background:var(--bg-hover);padding:14px;border-radius:var(--radius-md);margin-bottom:16px;font-size:0.88rem;"></div>
+      <div id="modalAlert" class="alert"></div>
+      <div id="submitForm">
+        <div class="form-group">
+          <label class="form-label">نوع التسليم</label>
+          <div class="input-wrapper"><i class="input-icon ri-bookmark-line"></i>
+            <select class="form-control" id="subType">
+              <option value="exercise">تمرين</option>
+              <option value="research">بحث</option>
+              <option value="project">مشروع</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">ملف الحل (PDF أو صورة) *</label>
+          <input class="form-control" type="file" id="subFile" accept=".pdf,image/*">
+          <div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px;">أنواع الملفات المدعومة: PDF أو صور</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">ملاحظات (اختياري)</label>
+          <textarea class="form-control" id="subNotes" rows="2" placeholder="اكتب ملاحظات للمشرف..."></textarea>
+        </div>
+      </div>
+      <div id="alreadyMsg" style="display:none;text-align:center;padding:20px;">
+        <i class="ri-checkbox-circle-fill" style="font-size:2.5rem;color:var(--success);"></i>
+        <p style="font-weight:700;color:var(--success);margin-top:8px;">تم تسليم هذا التكليف مسبقاً</p>
+      </div>
+      <div id="lateMsg" style="display:none;text-align:center;padding:20px;">
+        <i class="ri-error-warning-fill" style="font-size:2.5rem;color:var(--danger);"></i>
+        <p style="font-weight:700;color:var(--danger);margin-top:8px;">انتهى وقت التسليم</p>
+      </div>
+    </div>
+    <div class="modal-footer" id="modalFooter">
+      <button class="btn btn-ghost" onclick="CBS.closeModal('submitModal')">إلغاء</button>
+      <button class="btn btn-primary" id="submitBtn" onclick="doSubmit()">
+        <i class="ri-send-plane-line"></i> إرسال التسليم
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<footer class="main-footer">
+  جميع الحقوق محفوظة © <span id="year"></span> النظام الجامعي المتكامل
+</footer>
+
+<script src="/js/app.js?v=2026073125"></script>
+<script src="/js/socket-client.js?v=2026073125" defer></script>
+<script>
+  CBS.init();
+  const user = CBS.getUser();
+  let currentTab = 'pending', currentAssignId = null, submittedSet = new Set();
+  const typeLabel = { exercise:'تمرين', research:'بحث', project:'مشروع' };
+
+  function switchTab(tab, el) {
+    currentTab = tab;
+    document.querySelectorAll('.tab-item').forEach(t => t.classList.remove('active'));
+    el.classList.add('active');
+    tab === 'pending' ? loadPending() : loadSubmitted();
+  }
+
+  async function loadPending() {
+    CBS.showLoading('mainList', 'جاري التحميل...', 'skeleton-list');
+    try {
+      const [ex, re, pr, myRes] = await Promise.all([
+        CBS.apiGet('/api/assignments/type/exercise'),
+        CBS.apiGet('/api/assignments/type/research'),
+        CBS.apiGet('/api/assignments/type/project'),
+        CBS.apiGet('/api/submissions/my-submissions')
+      ]);
+      const all  = [...await ex.json(), ...await re.json(), ...await pr.json()];
+      const mine = await myRes.json();
+      submittedSet = new Set(mine.map(s => s.assignment._id));
+
+      if (!all.length) { CBS.showEmpty('mainList','لا توجد تكليفات مطلوبة حالياً','ri-inbox-line'); return; }
+
+      document.getElementById('mainList').innerHTML = `<div class="assign-list">${all.map(a => {
+        const isSubmitted = submittedSet.has(a._id);
+        const due = a.dueDate ? new Date(a.dueDate) : null;
+        if (due && a.dueTime) { const [h,m] = a.dueTime.split(':'); due.setHours(+h,+m,0,0); }
+        const isLate = due && new Date() > due;
+        const remaining = due ? due - new Date() : null;
+        const days  = remaining ? Math.floor(remaining/864e5) : 0;
+        const hours = remaining ? Math.floor((remaining%864e5)/36e5) : 0;
+        const mins  = remaining ? Math.floor((remaining%36e5)/6e4) : 0;
+
+        let timeHtml = '';
+        if (due) {
+          if (isLate) timeHtml = `<div class="time-box late"><i class="ri-error-warning-line"></i> متأخر منذ: ${CBS.formatDateTime(due)}</div>`;
+          else if (days < 1) timeHtml = `<div class="time-box warn"><i class="ri-alarm-line"></i> متبقي: ${hours} ساعة و ${mins} دقيقة</div>`;
+          else timeHtml = `<div class="time-box ok"><i class="ri-time-line"></i> متبقي: ${days} أيام و ${hours} ساعة | الموعد: ${CBS.formatDateTime(due)}</div>`;
+        }
+
+        return `
+          <div class="assign-card ${isSubmitted?'submitted':(isLate?'late':'')}">
+            <div class="assign-head">
+              <div>
+                <div class="assign-title">${CBS.escapeHTML(a.title)} <span class="badge badge-primary">${typeLabel[a.type]||a.type}</span>
+                  ${isSubmitted?'<span class="badge badge-success">تم التسليم</span>':(isLate?'<span class="badge badge-danger">متأخر</span>':'')}
+                </div>
+              </div>
+            </div>
+            <div class="assign-meta">
+              <span><i class="ri-book-open-line"></i>${CBS.escapeHTML(a.subject?.name||'مقرر غير محدد')}</span>
+              <span><i class="ri-user-line"></i>${CBS.escapeHTML(a.addedBy?.name||'غير معروف')}</span>
+            </div>
+            ${a.description?`<div style="font-size:0.84rem;color:var(--text-muted);margin-bottom:10px;">${CBS.escapeHTML(a.description)}</div>`:''}
+            ${timeHtml}
+            <div class="assign-actions">
+              <a href="${API_BASE}/uploads/${a.file}" target="_blank" class="btn btn-secondary" style="font-size:0.83rem;padding:7px 14px;text-decoration:none;">
+                <i class="ri-download-cloud-line"></i> تحميل المرفق
+              </a>
+              ${!isSubmitted && !isLate ? `<button class="btn btn-primary" style="font-size:0.83rem;padding:7px 14px;" onclick="openSubmit('${a._id}','${CBS.escapeHTML(a.title)}','${a.type}')"><i class="ri-upload-cloud-line"></i> تسليم الحل</button>` : ''}
+            </div>
+          </div>`;
+      }).join('')}</div>`;
+    } catch(e) { CBS.showAlert('alertMsg', 'خطأ في التحميل', 'danger'); }
+  }
+
+  async function loadSubmitted() {
+    CBS.showLoading('mainList', 'جاري التحميل...', 'skeleton-list');
+    try {
+      const res  = await CBS.apiGet('/api/submissions/my-submissions');
+      const _resData = await CBS.readJson(res);
+      const list = _resData.data?.subjects || _resData.subjects || _resData.data || _resData;
+      if (!list.length) { CBS.showEmpty('mainList','لم تقم بتسليم أي تكليفات بعد','ri-inbox-line'); return; }
+      document.getElementById('mainList').innerHTML = list.map(s => {
+        const statusMap = { pending:'badge-warning', reviewed:'badge-primary', graded:'badge-success' };
+        const statusTxt = { pending:'قيد المراجعة', reviewed:'تمت المراجعة', graded:'مقيّم' };
+        let undoBtn = '';
+        if(s.status === 'pending') {
+           undoBtn = `<button class="btn btn-secondary" style="font-size:0.8rem;padding:6px 12px;color:var(--danger);border-color:var(--danger);background:transparent;margin-right:8px;" onclick="undoSubmission('${s._id}')"><i class="ri-delete-back-2-line"></i> تراجع</button>`;
+        }
+        return `
+          <div class="sub-card ${s.status}">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
+              <div>
+                <div style="font-weight:700;font-size:1rem;">${CBS.escapeHTML(s.assignment?.title || '')} <span class="badge badge-primary">${typeLabel[s.submissionType]}</span> <span class="badge ${statusMap[s.status]}">${statusTxt[s.status]}</span></div>
+                <div style="font-size:0.8rem;color:var(--text-muted);margin-top:4px;">${CBS.formatDateTime(s.submissionDate)} | ${s.isLate?'<span style="color:var(--danger);">تسليم متأخر</span>':'في الموعد'}</div>
+              </div>
+              <div style="display:flex;align-items:center;flex-shrink:0;">
+                <a href="${API_BASE}/uploads/${s.file}" target="_blank" class="btn btn-secondary" style="font-size:0.8rem;padding:6px 12px;text-decoration:none;"><i class="ri-download-line"></i></a>
+                ${undoBtn}
+              </div>
+            </div>
+            ${s.grade != null ? `<div class="grade-big">${s.grade}<span style="font-size:1rem;color:var(--text-muted);">/100</span></div>` : ''}
+            ${s.feedback ? `<div class="feedback-box"><strong>ملاحظات المشرف:</strong><br>${s.feedback}</div>` : ''}
+          </div>`;
+      }).join('');
+    } catch(e) { CBS.showAlert('alertMsg', 'خطأ في التحميل', 'danger'); }
+  }
+
+  window.undoSubmission = async function(id) {
+    if (!confirm('هل أنت متأكد من إلغاء هذا التسليم؟ ستحتاج لرفعه مجدداً.')) return;
+    try {
+      const res = await CBS.apiDelete(`/api/submissions/${id}/undo`);
+      if (res.ok) {
+        CBS.toast('نجاح', 'تم التراجع عن التسليم بنجاح', 'success');
+        switchTab('pending', document.querySelector('.tab-item:nth-child(1)'));
+      } else {
+        const err = await res.json();
+        CBS.showAlert('alertMsg', err.message || 'فشل إلغاء التسليم', 'danger');
+      }
+    } catch(e) {
+      CBS.showAlert('alertMsg', 'حدث خطأ في الاتصال', 'danger');
+    }
+  }
+
+  function openSubmit(id, title, type) {
+    currentAssignId = id;
+    document.getElementById('modalTitle').textContent = `تسليم: ${title}`;
+    document.getElementById('modalDetails').innerHTML = `<strong>التكليف:</strong> ${title}<br><strong>النوع:</strong> ${typeLabel[type]}`;
+    document.getElementById('subType').value = type;
+    document.getElementById('subFile').value = '';
+    document.getElementById('subNotes').value = '';
+
+    if (submittedSet.has(id)) {
+      document.getElementById('submitForm').style.display = 'none';
+      document.getElementById('alreadyMsg').style.display = 'block';
+      document.getElementById('lateMsg').style.display = 'none';
+      document.getElementById('modalFooter').style.display = 'none';
+    } else {
+      document.getElementById('submitForm').style.display = 'block';
+      document.getElementById('alreadyMsg').style.display = 'none';
+      document.getElementById('lateMsg').style.display = 'none';
+      document.getElementById('modalFooter').style.display = 'flex';
+    }
+    CBS.hideAlert('modalAlert');
+    CBS.openModal('submitModal');
+  }
+
+  async function doSubmit() {
+    const file = document.getElementById('subFile').files[0];
+    if (!file) { CBS.showAlert('modalAlert', 'الرجاء اختيار ملف للرفع', 'danger'); return; }
+
+    document.getElementById('submitBtn').disabled = true;
+
+    if (!navigator.onLine) {
+      try {
+        const dbReq = indexedDB.open('CBS_Sync', 1);
+        dbReq.onupgradeneeded = e => e.target.result.createObjectStore('submissions', { keyPath: 'id', autoIncrement: true });
+        dbReq.onsuccess = e => {
+          const db = e.target.result;
+          const tx = db.transaction('submissions', 'readwrite');
+          tx.objectStore('submissions').add({
+            assignmentId: currentAssignId,
+            submissionType: document.getElementById('subType').value,
+            notes: document.getElementById('subNotes').value,
+            file: file,
+            fileName: file.name,
+            token: CBS.getToken()
+          });
+          tx.oncomplete = () => {
+            if ('serviceWorker' in navigator && 'SyncManager' in window) {
+              navigator.serviceWorker.ready.then(sw => sw.sync.register('sync-submissions').catch(console.warn));
+            }
+            CBS.toast('تم الحفظ', 'تم الحفظ محلياً وسيتم الرفع فور عودة الإنترنت', 'success');
+            CBS.closeModal('submitModal');
+            document.getElementById('submitBtn').disabled = false;
+          };
+          tx.onerror = (e) => {
+            CBS.toast('فشل الحفظ', 'متصفحك لا يدعم حفظ الملفات محلياً بدون إنترنت', 'error');
+            document.getElementById('submitBtn').disabled = false;
+          };
+        };
+        dbReq.onerror = e => {
+          CBS.toast('خطأ محلي', 'حدث خطأ أثناء فتح قاعدة البيانات المحلية', 'error');
+          document.getElementById('submitBtn').disabled = false;
+        };
+      } catch (err) {
+        CBS.toast('خطأ', 'الرجاء الاتصال بالإنترنت لرفع هذا الملف', 'warning');
+        document.getElementById('submitBtn').disabled = false;
+      }
+      return;
+    }
+
+    const form = new FormData();
+    form.append('assignmentId',    currentAssignId);
+    form.append('submissionType',  document.getElementById('subType').value);
+    form.append('notes',           document.getElementById('subNotes').value);
+    form.append('file',            await CBS.compressImage(file));
+
+    const batchId = CBS.getBatchId();
+    const headers = { Authorization: 'Bearer ' + CBS.getToken() };
+    if (batchId) headers['x-batch-id'] = batchId;
+
+    try {
+      const res  = await fetch(API_BASE + '/api/submissions/submit', { method:'POST', headers, body: form });
+      const data = await res.json();
+      if (res.ok) {
+        _hasUnsavedNote = false; // تنظيف حالة الحماية
+        CBS.toast('تم تسليم الحل بنجاح', '', 'success');
+        CBS.closeModal('submitModal');
+        loadPending();
+      } else {
+        CBS.showAlert('modalAlert', data.message || 'فشل في تسليم الحل', 'danger');
+      }
+    } catch(e) { CBS.showAlert('modalAlert', 'خطأ في الاتصال', 'danger'); }
+    document.getElementById('submitBtn').disabled = false;
+  }
+
+  // تحذير عند مغادرة الصفحة أثناء الكتابة
+  let _hasUnsavedNote = false;
+  document.getElementById('subNotes')?.addEventListener('input', () => {
+    _hasUnsavedNote = document.getElementById('subNotes').value.trim().length > 0;
+  });
+  window.addEventListener('beforeunload', (e) => {
+    if (_hasUnsavedNote) {
+      e.preventDefault();
+      e.returnValue = 'لديك نص لم يتم حفظه، هل تريد المغادرة؟';
+    }
+  });
+
+  loadPending();
+</script>
+</body>
+</html>
+
+

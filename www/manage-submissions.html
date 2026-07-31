@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>إدارة التسليمات | كلية تقنية المعلومات</title>
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css?v=2026073125">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026073125">
+  <style>
+    .stats-row {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 14px;
+      margin-bottom: 24px;
+    }
+    .stat-box {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+    }
+    .stat-box .num  { font-size: 2rem; font-weight: 800; color: var(--primary); line-height: 1; }
+    .stat-box .lbl  { font-size: 0.78rem; color: var(--text-muted); margin-top: 4px; }
+    .stat-box.warn  .num { color: var(--warning); }
+    .stat-box.success .num { color: var(--success); }
+    .stat-box.danger  .num { color: var(--danger); }
+
+    .filters-bar {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      box-shadow: var(--shadow-sm);
+      margin-bottom: 20px;
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      align-items: flex-end;
+    }
+    .filters-bar .form-group { flex: 1; min-width: 180px; margin: 0; }
+    .filters-bar .form-group label { font-size: 0.82rem; }
+
+    .not-sub-card {
+      background: var(--danger-bg);
+      border: 1px solid rgba(239,68,68,0.25);
+      border-radius: var(--radius-lg);
+      padding: 16px 20px;
+      margin-top: 20px;
+    }
+    .not-sub-title { font-weight: 700; color: var(--danger); margin-bottom: 12px; display:flex; align-items:center; gap:8px; }
+    .not-sub-list  { display: flex; flex-direction: column; gap: 8px; max-height: 240px; overflow-y: auto; }
+    .not-sub-item  { display: flex; justify-content: space-between; align-items: center; padding: 8px 12px; background: var(--bg-card); border-radius: var(--radius-md); font-size: 0.88rem; }
+
+    /* ===== بطاقات التسليمات (عرض الموبايل) =====
+       كانت هذه الأصناف مستخدمة في الـHTML وغير معرَّفة في أي ملف CSS،
+       فكانت البطاقات تظهر كنص متراكم بلا إطار ولا ترتيب. */
+    .sub-cards-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      gap: 14px;
+    }
+    .sub-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      box-shadow: var(--shadow-sm);
+    }
+    .sub-card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .sub-card-student { display: flex; align-items: center; gap: 10px; min-width: 0; }
+    .sub-avatar {
+      width: 40px;
+      height: 40px;
+      flex: 0 0 40px;
+      border-radius: 50%;
+      background: var(--primary);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 700;
+      font-size: 1rem;
+    }
+    .sub-name  { font-weight: 700; font-size: 0.95rem; }
+    .sub-email { font-size: 0.78rem; color: var(--text-muted); word-break: break-all; }
+    .sub-card-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      font-size: 0.84rem;
+      color: var(--text-muted);
+    }
+    .sub-card-meta span { display: flex; align-items: center; gap: 6px; }
+    .sub-card-actions { display: flex; gap: 8px; align-items: stretch; }
+    @media (max-width: 480px) {
+      .sub-cards-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+</head>
+<body>
+
+<header class="main-header">
+  <div class="header-brand">
+    <img src="/assets/logo.png" class="header-logo" alt="Logo">
+    <div class="header-title-group">
+      <strong>كلية تقنية المعلومات</strong>
+      <small>إدارة التسليمات</small>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="CBS.goHome()" title="الرئيسية"><i class="ri-home-4-line"></i></button>
+  </div>
+</header>
+
+<div class="page-content">
+
+    <!-- Welcome Banner -->
+    <div class="welcome-banner" style="background: linear-gradient(135deg,#8b5cf6,#7c3aed,#6d28d9);">
+      <div class="welcome-banner-icon-wrap">
+        <i class="ri-stack-line welcome-banner-icon"></i>
+      </div>
+      <div class="welcome-banner-body">
+        <h2>إدارة التسليمات</h2>
+        <p>مراجعة وتقييم تكليفات الطلاب</p>
+      </div>
+    </div>
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon"><i class="ri-stack-line"></i></div>
+      <div>
+        <div class="page-title">إدارة التسليمات</div>
+        <div class="page-subtitle">مراجعة وتقييم أعمال الطلاب</div>
+      </div>
+    </div>
+    <button class="btn btn-secondary" onclick="exportCSV()" id="exportBtn">
+      <i class="ri-file-excel-2-line"></i> تصدير CSV
+    </button>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row" id="statsRow"></div>
+
+  <!-- Filters -->
+  <div class="filters-bar">
+    <div class="form-group">
+      <label class="form-label">التكليف</label>
+      <div class="input-wrapper"><i class="input-icon ri-file-list-line"></i>
+        <select class="form-control" id="filterAssign" onchange="loadSubmissions()">
+          <option value="">جميع التكليفات</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">النوع</label>
+      <div class="input-wrapper"><i class="input-icon ri-bookmark-line"></i>
+        <select class="form-control" id="filterType" onchange="loadSubmissions()">
+          <option value="">الكل</option>
+          <option value="exercise">تمرين</option>
+          <option value="research">بحث</option>
+          <option value="project">مشروع</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group">
+      <label class="form-label">الحالة</label>
+      <div class="input-wrapper"><i class="input-icon ri-filter-line"></i>
+        <select class="form-control" id="filterStatus" onchange="loadSubmissions()">
+          <option value="">الكل</option>
+          <option value="pending">قيد المراجعة</option>
+          <option value="reviewed">تمت المراجعة</option>
+          <option value="graded">مقيّم</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-group" style="flex: 2; min-width: 200px;">
+      <label class="form-label">بحث بالاسم</label>
+      <div class="input-wrapper">
+        <i class="input-icon ri-search-line"></i>
+        <input type="text" id="searchSubInput" class="form-control" placeholder="ابحث باسم الطالب..." oninput="searchSubmissions(this.value)">
+      </div>
+    </div>
+    <button class="btn btn-secondary" onclick="loadSubmissions()"><i class="ri-refresh-line"></i> تحديث</button>
+  </div>
+
+  <div id="alertMsg" class="alert"></div>
+
+  <!-- Submissions List -->
+  <div id="subsContainer"></div>
+
+  <!-- لم يسلموا -->
+  <div class="not-sub-card" id="notSubCard" style="display:none;">
+    <div class="not-sub-title"><i class="ri-user-unfollow-line"></i> طلاب لم يسلموا هذا التكليف</div>
+    <div class="not-sub-list" id="notSubList"></div>
+  </div>
+</div>
+
+<!-- Grade Modal -->
+<div class="modal-overlay" id="gradeModal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <span class="modal-title" id="gradeModalTitle">تقييم الطالب</span>
+      <button class="modal-close" onclick="CBS.closeModal('gradeModal')"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body">
+      <div id="gradeModalAlert" class="alert"></div>
+      <div id="subInfo" style="background:var(--bg-hover); border-radius:var(--radius-md); padding:14px; margin-bottom:16px; font-size:0.88rem;"></div>
+      <div class="form-group">
+        <label class="form-label">الدرجة (0 - 100)</label>
+        <div class="input-wrapper"><i class="input-icon ri-star-line"></i>
+          <input class="form-control" type="number" id="gradeInput" min="0" max="100">
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label">ملاحظات (اختياري)</label>
+        <textarea class="form-control" id="feedbackInput" rows="3" placeholder="اكتب ملاحظاتك..."></textarea>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="CBS.closeModal('gradeModal')">إلغاء</button>
+      <button class="btn btn-primary" onclick="saveGrade()"><i class="ri-save-line"></i> حفظ التقييم</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<footer class="main-footer">
+  جميع الحقوق محفوظة © <span id="year"></span> النظام الجامعي المتكامل
+</footer>
+
+<script src="/js/app.js?v=2026073125"></script>
+<script src="/js/socket-client.js?v=2026073125" defer></script>
+<script>
+  CBS.init({ requireRoles: ['dean', 'doctor', 'leader', 'admin'] });
+
+  let allSubs = [], allAssigns = [], currentSubId = null;
+  const typeLabel   = { exercise:'تمرين', research:'بحث', project:'مشروع' };
+  const statusLabel = { pending:'قيد المراجعة', reviewed:'تمت المراجعة', graded:'مقيّم' };
+  const statusBadge = { pending:'badge-warning', reviewed:'badge-accent', graded:'badge-success' };
+
+  function searchSubmissions(query) {
+    const q = query.toLowerCase().trim();
+    const cards = document.querySelectorAll('#subsContainer .sub-card');
+    cards.forEach(card => {
+      const text = card.querySelector('.sub-name')?.innerText.toLowerCase() || '';
+      card.style.display = text.includes(q) ? 'flex' : 'none';
+    });
+  }
+
+  async function init() {
+    try {
+      const types = ['exercise','research','project'];
+      allAssigns = [];
+      await Promise.all(types.map(async t => {
+        const res = await CBS.apiGet(`/api/assignments/type/${t}`);
+        const d   = await CBS.readJson(res);
+        const items = d.success && d.data ? (d.data.assignments || []) : (Array.isArray(d) ? d : []);
+        allAssigns.push(...items);
+      }));
+      const sel = document.getElementById('filterAssign');
+      sel.innerHTML = '<option value="">جميع التكليفات</option>' +
+        allAssigns.map(a => `<option value="${a._id}">${CBS.escapeHTML(a.title)}</option>`).join('');
+      loadSubmissions();
+    } catch(e) { CBS.showAlert('alertMsg', 'خطأ في التحميل', 'danger'); }
+  }
+
+  async function loadSubmissions() {
+    const assignId = document.getElementById('filterAssign').value;
+    const type     = document.getElementById('filterType').value;
+    const status   = document.getElementById('filterStatus').value;
+    const container = document.getElementById('subsContainer');
+    container.innerHTML = '<div class="loading-state"><div class="spinner spinner-dark"></div><p>جاري التحميل...</p></div>';
+    document.getElementById('notSubCard').style.display = 'none';
+
+    try {
+      allSubs = [];
+      const targets = assignId ? [assignId] : allAssigns.map(a => a._id);
+      await Promise.all(targets.map(async id => {
+        const res = await CBS.apiGet(`/api/submissions/assignment/${id}/submissions`);
+        const d   = await CBS.readJson(res);
+        const items = d.success && d.data ? (d.data.submissions || []) : (Array.isArray(d) ? d : []);
+        allSubs.push(...items);
+      }));
+
+      let filtered = allSubs;
+      if (type)   filtered = filtered.filter(s => s.submissionType === type);
+      if (status) filtered = filtered.filter(s => s.status === status);
+
+      updateStats(filtered);
+
+      if (!filtered.length) {
+        container.innerHTML = '<div class="empty-state"><i class="ri-inbox-line"></i><p>لا توجد تسليمات</p></div>';
+      } else {
+        // عرض كبطاقات (أنسب للموبايل)
+        container.innerHTML = `<div class="sub-cards-grid">${filtered.map(s => `
+          <div class="sub-card">
+            <div class="sub-card-head">
+              <div class="sub-card-student">
+                <div class="sub-avatar">${CBS.escapeHTML((s.student?.name || '?')[0])}</div>
+                <div>
+                  <div class="sub-name">${CBS.escapeHTML(s.student?.name || '-')}</div>
+                  <div class="sub-email">${CBS.escapeHTML(s.student?.email || '')}</div>
+                </div>
+              </div>
+              <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                <span class="badge ${statusBadge[s.status] || 'badge-accent'}">${statusLabel[s.status] || s.status}</span>
+                ${s.isLate ? '<span class="badge badge-danger">متأخر</span>' : '<span class="badge badge-success">في الوقت</span>'}
+              </div>
+            </div>
+            <div class="sub-card-meta">
+              <span><i class="ri-file-list-3-line"></i> ${CBS.escapeHTML(s.assignment?.title || '-')}</span>
+              <span><i class="ri-bookmark-line"></i> ${typeLabel[s.submissionType] || s.submissionType}</span>
+              <span><i class="ri-time-line"></i> ${CBS.formatDateTime(s.submissionDate)}</span>
+              <span><i class="ri-star-line"></i> ${s.grade != null ? `<strong>${s.grade}/100</strong>` : 'لم يقيم'}</span>
+            </div>
+            <div class="sub-card-actions">
+              <button class="btn btn-secondary" style="flex:1;" onclick="openGrade('${s._id}')">
+                <i class="ri-edit-line"></i> تقييم
+              </button>
+              <a href="${API_BASE}/uploads/${s.file}" target="_blank" class="btn btn-primary" style="text-decoration:none;">
+                <i class="ri-download-line"></i>
+              </a>
+            </div>
+          </div>`).join('')}</div>`;
+      }
+
+      if (assignId) loadNotSubmitted(assignId);
+    } catch(e) { CBS.showAlert('alertMsg', 'حدث خطأ في التحميل', 'danger'); }
+  }
+
+  async function exportCSV() {
+    const assignId = document.getElementById('filterAssign').value;
+    const url = assignId
+      ? `/api/submissions/export/csv?assignmentId=${assignId}`
+      : `/api/submissions/export/csv`;
+    
+    try {
+      const btn = document.getElementById('exportBtn');
+      const originalText = btn.innerHTML;
+      btn.innerHTML = '<i class="ri-loader-4-line spinner" style="display:inline-block"></i> جاري التصدير...';
+      btn.disabled = true;
+
+      const res = await CBS.apiGet(url);
+      if (!res.ok) throw new Error('فشل التصدير');
+
+      const blob = await res.blob();
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = downloadUrl;
+      
+      let filename = `submissions_${Date.now()}.csv`;
+      const disposition = res.headers.get('Content-Disposition');
+      if (disposition && disposition.includes('filename=')) {
+        const matches = /filename[^;=\n]*=((['"]).*?\2|[^;\n]*)/.exec(disposition);
+        if (matches != null && matches[1]) {
+          filename = matches[1].replace(/['"]/g, '');
+        }
+      }
+      
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(downloadUrl);
+
+      btn.innerHTML = originalText;
+      btn.disabled = false;
+    } catch (e) {
+      CBS.showAlert('alertMsg', 'فشل في تصدير البيانات', 'danger');
+      const btn = document.getElementById('exportBtn');
+      btn.innerHTML = '<i class="ri-file-excel-2-line"></i> تصدير CSV';
+      btn.disabled = false;
+    }
+  }
+
+  function updateStats(list) {
+    const total    = list.length;
+    const pending  = list.filter(s => s.status === 'pending').length;
+    const graded   = list.filter(s => s.status === 'graded').length;
+    const late     = list.filter(s => s.isLate).length;
+    const reviewed = list.filter(s => s.status === 'reviewed').length;
+    document.getElementById('statsRow').innerHTML = `
+      <div class="stat-box"><div class="num">${total}</div><div class="lbl">الإجمالي</div></div>
+      <div class="stat-box warn"><div class="num">${pending}</div><div class="lbl">قيد المراجعة</div></div>
+      <div class="stat-box"><div class="num">${reviewed}</div><div class="lbl">تمت المراجعة</div></div>
+      <div class="stat-box success"><div class="num">${graded}</div><div class="lbl">مقيّم</div></div>
+      <div class="stat-box danger"><div class="num">${late}</div><div class="lbl">تسليم متأخر</div></div>`;
+  }
+
+  async function loadNotSubmitted(assignId) {
+    try {
+      const res  = await CBS.apiGet(`/api/submissions/assignment/${assignId}/not-submitted`);
+      const data = await CBS.readJson(res);
+      const card = document.getElementById('notSubCard');
+      if (!data.notSubmitted?.length) { card.style.display = 'none'; return; }
+      card.style.display = 'block';
+      document.getElementById('notSubList').innerHTML = data.notSubmitted.map(st => `
+        <div class="not-sub-item">
+          <div><strong>${CBS.escapeHTML(st.name)}</strong><div style="font-size:0.75rem;color:var(--text-muted);">${CBS.escapeHTML(st.email)}</div></div>
+          <span class="badge badge-danger">لم يسلم</span>
+        </div>`).join('') + `<div style="text-align:center;margin-top:8px;font-size:0.82rem;color:var(--text-muted);">${data.notSubmitted.length} من ${data.totalStudents} طلاب لم يسلموا</div>`;
+    } catch(e) {
+      // لوحة ثانوية — لا نُزعج المستخدم برسالة، لكن لا نبتلع الخطأ بصمت تام
+      console.warn('loadNotSubmitted:', e.message);
+      const card = document.getElementById('notSubCard');
+      if (card) card.style.display = 'none';
+    }
+  }
+
+  function openGrade(id) {
+    currentSubId = id;
+    const s = allSubs.find(x => x._id === id);
+    // textContent يتولى الهروب، والاسم لم يعد يُمرَّر عبر onclick (اسم فيه ' كان يكسر الزر)
+    document.getElementById('gradeModalTitle').textContent = `تقييم الطالب: ${s?.student?.name || ''}`;
+    if (s) {
+      document.getElementById('subInfo').innerHTML = `
+        <strong>الطالب:</strong> ${CBS.escapeHTML(s.student?.name || '')}<br>
+        <strong>التكليف:</strong> ${CBS.escapeHTML(s.assignment?.title || '')}<br>
+        <strong>تاريخ التسليم:</strong> ${CBS.formatDateTime(s.submissionDate)}`;
+      document.getElementById('gradeInput').value    = s.grade ?? '';
+      document.getElementById('feedbackInput').value = s.feedback || '';
+    }
+    CBS.hideAlert('gradeModalAlert');
+    CBS.openModal('gradeModal');
+  }
+
+  async function saveGrade() {
+    const grade    = parseInt(document.getElementById('gradeInput').value);
+    const feedback = document.getElementById('feedbackInput').value;
+    if (isNaN(grade) || grade < 0 || grade > 100) {
+      CBS.showAlert('gradeModalAlert', 'الرجاء إدخال درجة من 0 إلى 100', 'danger'); return;
+    }
+    try {
+      const res = await CBS.apiPost(`/api/submissions/${currentSubId}/grade`, { grade, feedback }, 'PUT');
+      if (res.ok) {
+        CBS.toast('تم حفظ التقييم بنجاح', '', 'success');
+        CBS.closeModal('gradeModal');
+        loadSubmissions();
+      } else {
+        CBS.showAlert('gradeModalAlert', 'فشل حفظ التقييم', 'danger');
+      }
+    } catch(e) { CBS.showAlert('gradeModalAlert', 'خطأ في الاتصال', 'danger'); }
+  }
+
+  init();
+</script>
+</body>
+</html>
+
+

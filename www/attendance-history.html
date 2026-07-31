@@ -1,0 +1,307 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>سجل الحضور | كلية تقنية المعلومات</title>
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css?v=2026073125">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026073125">
+  <!-- يُنتج ملف xlsx حقيقياً؛ بدونه يتراجع التصدير إلى CSV -->
+  <script src="/vendor/xlsx.full.min.js"></script>
+  <style>
+    .history-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 16px;
+    }
+    .history-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 20px;
+      box-shadow: var(--shadow-sm);
+      cursor: pointer;
+      transition: var(--transition);
+      border-right: 5px solid var(--primary);
+    }
+    .history-card:hover { transform: translateY(-5px); box-shadow: var(--shadow-md); border-right-color: var(--accent); }
+    .h-date    { font-size: 0.78rem; color: var(--text-muted); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 6px; }
+    .h-subject { font-size: 1.05rem; font-weight: 800; color: var(--text-main); margin-bottom: 10px; }
+    .h-stats   { display: flex; gap: 10px; flex-wrap: wrap; }
+    .h-stat    { font-size: 0.8rem; padding: 4px 10px; border-radius: 999px; font-weight: 600; }
+    .h-stat.present { background: var(--success-bg); color: var(--success); }
+    .h-stat.absent  { background: var(--danger-bg);  color: var(--danger); }
+    .h-stat.rate    { background: var(--primary-light); color: var(--primary); }
+
+    /* Detail Modal */
+    .student-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 12px; border-bottom: 1px solid var(--border);
+      font-size: 0.9rem;
+    }
+    .student-item:last-child { border-bottom: none; }
+    .student-item .s-name { font-weight: 600; color: var(--text-main); }
+    .student-item .s-num  { font-size: 0.78rem; color: var(--text-muted); }
+
+    .modal-students { max-height: 360px; overflow-y: auto; border: 1px solid var(--border); border-radius: var(--radius-md); }
+    .modal-summary  { background: var(--bg-hover); border-radius: var(--radius-md); padding: 12px 16px; margin-bottom: 16px; display:flex; gap:16px; flex-wrap:wrap; }
+    .ms-item { text-align: center; }
+    .ms-num  { font-size: 1.4rem; font-weight: 800; }
+    .ms-lbl  { font-size: 0.75rem; color: var(--text-muted); }
+  </style>
+
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+</head>
+<body>
+
+<header class="main-header">
+  <div class="header-brand">
+    <img src="/assets/logo.png" class="header-logo" alt="الشعار">
+    <div class="header-title-group">
+      <strong>كلية تقنية المعلومات</strong>
+      <small>سجل الحضور</small>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="CBS.goHome()" title="الرئيسية"><i class="ri-home-4-line"></i></button>
+  </div>
+</header>
+
+<div class="page-content">
+
+    <!-- Welcome Banner -->
+    <div class="welcome-banner" style="background: linear-gradient(135deg,#10b981,#059669,#047857);">
+      <div class="welcome-banner-icon-wrap">
+        <i class="ri-calendar-check-line welcome-banner-icon"></i>
+      </div>
+      <div class="welcome-banner-body">
+        <h2>سجل الحضور</h2>
+        <p>عرض تفاصيل حضور وانصراف الطلاب</p>
+      </div>
+    </div>
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon"><i class="ri-calendar-check-line"></i></div>
+      <div>
+        <div class="page-title">سجل الحضور والغياب</div>
+        <div class="page-subtitle">تصفح سجلات الحضور السابقة</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="controls-bar">
+    <div class="search-wrapper">
+      <i class="ri-search-line"></i>
+      <input type="text" class="search-input" id="searchBox" placeholder="البحث في سجل الحضور...">
+    </div>
+  </div>
+
+  <div id="alertMsg" class="alert"></div>
+  <div class="history-grid" id="historyGrid"></div>
+</div>
+
+<!-- Detail Modal -->
+<div class="modal-overlay" id="detailModal">
+  <div class="modal-box" style="max-width:580px;">
+    <div class="modal-header">
+      <span class="modal-title" id="detailTitle">تفاصيل الحضور</span>
+      <button class="modal-close" onclick="CBS.closeModal('detailModal')"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="modal-summary" id="modalSummary"></div>
+      <div class="modal-students" id="studentList"></div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="CBS.closeModal('detailModal')">إغلاق</button>
+      <button class="btn btn-secondary" onclick="viewReportFullscreen()"><i class="ri-eye-line"></i> عرض</button>
+      <button class="btn btn-success" onclick="downloadExcel()"><i class="ri-file-excel-line"></i> تصدير Excel</button>
+      <button class="btn btn-primary" onclick="downloadPDF()"><i class="ri-download-cloud-line"></i> تحميل PDF</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<footer class="main-footer">
+  جميع الحقوق محفوظة &copy; <span id="year"></span> النظام الجامعي المتكامل
+</footer>
+
+<script src="/js/app.js?v=2026073125"></script>
+<script src="/js/socket-client.js?v=2026073125" defer></script>
+<script>
+  CBS.init();
+  const user = CBS.getUser();
+  const userRole = CBS.getPrimaryRole(user);
+  if (userRole === 'admin') {
+    window.location.replace('/admin_dashboard.html');
+  }
+  let allHistory = [], currentRecord = null;
+
+  async function loadHistory() {
+    CBS.showLoading('historyGrid', 'جاري تحميل السجل...', 'skeleton-list');
+    try {
+      const res  = await CBS.apiGet('/api/attendance/history');
+      const data = await res.json();
+      if (!res.ok) throw new Error(data?.message || 'خطأ في جلب البيانات');
+      // قد يعود المسار بمصفوفة مباشرة أو مغلّفة داخل كائن
+      allHistory = Array.isArray(data) ? data : (data.records || data.data || []);
+      render(allHistory);
+    } catch(e) { CBS.showAlert('alertMsg', e.message || 'خطأ في جلب البيانات', 'danger'); }
+  }
+
+  function render(list) {
+    if (!list.length) { CBS.showEmpty('historyGrid', 'لا توجد سجلات حضور', 'ri-calendar-line'); return; }
+    document.getElementById('historyGrid').innerHTML = list.map(h => {
+      const students = h.students || [];
+      const present = students.filter(s => s.status === 'present').length;
+      const total   = students.length;
+      const rate    = total ? Math.round(present/total*100) : 0;
+      return `
+        <div class="history-card" onclick="viewDetail('${CBS.escapeHTML(h._id)}')">
+          <div class="h-date"><i class="ri-calendar-line"></i> ${CBS.escapeHTML(h.date)}</div>
+          <div class="h-subject">${CBS.escapeHTML(h.subject?.name) || 'غير محدد'}</div>
+          <div class="h-stats">
+            <span class="h-stat present"><i class="ri-user-follow-line"></i> حضور: ${present}</span>
+            <span class="h-stat absent"><i class="ri-user-unfollow-line"></i> غياب: ${total - present}</span>
+            <span class="h-stat rate"><i class="ri-bar-chart-line"></i> ${rate}%</span>
+          </div>
+        </div>`;
+    }).join('');
+  }
+
+  async function viewDetail(id) {
+    try {
+      const res = await CBS.apiGet(`/api/attendance/${id}`);
+      currentRecord = await CBS.readJson(res);
+      currentRecord.students = currentRecord.students || [];
+      const present = currentRecord.students.filter(s => s.status === 'present').length;
+      const total   = currentRecord.students.length;
+      const absent  = total - present;
+      // بدون حارس القسمة كانت النسبة تظهر NaN% عند سجل بلا طلاب
+      const rate    = total ? Math.round(present / total * 100) : 0;
+
+      document.getElementById('detailTitle').textContent =
+        `حضور: ${currentRecord.subject?.name || 'غير محدد'} (${currentRecord.date})`;
+      document.getElementById('modalSummary').innerHTML = `
+        <div class="ms-item"><div class="ms-num" style="color:var(--success);">${present}</div><div class="ms-lbl">حضور</div></div>
+        <div class="ms-item"><div class="ms-num" style="color:var(--danger);">${absent}</div><div class="ms-lbl">غياب</div></div>
+        <div class="ms-item"><div class="ms-num" style="color:var(--primary);">${total}</div><div class="ms-lbl">الإجمالي</div></div>
+        <div class="ms-item"><div class="ms-num" style="color:var(--accent);">${rate}%</div><div class="ms-lbl">نسبة الحضور</div></div>`;
+
+      document.getElementById('studentList').innerHTML = currentRecord.students.map(s => `
+        <div class="student-item">
+          <div><div class="s-name">${CBS.escapeHTML(s.student?.name) || '-'}</div><div class="s-num">${CBS.escapeHTML(s.student?.studentId || s.student?.email || '')}</div></div>
+          <span class="badge ${s.status === 'present' ? 'badge-success' : 'badge-danger'}">${s.status === 'present' ? 'حاضر' : 'غائب'}</span>
+        </div>`).join('');
+
+      CBS.openModal('detailModal');
+    } catch(e) { CBS.toast('حدث خطأ غير متوقع', '', 'error'); }
+  }
+
+  // قالب واحد للتقرير (يستخدمه العرض والـ PDF) — كل الألوان صريحة حتى لا يفسدها الوضع الليلي
+  function buildReportHTML() {
+    const present = currentRecord.students.filter(s => s.status === 'present').length;
+    const total   = currentRecord.students.length;
+    const absent  = total - present;
+    const rate    = total ? Math.round(present / total * 100) : 0;
+    const statBox = (num, lbl, color) => `
+      <div style="flex:1;text-align:center;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:10px;">
+        <div style="font-size:1.5rem;font-weight:800;color:${color};">${num}</div>
+        <div style="font-size:0.8rem;color:#64748b;">${lbl}</div>
+      </div>`;
+    return `
+      <div style="text-align:center;border-bottom:3px solid #0d3b66;padding-bottom:14px;margin-bottom:16px;">
+        <h2 style="color:#0d3b66;margin:0 0 4px;font-size:1.4rem;">سجل الحضور — ${CBS.escapeHTML(currentRecord.subject?.name) || 'غير محدد'}</h2>
+        <div style="color:#334155;font-size:1.05rem;font-weight:700;">${CBS.escapeHTML(currentRecord.date)}</div>
+        <p style="color:#94a3b8;margin:4px 0 0;font-size:0.85rem;">كلية تقنية المعلومات - النظام الجامعي المتكامل</p>
+      </div>
+      <div style="display:flex;gap:10px;margin-bottom:16px;">
+        ${statBox(present, 'حضور', '#16a34a')}
+        ${statBox(absent, 'غياب', '#dc2626')}
+        ${statBox(total, 'الإجمالي', '#0d3b66')}
+        ${statBox(rate + '%', 'نسبة الحضور', '#7c3aed')}
+      </div>
+      <div style="display:flex;justify-content:space-between;padding:8px 16px;background:#0d3b66;color:#fff;border-radius:8px 8px 0 0;font-size:0.85rem;font-weight:700;">
+        <span>الطالب</span><span>الحالة</span>
+      </div>
+      ${currentRecord.students.map((s, i) => `
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 16px;border-bottom:1px solid #e2e8f0;${i % 2 === 0 ? 'background:#f8fafc;' : 'background:#fff;'}">
+          <div>
+            <div style="font-size:1rem;font-weight:700;color:#1e293b;">${i + 1}. ${CBS.escapeHTML(s.student?.name) || '-'}</div>
+            <div style="font-size:0.8rem;color:#64748b;direction:ltr;text-align:right;">${CBS.escapeHTML(s.student?.studentId || s.student?.email || '')}</div>
+          </div>
+          <span style="font-size:0.9rem;font-weight:bold;color:${s.status === 'present' ? '#16a34a' : '#dc2626'};background:${s.status === 'present' ? '#dcfce7' : '#fee2e2'};padding:4px 14px;border-radius:20px;">${s.status === 'present' ? 'حاضر' : 'غائب'}</span>
+        </div>`).join('')}
+      <div style="margin-top:24px;text-align:center;font-size:0.85rem;color:#94a3b8;">تم الإصدار عبر النظام الجامعي المتكامل</div>`;
+  }
+
+  /* كان الزر يستدعي downloadExcel() غير المعرَّفة إطلاقاً — أي ReferenceError
+     صامت عند كل ضغطة. نبني جدولاً مؤقتاً من السجل الحالي ونمرره لأداة التصدير
+     الموحّدة (تستخدم XLSX إن توفّرت وإلا CSV بترميز UTF-8 يدعم العربية). */
+  function downloadExcel() {
+    if (!currentRecord) return;
+    const students = currentRecord.students || [];
+    const subject  = currentRecord.subject?.name || 'غير محدد';
+    const table = document.createElement('table');
+    table.innerHTML = `
+      <thead>
+        <tr><th>م</th><th>الطالب</th><th>الرقم الجامعي / البريد</th><th>الحالة</th><th>المقرر</th><th>التاريخ</th></tr>
+      </thead>
+      <tbody>
+        ${students.map((s, i) => `
+          <tr>
+            <td>${i + 1}</td>
+            <td>${CBS.escapeHTML(s.student?.name) || '-'}</td>
+            <td>${CBS.escapeHTML(s.student?.studentId || s.student?.email || '')}</td>
+            <td>${s.status === 'present' ? 'حاضر' : 'غائب'}</td>
+            <td>${CBS.escapeHTML(subject)}</td>
+            <td>${CBS.escapeHTML(currentRecord.date)}</td>
+          </tr>`).join('')}
+      </tbody>`;
+    // خارج الشاشة: XLSX.table_to_book يحتاج الجدول متصلاً بالمستند
+    table.style.cssText = 'position:absolute;left:-99999px;top:0;';
+    document.body.appendChild(table);
+    try {
+      CBS.exportTableToExcel(table, `Attendance_${currentRecord.date}.xlsx`);
+    } finally {
+      table.remove();
+    }
+  }
+
+  function downloadPDF() {
+    if (!currentRecord) return;
+    CBS.exportPdfWithFeedback(buildReportHTML(), {
+      filename: `Attendance_${currentRecord.date}.pdf`
+    });
+  }
+
+  function viewReportFullscreen() {
+    if (!currentRecord) return;
+    const overlay = document.createElement('div');
+    overlay.id = 'reportOverlay';
+    // color صريح — الصفحة قد تكون بوضع ليلي ونصه أبيض على خلفيتنا البيضاء
+    overlay.style.cssText = 'position:fixed;inset:0;background:#fff;color:#1e293b;z-index:99999;overflow-y:auto;direction:rtl;font-family:"Tajawal",Arial,sans-serif;padding:20px;';
+    overlay.innerHTML = `
+      <div style="max-width:800px;margin:0 auto;">
+        <button onclick="document.getElementById('reportOverlay').remove()" style="position:sticky;top:0;float:left;background:#dc2626;color:#fff;border:none;border-radius:50%;width:40px;height:40px;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 6px rgba(0,0,0,0.15);z-index:1;"><i class="ri-close-line"></i></button>
+        ${buildReportHTML()}
+      </div>`;
+    document.body.appendChild(overlay);
+  }
+
+  document.getElementById('searchBox').addEventListener('input', e => {
+    const q = e.target.value.toLowerCase();
+    render(allHistory.filter(h => (h.subject?.name || '').toLowerCase().includes(q)));
+  });
+
+  loadHistory();
+</script>
+<script>document.addEventListener('cbs:refresh',e=>{e.preventDefault();loadHistory().finally(()=>e.detail.done());});</script>
+</body>
+</html>
+
+

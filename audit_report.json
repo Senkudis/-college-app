@@ -1,0 +1,427 @@
+[
+  {
+    "type": "Logic / Script",
+    "file": "demo-users.html",
+    "detail": "Page is missing /js/app.js inclusion"
+  },
+  {
+    "type": "Logic / Script",
+    "file": "index.html",
+    "detail": "Page is missing /js/app.js inclusion"
+  },
+  {
+    "type": "UI / Mobile",
+    "file": "play-store-resizer.html",
+    "detail": "Missing viewport meta tag for responsive layout"
+  },
+  {
+    "type": "Logic / Script",
+    "file": "welcome.html",
+    "detail": "Page is missing /js/app.js inclusion"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "admin-content.html",
+    "detail": "HTML calls undefined CBS function: CBS.compressImage()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "admin-content.html",
+    "detail": "HTML calls undefined CBS function: CBS.apiPut()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "admin-content.html",
+    "detail": "HTML calls undefined CBS function: CBS.readJson()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "admin_dashboard.html",
+    "detail": "HTML calls undefined CBS function: CBS.readJson()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "attendance-history.html",
+    "detail": "HTML calls undefined CBS function: CBS.readJson()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "attendance-history.html",
+    "detail": "HTML calls undefined CBS function: CBS.exportPdfWithFeedback()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "batch-selector.html",
+    "detail": "HTML calls undefined CBS function: CBS.readJson()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "calendar.html",
+    "detail": "HTML calls undefined CBS function: CBS.apiPut()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "calendar.html",
+    "detail": "HTML calls undefined CBS function: CBS.readJson()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "creator-studio.html",
+    "detail": "HTML calls undefined CBS function: CBS.apiPut()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "creator-studio.html",
+    "detail": "HTML calls undefined CBS function: CBS.readJson()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "dashboard.html",
+    "detail": "HTML calls undefined CBS function: CBS.readJson()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "financials.html",
+    "detail": "HTML calls undefined CBS function: CBS.compressImage()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "financials.html",
+    "detail": "HTML calls undefined CBS function: CBS.exportPdfWithFeedback()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "financials.html",
+    "detail": "HTML calls undefined CBS function: CBS.readJson()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "manage-attendance.html",
+    "detail": "HTML calls undefined CBS function: CBS.readJson()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "manage-batches.html",
+    "detail": "HTML calls undefined CBS function: CBS.readJson()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "manage-lectures.html",
+    "detail": "HTML calls undefined CBS function: CBS.apiPut()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "manage-lectures.html",
+    "detail": "HTML calls undefined CBS function: CBS.readJson()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "manage-notifications.html",
+    "detail": "HTML calls undefined CBS function: CBS.readJson()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "manage-subjects.html",
+    "detail": "HTML calls undefined CBS function: CBS.readJson()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "manage-submissions.html",
+    "detail": "HTML calls undefined CBS function: CBS.readJson()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "my-report.html",
+    "detail": "HTML calls undefined CBS function: CBS.exportPdf()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "my-report.html",
+    "detail": "HTML calls undefined CBS function: CBS.readJson()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "my-report.html",
+    "detail": "HTML calls undefined CBS function: CBS.exportPdfWithFeedback()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "notifications.html",
+    "detail": "HTML calls undefined CBS function: CBS.readJson()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "profile.html",
+    "detail": "HTML calls undefined CBS function: CBS.enableWebPush()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "profile.html",
+    "detail": "HTML calls undefined CBS function: CBS.readJson()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "reports.html",
+    "detail": "HTML calls undefined CBS function: CBS.exportPdf()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "reports.html",
+    "detail": "HTML calls undefined CBS function: CBS.saveFileNative()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "reports.html",
+    "detail": "HTML calls undefined CBS function: CBS.exportPdfWithFeedback()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "subject.html",
+    "detail": "HTML calls undefined CBS function: CBS.offlineGet()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "subject.html",
+    "detail": "HTML calls undefined CBS function: CBS.user()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "subject.html",
+    "detail": "HTML calls undefined CBS function: CBS.openFileExternally()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "subject.html",
+    "detail": "HTML calls undefined CBS function: CBS.offlineSave()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "submit-assignment.html",
+    "detail": "HTML calls undefined CBS function: CBS.compressImage()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "submit-assignment.html",
+    "detail": "HTML calls undefined CBS function: CBS.readJson()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "video-library.html",
+    "detail": "HTML calls undefined CBS function: CBS.readJson()"
+  },
+  {
+    "type": "Logic / JS Error",
+    "file": "watch-video.html",
+    "detail": "HTML calls undefined CBS function: CBS.readJson()"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "academic-event.routes.js",
+    "detail": "Line 30: Route POST/PUT/DELETE may be missing auth middleware: router.post(\"/\", role(\"dean\", \"leader\", \"admin\"), async (req, res) => {"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "academic-event.routes.js",
+    "detail": "Line 64: Route POST/PUT/DELETE may be missing auth middleware: router.put(\"/:id\", role(\"dean\", \"leader\", \"admin\"), async (req, res) => {"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "academic-event.routes.js",
+    "detail": "Line 83: Route POST/PUT/DELETE may be missing auth middleware: router.delete(\"/:id\", role(\"dean\", \"leader\", \"admin\"), async (req, res) => {"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "ai.routes.js",
+    "detail": "Line 321: Route POST/PUT/DELETE may be missing auth middleware: router.post('/summarize', auth, async (req, res) => {"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "ai.routes.js",
+    "detail": "Line 339: Route POST/PUT/DELETE may be missing auth middleware: router.post('/ask', auth, async (req, res) => {"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "ai.routes.js",
+    "detail": "Line 445: Route POST/PUT/DELETE may be missing auth middleware: router.post('/flashcards', auth, async (req, res) => {"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "assignment.routes.js",
+    "detail": "Line 13: Route POST/PUT/DELETE may be missing auth middleware: router.post(\"/\", auth, role(\"dean\", \"doctor\", \"leader\", \"admin\"), uploadLimiter,"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "assignment.routes.js",
+    "detail": "Line 174: Route POST/PUT/DELETE may be missing auth middleware: router.put(\"/:id\", auth, role(\"dean\", \"doctor\", \"leader\", \"admin\"), upload.singl"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "assignment.routes.js",
+    "detail": "Line 210: Route POST/PUT/DELETE may be missing auth middleware: router.delete(\"/:id\", auth, role(\"dean\", \"doctor\", \"leader\", \"admin\"), async (re"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "attendance.routes.js",
+    "detail": "Line 36: Route POST/PUT/DELETE may be missing auth middleware: router.post(\"/\", auth, role(\"dean\", \"doctor\", \"leader\", \"admin\"), verifySubjectA"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "batch.routes.js",
+    "detail": "Line 171: Route POST/PUT/DELETE may be missing auth middleware: router.post(\"/\", auth, role(\"dean\", \"leader\", \"admin\"), async (req, res) => {"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "batch.routes.js",
+    "detail": "Line 214: Route POST/PUT/DELETE may be missing auth middleware: router.put(\"/:id\", auth, role(\"dean\", \"leader\", \"admin\"), async (req, res) => {"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "batch.routes.js",
+    "detail": "Line 237: Route POST/PUT/DELETE may be missing auth middleware: router.delete(\"/:id\", auth, role(\"dean\", \"admin\"), async (req, res) => {"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "comment.routes.js",
+    "detail": "Line 23: Route POST/PUT/DELETE may be missing auth middleware: router.post(\"/:videoId/comments\", async (req, res) => {"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "comment.routes.js",
+    "detail": "Line 115: Route POST/PUT/DELETE may be missing auth middleware: router.delete(\"/comments/:id\", async (req, res) => {"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "device.routes.js",
+    "detail": "Line 12: Route POST/PUT/DELETE may be missing auth middleware: router.post('/register', auth, async (req, res) => {"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "device.routes.js",
+    "detail": "Line 33: Route POST/PUT/DELETE may be missing auth middleware: router.delete('/unregister', auth, async (req, res) => {"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "device.routes.js",
+    "detail": "Line 59: Route POST/PUT/DELETE may be missing auth middleware: router.post('/webpush/subscribe', auth, async (req, res) => {"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "financial.routes.js",
+    "detail": "Line 14: Route POST/PUT/DELETE may be missing auth middleware: router.post(\"/fees\", auth, role(\"dean\", \"admin\"), async (req, res) => {"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "financial.routes.js",
+    "detail": "Line 95: Route POST/PUT/DELETE may be missing auth middleware: router.post(\"/payments\", auth, role(\"dean\", \"admin\"), async (req, res) => {"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "financial.routes.js",
+    "detail": "Line 250: Route POST/PUT/DELETE may be missing auth middleware: router.post(\"/payment-requests\", auth, role(\"student\", \"leader\"), upload.single("
+  },
+  {
+    "type": "Security / Logic",
+    "file": "lecture.routes.js",
+    "detail": "Line 26: Route POST/PUT/DELETE may be missing auth middleware: router.post(\"/\", auth, role(\"dean\", \"doctor\", \"leader\", \"admin\"), uploadLimiter,"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "lecture.routes.js",
+    "detail": "Line 96: Route POST/PUT/DELETE may be missing auth middleware: router.post(\"/reorder\", auth, role(\"dean\", \"doctor\", \"leader\", \"admin\"), async ("
+  },
+  {
+    "type": "Security / Logic",
+    "file": "lecture.routes.js",
+    "detail": "Line 134: Route POST/PUT/DELETE may be missing auth middleware: router.put(\"/:id\", auth, role(\"dean\", \"doctor\", \"leader\", \"admin\"), async (req, "
+  },
+  {
+    "type": "Security / Logic",
+    "file": "notification.routes.js",
+    "detail": "Line 88: Route POST/PUT/DELETE may be missing auth middleware: router.post(\"/\", auth, role(\"dean\", \"doctor\", \"leader\", \"admin\"), async (req, re"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "notification.routes.js",
+    "detail": "Line 341: Route POST/PUT/DELETE may be missing auth middleware: router.post(\"/read/:id\", auth, async (req, res) => {"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "notification.routes.js",
+    "detail": "Line 364: Route POST/PUT/DELETE may be missing auth middleware: router.post(\"/read-all\", auth, async (req, res) => {"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "quiz.routes.js",
+    "detail": "Line 43: Route POST/PUT/DELETE may be missing auth middleware: router.post(\"/\", role(\"dean\", \"doctor\", \"leader\"), async (req, res) => {"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "quiz.routes.js",
+    "detail": "Line 57: Route POST/PUT/DELETE may be missing auth middleware: router.post(\"/:id/attempt\", role(\"student\", \"leader\"), async (req, res) => {"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "quiz.routes.js",
+    "detail": "Line 81: Route POST/PUT/DELETE may be missing auth middleware: router.delete(\"/:id\", role(\"dean\", \"doctor\", \"admin\"), async (req, res) => {"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "reference.routes.js",
+    "detail": "Line 12: Route POST/PUT/DELETE may be missing auth middleware: router.post(\"/\", auth, role(\"dean\", \"doctor\", \"leader\"), upload.single(\"file\"), "
+  },
+  {
+    "type": "Security / Logic",
+    "file": "reference.routes.js",
+    "detail": "Line 91: Route POST/PUT/DELETE may be missing auth middleware: router.delete(\"/:id\", auth, role(\"dean\", \"doctor\", \"admin\", \"leader\"), async (re"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "settings.routes.js",
+    "detail": "Line 26: Route POST/PUT/DELETE may be missing auth middleware: router.post(\"/\", auth, restrictTo(\"admin\", \"dean\"), async (req, res) => {"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "subject.routes.js",
+    "detail": "Line 12: Route POST/PUT/DELETE may be missing auth middleware: router.post(\"/\", auth, role(\"dean\", \"doctor\", \"admin\"), async (req, res) => {"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "subject.routes.js",
+    "detail": "Line 136: Route POST/PUT/DELETE may be missing auth middleware: router.put(\"/:id\", auth, role(\"dean\", \"doctor\", \"admin\"), verifySubjectAccess, a"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "subject.routes.js",
+    "detail": "Line 159: Route POST/PUT/DELETE may be missing auth middleware: router.delete(\"/:id\", auth, role(\"dean\", \"doctor\", \"admin\"), verifySubjectAccess"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "submission.routes.js",
+    "detail": "Line 15: Route POST/PUT/DELETE may be missing auth middleware: router.post(\"/submit\", auth, role(\"student\", \"leader\"), upload.single(\"file\"), a"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "submission.routes.js",
+    "detail": "Line 134: Route POST/PUT/DELETE may be missing auth middleware: router.delete(\"/:id/undo\", auth, role(\"student\", \"leader\"), async (req, res) => "
+  },
+  {
+    "type": "Security / Logic",
+    "file": "submission.routes.js",
+    "detail": "Line 166: Route POST/PUT/DELETE may be missing auth middleware: router.post(\"/:id/resubmit\", auth, role(\"student\", \"leader\"), upload.single(\"fil"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "video.routes.js",
+    "detail": "Line 56: Route POST/PUT/DELETE may be missing auth middleware: router.post(\"/init-upload\", auth, role(\"dean\", \"doctor\", \"leader\", \"admin\"), asy"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "video.routes.js",
+    "detail": "Line 109: Route POST/PUT/DELETE may be missing auth middleware: router.post(\"/upload-chunk/:uploadId\", auth, role(\"dean\", \"doctor\", \"leader\", \"a"
+  },
+  {
+    "type": "Security / Logic",
+    "file": "video.routes.js",
+    "detail": "Line 177: Route POST/PUT/DELETE may be missing auth middleware: router.post(\"/finalize/:uploadId\", auth, role(\"dean\", \"doctor\", \"leader\", \"admin"
+  }
+]

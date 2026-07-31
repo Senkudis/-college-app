@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>تقريري الأكاديمي | كلية تقنية المعلومات</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Al-Nasr CBS">
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <link rel="stylesheet" href="/css/style.css?v=2026073125">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026073125">
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
+  <style>
+    .report-banner {
+      background: linear-gradient(135deg, #2563eb, #1d4ed8, #1e40af);
+      border-radius: var(--radius-lg);
+      padding: 28px;
+      color: #fff;
+      margin-bottom: 24px;
+      box-shadow: var(--shadow-lg);
+      position: relative;
+      overflow: hidden;
+    }
+    .report-banner::after {
+      content: '\eeab';
+      font-family: 'remixicon';
+      font-style: normal;
+      font-size: 8rem;
+      position: absolute;
+      left: -20px;
+      bottom: -30px;
+      opacity: 0.15;
+    }
+    .stats-grid-3 {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 600px) {
+      .stats-grid-3 { grid-template-columns: 1fr; }
+    }
+    .stat-card-clean {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      padding: 20px;
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+    }
+    .stat-card-clean .num { font-size: 2rem; font-weight: 900; color: var(--primary); margin-bottom: 4px; }
+    .stat-card-clean .label { font-size: 0.9rem; color: var(--text-muted); font-weight: 700; }
+
+    .report-section-card {
+      background: var(--bg-card);
+      border-radius: var(--radius-lg);
+      border: 1px solid var(--border);
+      padding: 24px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-sm);
+    }
+    .section-title { font-size: 1.15rem; font-weight: 800; color: var(--text-main); margin-bottom: 18px; display: flex; align-items: center; gap: 8px; }
+    .subject-stat-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 0;
+      border-bottom: 1px dashed var(--border);
+    }
+    .subject-stat-row:last-child { border-bottom: none; }
+    .progress-bar-wrap { width: 140px; background: var(--bg-main); height: 10px; border-radius: 6px; overflow: hidden; }
+    .progress-bar-inner { height: 100%; border-radius: 6px; transition: width 0.5s ease; }
+  </style>
+</head>
+<body>
+
+<header class="main-header">
+  <div class="header-brand">
+    <button class="btn-icon" onclick="CBS.goHome()" title="رجوع"><i class="ri-arrow-right-line"></i></button>
+    <div class="header-title-group">
+      <strong>كلية تقنية المعلومات</strong>
+      <small>تقرير الأداء والتحصيل الأكاديمي</small>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" id="exportPdfBtn" onclick="exportReportPDF()" title="تحميل التقرير PDF" disabled><i class="ri-file-pdf-2-line"></i></button>
+  </div>
+</header>
+
+<div class="page-content">
+  <div class="report-banner">
+    <h2 id="reportUserName" style="font-size:1.6rem;font-weight:900;margin-bottom:6px">تقرير الأداء الشامل</h2>
+    <p id="reportBatchName" style="opacity:0.9;font-size:0.95rem"></p>
+  </div>
+
+  <div id="loading" class="loading-state">
+    <div class="uib-loader dark"><div class="half"></div><div class="half"></div></div>
+    <p>جاري تجميع التقرير الأكاديمي...</p>
+  </div>
+
+  <div id="reportContent" style="display:none">
+    <div class="stats-grid-3">
+      <div class="stat-card-clean">
+        <div id="attendRate" class="num">-</div>
+        <div class="label">نسبة الالتزام بالحضور</div>
+      </div>
+      <div class="stat-card-clean">
+        <div id="assignCount" class="num">-</div>
+        <div class="label">الواجبات المنجزة</div>
+      </div>
+      <div class="stat-card-clean">
+        <div id="pointsCount" class="num">-</div>
+        <div class="label">نقاط التميز الأكاديمي</div>
+      </div>
+    </div>
+
+    <!-- حضور المواد -->
+    <div class="report-section-card">
+      <div class="section-title"><i class="ri-calendar-check-line" style="color:var(--success)"></i> نسبة الحضور حسب المواد</div>
+      <div id="subjectsAttendanceList"></div>
+      <canvas id="attendanceDonut" width="200" height="200" style="display:block;margin:16px auto 0;"></canvas>
+    </div>
+
+    <!-- سجل تسليمات الواجبات -->
+    <div class="report-section-card">
+      <div class="section-title"><i class="ri-task-line" style="color:var(--warning)"></i> آخر الواجبات المسلمة</div>
+      <div id="submissionsList"></div>
+    </div>
+
+    <!-- نتائج الاختبارات -->
+    <div class="report-section-card">
+      <div class="section-title"><i class="ri-question-answer-line" style="color:var(--danger)"></i> نتائج الاختبارات القصيرة</div>
+      <div id="quizzesList"></div>
+    </div>
+  </div>
+</div>
+
+<footer class="main-footer">
+  حقوق النشر &copy; <span id="year"></span> جامعة النصر التقنية
+</footer>
+
+<script src="/js/app.js?v=2026073125"></script>
+<script>
+  CBS.init();
+  const user = CBS.getUser();
+  const userRole = CBS.getPrimaryRole(user);
+  if (user?.roles?.includes('admin')) {
+    // getPrimaryRole لا يعرف دور admin — نفحصه مباشرة حتى لا يعلق في صفحة تقرير طالب
+    window.location.replace('/admin_dashboard.html');
+  } else if (userRole === 'dean') {
+    window.location.replace('/reports.html');
+  } else if (userRole === 'doctor') {
+    window.location.replace('/dashboard.html');
+  }
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  let currentReport = null;
+
+  async function loadReport() {
+    try {
+      const res = await CBS.apiGet('/api/student/report');
+      const data = await CBS.readJson(res);
+      const report = data.data || data.report || data;
+      currentReport = report;
+
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('reportContent').style.display = 'block';
+      document.getElementById('exportPdfBtn').disabled = false;
+
+      if (report.student) {
+        document.getElementById('reportUserName').textContent = `تقرير الطالب: ${report.student.name}`;
+        document.getElementById('reportBatchName').textContent = `الدفعة: ${report.student.batch?.name || 'غير محدد'}`;
+      }
+
+      const attRate = report.attendance?.overallRate;
+      document.getElementById('attendRate').textContent =
+        (attRate !== null && attRate !== undefined) ? `${attRate}%` : 'غير متاح';
+      document.getElementById('assignCount').textContent =
+        `${report.assignments?.submittedCount ?? 0} / ${report.assignments?.totalCount ?? 0}`;
+      document.getElementById('pointsCount').textContent = report.totalPoints || 0;
+
+      // الحضور حسب المواد
+      const subAttEl = document.getElementById('subjectsAttendanceList');
+      if (report.attendance?.bySubject?.length) {
+        subAttEl.innerHTML = report.attendance.bySubject.map(s => {
+          const color = s.rate >= 75 ? 'var(--success)' : (s.rate >= 50 ? 'var(--warning)' : 'var(--danger)');
+          return `
+            <div class="subject-stat-row">
+              <span style="font-weight:700;color:var(--text-main)">${CBS.escapeHTML(s.subjectName)}</span>
+              <div style="display:flex;align-items:center;gap:12px">
+                <div class="progress-bar-wrap">
+                  <div class="progress-bar-inner" style="width:${s.rate}%;background:${color}"></div>
+                </div>
+                <span style="font-weight:800;width:45px;text-align:left;color:${color}">${s.rate}%</span>
+              </div>
+            </div>
+          `;
+        }).join('');
+      } else {
+        subAttEl.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:1rem">لا توجد سجلات حضور مسجلة حتى الآن</p>';
+      }
+      drawAttendanceChart(report);
+
+      // الواجبات المسلمة
+      const subEl = document.getElementById('submissionsList');
+      if (report.assignments?.list?.length) {
+        subEl.innerHTML = report.assignments.list.map(a => `
+          <div class="subject-stat-row">
+            <div>
+              <div style="font-weight:700;color:var(--text-main)">${CBS.escapeHTML(a.title || 'واجب')}</div>
+              <div style="font-size:0.8rem;color:var(--text-muted)">تاريخ التسليم: ${new Date(a.submittedAt).toLocaleDateString('ar')}</div>
+            </div>
+            <span style="padding:4px 12px;border-radius:12px;font-size:0.8rem;font-weight:700;background:var(--success-bg);color:var(--success)">${a.status === 'graded' && a.grade !== undefined ? `الدرجة: ${a.grade}` : 'تم التسليم'}</span>
+          </div>
+        `).join('');
+      } else {
+        subEl.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:1rem">لم يتم تسليم أي واجبات بعد</p>';
+      }
+
+      // نتائج الاختبارات
+      const quizEl = document.getElementById('quizzesList');
+      if (report.quizzes?.list?.length) {
+        quizEl.innerHTML = report.quizzes.list.map(q => `
+          <div class="subject-stat-row">
+            <div>
+              <div style="font-weight:700;color:var(--text-main)">${CBS.escapeHTML(q.title || 'اختبار')}</div>
+              <div style="font-size:0.8rem;color:var(--text-muted)">تاريخ المحاولة: ${new Date(q.submittedAt).toLocaleDateString('ar')}</div>
+            </div>
+            <span style="font-weight:800;font-size:1rem;color:var(--primary)">${q.score} / ${q.maxScore}</span>
+          </div>
+        `).join('');
+      } else {
+        quizEl.innerHTML = '<p style="color:var(--text-muted);text-align:center;padding:1rem">لم يتم تقديم أي اختبارات قصيرة بعد</p>';
+      }
+
+    } catch (err) {
+      document.getElementById('loading').innerHTML = '<p style="color:var(--danger)">حدث خطأ أثناء تحميل التقرير الأكاديمي</p>';
+    }
+  }
+
+  /* قالب الطباعة: كل الألوان صريحة (لا متغيرات CSS) حتى لا يخرج الملف
+     بخلفية سوداء عندما يكون التطبيق في الوضع الليلي. */
+  function buildPrintHTML() {
+    const r = currentReport;
+    const esc = s => CBS.escapeHTML(s);
+    const row = (right, left) => `
+      <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #e2e8f0;">
+        <div>${right}</div><div style="text-align:left">${left}</div>
+      </div>`;
+    const box = (num, lbl) => `
+      <div style="flex:1;text-align:center;background:#f8fafc;border:1px solid #e2e8f0;border-radius:10px;padding:14px;">
+        <div style="font-size:1.6rem;font-weight:800;color:#2563eb;">${num}</div>
+        <div style="font-size:0.82rem;color:#64748b;">${lbl}</div>
+      </div>`;
+    const section = (title, body) => `
+      <div style="margin-top:22px;page-break-inside:avoid;">
+        <div style="font-weight:800;color:#0d3b66;border-right:4px solid #2563eb;padding-right:10px;margin-bottom:10px;">${title}</div>
+        ${body || '<div style="color:#94a3b8;font-size:0.9rem;">لا توجد بيانات</div>'}
+      </div>`;
+
+    const attRate = r.attendance?.overallRate;
+    const subjects = (r.attendance?.bySubject || []).map(s => {
+      const color = s.rate >= 75 ? '#16a34a' : (s.rate >= 50 ? '#d97706' : '#dc2626');
+      return row(
+        `<span style="font-weight:700;color:#1e293b;">${esc(s.subjectName)}</span>`,
+        `<span style="font-weight:800;color:${color};">${s.rate}%</span>`
+      );
+    }).join('');
+    const assignments = (r.assignments?.list || []).map(a => row(
+      `<div style="font-weight:700;color:#1e293b;">${esc(a.title || 'واجب')}</div>
+       <div style="font-size:0.78rem;color:#64748b;">${new Date(a.submittedAt).toLocaleDateString('ar-EG')}</div>`,
+      `<span style="font-weight:700;color:#16a34a;">${a.status === 'graded' && a.grade !== undefined ? 'الدرجة: ' + esc(String(a.grade)) : 'تم التسليم'}</span>`
+    )).join('');
+    const quizzes = (r.quizzes?.list || []).map(q => row(
+      `<div style="font-weight:700;color:#1e293b;">${esc(q.title || 'اختبار')}</div>
+       <div style="font-size:0.78rem;color:#64748b;">${new Date(q.submittedAt).toLocaleDateString('ar-EG')}</div>`,
+      `<span style="font-weight:800;color:#2563eb;">${esc(String(q.score))} / ${esc(String(q.maxScore))}</span>`
+    )).join('');
+
+    return `
+      <div style="background:#ffffff;color:#1e293b;padding:30px;direction:rtl;font-family:'AppBodyFont','Cairo',sans-serif;position:relative;">
+        <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px double #0d3b66;padding-bottom:16px;margin-bottom:20px;">
+          <div>
+            <h2 style="color:#0d3b66;margin:0 0 4px;font-size:1.5rem;font-weight:900;">جامعة النصر التقنية</h2>
+            <h3 style="color:#2563eb;margin:0 0 4px;font-size:1.1rem;font-weight:700;">كلية تقنية المعلومات — الشؤون الأكاديمية</h3>
+            <div style="color:#64748b;font-size:0.82rem;">وثيقة كشف الدرجات الأكاديمي وسجل التحصيل الرسمي</div>
+          </div>
+          <div style="text-align:left;">
+            <img src="/assets/logo.png" style="width:70px;height:70px;object-fit:contain;" alt="Logo">
+          </div>
+        </div>
+
+        <div style="background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:16px;margin-bottom:20px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+          <div><strong>اسم الطالب:</strong> ${esc(r.student?.name || '')}</div>
+          <div><strong>الرقم الجامعي:</strong> ${esc(r.student?.studentId || r.student?.email || '-')}</div>
+          <div><strong>الدفعة الأكاديمية:</strong> ${esc(r.student?.batch?.name || 'غير محدد')}</div>
+          <div><strong>تاريخ الإصدار:</strong> ${new Date().toLocaleDateString('ar-EG')}</div>
+        </div>
+
+        <div style="display:flex;gap:12px;margin-bottom:20px;">
+          ${box(attRate !== null && attRate !== undefined ? attRate + '%' : 'غير متاح', 'نسبة الالتزام بالحضور')}
+          ${box(`${r.assignments?.submittedCount ?? 0} / ${r.assignments?.totalCount ?? 0}`, 'الواجبات والتكاليف')}
+          ${box(r.totalPoints || 0, 'نقاط التميز الأكاديمي')}
+        </div>
+
+        ${section('تفاصيل الالتزام والحضور حسب المقررات', subjects)}
+        ${section('سجل التكاليف والواجبات المنجزة', assignments)}
+        ${section('نتائج الاختبارات والتقييمات القصيرة', quizzes)}
+
+        <div style="margin-top:40px;display:flex;justify-content:space-between;align-items:flex-end;border-top:1px solid #cbd5e1;padding-top:20px;font-size:0.85rem;color:#475569;">
+          <div style="text-align:center;">
+            <div style="font-weight:700;margin-bottom:30px;">مسؤول الشؤون الأكاديمية</div>
+            <div style="font-size:0.8rem;color:#94a3b8;">اعتماد إلكتروني</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="border:2px dashed #0d3b66;border-radius:50%;width:80px;height:80px;display:flex;align-items:center;justify-content:center;color:#0d3b66;font-weight:800;font-size:0.7rem;margin:0 auto 6px;transform:rotate(-12deg);">
+              ختم الكلية
+            </div>
+            <div style="font-size:0.78rem;color:#64748b;">مستند رسمي صادِر آلياً</div>
+          </div>
+          <div style="text-align:center;">
+            <div style="font-weight:700;margin-bottom:30px;">عميد الكلية</div>
+            <div style="font-size:0.8rem;color:#94a3b8;">جامعة النصر التقنية</div>
+          </div>
+        </div>
+      </div>`;
+  }
+
+  async function exportReportPDF() {
+    if (!currentReport) return;
+    const name = (currentReport.student?.name || 'student').replace(/[^\p{L}\p{N}]+/gu, '_');
+    /* نمرر النص مباشرةً بدل إنشاء عنصر في الصفحة:
+       - العنصر السابق كان position:fixed، والعناصر الثابتة تخرج من تدفق
+         المستند فلا تُسهم في ارتفاع الحاوية — فكان القياس 48px بدل 1448px
+         ويخرج ملف شبه فارغ (6.7KB مقابل 159KB).
+       - وإزالة fixed وحدها كانت ستُظهر الوثيقة للمستخدم لحظياً داخل الصفحة.
+       CBS.exportPdf يبني حاويته المخفية بنفسه ويقيسها بشكل صحيح. */
+    await CBS.exportPdfWithFeedback(buildPrintHTML(), {
+      filename: `Academic_Transcript_${name}.pdf`,
+      width: 800,
+      margin: 8
+    });
+  }
+
+  function drawAttendanceChart(r) {
+    const canvas = document.getElementById('attendanceDonut');
+    if (!canvas) return;
+    const subjects = r.attendance?.bySubject || [];
+    if (!subjects.length) { canvas.style.display='none'; return; }
+    canvas.style.display = 'block';
+    const ctx = canvas.getContext('2d');
+    const W = canvas.width, H = canvas.height, cx = W/2, cy = H/2, radius = Math.min(W,H)/2 - 16;
+    const present = subjects.reduce((a,s)=>a+(s.present||0),0);
+    const total   = subjects.reduce((a,s)=>a+(s.total||s.totalLectures||0),0);
+    const absent  = Math.max(0, total - present);
+    ctx.clearRect(0,0,W,H);
+    function arc(start, end, color) {
+      ctx.beginPath(); ctx.moveTo(cx,cy);
+      ctx.arc(cx,cy,radius,start,end);
+      ctx.closePath(); ctx.fillStyle=color; ctx.fill();
+    }
+    const total2 = present+absent;
+    if (!total2) return;
+    const pAngle = (present/total2)*(2*Math.PI);
+    arc(-Math.PI/2, -Math.PI/2+pAngle, '#16a34a');
+    arc(-Math.PI/2+pAngle, -Math.PI/2+2*Math.PI, '#fee2e2');
+    // Donut hole
+    ctx.beginPath(); ctx.arc(cx,cy,radius*0.58,0,2*Math.PI);
+    ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--bg-card').trim() || '#fff';
+    ctx.fill();
+    // Center text
+    const pct = Math.round((present/total2)*100);
+    ctx.fillStyle = '#16a34a'; ctx.font = 'bold 22px system-ui';
+    ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText(pct+'%', cx, cy-8);
+    ctx.fillStyle = '#64748b'; ctx.font = '11px system-ui';
+    ctx.fillText('التزام', cx, cy+12);
+  }
+
+  loadReport();
+</script>
+</body>
+</html>
+

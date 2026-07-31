@@ -1,0 +1,912 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>الجدول الدراسي والتقويم الأكاديمي | كلية تقنية المعلومات</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Al-Nasr CBS">
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <link rel="stylesheet" href="/css/style.css?v=2026073125">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026073125">
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
+  <style>
+    :root {
+      --calendar-primary: #0d3b66;
+      --calendar-accent: #2176c7;
+    }
+    .calendar-banner {
+      background: linear-gradient(135deg, #0d3b66 0%, #1a6fc4 60%, #2176c7 100%);
+      border-radius: 20px;
+      padding: 24px 28px;
+      color: #fff;
+      margin-bottom: 24px;
+      box-shadow: 0 10px 30px rgba(13,59,102,0.25);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+    .calendar-banner::before {
+      content: '\eb29';
+      font-family: 'remixicon';
+      font-style: normal;
+      font-size: 8rem;
+      position: absolute;
+      left: -20px;
+      bottom: -30px;
+      opacity: 0.12;
+      pointer-events: none;
+    }
+    .month-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: var(--bg-card);
+      border-radius: 16px;
+      padding: 14px 20px;
+      margin-bottom: 20px;
+      border: 1px solid var(--border);
+      flex-wrap: wrap;
+      gap: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.04);
+    }
+    .month-title { font-size: 1.3rem; font-weight: 800; color: var(--text-primary); display:flex; align-items:center; gap:8px; }
+    .btn-month { 
+      background: var(--bg-input); color: var(--text-primary); border: 1px solid var(--border); 
+      border-radius: 12px; padding: 8px 16px; font-weight: 700; cursor: pointer; 
+      transition: all 0.2s; display: flex; align-items: center; gap: 6px; font-size: 0.9rem;
+    }
+    .btn-month:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+    .btn-today { background: rgba(33,118,199,0.12); color: #2176c7; border: 1px solid rgba(33,118,199,0.3); }
+    .btn-today:hover { background: #2176c7; color: #fff; }
+
+    .filter-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 24px;
+      overflow-x: auto;
+      padding-bottom: 4px;
+    }
+    .filter-tab {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      padding: 10px 18px;
+      border-radius: 14px;
+      font-weight: 700;
+      font-size: 0.9rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.2s;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .filter-tab.active {
+      background: linear-gradient(135deg, #0d3b66, #2176c7);
+      color: white;
+      border-color: transparent;
+      box-shadow: 0 4px 14px rgba(13,59,102,0.25);
+    }
+
+    /* Day Group Container */
+    .day-group {
+      margin-bottom: 24px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 18px;
+      overflow: hidden;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.05);
+    }
+    .day-header {
+      background: var(--bg-body);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .day-title {
+      font-weight: 800;
+      font-size: 1.05rem;
+      color: var(--text-primary);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .day-count {
+      background: var(--primary-light);
+      color: var(--primary);
+      border-radius: 20px;
+      padding: 2px 10px;
+      font-size: 0.78rem;
+      font-weight: 700;
+    }
+
+    .event-item {
+      padding: 18px 20px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
+      transition: background 0.2s;
+    }
+    .event-item:last-child { border-bottom: none; }
+    .event-item:hover { background: rgba(0,0,0,0.015); }
+    
+    .event-time-badge {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      min-width: 85px;
+      text-align: center;
+      flex-shrink: 0;
+    }
+    .event-time-main { font-weight: 800; font-size: 0.95rem; color: var(--text-primary); line-height: 1.2; }
+    .event-time-sub { font-size: 0.72rem; color: var(--text-muted); margin-top: 3px; }
+
+    .event-content { flex: 1; min-width: 0; }
+    .event-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+    }
+    .event-title-text { font-size: 1.1rem; font-weight: 800; color: var(--text-primary); margin-bottom: 4px; word-break: break-word; }
+    .event-sub-info { display: flex; flex-wrap: wrap; gap: 12px; font-size: 0.85rem; color: var(--text-secondary); align-items: center; }
+    .event-sub-item { display: flex; align-items: center; gap: 4px; }
+
+    .event-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+    .btn-event-action {
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      color: var(--text-secondary);
+      border-radius: 10px;
+      width: 34px;
+      height: 34px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .btn-event-action:hover { background: var(--primary); color: white; border-color: var(--primary); }
+    .btn-event-action.delete:hover { background: #ef4444; color: white; border-color: #ef4444; }
+
+    /* Manage Button for Admin / Leader */
+    #addScheduleBtn {
+      background: white;
+      color: #0d3b66;
+      border: none;
+      border-radius: 14px;
+      padding: 12px 20px;
+      font-weight: 800;
+      font-size: 0.95rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+      transition: all 0.2s;
+    }
+    #addScheduleBtn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.2); }
+
+    /* Modal Form Styling */
+    .modal-content { max-width: 520px; border-radius: 22px; overflow: hidden; padding: 0; }
+    .modal-header-gradient {
+      background: linear-gradient(135deg, #0d3b66, #2176c7);
+      padding: 22px 24px;
+      color: white;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .form-grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+    @media (max-width: 480px) { .form-grid-2 { grid-template-columns: 1fr; } }
+  
+/* --- Timetable CSS --- */
+.view-toggle {
+  display: flex;
+  background: var(--bg-card);
+  padding: 6px;
+  border-radius: 14px;
+  border: 1px solid var(--border);
+  margin-bottom: 20px;
+  gap: 6px;
+}
+.view-toggle button {
+  flex: 1;
+  padding: 12px;
+  border-radius: 10px;
+  border: none;
+  background: transparent;
+  color: var(--text-muted);
+  font-size: 0.95rem;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: 0.2s;
+}
+.view-toggle button:hover {
+  background: rgba(0,0,0,0.03);
+}
+.dark-mode .view-toggle button:hover {
+  background: rgba(255,255,255,0.05);
+}
+.view-toggle button.active {
+  background: var(--primary);
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(10, 102, 194, 0.3);
+}
+
+.timetable-container {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 12px;
+  margin-top: 20px;
+}
+@media (max-width: 768px) {
+  .timetable-container {
+    grid-template-columns: 1fr;
+  }
+}
+.tt-day {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+.tt-day-header {
+  background: rgba(10, 102, 194, 0.05);
+  padding: 14px;
+  text-align: center;
+  font-weight: 800;
+  color: var(--primary);
+  border-bottom: 1px solid var(--border);
+}
+.tt-day.today {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 2px var(--primary);
+}
+.tt-day.today .tt-day-header {
+  background: var(--primary);
+  color: #fff;
+}
+.tt-events {
+  padding: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  flex: 1;
+}
+.tt-event {
+  background: var(--bg-body);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 0.85rem;
+  position: relative;
+  overflow: hidden;
+}
+.tt-event::before {
+  content: '';
+  position: absolute;
+  right: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+  background: var(--primary);
+}
+.tt-event.type-quiz::before { background: #eab308; }
+.tt-event.type-assignment::before { background: #f97316; }
+.tt-event.type-holiday::before { background: #10b981; }
+
+.tt-time {
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.tt-title {
+  font-weight: 700;
+  color: var(--primary);
+  margin-bottom: 6px;
+  line-height: 1.4;
+}
+.tt-meta {
+  color: var(--text-muted);
+  font-size: 0.8rem;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-top: 4px;
+}
+.tt-empty {
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  padding: 20px 0;
+  opacity: 0.7;
+}
+
+</style>
+</head>
+<body>
+
+<header class="main-header">
+  <div class="header-brand">
+    <button class="btn-icon" onclick="CBS.goHome()" title="رجوع"><i class="ri-arrow-right-line"></i></button>
+    <div class="header-title-group">
+      <strong>كلية تقنية المعلومات</strong>
+      <small>الجدول الدراسي والتقويم الأكاديمي</small>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="CBS.logout()" title="خروج"><i class="ri-logout-box-r-line"></i></button>
+  </div>
+</header>
+
+<div class="page-content">
+  <!-- Banner -->
+  <div class="calendar-banner">
+    <div>
+      <h2 style="font-size:1.55rem;font-weight:900;margin-bottom:6px">الجدول الدراسي والتقويم الأكاديمي</h2>
+      <p style="opacity:0.9;font-size:0.92rem;margin:0">جدول المحاضرات، مواعيد تسليم الواجبات، الاختبارات القصيرة، والأحداث الرسمية للدفعة</p>
+    </div>
+    <!-- Manage Button (Shown dynamically if Admin/Leader) -->
+    <div id="managerControls" style="display:none;">
+      <button id="addScheduleBtn" onclick="openAddModal()">
+        <i class="ri-add-circle-fill" style="font-size:1.25rem;"></i>
+        <span>إضافة موعد / محاضرة</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Month Navigation Bar -->
+  
+  <!-- View Toggle -->
+  <div class="view-toggle">
+    <button id="btnMonthView" class="active" onclick="switchView('month')"><i class="ri-list-check"></i> قائمة المواعيد (شهري)</button>
+    <button id="btnWeekView" onclick="switchView('week')"><i class="ri-layout-grid-fill"></i> الجدول الأسبوعي</button>
+  </div>
+
+  <div class="month-bar">
+    <div style="display:flex; gap:8px; align-items:center;">
+      <button class="btn-month" onclick="changeMonth(-1)"><i class="ri-arrow-right-s-line"></i> السابق</button>
+      <button class="btn-month btn-today" onclick="goToToday()">اليوم</button>
+      <button class="btn-month" onclick="changeMonth(1)">التالي <i class="ri-arrow-left-s-line"></i></button>
+    </div>
+    <div id="monthLabel" class="month-title">جاري التحميل...</div>
+  </div>
+
+  <!-- Filter Tabs -->
+  <div class="filter-tabs">
+    <button class="filter-tab active" onclick="setFilter('all', this)"><i class="ri-layout-grid-line"></i> كل المواعيد</button>
+    <button class="filter-tab" onclick="setFilter('academicEvent', this)"><i class="ri-calendar-event-line"></i> محاضرات وأحداث</button>
+    <button class="filter-tab" onclick="setFilter('assignment', this)"><i class="ri-file-text-line"></i> واجبات وتكليفات</button>
+    <button class="filter-tab" onclick="setFilter('quiz', this)"><i class="ri-timer-2-line"></i> اختبارات قصيرة</button>
+  </div>
+
+  <!-- Loading State -->
+  <div id="loading" class="loading-state" style="padding: 60px 0;">
+    <div class="uib-loader dark"><div class="half"></div><div class="half"></div></div>
+    <p style="margin-top:14px;font-weight:700;">جاري تحميل جدول المواعيد...</p>
+  </div>
+
+  <!-- Events Container Grouped By Day -->
+  <div id="weeklyTimetableContainer" style="display:none;" class="timetable-container"></div>
+  <div id="eventsContainer" style="display:none;"></div>
+
+  <!-- Empty State -->
+  <div id="emptyState" style="display:none;text-align:center;padding:4rem 1rem;background:var(--bg-card);border:1px solid var(--border);border-radius:20px;">
+    <i class="ri-calendar-check-line" style="font-size:4rem;display:block;margin-bottom:14px;color:var(--text-muted);opacity:0.6;"></i>
+    <h3 style="font-size:1.2rem;font-weight:800;color:var(--text-primary);margin-bottom:6px;">لا توجد مواعيد أو محاضرات في هذا الشهر</h3>
+    <p style="color:var(--text-muted);font-size:0.92rem;max-width:400px;margin:0 auto;">لم يتم تسجيل أي أحداث أو مهام في هذه الفترة. يمكنك تصفح الشهور الأخرى أو إضافة موعد جديد.</p>
+  </div>
+</div>
+
+<!-- ================= ADD / EDIT EVENT MODAL ================= -->
+<div id="addEditEventModal" class="modal-overlay">
+  <div class="modal-box" style="max-width: 520px; overflow: hidden;">
+    <div class="modal-header-gradient">
+      <div>
+        <h3 id="modalTitleText" style="margin:0;font-size:1.2rem;font-weight:800;display:flex;align-items:center;gap:8px;">
+          <i class="ri-calendar-add-line"></i> إضافة موعد أو محاضرة للجدول
+        </h3>
+        <div style="font-size:0.78rem;opacity:0.8;margin-top:3px;">سيظهر هذا الموعد فوراً لجميع طلاب الدفعة</div>
+      </div>
+      <button onclick="CBS.closeModal('addEditEventModal')" style="background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:36px;height:36px;color:white;font-size:1.3rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+        <i class="ri-close-line"></i>
+      </button>
+    </div>
+    <div class="modal-body" style="padding:24px;">
+      <form id="eventForm" onsubmit="handleSaveEvent(event)">
+        <input type="hidden" id="editEventId">
+        
+        <div class="form-group mb-3">
+          <label style="font-weight:700;font-size:0.88rem;color:var(--text-secondary);display:block;margin-bottom:6px;">عنوان الموعد / المحاضرة <span style="color:#ef4444;">*</span></label>
+          <input type="text" id="eventTitle" class="form-control" placeholder="مثال: محاضرة خوارزميات إضافية، أو مراجعة ميدترم" required>
+        </div>
+
+        <div class="form-grid-2 mb-3">
+          <div class="form-group">
+            <label style="font-weight:700;font-size:0.88rem;color:var(--text-secondary);display:block;margin-bottom:6px;">نوع الحدث <span style="color:#ef4444;">*</span></label>
+            <select id="eventType" class="form-control" required>
+              <option value="lecture">محاضرة دراسية</option>
+              <option value="exam">امتحان / اختبار</option>
+              <option value="assignment">موعد تسليم تكليف</option>
+              <option value="meeting">اجتماع / لقاء</option>
+              <option value="announcement">تنبيه أكاديمي</option>
+              <option value="holiday">عطلة رسمية</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label style="font-weight:700;font-size:0.88rem;color:var(--text-secondary);display:block;margin-bottom:6px;">المادة الدراسية (اختياري)</label>
+            <select id="eventSubject" class="form-control">
+              <option value="">— عام لجميع المواد —</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="form-grid-2 mb-3">
+          <div class="form-group">
+            <label style="font-weight:700;font-size:0.88rem;color:var(--text-secondary);display:block;margin-bottom:6px;">التاريخ وموعد البداية <span style="color:#ef4444;">*</span></label>
+            <input type="datetime-local" id="eventStart" class="form-control" required>
+          </div>
+          <div class="form-group">
+            <label style="font-weight:700;font-size:0.88rem;color:var(--text-secondary);display:block;margin-bottom:6px;">موعد النهاية (اختياري)</label>
+            <input type="datetime-local" id="eventEnd" class="form-control">
+          </div>
+        </div>
+
+        <div class="form-group mb-3">
+          <label style="font-weight:700;font-size:0.88rem;color:var(--text-secondary);display:block;margin-bottom:6px;">المكان / القاعة (اختياري)</label>
+          <input type="text" id="eventLocation" class="form-control" placeholder="مثال: قاعة 3B، أو رابط زووم، أو معمل البرمجة">
+        </div>
+
+        <div class="form-group mb-4">
+          <label style="font-weight:700;font-size:0.88rem;color:var(--text-secondary);display:block;margin-bottom:6px;">تفاصيل وملاحظات إضافية</label>
+          <textarea id="eventDescription" class="form-control" rows="3" placeholder="أدخل أي ملاحظات هامة للطلاب بخصوص هذا الموعد..."></textarea>
+        </div>
+
+        <button type="submit" id="saveEventBtn" class="btn btn-primary btn-block" style="padding:14px;font-size:1.05rem;font-weight:800;border-radius:14px;">
+          <i class="ri-check-line"></i> حفظ ونشر في جدول الدفعة
+        </button>
+      </form>
+    </div>
+  </div>
+</div>
+
+<footer class="main-footer">
+  حقوق النشر &copy; <span id="year"></span> جامعة النصر التقنية
+</footer>
+
+<script src="/js/app.js?v=2026073125"></script>
+<script>
+  CBS.init();
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  let currentDate = new Date();
+  let allEvents = [];
+  let currentFilter = 'all';
+  let canUserManage = false;
+  let subjectsLoaded = false;
+
+  // Check initial user role for instant button display
+  const user = CBS.getUser();
+  const roles = user?.roles || (user?.role ? [user.role] : []);
+  if (roles.includes('dean') || roles.includes('leader') || roles.includes('admin')) {
+    canUserManage = true;
+    document.getElementById('managerControls').style.display = 'block';
+  }
+
+  function updateMonthLabel() {
+    const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+    document.getElementById('monthLabel').innerHTML = `
+      <i class="ri-calendar-2-line" style="color:var(--primary);"></i>
+      ${months[currentDate.getMonth()]} ${currentDate.getFullYear()}
+    `;
+  }
+
+  function changeMonth(delta) {
+    currentDate.setMonth(currentDate.getMonth() + delta);
+    updateMonthLabel();
+    loadEvents();
+  }
+
+  function goToToday() {
+    currentDate = new Date();
+    updateMonthLabel();
+    loadEvents();
+  }
+
+  function setFilter(filterType, btnEl) {
+    currentFilter = filterType;
+    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+    btnEl.classList.add('active');
+    renderEvents();
+  }
+
+  async function loadEvents() {
+    document.getElementById('loading').style.display = 'block';
+    document.getElementById('eventsContainer').style.display = 'none';
+    document.getElementById('emptyState').style.display = 'none';
+
+    try {
+      const year = currentDate.getFullYear();
+      const month = currentDate.getMonth() + 1;
+      const res = await CBS.apiGet(`/api/calendar/events?year=${year}&month=${month}`);
+      const data = await CBS.readJson(res);
+      
+      allEvents = data.data?.events || data.events || [];
+      if (data.canManage || data.data?.canManage) {
+        canUserManage = true;
+        document.getElementById('managerControls').style.display = 'block';
+      }
+
+      document.getElementById('loading').style.display = 'none';
+      renderEvents();
+    } catch (err) {
+      document.getElementById('loading').innerHTML = '<p style="color:var(--danger);text-align:center;font-weight:700;">حدث خطأ أثناء تحميل بيانات التقويم</p>';
+    }
+  }
+
+  
+  let currentViewMode = 'month'; // 'month' or 'week'
+  
+  function switchView(mode) {
+    currentViewMode = mode;
+    document.getElementById('btnMonthView').classList.toggle('active', mode === 'month');
+    document.getElementById('btnWeekView').classList.toggle('active', mode === 'week');
+    
+    document.querySelector('.filter-tabs').style.display = (mode === 'month') ? 'flex' : 'none';
+    document.getElementById('eventsContainer').style.display = 'none';
+    document.getElementById('weeklyTimetableContainer').style.display = 'none';
+    document.getElementById('emptyState').style.display = 'none';
+    
+    renderEvents();
+  }
+
+  function getStartOfWeek(date) {
+    const d = new Date(date);
+    const day = d.getDay(); // 0 = Sunday
+    d.setDate(d.getDate() - day);
+    d.setHours(0,0,0,0);
+    return d;
+  }
+
+  function renderTimetable() {
+    const ttContainer = document.getElementById('weeklyTimetableContainer');
+    ttContainer.innerHTML = '';
+    
+    const startOfWeek = getStartOfWeek(currentDate);
+    const endOfWeek = new Date(startOfWeek);
+    endOfWeek.setDate(startOfWeek.getDate() + 4); // Thursday
+    endOfWeek.setHours(23,59,59,999);
+    
+    // Update month label to show week range
+    const months = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+    document.getElementById('monthLabel').innerHTML = `
+      <i class="ri-calendar-2-line" style="color:var(--primary);"></i>
+      أسبوع ${startOfWeek.getDate()} ${months[startOfWeek.getMonth()]} - ${endOfWeek.getDate()} ${months[endOfWeek.getMonth()]} ${endOfWeek.getFullYear()}
+    `;
+
+    const dayNames = ['الأحد', 'الإثنين', 'الثلاثاء', 'الأربعاء', 'الخميس'];
+    const todayStr = new Date().toDateString();
+    
+    let ttHtml = '';
+    for(let i=0; i<5; i++) {
+      const currentDayDate = new Date(startOfWeek);
+      currentDayDate.setDate(startOfWeek.getDate() + i);
+      const isToday = currentDayDate.toDateString() === todayStr;
+      
+      const dayEvents = allEvents.filter(e => {
+        if(e.type !== 'lecture' && e.type !== 'exam') return false; // Only show lectures and exams in timetable
+        const eDate = new Date(e.start);
+        return eDate.toDateString() === currentDayDate.toDateString();
+      });
+      
+      ttHtml += `
+        <div class="tt-day ${isToday ? 'today' : ''}">
+          <div class="tt-day-header">
+            ${dayNames[i]}<br>
+            <span style="font-size:0.8rem; opacity:0.8; font-weight:normal;">${currentDayDate.getDate()} ${months[currentDayDate.getMonth()]}</span>
+          </div>
+          <div class="tt-events">
+            ${dayEvents.length === 0 ? '<div class="tt-empty">لا توجد محاضرات</div>' : dayEvents.map(e => `
+              <div class="tt-event type-${e.type}">
+                <div class="tt-time"><i class="ri-time-line"></i> ${CBS.formatTime(e.start)} ${e.end ? ' - ' + CBS.formatTime(e.end) : ''}</div>
+                <div class="tt-title">${e.subjectName ? CBS.escapeHTML(e.subjectName) + ' - ' : ''}${CBS.escapeHTML(e.title)}</div>
+                ${e.location ? `<div class="tt-meta"><i class="ri-map-pin-line"></i> ${CBS.escapeHTML(e.location)}</div>` : ''}
+              </div>
+            `).join('')}
+          </div>
+        </div>
+      `;
+    }
+    
+    ttContainer.innerHTML = ttHtml;
+    ttContainer.style.display = 'grid';
+  }
+
+  function renderEvents() {
+    if (currentViewMode === 'week') {
+      renderTimetable();
+      return;
+    }
+    const container = document.getElementById('eventsContainer');
+    container.innerHTML = '';
+
+    // Filter
+    const filtered = allEvents.filter(e => {
+      if (currentFilter === 'all') return true;
+      if (currentFilter === 'academicEvent') return e.rawType === 'academicEvent' || !e.rawType;
+      return e.rawType === currentFilter;
+    });
+
+    if (!filtered.length) {
+      container.style.display = 'none';
+      document.getElementById('emptyState').style.display = 'block';
+      return;
+    }
+
+    document.getElementById('emptyState').style.display = 'none';
+    container.style.display = 'block';
+
+    // Group by Day String (YYYY-MM-DD)
+    const groups = {};
+    const dayNames = ['الأحد', 'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت'];
+    const monthsShort = ['يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'];
+
+    filtered.forEach(e => {
+      const d = new Date(e.start);
+      const key = d.toISOString().split('T')[0];
+      if (!groups[key]) {
+        const dayName = dayNames[d.getDay()];
+        groups[key] = {
+          label: `${dayName}، ${d.getDate()} ${monthsShort[d.getMonth()]} ${d.getFullYear()}`,
+          isToday: new Date().toISOString().split('T')[0] === key,
+          items: []
+        };
+      }
+      groups[key].items.push(e);
+    });
+
+    const sortedKeys = Object.keys(groups).sort();
+
+    const badgeConfig = {
+      assignment: { label: 'واجب / تكليف', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)', icon: 'ri-file-text-line' },
+      quiz:       { label: 'اختبار قصير', color: '#ef4444', bg: 'rgba(239,68,68,0.15)',  icon: 'ri-timer-2-line' },
+      lecture:    { label: 'محاضرة دراسية', color: '#10b981', bg: 'rgba(16,185,129,0.15)', icon: 'ri-book-open-line' },
+      exam:       { label: 'امتحان / اختبار', color: '#ef4444', bg: 'rgba(239,68,68,0.15)', icon: 'ri-file-list-3-line' },
+      meeting:    { label: 'اجتماع / لقاء', color: '#8b5cf6', bg: 'rgba(139,92,246,0.15)', icon: 'ri-group-line' },
+      holiday:    { label: 'عطلة رسمية', color: '#3b82f6', bg: 'rgba(59,130,246,0.15)',  icon: 'ri-sun-line' },
+      event:      { label: 'فعالية أكاديمية', color: '#10b981', bg: 'rgba(16,185,129,0.15)', icon: 'ri-calendar-check-line' }
+    };
+
+    sortedKeys.forEach(dateKey => {
+      const group = groups[dateKey];
+      const groupDiv = document.createElement('div');
+      groupDiv.className = 'day-group';
+      
+      const todayBadge = group.isToday ? `<span style="background:#2176c7;color:white;padding:2px 8px;border-radius:12px;font-size:0.72rem;margin-right:6px;">اليوم</span>` : '';
+
+      groupDiv.innerHTML = `
+        <div class="day-header" ${group.isToday ? 'style="background:rgba(33,118,199,0.08);"' : ''}>
+          <div class="day-title">
+            <i class="ri-calendar-event-line" style="color:var(--primary);"></i>
+            <span>${group.label}</span>
+            ${todayBadge}
+          </div>
+          <div class="day-count">${group.items.length} أحداث</div>
+        </div>
+        <div class="day-items">
+          ${group.items.map(item => {
+            const startDate = new Date(item.start);
+            const timeMain = startDate.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+            let timeSub = 'استحقاق/بداية';
+            if (item.end) {
+              const endDate = new Date(item.end);
+              timeSub = 'إلى ' + endDate.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+            }
+
+            const cfg = badgeConfig[item.type] || badgeConfig.event;
+            
+            // Sub details
+            const subItems = [];
+            if (item.subtitle || item.subjectName) {
+              subItems.push(`<span class="event-sub-item"><i class="ri-book-2-line"></i> ${CBS.escapeHTML(item.subjectName || item.subtitle)}</span>`);
+            }
+            if (item.location) {
+              subItems.push(`<span class="event-sub-item"><i class="ri-map-pin-line"></i> ${CBS.escapeHTML(item.location)}</span>`);
+            }
+            if (item.description) {
+              subItems.push(`<span class="event-sub-item" style="color:var(--text-muted);"><i class="ri-sticky-note-line"></i> ${CBS.escapeHTML(item.description)}</span>`);
+            }
+
+            // Actions for Leaders / Admin on AcademicEvents
+            let actionsHtml = '';
+            if (item.url && !item.canEdit) {
+              actionsHtml = `
+                <div class="event-actions">
+                  <a href="${item.url}" class="btn-event-action" title="فتح التفاصيل"><i class="ri-arrow-left-up-line"></i></a>
+                </div>`;
+            } else if (item.rawType === 'academicEvent' && (item.canEdit || canUserManage)) {
+              const itemJsonStr = encodeURIComponent(JSON.stringify(item));
+              actionsHtml = `
+                <div class="event-actions">
+                  <button type="button" class="btn-event-action" title="تعديل" onclick="openEditModal('${itemJsonStr}')"><i class="ri-edit-line"></i></button>
+                  <button type="button" class="btn-event-action delete" title="حذف" onclick="handleDeleteEvent('${item.rawId}')"><i class="ri-delete-bin-line"></i></button>
+                </div>`;
+            }
+
+            return `
+              <div class="event-item">
+                <div class="event-time-badge">
+                  <div class="event-time-main">${timeMain}</div>
+                  <div class="event-time-sub">${timeSub}</div>
+                </div>
+                <div class="event-content">
+                  <div class="event-badge" style="background:${cfg.bg};color:${cfg.color};">
+                    <i class="${cfg.icon}"></i> ${cfg.label}
+                  </div>
+                  <div class="event-title-text">${CBS.escapeHTML(item.title)}</div>
+                  <div class="event-sub-info">
+                    ${subItems.join(' · ')}
+                  </div>
+                </div>
+                ${actionsHtml}
+              </div>`;
+          }).join('')}
+        </div>
+      `;
+      container.appendChild(groupDiv);
+    });
+  }
+
+  // ================= MODAL & CRUD LOGIC =================
+  async function loadSubjectsDropdown() {
+    if (subjectsLoaded) return;
+    try {
+      const res = await CBS.apiGet('/api/subjects');
+      const data = await res.json();
+      const select = document.getElementById('eventSubject');
+      if (res.ok && (data.data || data.subjects)) {
+        const list = data.data?.subjects || data.subjects || data.data || (Array.isArray(data) ? data : []);
+        select.innerHTML = `<option value="">— عام لجميع المواد —</option>` +
+          (Array.isArray(list) ? list : []).map(s => `<option value="${s._id}">${CBS.escapeHTML(s.name)} (${s.code || ''})</option>`).join('');
+        subjectsLoaded = true;
+      }
+    } catch(e) { console.error('Failed to load subjects:', e); }
+  }
+
+  function formatForInput(isoString) {
+    if (!isoString) return '';
+    const d = new Date(isoString);
+    const pad = n => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+  }
+
+  function openAddModal() {
+    if (!canUserManage) {
+      if (window.CBS && window.CBS.toast) CBS.toast('تنبيه', 'غير مصرح لك بإضافة مواعيد للجدول', 'error');
+      return;
+    }
+    loadSubjectsDropdown();
+    document.getElementById('editEventId').value = '';
+    document.getElementById('modalTitleText').innerHTML = `<i class="ri-calendar-add-line"></i> إضافة موعد أو محاضرة للجدول`;
+    document.getElementById('eventForm').reset();
+    
+    // Default start time right now (rounded to nearest 30 mins)
+    const now = new Date();
+    now.setMinutes(now.getMinutes() >= 30 ? 60 : 30, 0, 0);
+    document.getElementById('eventStart').value = formatForInput(now.toISOString());
+
+    CBS.openModal('addEditEventModal');
+  }
+
+  function openEditModal(encodedJson) {
+    if (!canUserManage) {
+      if (window.CBS && window.CBS.toast) CBS.toast('تنبيه', 'غير مصرح لك بتعديل مواعيد الجدول', 'error');
+      return;
+    }
+    loadSubjectsDropdown();
+    try {
+      const item = JSON.parse(decodeURIComponent(encodedJson));
+      document.getElementById('editEventId').value = item.rawId || '';
+      document.getElementById('modalTitleText').innerHTML = `<i class="ri-edit-line"></i> تعديل الموعد / المحاضرة`;
+      
+      document.getElementById('eventTitle').value = item.title || '';
+      document.getElementById('eventType').value = item.type || 'lecture';
+      if (item.subjectId) document.getElementById('eventSubject').value = item.subjectId;
+      document.getElementById('eventStart').value = formatForInput(item.start);
+      if (item.end) document.getElementById('eventEnd').value = formatForInput(item.end);
+      document.getElementById('eventLocation').value = item.location || '';
+      document.getElementById('eventDescription').value = item.description || '';
+
+      CBS.openModal('addEditEventModal');
+    } catch(e) {
+      CBS.toast('خطأ', 'تعذر فتح بيانات التعديل', 'error');
+    }
+  }
+
+  async function handleSaveEvent(e) {
+    e.preventDefault();
+    const saveBtn = document.getElementById('saveEventBtn');
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = `<i class="ri-loader-4-line"></i> جاري الحفظ...`;
+
+    try {
+      const id = document.getElementById('editEventId').value;
+      const body = {
+        title: document.getElementById('eventTitle').value.trim(),
+        type: document.getElementById('eventType').value,
+        startsAt: new Date(document.getElementById('eventStart').value).toISOString(),
+        location: document.getElementById('eventLocation').value.trim(),
+        description: document.getElementById('eventDescription').value.trim(),
+        subject: document.getElementById('eventSubject').value || null
+      };
+
+      const endVal = document.getElementById('eventEnd').value;
+      if (endVal) body.endsAt = new Date(endVal).toISOString();
+
+      const url = id ? `/api/academic-events/${id}` : `/api/academic-events`;
+      const res = id ? await CBS.apiPut(url, body) : await CBS.apiPost(url, body);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'حدث خطأ أثناء الحفظ');
+
+      CBS.toast('تم بنجاح', id ? 'تم تحديث الموعد في الجدول' : 'تمت إضافة الموعد لجدول الدفعة', 'success');
+      CBS.closeModal('addEditEventModal');
+      loadEvents();
+    } catch (err) {
+      CBS.toast('خطأ الحفظ', err.message, 'error');
+    } finally {
+      saveBtn.disabled = false;
+      saveBtn.innerHTML = `<i class="ri-check-line"></i> حفظ ونشر في جدول الدفعة`;
+    }
+  }
+
+  async function handleDeleteEvent(eventId) {
+    if (!confirm('هل أنت متأكد من حذف هذا الموعد من الجدول الدراسي للدفعة؟')) return;
+    try {
+      const res = await CBS.apiDelete(`/api/academic-events/${eventId}`);
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'تعذر حذف الموعد');
+
+      CBS.toast('تم الحذف', 'تم حذف الموعد من جدول الدفعة', 'success');
+      loadEvents();
+    } catch (err) {
+      CBS.toast('خطأ في الحذف', err.message, 'error');
+    }
+  }
+
+  updateMonthLabel();
+  loadEvents();
+</script>
+</body>
+</html>
+

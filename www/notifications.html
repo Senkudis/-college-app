@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>
+  if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>الإشعارات | كلية تقنية المعلومات</title>
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css?v=2026073125">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026073125">
+  <style>
+    .notif-list { display: flex; flex-direction: column; gap: 8px; }
+    .notif-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-right: 3px solid var(--primary);
+      border-radius: 12px;
+      padding: 12px 14px 12px 12px;
+      box-shadow: var(--shadow-sm);
+      position: relative;
+      animation: fadeUp 0.3s ease;
+      transition: transform 0.15s, box-shadow 0.15s;
+    }
+    @keyframes fadeUp { from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);} }
+    .notif-card.unread { cursor: pointer; }
+    .notif-card.unread:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+    .notif-card.emergency { background: var(--danger-bg); border-right-color: var(--danger); }
+
+    .unread-dot {
+      position: absolute;
+      top: 14px; left: 14px;
+      width: 7px; height: 7px;
+      border-radius: 50%;
+      background: var(--primary);
+    }
+    .notif-card.emergency .unread-dot { background: var(--danger); }
+
+    .notif-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 5px; }
+    .notif-title { font-size: 0.86rem; font-weight: 700; color: var(--text-main); }
+    .notif-card.emergency .notif-title { color: var(--danger); }
+    .notif-time { font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; display: flex; align-items: center; gap: 3px; flex-shrink: 0; }
+    .notif-body { font-size: 0.8rem; color: var(--text-muted); line-height: 1.55; }
+
+    .emergency-pill {
+      display: inline-flex; align-items: center; gap: 4px;
+      background: var(--danger); color: white;
+      padding: 1px 8px; border-radius: 20px;
+      font-size: 0.68rem; font-weight: 700;
+      margin-bottom: 5px;
+    }
+    .page-actions { display: flex; justify-content: flex-end; }
+    .notif-tabs { display:flex; gap:8px; margin-bottom:16px; }
+    .notif-tab {
+      border:none; background:var(--bg-card); color:var(--text-muted);
+      border:1px solid var(--border); border-radius:20px;
+      padding:7px 16px; font-size:0.82rem; font-weight:700;
+      cursor:pointer; transition:all 0.2s;
+      display:flex; align-items:center; gap:6px;
+    }
+    .notif-tab.active { background:var(--primary); color:#fff; border-color:var(--primary); }
+    .notif-tab .tab-count {
+      background:rgba(255,255,255,0.25); color:inherit;
+      border-radius:10px; padding:1px 7px; font-size:0.75rem; font-weight:800;
+      display:none;
+    }
+    .notif-tab.active .tab-count, .notif-tab .tab-count.has-count { display:inline; }
+  </style>
+
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+</head>
+<body>
+
+<header class="main-header">
+  <div class="header-brand">
+    <img src="/assets/logo.png" class="header-logo" alt="Logo">
+    <div class="header-title-group">
+      <strong>كلية تقنية المعلومات</strong>
+      <small>النظام الجامعي المتكامل</small>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="CBS.goHome()" title="الرئيسية"><i class="ri-home-4-line"></i></button>
+  </div>
+</header>
+
+<div class="page-content" style="max-width:860px;">
+
+  <!-- Welcome Banner -->
+  <div class="welcome-banner" style="background: linear-gradient(135deg,#3b82f6,#2563eb,#1d4ed8);">
+    <div class="welcome-banner-icon-wrap">
+      <i class="ri-notification-3-line welcome-banner-icon"></i>
+    </div>
+    <div class="welcome-banner-body">
+      <h2>الإشعارات</h2>
+      <p>متابعة جميع الإشعارات والتنبيهات</p>
+    </div>
+  </div>
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon"><i class="ri-notification-3-fill"></i></div>
+      <div>
+        <div class="page-title">الإشعارات</div>
+        <div class="page-subtitle">آخر التحديثات والإشعارات</div>
+      </div>
+    </div>
+    <button class="btn btn-secondary" id="readAllBtn" onclick="markAllRead()" style="display:none;">
+      <i class="ri-check-double-line"></i> تعيين الكل كمقروء
+    </button>
+  </div>
+
+  <div class="notif-tabs" id="notifTabs">
+    <button class="notif-tab active" data-tab="all" onclick="setTab('all')">
+      <i class="ri-notification-3-line"></i> الكل
+      <span class="tab-count" id="tabCountAll">0</span>
+    </button>
+    <button class="notif-tab" data-tab="unread" onclick="setTab('unread')">
+      <i class="ri-checkbox-blank-circle-fill" style="font-size:0.6rem;color:var(--primary);"></i> غير مقروء
+      <span class="tab-count" id="tabCountUnread">0</span>
+    </button>
+    <button class="notif-tab" data-tab="emergency" onclick="setTab('emergency')">
+      <i class="ri-alarm-warning-fill"></i> عاجل
+      <span class="tab-count" id="tabCountEmergency">0</span>
+    </button>
+  </div>
+  <div class="notif-list" id="notifList"></div>
+</div>
+
+<div id="toast-container"></div>
+
+<footer class="main-footer">
+  جميع الحقوق محفوظة © <span id="year"></span> النظام الجامعي المتكامل
+</footer>
+
+<script src="/js/app.js?v=2026073125"></script>
+<script src="/js/socket-client.js?v=2026073125" defer></script>
+<script>
+  CBS.init({ polling: false });
+  const user = CBS.getUser();
+  let _allNotifs = [];
+  let _activeTab = 'all';
+
+  function setTab(tab) {
+    _activeTab = tab;
+    document.querySelectorAll('.notif-tab').forEach(t => t.classList.toggle('active', t.dataset.tab === tab));
+    renderNotifs();
+  }
+
+  function renderNotifs() {
+    const list = document.getElementById('notifList');
+    let data = _allNotifs;
+    if (_activeTab === 'unread') data = data.filter(n => !n.readBy?.includes(user.id));
+    if (_activeTab === 'emergency') data = data.filter(n => n.type === 'emergency');
+
+    if (!data.length) {
+      list.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--text-muted);"><i class="ri-notification-off-line" style="font-size:3rem;opacity:0.3;"></i><p style="margin-top:12px;">لا توجد إشعارات في هذا التصنيف</p></div>`;
+      return;
+    }
+    list.innerHTML = data.map(n => {
+      const unread = !n.readBy?.includes(user.id);
+      const emergency = n.type === 'emergency';
+      return `<div class="notif-card ${emergency ? 'emergency' : ''} ${unread ? 'unread' : ''}"
+           id="n-${n._id}" onclick="${unread ? `markRead('${n._id}')` : ''}">
+        ${unread ? '<div class="unread-dot"></div>' : ''}
+        <div>
+          ${emergency ? '<div class="emergency-pill"><i class="ri-alarm-warning-fill"></i> تنبيه عاجل</div>' : ''}
+          <div class="notif-top">
+            <div class="notif-title" style="${unread ? 'padding-left:18px' : ''}">${CBS.escapeHTML(n.title)}</div>
+            <div class="notif-time"><i class="ri-time-line"></i>${CBS.formatDateTime(n.createdAt)}</div>
+          </div>
+          <div class="notif-body">${CBS.escapeHTML(n.message)}</div>
+        </div>
+      </div>`;
+    }).join('');
+  }
+
+  async function loadNotifications() {
+    CBS.showLoading('notifList', 'جاري التحميل...', 'skeleton-list');
+    try {
+      const res = await CBS.apiGet('/api/notifications');
+      const _resData = await CBS.readJson(res);
+      _allNotifs = _resData.data?.notifications || _resData.notifications || _resData.data || _resData;
+      if (!Array.isArray(_allNotifs)) _allNotifs = [];
+
+      // Update tab counts
+      const unreadCount = _allNotifs.filter(n => !n.readBy?.includes(user.id)).length;
+      const emergencyCount = _allNotifs.filter(n => n.type === 'emergency').length;
+      const allEl = document.getElementById('tabCountAll');
+      const unEl = document.getElementById('tabCountUnread');
+      const emEl = document.getElementById('tabCountEmergency');
+      allEl.textContent = _allNotifs.length; allEl.classList.toggle('has-count', _allNotifs.length > 0);
+      unEl.textContent = unreadCount; unEl.classList.toggle('has-count', unreadCount > 0);
+      emEl.textContent = emergencyCount; emEl.classList.toggle('has-count', emergencyCount > 0);
+
+      const hasUnread = unreadCount > 0;
+      document.getElementById('readAllBtn').style.display = hasUnread ? 'inline-flex' : 'none';
+      renderNotifs();
+    } catch {
+      CBS.showEmpty('notifList', 'حدث خطأ في تحميل الإشعارات', 'ri-error-warning-line');
+    }
+  }
+
+  async function markRead(id) {
+    try {
+      await CBS.apiPost(`/api/notifications/read/${id}`, {});
+      const n = _allNotifs.find(x => x._id === id);
+      if (n) { if (!n.readBy) n.readBy = []; n.readBy.push(user.id); }
+      const card = document.getElementById(`n-${id}`);
+      card?.querySelector('.unread-dot')?.remove();
+      card?.classList.remove('unread');
+      if (card) card.onclick = null;
+      const unreadCount = _allNotifs.filter(x => !x.readBy?.includes(user.id)).length;
+      document.getElementById('tabCountUnread').textContent = unreadCount;
+      document.getElementById('readAllBtn').style.display = unreadCount > 0 ? 'inline-flex' : 'none';
+      if (_activeTab === 'unread') renderNotifs();
+    } catch { /* silent */ }
+  }
+
+  async function markAllRead() {
+    try {
+      await CBS.apiPost('/api/notifications/read-all', {});
+      loadNotifications();
+    } catch { /* silent */ }
+  }
+
+  document.getElementById('year').textContent = new Date().getFullYear();
+  window.refreshNotifications = loadNotifications;
+  loadNotifications();
+</script>
+<script>document.addEventListener('cbs:refresh',e=>{e.preventDefault();loadNotifications().finally(()=>e.detail.done());});</script>
+</body>
+</html>
+
+
+
+

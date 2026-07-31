@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>تسجيل طالب جديد | كلية تقنية المعلومات</title>
+  <meta name="description" content="صفحة تقديم طلب تسجيل طالب جديد - النظام الجامعي المتكامل">
+  <link href="/vendor/fonts/cairo.css" rel="stylesheet">
+  <link rel="stylesheet" href="/vendor/remixicon/remixicon.css">
+  <script src="/js/app.js?v=2026073125"></script>
+
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      min-height: 100vh;
+      font-family: system-ui, -apple-system, sans-serif;
+      background: #051527;
+      color: white;
+      overflow-x: hidden;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 20px 12px;
+    }
+
+    .reg-container {
+      width: 100%;
+      max-width: 440px;
+    }
+
+    .logo-section {
+      text-align: center;
+      margin-bottom: 20px;
+    }
+    .logo-img {
+      width: 70px;
+      height: 70px;
+      border-radius: 50%;
+      object-fit: cover;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.4);
+    }
+    .logo-title {
+      font-size: 1.3rem;
+      font-weight: 800;
+      margin-top: 10px;
+      color: #fff;
+    }
+    .logo-sub {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      margin-top: 2px;
+    }
+
+    .reg-card {
+      background: rgba(15, 23, 42, 0.8);
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      border-radius: 24px;
+      padding: 28px 24px;
+      backdrop-filter: blur(16px);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+    }
+
+    .card-title {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #38bdf8;
+      margin-bottom: 6px;
+      text-align: center;
+    }
+    .card-desc {
+      font-size: 0.85rem;
+      color: #94a3b8;
+      text-align: center;
+      margin-bottom: 22px;
+    }
+
+    .form-group {
+      margin-bottom: 16px;
+    }
+    .form-label {
+      display: block;
+      font-size: 0.82rem;
+      font-weight: 700;
+      color: #cbd5e1;
+      margin-bottom: 6px;
+    }
+    .input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .input-wrap i {
+      position: absolute;
+      right: 14px;
+      color: #64748b;
+      font-size: 1.1rem;
+      pointer-events: none;
+    }
+    .form-input, .form-select {
+      width: 100%;
+      padding: 12px 42px 12px 14px;
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 14px;
+      color: #fff;
+      font-size: 0.92rem;
+      outline: none;
+      transition: all 0.2s;
+      font-family: inherit;
+    }
+    .form-select option {
+      background: #0f172a;
+      color: #fff;
+    }
+    .form-input:focus, .form-select:focus {
+      border-color: #38bdf8;
+      background: rgba(255, 255, 255, 0.1);
+      box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
+    }
+
+    .btn-submit {
+      width: 100%;
+      padding: 14px;
+      border: none;
+      border-radius: 14px;
+      background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      margin-top: 22px;
+      transition: all 0.2s;
+      box-shadow: 0 6px 20px rgba(16, 185, 129, 0.35);
+    }
+    .btn-submit:hover:not(:disabled) {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 25px rgba(16, 185, 129, 0.5);
+    }
+    .btn-submit:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .alert {
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      margin-bottom: 16px;
+      display: none;
+      align-items: center;
+      gap: 8px;
+    }
+    .alert-error { background: rgba(239, 68, 68, 0.2); border: 1px solid rgba(239, 68, 68, 0.4); color: #fca5a5; }
+    .alert-success { background: rgba(16, 185, 129, 0.2); border: 1px solid rgba(16, 185, 129, 0.4); color: #6ee7b7; }
+
+    .back-link {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      margin-top: 18px;
+      color: #94a3b8;
+      font-size: 0.85rem;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .back-link:hover { color: #fff; }
+  </style>
+</head>
+
+<body>
+  <div class="reg-container">
+    <div class="logo-section">
+      <img src="/assets/logo.png" class="logo-img" alt="Logo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2280%22%3E🎓%3C/text%3E%3C/svg%3E'">
+      <div class="logo-title">كلية تقنية المعلومات</div>
+      <div class="logo-sub">طلب تسجيل طالب جديد</div>
+    </div>
+
+    <div class="reg-card">
+      <div class="card-title"><i class="ri-user-add-line"></i> إنشــاء حســاب</div>
+      <div class="card-desc">أدخل بياناتك وكود الدعوة للانضمام إلى النظام الجامعي</div>
+
+      <div class="alert alert-error" id="alertError"></div>
+      <div class="alert alert-success" id="alertSuccess"></div>
+
+      <form id="regForm" onsubmit="event.preventDefault(); submitRegistration();">
+        <div class="form-group">
+          <label class="form-label">الاسم الرباعي كاملًا</label>
+          <div class="input-wrap">
+            <i class="ri-user-line"></i>
+            <input type="text" id="name" class="form-input" placeholder="مثال: أحمد محمد علي حسن" required>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">البريد الإلكتروني</label>
+          <div class="input-wrap">
+            <i class="ri-mail-line"></i>
+            <input type="email" id="email" class="form-input" placeholder="name@example.com" required dir="ltr">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">رقم الواتساب (للتواصل واستلام التأكيد)</label>
+          <div class="input-wrap">
+            <i class="ri-whatsapp-line"></i>
+            <input type="tel" id="phone" class="form-input" placeholder="مثال: 249912345678" required dir="ltr">
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">كود الدعوة السري الخاص بدفعتك (Invite Code)</label>
+          <div class="input-wrap">
+            <i class="ri-key-2-line"></i>
+            <input type="text" id="inviteCode" class="form-input" placeholder="أدخل كود الدعوة المخصص لدفعتك" required dir="ltr">
+          </div>
+          <div style="font-size: 0.78rem; color: #94a3b8; margin-top: 5px;">
+            <i class="ri-information-line"></i> كود الدعوة هو الذي سيحدد دفعتك الدراسية تلقائياً ويمنع أي خطأ.
+          </div>
+        </div>
+
+        <button type="submit" class="btn-submit" id="submitBtn">
+          <i class="ri-send-plane-fill"></i>
+          <span>إرسال طلب التسجيل</span>
+        </button>
+      </form>
+
+      <a href="/login.html" class="back-link">
+        <i class="ri-arrow-right-line"></i> العودة لصفحة تسجيل الدخول
+      </a>
+    </div>
+  </div>
+
+  <script>
+    const apiBaseUrl = (typeof API_BASE !== 'undefined' && API_BASE) ? API_BASE : window.location.origin;
+
+    async function submitRegistration() {
+      const name = document.getElementById('name').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const phone = document.getElementById('phone').value.trim();
+      const inviteCode = document.getElementById('inviteCode').value.trim();
+      const password = '123456';
+
+      const errEl = document.getElementById('alertError');
+      const succEl = document.getElementById('alertSuccess');
+      const btn = document.getElementById('submitBtn');
+
+      errEl.style.display = 'none';
+      succEl.style.display = 'none';
+
+      if (!inviteCode) {
+        errEl.textContent = 'يرجى إدخال كود الدعوة الخاص بدفعتك';
+        errEl.style.display = 'flex';
+        return;
+      }
+
+      btn.disabled = true;
+      btn.innerHTML = '<i class="ri-loader-4-line" style="animation:spin 1s linear infinite;"></i> جاري إرسال الطلب...';
+
+      try {
+        const res = await fetch(apiBaseUrl + '/api/auth/register-public', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name, email, phone, inviteCode, password })
+        });
+
+        const data = await res.json();
+
+        if (res.ok && data.success) {
+          document.getElementById('regForm').reset();
+          succEl.innerHTML = '<i class="ri-checkbox-circle-fill"></i> ' + (data.message || 'تم إرسال طلبك بنجاح! سيتم مراجعته وقبوله من قبل إدارة الكلية.');
+          succEl.style.display = 'flex';
+        } else {
+          errEl.innerHTML = '<i class="ri-error-warning-fill"></i> ' + (data.message || 'فشل إرسال طلب التسجيل');
+          errEl.style.display = 'flex';
+        }
+      } catch (err) {
+        errEl.innerHTML = '<i class="ri-wifi-off-line"></i> تعذر الاتصال بالخادم، يرجى التحقق من الشبكة';
+        errEl.style.display = 'flex';
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ri-send-plane-fill"></i> <span>إرسال طلب التسجيل</span>';
+      }
+    }
+  </script>
+</body>
+</html>

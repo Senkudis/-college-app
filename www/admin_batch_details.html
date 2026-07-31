@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#0d3b66">
+  <link rel="manifest" href="/manifest.json">
+  <title>إدارة الدفعة | كلية تقنية المعلومات</title>
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css?v=2026073125">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026073125">
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <style>
+    .batch-summary-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 20px;
+      padding: 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+    }
+    .batch-kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .batch-kpi {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 14px 12px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      transition: transform 0.15s;
+    }
+    .batch-kpi:hover { transform: translateY(-2px); }
+    .batch-kpi .kpi-num {
+      font-size: 1.8rem;
+      font-weight: 800;
+      line-height: 1.1;
+      margin-bottom: 4px;
+    }
+    .batch-kpi .kpi-label {
+      font-size: 0.75rem;
+      color: var(--text-muted);
+      font-weight: 500;
+    }
+    .kpi-num.primary { color: var(--primary); }
+    .kpi-num.success { color: #16a34a; }
+    .kpi-num.warning { color: #d97706; }
+    .kpi-num.danger  { color: #dc2626; }
+    .attendance-alert {
+      background: linear-gradient(135deg, #fef2f2, #fee2e2);
+      border: 1px solid #fca5a5;
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+    [data-theme="dark"] .attendance-alert {
+      background: rgba(220,38,38,0.15);
+      border-color: rgba(220,38,38,0.4);
+    }
+    .attendance-alert h4 { color: #dc2626; margin: 0 0 8px 0; font-size: 0.9rem; }
+    .at-risk-student {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      background: rgba(220,38,38,0.07);
+      border-radius: 8px;
+      margin-bottom: 6px;
+      font-size: 0.85rem;
+    }
+    .at-risk-badge {
+      background: #dc2626;
+      color: white;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 700;
+    }
+    .overdue-alert {
+      background: linear-gradient(135deg, #fffbeb, #fef3c7);
+      border: 1px solid #fcd34d;
+      border-radius: 14px;
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+    [data-theme="dark"] .overdue-alert {
+      background: rgba(217,119,6,0.15);
+      border-color: rgba(217,119,6,0.4);
+    }
+    .overdue-alert h4 { color: #b45309; margin: 0 0 8px 0; font-size: 0.9rem; }
+    .overdue-student {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      background: rgba(217,119,6,0.08);
+      border-radius: 8px;
+      margin-bottom: 6px;
+      font-size: 0.85rem;
+    }
+  </style>
+</head>
+<body>
+
+<header class="main-header">
+  <div class="header-brand">
+    <img src="/assets/logo.png" class="header-logo" alt="Logo">
+    <div class="header-title-group">
+      <strong>كلية تقنية المعلومات</strong>
+      <small id="headerBatchName">إدارة الدفعة المحددة</small>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn-icon" onclick="location.href='/admin_dashboard.html'" title="لوحة الإدارة العامة"><i class="ri-shield-star-line"></i></button>
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="CBS.logout()" title="خروج"><i class="ri-logout-box-r-line"></i></button>
+  </div>
+</header>
+
+<div class="page-content">
+
+  <!-- ▼ شريط تبديل الدفعة سيُحقن هنا تلقائياً بواسطة renderBatchSwitcher() ▼ -->
+
+  <!-- البانر الرئيسي -->
+  <div class="welcome-banner" id="batchBanner" style="background: linear-gradient(135deg,#7c3aed,#4f46e5,#2563eb);">
+    <div class="welcome-banner-icon-wrap">
+      <i class="ri-team-line welcome-banner-icon"></i>
+    </div>
+    <div class="welcome-banner-body">
+      <h2 id="batchTitle">إدارة الدفعة الأكاديمية</h2>
+      <p id="batchSubtitle">متابعة وتسيير أمور الدفعة المحددة</p>
+    </div>
+  </div>
+
+  <!-- ملخص الدفعة الإحصائي -->
+  <div class="section-divider">
+    <i class="ri-bar-chart-box-line"></i>
+    <span>ملخص الدفعة</span>
+  </div>
+
+  <div class="batch-kpi-grid" id="batchKpiGrid">
+    <div class="batch-kpi">
+      <div class="kpi-num primary" id="kpiStudents">-</div>
+      <div class="kpi-label">إجمالي الطلاب</div>
+    </div>
+    <div class="batch-kpi">
+      <div class="kpi-num success" id="kpiAttendanceRate">-</div>
+      <div class="kpi-label">متوسط الحضور</div>
+    </div>
+    <div class="batch-kpi">
+      <div class="kpi-num warning" id="kpiPendingFees">-</div>
+      <div class="kpi-label">رسوم معلقة</div>
+    </div>
+    <div class="batch-kpi">
+      <div class="kpi-num danger" id="kpiAtRisk">-</div>
+      <div class="kpi-label">طلاب منذرون</div>
+    </div>
+    <div class="batch-kpi">
+      <div class="kpi-num primary" id="kpiSubjects">-</div>
+      <div class="kpi-label">المقررات</div>
+    </div>
+    <div class="batch-kpi">
+      <div class="kpi-num success" id="kpiAssignments">-</div>
+      <div class="kpi-label">واجبات مفتوحة</div>
+    </div>
+  </div>
+
+  <!-- تنبيه الحضور المنخفض -->
+  <div class="attendance-alert" id="attendanceAlertSection" style="display:none;">
+    <h4><i class="ri-alarm-warning-line"></i> طلاب في خطر (حضور أقل من 75%)</h4>
+    <div id="atRiskStudentsList"></div>
+    <button class="btn btn-sm btn-danger" style="margin-top: 8px;" onclick="sendAttendanceWarnings()">
+      <i class="ri-send-plane-line"></i> إرسال إنذار للطلاب المنذرين
+    </button>
+  </div>
+
+  <!-- تنبيه المتأخرين مالياً -->
+  <div class="overdue-alert" id="overdueAlertSection" style="display:none;">
+    <h4><i class="ri-money-dollar-circle-line"></i> طلاب متأخرون في السداد</h4>
+    <div id="overdueStudentsList"></div>
+    <button class="btn btn-sm btn-warning" style="margin-top: 8px;" onclick="location.href='/financials.html'">
+      <i class="ri-arrow-left-line"></i> فتح صفحة المالية
+    </button>
+  </div>
+
+  <!-- ===== قسم: عمليات الدفعة ===== -->
+  <div class="section-divider">
+    <i class="ri-dashboard-3-line"></i>
+    <span>عمليات الدفعة المختارة</span>
+  </div>
+
+  <div class="dash-grid">
+    <div class="dash-card" id="cardAttendance" onclick="goWithBatch('/manage-attendance.html')">
+      <div class="dash-card-icon success"><i class="ri-calendar-check-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title">سجل الحضور</span>
+        <span class="subtitle">حضور طلاب الدفعة الحالية</span>
+      </div>
+    </div>
+    <div class="dash-card" onclick="goWithBatch('/assignments.html')">
+      <div class="dash-card-icon warning"><i class="ri-file-list-3-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title">الواجبات والتكاليف</span>
+        <span class="subtitle">واجبات الدفعة الحالية</span>
+      </div>
+    </div>
+    <div class="dash-card" onclick="goWithBatch('/manage-submissions.html')">
+      <div class="dash-card-icon primary"><i class="ri-stack-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title">تسليمات الطلاب</span>
+        <span class="subtitle">مراجعة وتقييم تسليمات الدفعة</span>
+      </div>
+    </div>
+    <div class="dash-card" onclick="goWithBatch('/video-library.html')">
+      <div class="dash-card-icon danger"><i class="ri-play-circle-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title">المكتبة المرئية</span>
+        <span class="subtitle">مشاهدة المحاضرات المسجلة</span>
+      </div>
+    </div>
+    <div class="dash-card" onclick="goWithBatch('/attendance-history.html')">
+      <div class="dash-card-icon success"><i class="ri-bar-chart-box-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title">تقرير الحضور</span>
+        <span class="subtitle">إحصائيات وتحليل الغياب</span>
+      </div>
+    </div>
+    <div class="dash-card" onclick="goWithBatch('/financials.html')">
+      <div class="dash-card-icon primary"><i class="ri-money-dollar-circle-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title">الرسوم المالية</span>
+        <span class="subtitle">إدارة المدفوعات والأقساط</span>
+      </div>
+    </div>
+    <div class="dash-card" onclick="goWithBatch('/manage-notifications.html')">
+      <div class="dash-card-icon info"><i class="ri-megaphone-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title">إشعارات الدفعة</span>
+        <span class="subtitle">إرسال تنبيهات لهذه الدفعة</span>
+      </div>
+    </div>
+    <div class="dash-card" onclick="goWithBatch('/quizzes.html')">
+      <div class="dash-card-icon warning"><i class="ri-question-answer-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title">الاختبارات</span>
+        <span class="subtitle">اختبارات الدفعة الحالية</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== قسم: العودة ===== -->
+  <div class="section-divider">
+    <i class="ri-arrow-go-back-line"></i>
+    <span>روابط أخرى</span>
+  </div>
+
+  <div class="dash-grid">
+    <div class="dash-card" onclick="location.href='/admin_dashboard.html'">
+      <div class="dash-card-icon danger"><i class="ri-shield-star-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title">الإدارة العامة</span>
+        <span class="subtitle">العودة لمركز التحكم الإداري</span>
+      </div>
+    </div>
+    <div class="dash-card" onclick="location.href='/batch-selector.html'">
+      <div class="dash-card-icon success"><i class="ri-refresh-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title">تغيير الدفعة</span>
+        <span class="subtitle">اختر دفعة أكاديمية أخرى</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<div id="toast-container"></div>
+
+<footer class="main-footer">
+  حقوق النشر &copy; <span id="year"></span> جامعة النصر التقنية &nbsp;|&nbsp; تطوير: ضياء الدين إبراهيم
+</footer>
+
+<script src="/js/app.js?v=2026073125"></script>
+<script src="/js/socket-client.js?v=2026073125" defer></script>
+<script>
+  CBS.init({ requireRoles: ['dean', 'admin'] });
+  document.getElementById('year').textContent = new Date().getFullYear();
+
+  const batchId = CBS.getBatchId();
+
+  function goWithBatch(path) {
+    if (batchId) {
+      location.href = path + '?batch=' + batchId;
+    } else {
+      location.href = path;
+    }
+  }
+
+  // ===== تحميل بيانات الدفعة =====
+  async function loadBatchData() {
+    if (!batchId) {
+      document.getElementById('batchSubtitle').textContent = 'لم يتم اختيار دفعة — اذهب للوحة الإدارة وحدد دفعة';
+      return;
+    }
+
+    try {
+      const batchRes = await CBS.apiGet('/api/batches/' + batchId);
+      if (batchRes.ok) {
+        const batchData = await batchRes.json();
+        const batch = batchData.batch || batchData;
+        const batchName = batch.name || 'الدفعة المختارة';
+        const batchCode = batch.code ? ' (' + batch.code + ')' : '';
+        document.getElementById('batchTitle').textContent = 'إدارة الدفعة: ' + batchName;
+        document.getElementById('batchSubtitle').textContent = 'دفعة أكاديمية' + batchCode + ' — متابعة وتسيير الشؤون';
+        document.getElementById('headerBatchName').textContent = batchName + batchCode;
+
+        // إجمالي الطلاب
+        document.getElementById('kpiStudents').textContent = batch.studentsCount !== undefined ? batch.studentsCount : 0;
+
+        // متوسط الحضور
+        document.getElementById('kpiAttendanceRate').textContent = (batch.attendanceRate !== undefined ? batch.attendanceRate : 0) + '%';
+
+        // طلاب منذرون (حضور أقل من 75%)
+        const atRiskCount = batch.atRiskStudentsCount !== undefined ? batch.atRiskStudentsCount : 0;
+        document.getElementById('kpiAtRisk').textContent = atRiskCount;
+
+        if (atRiskCount > 0 && Array.isArray(batch.atRiskStudents) && batch.atRiskStudents.length > 0) {
+          document.getElementById('attendanceAlertSection').style.display = 'block';
+          const atRiskList = document.getElementById('atRiskStudentsList');
+          atRiskList.innerHTML = batch.atRiskStudents.map(s => `
+            <div class="at-risk-student" data-at-risk-id="${s.student?._id}">
+              <span>${CBS.escapeHTML(s.student?.name || 'طالب')} (${s.student?.studentId || s.student?.email || ''})</span>
+              <span class="at-risk-badge">${s.attendanceRate}% حضور</span>
+            </div>
+          `).join('');
+        }
+
+        // المقررات
+        document.getElementById('kpiSubjects').textContent = batch.subjectsCount !== undefined ? batch.subjectsCount : (Array.isArray(batch.subjects) ? batch.subjects.length : 0);
+
+        // الواجبات المفتوحة
+        if (batch.assignmentsCount !== undefined) {
+          document.getElementById('kpiAssignments').textContent = batch.assignmentsCount;
+        }
+      }
+    } catch(e) { console.warn('batch load error:', e.message); }
+
+    // جلب الإحصائيات المالية
+    try {
+      const finRes = await CBS.apiGet('/api/financials/overdue-report?batchId=' + batchId);
+      if (finRes.ok) {
+        const finData = await finRes.json();
+        const overdueData = finData.data || finData;
+        const overdueStudents = overdueData.students || [];
+        const pendingCount = overdueStudents.length;
+        document.getElementById('kpiPendingFees').textContent = pendingCount;
+
+        if (pendingCount > 0) {
+          document.getElementById('overdueAlertSection').style.display = 'block';
+          const list = document.getElementById('overdueStudentsList');
+          list.innerHTML = overdueStudents.slice(0, 5).map(s => `
+            <div class="overdue-student">
+              <span>${CBS.escapeHTML(s.student?.name || 'غير معروف')}</span>
+              <span style="font-weight:700; color:#b45309;">${s.totalOverdueAmount?.toLocaleString?.() ?? s.totalOverdueAmount} ج.س</span>
+            </div>
+          `).join('') + (pendingCount > 5 ? `<div style="text-align:center; font-size:0.8rem; color:var(--text-muted); margin-top:4px;">وآخرون (${pendingCount - 5} إضافيين)</div>` : '');
+        }
+      }
+    } catch(e) { console.warn('financials load error:', e.message); }
+  }
+
+  // ===== إرسال إنذار الحضور =====
+  async function sendAttendanceWarnings() {
+    const atRiskEls = document.querySelectorAll('[data-at-risk-id]');
+    if (atRiskEls.length === 0) return;
+    const recipientIds = Array.from(atRiskEls).map(el => el.dataset.atRiskId);
+    try {
+      const res = await CBS.apiPost('/api/notifications', {
+        title: 'إنذار حضور أكاديمي',
+        message: 'انتباه: نسبة حضورك انخفضت عن 75%. يرجى الالتزام بالحضور تجنباً للحرمان من الامتحانات.',
+        type: 'emergency',
+        // 'custom' ليست ضمن قيم enum المسموحة في النموذج
+        // (all/students/doctors/leaders) فكان الطلب يفشل دائماً بخطأ تحقق.
+        // قائمة recipients هي التي تحدد المستلمين فعلياً وتسبق target.
+        target: 'students',
+        recipients: recipientIds,
+        batches: [batchId]
+      });
+      if (res && res.ok) {
+        CBS.showToast('تم إرسال الإنذار لـ ' + recipientIds.length + ' طالب بنجاح', 'success');
+      } else {
+        const err = await res.json().catch(() => ({}));
+        CBS.showToast(err.message || 'تعذر إرسال الإنذارات', 'danger');
+      }
+    } catch(e) {
+      CBS.showToast('حدث خطأ أثناء إرسال الإنذارات', 'danger');
+    }
+  }
+
+  loadBatchData();
+</script>
+</body>
+</html>

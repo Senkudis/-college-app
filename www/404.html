@@ -1,0 +1,105 @@
+﻿﻿﻿<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>404 - الصفحة غير موجودة | كلية تقنية المعلومات</title>
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css?v=2026073125">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026073125">
+  <style>
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      text-align: center;
+      padding: 24px;
+    }
+
+    .error-box {
+      max-width: 480px;
+      width: 100%;
+    }
+
+    .error-code {
+      font-size: 7rem;
+      font-weight: 900;
+      line-height: 1;
+      background: linear-gradient(135deg, var(--primary), var(--accent));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin-bottom: 8px;
+    }
+
+    .error-icon {
+      font-size: 3.5rem;
+      color: var(--text-muted);
+      opacity: 0.35;
+      display: block;
+      margin-bottom: 16px;
+    }
+
+    .error-title {
+      font-size: 1.4rem;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 10px;
+    }
+
+    .error-desc {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+      margin-bottom: 32px;
+      line-height: 1.7;
+    }
+
+    .error-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+
+    @media (max-width: 480px) {
+      .error-code { font-size: 5rem; }
+      .error-title { font-size: 1.15rem; }
+    }
+  </style>
+
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+</head>
+<body>
+  <div class="error-box">
+    <i class="ri-map-pin-time-line error-icon"></i>
+    <div class="error-code">404</div>
+    <h1 class="error-title">الصفحة غير موجودة</h1>
+    <p class="error-desc">
+      الصفحة التي تبحث عنها قد تكون نُقلت أو تم حذفها.<br>
+      تأكد من صحة الرابط أو عد للصفحة الرئيسية.
+    </p>
+    <div class="error-actions">
+      <button class="btn btn-primary" onclick="history.back()">
+        <i class="ri-home-4-line"></i> الصفحة السابقة
+      </button>
+      <a href="/dashboard.html" class="btn btn-secondary">
+        <i class="ri-home-5-line"></i> الرئيسية
+      </a>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (localStorage.getItem('darkMode') === 'true') {
+        document.body.classList.add('dark');
+      }
+    });
+  </script>
+</body>
+</html>
+
+

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "598257954455",
+    "project_id": "elnasr-3dd9b",
+    "storage_bucket": "elnasr-3dd9b.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:598257954455:android:cada0e459e24d2d6c603d2",
+        "android_client_info": {
+          "package_name": "com.elnasrcsit.cbs"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCB6Af9MlvJuJHBvs1cM_O6WM2rHCQUA1w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

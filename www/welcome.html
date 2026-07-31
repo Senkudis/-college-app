@@ -1,0 +1,1709 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>
+    // توجيه المستخدم المسجّل مباشرة إلى Dashboard إلا إذا كان يريد قراءة خبر محدد أو تصفح الموقع
+    (function() {
+      try {
+        const u = JSON.parse(localStorage.getItem('user') || 'null');
+        const t = localStorage.getItem('token');
+        const params = new URLSearchParams(window.location.search);
+        if (u && t && !params.get('newsId') && !params.get('view')) {
+          window.location.replace('/index.html');
+        }
+      } catch(e) {}
+    })();
+  </script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>جامعة النصر التقنية | Al-Nasr University</title>
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Al-Nasr CBS">
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="description" content="جامعة النصر التقنية - جسر نحو المعرفة. مؤسسة تعليمية أهلية رائدة في أم درمان، الخرطوم، السودان. تضم 8 كليات وأكثر من 2580 طالب.">
+  <link rel="manifest" href="/manifest.json">
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet">
+  <style>
+    @font-face {
+      font-family: 'CustomHeadingFont';
+      src: url('fonts/heading-font.ttf') format('truetype');
+      font-weight: normal;
+      font-style: normal;
+    }
+    @font-face {
+      font-family: 'CustomBodyFont';
+      src: url('fonts/body-font.otf') format('opentype');
+      font-weight: normal;
+      font-style: normal;
+    }
+
+    /* ── Reset & Base ─────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --primary: #00123A;     /* Navy Blue - Elnasr Brand */
+      --secondary: #243673;   /* Lighter Navy */
+      --accent: #F59E0B;      /* Yellow/Gold Accent */
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --bg-page: #f8fafc;
+      --white: #ffffff;
+      --radius: 12px;
+      --shadow-sm: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      --shadow-md: 0 10px 15px -3px rgba(0, 0, 0, 0.05);
+      --safe-top: env(safe-area-inset-top, 20px);
+      --safe-bottom: env(safe-area-inset-bottom, 20px);
+    }
+    
+    html { scroll-behavior: smooth; font-size: 16px; }
+    body {
+      font-family: 'CustomBodyFont', sans-serif;
+      background: var(--bg-page);
+      color: var(--text-main);
+      line-height: 1.7;
+      overflow-x: hidden;
+      -webkit-tap-highlight-color: transparent;
+    }
+    h1, h2, h3, h4, .section-title, .brand {
+      font-family: 'CustomHeadingFont', sans-serif;
+    }
+    a { text-decoration: none; color: inherit; }
+    img { max-width: 100%; display: block; }
+    
+    /* ── Utilities & Layout ───────────────────────────────── */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 20px;
+    }
+    .section { padding: 60px 0; }
+    .section-alt { background: var(--white); }
+    
+    .section-header {
+      text-align: center;
+      margin-bottom: 40px;
+    }
+    .section-title {
+      font-size: 2rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 10px;
+    }
+    .section-subtitle {
+      font-size: 1.1rem;
+      color: var(--text-muted);
+    }
+    .accent-bar {
+      width: 60px;
+      height: 4px;
+      background: var(--accent);
+      margin: 15px auto 0;
+      border-radius: 4px;
+    }
+
+    /* ── Ticker & Navbar (Safe Areas Included) ────────────── */
+    .top-bar {
+      background: var(--primary);
+      color: var(--white);
+      padding: calc(var(--safe-top) + 8px) 20px 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+    .top-contact { display: flex; gap: 15px; }
+    .top-contact i { color: var(--accent); margin-left: 5px; }
+    
+    .navbar {
+      background: rgba(255, 255, 255, 0.98);
+      backdrop-filter: blur(10px);
+      position: sticky;
+      top: 0;
+      z-index: 1000;
+      box-shadow: var(--shadow-sm);
+    }
+    .nav-container {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      height: 70px;
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-weight: 900;
+      font-size: 1.2rem;
+      color: var(--primary);
+    }
+    .brand img {
+      height: 45px;
+      width: auto;
+    }
+    .nav-links {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+    }
+    .nav-links a {
+      font-weight: 700;
+      color: var(--text-main);
+      transition: color 0.3s;
+    }
+    .nav-links a:hover { color: var(--accent); }
+    .btn-login {
+      background: var(--accent);
+      color: var(--primary) !important;
+      padding: 8px 24px;
+      border-radius: 50px;
+      font-weight: 800 !important;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: transform 0.2s;
+    }
+    .btn-login:hover { transform: translateY(-2px); }
+    
+    /* ── Hero Section ─────────────────────────────────────── */
+    .hero {
+      position: relative;
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: var(--white);
+      padding: 80px 20px 100px;
+      overflow: hidden;
+    }
+    .hero::after {
+      content: '';
+      position: absolute;
+      bottom: -1px; left: 0; right: 0;
+      height: 60px;
+      background: var(--bg-page);
+      clip-path: polygon(0 100%, 100% 100%, 100% 0);
+    }
+    .hero-content {
+      max-width: 800px;
+      margin: 0 auto;
+      text-align: center;
+      position: relative;
+      z-index: 2;
+    }
+    .hero-badge {
+      display: inline-block;
+      background: rgba(255,255,255,0.15);
+      padding: 6px 16px;
+      border-radius: 50px;
+      font-size: 0.9rem;
+      font-weight: 600;
+      margin-bottom: 25px;
+      backdrop-filter: blur(5px);
+    }
+    .hero h1 {
+      font-size: clamp(2.2rem, 5vw, 3.5rem);
+      font-weight: 900;
+      line-height: 1.3;
+      margin-bottom: 20px;
+    }
+    .hero h1 span { color: var(--accent); }
+    .hero p {
+      font-size: 1.15rem;
+      opacity: 0.9;
+      margin-bottom: 35px;
+      max-width: 600px;
+      margin-inline: auto;
+    }
+    
+    /* Stats Row */
+    .hero-stats {
+      display: flex;
+      justify-content: center;
+      gap: 30px;
+      flex-wrap: wrap;
+      margin-top: 50px;
+    }
+    .stat-box {
+      text-align: center;
+    }
+    .stat-num {
+      font-size: 2.2rem;
+      font-weight: 900;
+      color: var(--accent);
+      line-height: 1.1;
+    }
+    .stat-label {
+      font-size: 0.9rem;
+      font-weight: 500;
+      opacity: 0.8;
+      margin-top: 5px;
+    }
+
+    /* ── Features (Why Us?) ───────────────────────────────── */
+    .features-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 25px;
+    }
+    .feature-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      padding: 30px 25px;
+      box-shadow: var(--shadow-sm);
+      text-align: center;
+      transition: transform 0.3s, box-shadow 0.3s;
+      border: 1px solid rgba(0,0,0,0.03);
+    }
+    .feature-card:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--shadow-md);
+    }
+    .feature-icon {
+      width: 70px;
+      height: 70px;
+      background: rgba(245, 158, 11, 0.1);
+      color: var(--accent);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      margin: 0 auto 20px;
+    }
+    .feature-card h3 {
+      font-size: 1.3rem;
+      color: var(--primary);
+      margin-bottom: 15px;
+      font-weight: 800;
+    }
+    .feature-card p {
+      font-size: 0.95rem;
+      color: var(--text-muted);
+    }
+
+    /* ── Colleges Grid ────────────────────────────────────── */
+    .colleges-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 20px;
+    }
+    .college-card {
+      background: var(--bg-page);
+      border: 1px solid rgba(0,0,0,0.05);
+      border-radius: var(--radius);
+      padding: 25px;
+      display: flex;
+      align-items: center;
+      gap: 15px;
+      transition: background 0.3s;
+    }
+    .college-card:hover {
+      background: var(--white);
+      box-shadow: var(--shadow-md);
+      border-color: transparent;
+    }
+    .college-icon {
+      width: 50px;
+      height: 50px;
+      background: var(--primary);
+      color: var(--white);
+      border-radius: 12px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.4rem;
+      flex-shrink: 0;
+    }
+    .college-info h4 {
+      font-size: 1.1rem;
+      color: var(--primary);
+      font-weight: 800;
+      margin-bottom: 4px;
+    }
+    .college-info p {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
+
+    /* ── News / Announcements ─────────────────────────────── */
+    .news-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 25px;
+    }
+    .news-card {
+      background: var(--white);
+      border-radius: var(--radius);
+      overflow: hidden;
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.3s;
+      border: 1px solid rgba(0,0,0,0.04);
+    }
+    .news-card:hover { transform: translateY(-4px); }
+    .news-img {
+      height: 180px;
+      background: #e2e8f0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2.5rem;
+      color: var(--text-muted);
+      position: relative;
+    }
+    .news-badge {
+      position: absolute;
+      top: 15px; right: 15px;
+      background: var(--accent);
+      color: var(--primary);
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 0.8rem;
+      font-weight: 800;
+    }
+    .news-body { padding: 20px; }
+    .news-date {
+      font-size: 0.85rem;
+      color: var(--text-muted);
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .news-title {
+      font-size: 1.2rem;
+      font-weight: 800;
+      color: var(--primary);
+      margin-bottom: 10px;
+      line-height: 1.4;
+    }
+
+    /* ── Footer ───────────────────────────────────────────── */
+    .footer {
+      background: var(--primary);
+      color: var(--white);
+      padding: 60px 20px calc(var(--safe-bottom) + 30px);
+      text-align: center;
+    }
+    .footer-logo {
+      height: 60px;
+      margin-bottom: 20px;
+      filter: brightness(0) invert(1);
+    }
+    .footer p {
+      color: rgba(255,255,255,0.7);
+      margin-bottom: 20px;
+      max-width: 500px;
+      margin-inline: auto;
+    }
+    .footer-social {
+      display: flex;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+    .footer-social a {
+      width: 45px;
+      height: 45px;
+      background: rgba(255,255,255,0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      border-radius: 50%;
+      font-size: 1.2rem;
+      transition: background 0.3s;
+    }
+    .footer-social a:hover {
+      background: var(--accent);
+      color: var(--primary);
+    }
+
+    .mobile-login-btn { display: none; }
+
+    /* ── Mobile Responsive ────────────────────────────────── */
+    @media (max-width: 768px) {
+      .top-contact { display: none; }
+      .top-bar { justify-content: center; }
+      
+      .nav-links { display: none; }
+      .nav-container { height: 60px; }
+      
+      .mobile-login-btn { display: flex; }
+      
+      .hero { padding: 50px 20px 80px; }
+      .hero h1 { font-size: 1.8rem; }
+      .hero-stats { gap: 20px; }
+      
+      .section { padding: 40px 0; }
+      
+      .lightbox-nav-btn {
+        width: 38px;
+        height: 38px;
+        font-size: 1.3rem;
+      }
+      .lightbox-nav-btn.prev { right: 8px; }
+      .lightbox-nav-btn.next { left: 8px; }
+    }
+    
+    /* ── Gallery Section & Lightbox ───────────────────────── */
+    .gallery-filters {
+      display: flex;
+      gap: 8px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-bottom: 24px;
+    }
+    .gallery-filter-btn {
+      background: var(--bg-card, #ffffff);
+      color: var(--text-muted, #64748b);
+      border: 1px solid var(--border, #e2e8f0);
+      padding: 8px 18px;
+      border-radius: 30px;
+      font-size: 0.88rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.25s ease;
+    }
+    .gallery-filter-btn:hover, .gallery-filter-btn.active {
+      background: var(--primary, #0d3b66);
+      color: #ffffff;
+      border-color: var(--primary, #0d3b66);
+      box-shadow: 0 4px 12px rgba(13, 59, 102, 0.25);
+    }
+    /* زر «عرض المزيد» لقسمي الأخبار والمعرض */
+    .load-more-btn {
+      background: var(--bg-card, #ffffff);
+      color: var(--primary, #0d3b66);
+      border: 1.5px solid var(--primary, #0d3b66);
+      padding: 11px 28px;
+      border-radius: 30px;
+      font-family: inherit;
+      font-size: 0.9rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      transition: background 0.25s ease, color 0.25s ease, box-shadow 0.25s ease;
+    }
+    .load-more-btn:hover {
+      background: var(--primary, #0d3b66);
+      color: #ffffff;
+      box-shadow: 0 6px 18px rgba(13, 59, 102, 0.28);
+    }
+    .load-more-btn i { font-size: 1.05rem; }
+
+    .gallery-card-like {
+      position: absolute;
+      top: 12px;
+      right: 12px;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 20px;
+      padding: 5px 12px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      z-index: 5;
+      transition: all 0.2s ease;
+    }
+    .gallery-card-like:hover {
+      background: rgba(239, 68, 68, 0.85);
+      border-color: #ef4444;
+      transform: scale(1.05);
+    }
+    .gallery-card-like.liked {
+      background: #ef4444;
+      color: #ffffff;
+      border-color: #ef4444;
+    }
+    .gallery-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 20px;
+    }
+    .gallery-card {
+      position: relative;
+      border-radius: var(--radius);
+      overflow: hidden;
+      aspect-ratio: 4 / 3;
+      background: #e2e8f0;
+      cursor: pointer;
+      box-shadow: var(--shadow-sm);
+      transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+    .gallery-card:hover {
+      transform: translateY(-5px);
+      box-shadow: var(--shadow-md);
+    }
+    .gallery-card img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      transition: transform 0.5s ease;
+    }
+    .gallery-card:hover img {
+      transform: scale(1.08);
+    }
+    .gallery-overlay {
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(to top, rgba(0,18,58,0.85) 0%, rgba(0,18,58,0.2) 60%, transparent 100%);
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-end;
+      padding: 15px;
+      color: var(--white);
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+    .gallery-card:hover .gallery-overlay {
+      opacity: 1;
+    }
+    .gallery-category {
+      align-self: flex-start;
+      background: var(--accent);
+      color: var(--primary);
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 2px 10px;
+      border-radius: 12px;
+      margin-bottom: 6px;
+    }
+    .gallery-caption {
+      font-size: 0.9rem;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+    .gallery-zoom-icon {
+      position: absolute;
+      top: 15px;
+      left: 15px;
+      width: 36px;
+      height: 36px;
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(4px);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.2rem;
+    }
+
+    /* Lightbox Modal */
+    .lightbox-overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(0, 18, 58, 0.92);
+      backdrop-filter: blur(10px);
+      -webkit-backdrop-filter: blur(10px);
+      z-index: 9999;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease;
+      padding: 20px;
+      touch-action: none;
+      overscroll-behavior: contain;
+    }
+    .lightbox-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .lightbox-content {
+      position: relative;
+      max-width: 90vw;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .lightbox-content img {
+      max-width: 100%;
+      max-height: 68vh;
+      border-radius: var(--radius);
+      box-shadow: 0 20px 40px rgba(0,0,0,0.5);
+      object-fit: contain;
+    }
+    .lightbox-caption {
+      color: var(--white);
+      margin-top: 6px;
+      font-size: 1.05rem;
+      font-weight: 600;
+      text-align: right;
+    }
+    .lightbox-close {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      background: rgba(255,255,255,0.2);
+      color: var(--white);
+      border: none;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      font-size: 1.5rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: background 0.2s;
+      z-index: 10001;
+    }
+    .lightbox-close:hover {
+      background: #ef4444;
+    }
+    .lightbox-nav-btn {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      background: rgba(255, 255, 255, 0.2);
+      backdrop-filter: blur(8px);
+      color: #ffffff;
+      border: none;
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      font-size: 1.6rem;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 10000;
+      transition: all 0.2s ease;
+    }
+    .lightbox-nav-btn:hover {
+      background: var(--primary, #0d3b66);
+      transform: translateY(-50%) scale(1.1);
+    }
+    .lightbox-nav-btn.prev { right: 20px; }
+    .lightbox-nav-btn.next { left: 20px; }
+
+    .lightbox-act-btn {
+      background: rgba(255, 255, 255, 0.15);
+      backdrop-filter: blur(6px);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      padding: 8px 16px;
+      border-radius: 12px;
+      font-size: 0.85rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: all 0.2s ease;
+    }
+    .lightbox-act-btn:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+    .lightbox-act-btn.liked {
+      background: #ef4444;
+      border-color: #ef4444;
+    }
+
+    /* Skeleton Loading & Zoom */
+    @keyframes skeletonPulse {
+      0% { opacity: 0.6; }
+      50% { opacity: 0.25; }
+      100% { opacity: 0.6; }
+    }
+    .skeleton-card {
+      background: var(--border, #e2e8f0);
+      border-radius: var(--radius, 16px);
+      min-height: 200px;
+      animation: skeletonPulse 1.4s infinite ease-in-out;
+    }
+    .zoom-enabled {
+      cursor: zoom-in;
+      transition: transform 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+    }
+    .zoom-enabled.is-zoomed {
+      transform: scale(1.8);
+      cursor: zoom-out;
+    }
+
+    /* News Card Pointer & Detail Modal */
+    .news-card {
+      cursor: pointer;
+    }
+    .news-modal-box {
+      background: var(--white);
+      border-radius: 20px;
+      max-width: 650px;
+      width: 92vw;
+      max-height: 88vh;
+      overflow-y: auto;
+      box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+      position: relative;
+      color: var(--text-main);
+    }
+    .news-modal-img {
+      width: 100%;
+      max-height: 300px;
+      object-fit: cover;
+      border-radius: 20px 20px 0 0;
+    }
+    .news-modal-body {
+      padding: 24px;
+    }
+    .news-modal-title {
+      font-size: 1.45rem;
+      font-weight: 900;
+      color: var(--primary);
+      margin-bottom: 12px;
+      line-height: 1.35;
+    }
+    .news-modal-text {
+      font-size: 1rem;
+      color: var(--text-main);
+      line-height: 1.8;
+      white-space: pre-wrap;
+      margin-top: 15px;
+      border-top: 1px solid rgba(0,0,0,0.06);
+      padding-top: 15px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Top Bar with Safe Area Top -->
+  <div class="top-bar">
+    <div><i class="ri-map-pin-line"></i> الهجرة شمال، أم درمان، السودان</div>
+    <div class="top-contact">
+      <span><i class="ri-phone-line"></i> +249 922 772 500</span>
+      <span><i class="ri-mail-line"></i> info@elnasr.edu.sd</span>
+    </div>
+  </div>
+
+  <!-- Navbar -->
+  <nav class="navbar">
+    <div class="container nav-container">
+      <a href="#" class="brand">
+        <img src="/WhatsApp-Image-2023-01-14-at-11.12.20-AM-300x300-removebg-preview-120x120.png" alt="شعار النصر التقنية">
+        النصر التقنية
+      </a>
+      <div class="nav-links">
+        <a href="#news">آخر الأخبار</a>
+        <a href="#gallery">معرض الصور</a>
+        <a href="#colleges">الكليات</a>
+        <a href="#about">عن الجامعة</a>
+        <a href="#features">المميزات</a>
+        <a href="/login.html" class="btn-login"><i class="ri-user-line"></i> بوابة الطلاب (LMS)</a>
+      </div>
+      <!-- Mobile Login Button -->
+      <a href="/login.html" class="btn-login mobile-login-btn"><i class="ri-user-line"></i> الدخول</a>
+    </div>
+  </nav>
+
+  <!-- Hero Section -->
+  <header class="hero">
+    <div class="hero-content reveal active">
+      <div class="hero-badge">تأسست عام 1956</div>
+      <h1>جامعة <span>النصر</span> التقنية</h1>
+      <p>مؤسسة تعليمية رائدة تسعى لتقديم تعليم متميز، نجمع بين العراقة الأكاديمية والتطور التقني لتخريج أجيال تصنع المستقبل.</p>
+      
+      <div class="hero-stats">
+        <div class="stat-box">
+          <div class="stat-num">8</div>
+          <div class="stat-label">كليات متخصصة</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num">1956</div>
+          <div class="stat-label">عام التأسيس</div>
+        </div>
+        <div class="stat-box">
+          <div class="stat-num">+14k</div>
+          <div class="stat-label">متر مربع مساحة</div>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <!-- News Section -->
+  <section id="news" class="section section-alt">
+    <div class="container reveal">
+      <div class="section-header">
+        <h2 class="section-title">أحداث وأخبار الجامعة</h2>
+        <div class="accent-bar"></div>
+      </div>
+      
+      <!-- News Search Bar -->
+      <div style="max-width:480px; margin:0 auto 24px; position:relative;">
+        <i class="ri-search-line" style="position:absolute; right:14px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:1.1rem;"></i>
+        <input type="text" id="welcomeNewsSearch" oninput="filterWelcomeNews(this.value)" placeholder="ابحث في الأخبار والفعاليات..." style="width:100%; box-sizing:border-box; padding:10px 42px 10px 14px; border:1px solid var(--border,#e2e8f0); border-radius:30px; font-size:0.9rem; background:var(--bg-card,#fff); color:var(--text-main,#0f172a); outline:none;">
+      </div>
+
+      <div class="news-grid" id="dynamic-news-container">
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+      </div>
+
+      <div id="news-load-more-wrap" style="display:none; text-align:center; margin-top:24px;">
+        <button id="news-load-more-btn" class="load-more-btn" onclick="showMoreNews()">
+          <i class="ri-arrow-down-line"></i> عرض المزيد من الأخبار
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Gallery Section -->
+  <section id="gallery" class="section">
+    <div class="container reveal">
+      <div class="section-header">
+        <h2 class="section-title">معرض صور الجامعة</h2>
+        <p class="section-subtitle">تصفح وتفاعل مع أجمل اللحظات والأنشطة الأكاديمية والطلابية</p>
+        <div class="accent-bar"></div>
+      </div>
+      
+      <!-- Category Filters -->
+      <div class="gallery-filters" id="gallery-filter-tabs">
+        <!-- التصنيفات يجب أن تطابق enum في models/PublicGallery.js حرفياً،
+             وإلا أعطى الفلتر «لا توجد صور» دائماً مهما كان المعرض ممتلئاً -->
+        <button class="gallery-filter-btn active" onclick="filterGalleryCategory('all', this)">الكل</button>
+        <button class="gallery-filter-btn" onclick="filterGalleryCategory('نشاط', this)">أنشطة</button>
+        <button class="gallery-filter-btn" onclick="filterGalleryCategory('مبنى', this)">مبانٍ</button>
+        <button class="gallery-filter-btn" onclick="filterGalleryCategory('تخرج', this)">تخرج</button>
+        <button class="gallery-filter-btn" onclick="filterGalleryCategory('أخرى', this)">أخرى</button>
+      </div>
+
+      <div class="gallery-grid" id="dynamic-gallery-container">
+        <div style="text-align:center; padding: 20px; color: var(--text-muted); grid-column: 1 / -1;">
+          <div class="spinner spinner-dark" style="width:24px;height:24px;border-width:2px;border-top-color:var(--primary);margin:0 auto 10px;"></div>
+          جاري تحميل الصور...
+        </div>
+      </div>
+
+      <div id="gallery-load-more-wrap" style="display:none; text-align:center; margin-top:24px;">
+        <button id="gallery-load-more-btn" class="load-more-btn" onclick="showMoreGallery()">
+          <i class="ri-arrow-down-line"></i> عرض المزيد من الصور
+        </button>
+      </div>
+    </div>
+  </section>
+
+  <!-- Colleges Section -->
+  <section id="colleges" class="section section-alt">
+    <div class="container reveal">
+      <div class="section-header">
+        <h2 class="section-title">الكليات والبرامج</h2>
+        <p class="section-subtitle">نوفر برامج واسعة ومتوازنة لتأهيل كوادر المستقبل</p>
+        <div class="accent-bar"></div>
+      </div>
+      <div class="colleges-grid">
+        <div class="college-card">
+          <div class="college-icon"><i class="ri-building-4-line"></i></div>
+          <div class="college-info">
+            <h4>كلية الهندسة والعمارة</h4>
+            <p>هندسة مدنية، كهربائية، وعمارة.</p>
+          </div>
+        </div>
+        <div class="college-card">
+          <div class="college-icon"><i class="ri-bar-chart-box-line"></i></div>
+          <div class="college-info">
+            <h4>كلية العلوم الإدارية</h4>
+            <p>المحاسبة، إدارة الأعمال، والمصارف.</p>
+          </div>
+        </div>
+        <div class="college-card">
+          <div class="college-icon"><i class="ri-translate-2"></i></div>
+          <div class="college-info">
+            <h4>كلية اللغات والترجمة</h4>
+            <p>اللغة الإنجليزية، الترجمة، واللغة الصينية.</p>
+          </div>
+        </div>
+        <div class="college-card">
+          <div class="college-icon"><i class="ri-computer-line"></i></div>
+          <div class="college-info">
+            <h4>علوم الحاسوب وتقانة المعلومات</h4>
+            <p>تقانة المعلومات، هندسة البرمجيات، ونظم المعلومات.</p>
+          </div>
+        </div>
+        <div class="college-card">
+          <div class="college-icon"><i class="ri-microscope-line"></i></div>
+          <div class="college-info">
+            <h4>كلية علوم المختبرات الطبية</h4>
+            <p>تأهيل كوادر طبية مختبرية متقدمة.</p>
+          </div>
+        </div>
+        <div class="college-card">
+          <div class="college-icon"><i class="ri-heart-pulse-line"></i></div>
+          <div class="college-info">
+            <h4>كلية علوم التمريض</h4>
+            <p>برامج تمريض متكاملة لخدمة المجتمع.</p>
+          </div>
+        </div>
+        <div class="college-card">
+          <div class="college-icon"><i class="ri-book-open-line"></i></div>
+          <div class="college-info">
+            <h4>كلية العلوم التربوية</h4>
+            <p>اللغة الإنجليزية للثانوي، والتعليم قبل المدرسي.</p>
+          </div>
+        </div>
+        <div class="college-card">
+          <div class="college-icon"><i class="ri-group-line"></i></div>
+          <div class="college-info">
+            <h4>كلية تنمية المجتمع</h4>
+            <p>دبلومات في المحاسبة، الدراسات الهندسية ونظم المعلومات.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- About Section -->
+  <section id="about" class="section">
+    <div class="container reveal">
+      <div class="section-header">
+        <h2 class="section-title">نبذة عن الجامعة</h2>
+        <div class="accent-bar"></div>
+      </div>
+      <div style="max-width: 800px; margin: 0 auto; text-align: center; font-size: 1.1rem; color: var(--text-muted);">
+        <p style="margin-bottom: 20px;">بدأت هذه المؤسسة التعليمية العريقة كمدرسة أهلية متوسطة عند إنشائها على يد الأستاذ/ معاذ حسن السراج في العام 1956م وذلك استجابة للنداء الوطني. وفي العام 1990م حصلت النصر على تصديق نهائي من وزارة التعليم العالي والبحث العلمي لتتحول إلى كلية تقنية جامعية.</p>
+        <blockquote style="font-size: 1.25rem; color: var(--primary); font-weight: 700; border-right: 4px solid var(--accent); padding-right: 20px; margin: 30px 0; text-align: right;">
+          "إن الأمم تعتمد على أبنائها لأن عليهم يعتمد الحاضر والمستقبل، وأن علينا إعدادهم وغرس الجميل في طباعهم. نحن نعمل يداً بيد مع أولياء الأمور لدعم الطلاب لتحقيق هذه الأحلام."
+          <span style="display: block; font-size: 0.9rem; color: var(--text-muted); margin-top: 10px;">— أ. عبادة معاذ السراج، وكيل الجامعة</span>
+        </blockquote>
+      </div>
+    </div>
+  </section>
+
+  <!-- Features Section -->
+  <section id="features" class="section section-alt">
+    <div class="container reveal">
+      <div class="section-header">
+        <h2 class="section-title">لماذا جامعة النصر؟</h2>
+        <div class="accent-bar"></div>
+      </div>
+      <div class="features-grid">
+        <div class="feature-card">
+          <div class="feature-icon"><i class="ri-history-line"></i></div>
+          <h3>العراقة والتاريخ</h3>
+          <p>بدأت رسالة التعليم منذ العام 1956، ولدينا هيئة تدريس متميزة تحمل خبرات عقود في نقل المعرفة.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon"><i class="ri-macbook-line"></i></div>
+          <h3>نظام التعليم الإلكتروني LMS</h3>
+          <p>نستخدم أحدث مستحدثات التكنولوجيا لتعزيز تجربة التعلم عبر بوابة رقمية متكاملة لخدمة طلابنا عن بُعد.</p>
+        </div>
+        <div class="feature-card">
+          <div class="feature-icon"><i class="ri-medal-line"></i></div>
+          <h3>تميز الخريج</h3>
+          <p>خريجو الجامعة منتشرون في كافة الدول العربية والأجنبية ويشغلون مناصب مرموقة داخل وخارج البلاد.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Lightbox Modal -->
+  <div id="lightbox-modal" class="lightbox-overlay" onclick="closeLightbox()">
+    <button class="lightbox-close" onclick="closeLightbox()"><i class="ri-close-line"></i></button>
+    <button class="lightbox-nav-btn prev" onclick="event.stopPropagation(); changeLightboxImage(-1);" title="الصورة السابقة"><i class="ri-arrow-right-s-line"></i></button>
+    <button class="lightbox-nav-btn next" onclick="event.stopPropagation(); changeLightboxImage(1);" title="الصورة التالية"><i class="ri-arrow-left-s-line"></i></button>
+
+    <div class="lightbox-content" onclick="event.stopPropagation()">
+      <img id="lightbox-img" src="" alt="صورة المعرض">
+      
+      <div style="width:100%; margin-top: 12px; display: flex; flex-direction: column; gap: 8px;">
+        <div style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px;">
+          <div>
+            <span id="lightbox-category" class="gallery-category" style="margin-bottom:2px; display:inline-block;"></span>
+            <p id="lightbox-caption" class="lightbox-caption" style="margin: 4px 0 0 0; text-align: right;"></p>
+          </div>
+          <div id="lightbox-counter" style="color: rgba(255,255,255,0.7); font-size: 0.85rem; font-weight: 700;"></div>
+        </div>
+
+        <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap; margin-top: 6px;">
+          <button id="lightbox-like-btn" class="lightbox-act-btn" onclick="toggleCurrentGalleryLike()">
+            <i class="ri-heart-line" id="lightbox-heart-icon"></i> <span id="lightbox-like-count">0</span>
+          </button>
+          <a id="lightbox-download-btn" href="#" download target="_blank" class="lightbox-act-btn" style="text-decoration:none;">
+            <i class="ri-download-2-line"></i> تحميل
+          </a>
+          <button class="lightbox-act-btn" onclick="shareCurrentGalleryImage()">
+            <i class="ri-share-line"></i> مشاركة
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- News Detail Modal -->
+  <div id="news-detail-modal" class="lightbox-overlay" onclick="closeNewsDetailModal()">
+    <div class="news-modal-box" onclick="event.stopPropagation()">
+      <button class="lightbox-close" onclick="closeNewsDetailModal()"><i class="ri-close-line"></i></button>
+      <img id="news-modal-img" src="" alt="صورة الخبر" class="news-modal-img" style="display:none;">
+      <div class="news-modal-body">
+        <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span id="news-modal-tag" class="news-badge" style="position:static;"></span>
+            <span style="font-size:0.8rem; color:var(--text-muted); font-weight:700;"><i class="ri-time-line"></i> <span id="news-modal-readtime-val">1 دقيقة</span></span>
+          </div>
+          <span id="news-modal-date" class="news-date"><i class="ri-calendar-line"></i> <span id="news-modal-date-val"></span></span>
+        </div>
+        <h2 id="news-modal-title" class="news-modal-title"></h2>
+        <p id="news-modal-summary" style="font-size: 0.95rem; color: var(--text-muted); font-weight:600; line-height:1.5;"></p>
+        <div id="news-modal-text" class="news-modal-text"></div>
+        
+        <div style="margin-top:20px; display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px; border-top:1px solid rgba(0,0,0,0.06); padding-top:16px;">
+          <div style="display:flex; gap:16px; align-items:center;">
+            <div style="display:flex; align-items:center; gap:6px; color:var(--text-muted); font-size:1rem; font-weight:700;">
+              <i class="ri-eye-line" style="font-size:1.3rem;"></i>
+              <span id="news-modal-views">0</span>
+            </div>
+            <button id="news-modal-like-btn" class="lightbox-act-btn" onclick="toggleCurrentNewsLike()" style="background:var(--bg-input); color:var(--text-main); border:1px solid var(--border);">
+              <i id="news-modal-like-icon" class="ri-heart-3-line" style="font-size:1.2rem;"></i>
+              <span id="news-modal-likes">0</span>
+            </button>
+          </div>
+          <button onclick="shareCurrentNewsLink()" class="lightbox-act-btn" style="background:var(--primary); color:#fff; border:none;">
+            <i class="ri-share-line"></i> مشاركة الخبر
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Footer with Safe Area Bottom -->
+  <footer class="footer">
+    <div class="container">
+      <img src="/WhatsApp-Image-2023-01-14-at-11.12.20-AM-300x300-removebg-preview-120x120.png" alt="شعار الجامعة" class="footer-logo" style="margin: 0 auto 20px;">
+      <p>جامعة النصر التقنية - جسر نحو المعرفة. مؤسسة تعليمية أهلية رائدة تقع في أم درمان وتسعى لتقديم أفضل خدمة تعليمية منذ عام 1956م.</p>
+      <div class="footer-social">
+        <a href="#"><i class="ri-facebook-fill"></i></a>
+        <a href="#"><i class="ri-twitter-x-line"></i></a>
+        <a href="#"><i class="ri-linkedin-fill"></i></a>
+      </div>
+      <div style="font-size: 0.85rem; opacity: 0.6;">
+        &copy; 2026 جامعة النصر التقنية. جميع الحقوق محفوظة.
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Scroll reveal animation
+    const reveals = document.querySelectorAll('.reveal');
+    function checkReveal() {
+      const windowHeight = window.innerHeight;
+      const revealPoint = 100;
+      reveals.forEach(reveal => {
+        const revealTop = reveal.getBoundingClientRect().top;
+        if (revealTop < windowHeight - revealPoint) {
+          reveal.classList.add('active');
+        }
+      });
+    }
+    window.addEventListener('scroll', checkReveal);
+    checkReveal();
+
+    window._allWelcomeNews = [];
+    window._cachedNewsMap = {};
+    window._currentActiveNewsId = null;
+
+    /* هذه الصفحة لا تحمّل app.js، فتحتاج دالة هروب خاصة بها.
+       بدونها أي عنوان خبر فيه < أو " أو ' كان يكسر بناء البطاقة. */
+    function escHtml(str) {
+      return String(str ?? '').replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[c]));
+    }
+
+    function getReadingTimeMinutes(text) {
+      const words = (text || '').trim().split(/\s+/).filter(Boolean).length;
+      return Math.max(1, Math.ceil(words / 120));
+    }
+
+    /* عرض تدريجي: كانت كل الأخبار تُرسم دفعة واحدة فتطول الصفحة بلا داعٍ.
+       نعرض أول NEWS_PAGE_SIZE فقط مع زر «عرض المزيد». */
+    const NEWS_PAGE_SIZE = 6;
+    window._newsVisibleCount = NEWS_PAGE_SIZE;
+    window._newsCurrentList = [];
+
+    function renderWelcomeNewsCards(newsList) {
+      const container = document.getElementById('dynamic-news-container');
+      if (!container) return;
+
+      // أي عرض جديد (بحث/تحميل أول) يعيد العدّاد للبداية
+      if (newsList !== window._newsCurrentList) {
+        window._newsCurrentList = newsList || [];
+        window._newsVisibleCount = NEWS_PAGE_SIZE;
+      }
+
+      const moreWrap = document.getElementById('news-load-more-wrap');
+      if (!newsList || !newsList.length) {
+        container.innerHTML = '<div style="text-align:center; padding: 20px; color: var(--text-muted); grid-column: 1 / -1;">لا توجد أخبار تنطبق على نتائج البحث.</div>';
+        if (moreWrap) moreWrap.style.display = 'none';
+        return;
+      }
+
+      const total = newsList.length;
+      newsList = newsList.slice(0, window._newsVisibleCount);
+
+      if (moreWrap) {
+        const remaining = total - newsList.length;
+        moreWrap.style.display = remaining > 0 ? 'block' : 'none';
+        const btn = document.getElementById('news-load-more-btn');
+        if (btn) btn.innerHTML = `<i class="ri-arrow-down-line"></i> عرض المزيد من الأخبار (${remaining})`;
+      }
+
+      const _IS_CAPACITOR_NATIVE = !!(window.Capacitor?.isNativePlatform?.());
+      const API_BASE = _IS_CAPACITOR_NATIVE ? 'https://elnasrcsit.website' : '';
+
+      container.innerHTML = newsList.map(item => {
+        const dateStr = item.publishedAt || item.createdAt || new Date();
+        const date = new Date(dateStr).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' });
+        const tag = (item.tags && item.tags.length > 0) ? item.tags[0] : 'أحداث الجامعة';
+        const readTime = getReadingTimeMinutes(item.body || item.summary);
+
+        let imgUrl = item.imageUrl || '';
+        if (imgUrl && !imgUrl.startsWith('http') && !imgUrl.startsWith('data:')) {
+          imgUrl = API_BASE + imgUrl;
+        }
+
+        const bgImg = imgUrl ? `background: url('${imgUrl}') center/cover no-repeat;` : 'background: #e2e8f0;';
+        const icon = imgUrl ? '' : '<i class="ri-image-line"></i>';
+
+        return `
+          <div class="news-card" onclick="openNewsDetailModal('${item._id}')">
+            <div class="news-img" style="${bgImg}">
+              ${icon}
+              <div class="news-badge">${escHtml(tag)}</div>
+            </div>
+            <div class="news-body">
+              <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+                <div class="news-date"><i class="ri-calendar-line"></i> ${date}</div>
+                <div style="font-size:0.75rem; color:var(--text-muted); font-weight:700;"><i class="ri-time-line"></i> ${readTime} دقائق قراءة</div>
+              </div>
+              <h3 class="news-title">${escHtml(item.title)}</h3>
+              <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom:12px;">${escHtml(item.summary || item.body || '')}</p>
+              <div style="display:flex; justify-content:space-between; align-items:center; padding-top:10px; border-top:1px solid var(--border);">
+                <div style="display:flex; gap:12px; color:var(--text-muted); font-size:0.85rem; font-weight:700;">
+                  <span><i class="ri-eye-line"></i> ${item.viewsCount || 0}</span>
+                  <span style="color:${getNewsLikes(item._id).isLiked ? '#ef4444' : 'inherit'}"><i class="${getNewsLikes(item._id).isLiked ? 'ri-heart-3-fill' : 'ri-heart-3-line'}"></i> ${getNewsLikes(item._id).count}</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function filterWelcomeNews(query) {
+      const q = (query || '').toLowerCase().trim();
+      if (!q) {
+        renderWelcomeNewsCards(window._allWelcomeNews);
+        return;
+      }
+      const filtered = window._allWelcomeNews.filter(n => {
+        return (n.title || '').toLowerCase().includes(q) ||
+               (n.summary || '').toLowerCase().includes(q) ||
+               (n.body || '').toLowerCase().includes(q);
+      });
+      renderWelcomeNewsCards(filtered);
+    }
+
+    async function loadNews() {
+      const container = document.getElementById('dynamic-news-container');
+      try {
+        const _IS_CAPACITOR_NATIVE = !!(window.Capacitor?.isNativePlatform?.());
+        const API_BASE = _IS_CAPACITOR_NATIVE ? 'https://elnasrcsit.website' : '';
+        const res = await fetch(API_BASE + '/api/public/news?limit=12');
+        const data = await res.json();
+        
+        const newsList = data.data?.news || data.news || (Array.isArray(data.data) ? data.data : []);
+        
+        if (res.ok && Array.isArray(newsList) && newsList.length > 0) {
+          window._allWelcomeNews = newsList;
+          window._cachedNewsMap = {};
+          newsList.forEach(item => {
+            window._cachedNewsMap[item._id] = item;
+          });
+
+          renderWelcomeNewsCards(newsList);
+
+          const urlParams = new URLSearchParams(window.location.search);
+          const targetNewsId = urlParams.get('newsId');
+          if (targetNewsId && window._cachedNewsMap[targetNewsId]) {
+            setTimeout(() => openNewsDetailModal(targetNewsId), 200);
+          }
+        } else {
+          container.innerHTML = '<div style="text-align:center; padding: 20px; color: var(--text-muted); grid-column: 1 / -1;">لا توجد أخبار حالياً.</div>';
+        }
+      } catch (err) {
+        console.warn('Failed to load news:', err);
+        container.innerHTML = '<div style="text-align:center; padding: 20px; color: var(--text-muted); grid-column: 1 / -1;">فشل تحميل الأخبار. يرجى المحاولة لاحقاً.</div>';
+      }
+    }
+
+    function openNewsDetailModal(id) {
+      const item = window._cachedNewsMap[id];
+      if (!item) return;
+      window._currentActiveNewsId = id;
+
+      const modal = document.getElementById('news-detail-modal');
+      const img = document.getElementById('news-modal-img');
+      const tag = document.getElementById('news-modal-tag');
+      const dateVal = document.getElementById('news-modal-date-val');
+      const readTimeVal = document.getElementById('news-modal-readtime-val');
+      const title = document.getElementById('news-modal-title');
+      const summary = document.getElementById('news-modal-summary');
+      const text = document.getElementById('news-modal-text');
+
+      const _IS_CAPACITOR_NATIVE = !!(window.Capacitor?.isNativePlatform?.());
+      const API_BASE = _IS_CAPACITOR_NATIVE ? 'https://elnasrcsit.website' : '';
+
+      let imgUrl = item.imageUrl || '';
+      if (imgUrl && !imgUrl.startsWith('http') && !imgUrl.startsWith('data:')) {
+        imgUrl = API_BASE + imgUrl;
+      }
+
+      if (imgUrl) {
+        img.src = imgUrl;
+        img.style.display = 'block';
+      } else {
+        img.style.display = 'none';
+      }
+
+      const dateStr = item.publishedAt || item.createdAt || new Date();
+      dateVal.textContent = new Date(dateStr).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'long', year: 'numeric' });
+      tag.textContent = (item.tags && item.tags.length > 0) ? item.tags[0] : 'أحداث الجامعة';
+      if (readTimeVal) readTimeVal.textContent = getReadingTimeMinutes(item.body || item.summary) + ' دقائق قراءة';
+      title.textContent = item.title || '';
+      summary.textContent = item.summary || '';
+      text.textContent = item.body || item.summary || '';
+
+      modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+
+      // Update likes and views logic
+      updateNewsModalLikeUI(id);
+      const viewsEl = document.getElementById('news-modal-views');
+      if (viewsEl) viewsEl.textContent = item.viewsCount || 0;
+
+      // Make API call to view the news (which increases view count)
+      fetch(API_BASE + '/api/public/news/' + id).then(r=>r.json()).then(d => {
+        if(d.ok || d.success) {
+          if (d.data?.news?.viewsCount) {
+             item.viewsCount = d.data.news.viewsCount;
+             if(viewsEl) viewsEl.textContent = item.viewsCount;
+             renderWelcomeNewsCards(window._allWelcomeNews); // Refresh list
+          }
+        }
+      }).catch(()=>{});
+    }
+
+    function getNewsLikes(id) {
+      const isLiked = localStorage.getItem('news_like_' + id) === 'true';
+      const targetImg = window._allWelcomeNews.find(x => x._id === id);
+      let count = targetImg ? (targetImg.likesCount || 0) : 0;
+      if (isLiked && count === 0) count = 1;
+      return { isLiked, count };
+    }
+
+    async function toggleCurrentNewsLike() {
+      const id = window._currentActiveNewsId;
+      if (!id) return;
+      const current = localStorage.getItem('news_like_' + id) === 'true';
+      const newLikedState = !current;
+      localStorage.setItem('news_like_' + id, newLikedState);
+
+      const targetImg = window._allWelcomeNews.find(x => x._id === id);
+      if (targetImg) {
+        targetImg.likesCount = Math.max(0, (targetImg.likesCount || 0) + (newLikedState ? 1 : -1));
+      }
+
+      updateNewsModalLikeUI(id);
+      renderWelcomeNewsCards(window._allWelcomeNews);
+
+      try {
+        const _IS_CAPACITOR_NATIVE = !!(window.Capacitor?.isNativePlatform?.());
+        const API_BASE = _IS_CAPACITOR_NATIVE ? 'https://elnasrcsit.website' : '';
+        const res = await fetch(API_BASE + '/api/public/news/' + id + '/like', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: newLikedState ? 'like' : 'unlike' })
+        });
+        const data = await res.json();
+        if (res.ok && data.data && targetImg) {
+          targetImg.likesCount = data.data.likesCount;
+          updateNewsModalLikeUI(id);
+          renderWelcomeNewsCards(window._allWelcomeNews);
+        }
+      } catch { }
+    }
+
+    function updateNewsModalLikeUI(id) {
+      const { isLiked, count } = getNewsLikes(id);
+      const btn = document.getElementById('news-modal-like-btn');
+      const icon = document.getElementById('news-modal-like-icon');
+      const countEl = document.getElementById('news-modal-likes');
+      if (btn && icon && countEl) {
+        if (isLiked) {
+           btn.style.background = '#fee2e2';
+           btn.style.color = '#ef4444';
+           btn.style.borderColor = '#ef4444';
+           icon.className = 'ri-heart-3-fill';
+        } else {
+           btn.style.background = 'var(--bg-input)';
+           btn.style.color = 'var(--text-main)';
+           btn.style.borderColor = 'var(--border)';
+           icon.className = 'ri-heart-3-line';
+        }
+        countEl.textContent = count;
+      }
+    }
+
+    function getPublicBaseUrl() {
+      const host = window.location.hostname || '';
+      const origin = window.location.origin || '';
+      if (!host || host === 'localhost' || host === '127.0.0.1' || origin === 'null' || !!(window.Capacitor?.isNativePlatform?.())) {
+        return 'https://elnasrcsit.website';
+      }
+      return origin;
+    }
+
+    function shareCurrentNewsLink() {
+      if (!window._currentActiveNewsId) return;
+      const shareUrl = getPublicBaseUrl() + '/welcome.html?newsId=' + window._currentActiveNewsId;
+      const item = window._cachedNewsMap[window._currentActiveNewsId];
+      const title = item ? item.title : 'خبر من جامعة النصر التقنية';
+      if (navigator.share) {
+        navigator.share({ title: title, url: shareUrl }).catch(() => {});
+      } else {
+        navigator.clipboard.writeText(shareUrl).then(() => {
+          alert('تم نسخ رابط الخبر بنجاح!');
+        }).catch(() => {});
+      }
+    }
+
+    function closeNewsDetailModal() {
+      const modal = document.getElementById('news-detail-modal');
+      modal.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    // ── Interactive Gallery Logic ─────────────────────────
+    window._allGalleryImages = [];
+    window._filteredGalleryImages = [];
+    window._currentLightboxIndex = 0;
+    window._activeGalleryCategory = 'all';
+
+    function getGalleryLikes(id) {
+      const isLiked = localStorage.getItem('gallery_like_' + id) === 'true';
+      const targetImg = window._allGalleryImages.find(x => x._id === id);
+      let count = targetImg ? (targetImg.likesCount || 0) : 0;
+      if (isLiked && count === 0) count = 1;
+      return { isLiked, count };
+    }
+
+    async function toggleGalleryLike(e, id) {
+      if (e) e.stopPropagation();
+      const current = localStorage.getItem('gallery_like_' + id) === 'true';
+      const newLikedState = !current;
+      localStorage.setItem('gallery_like_' + id, newLikedState);
+
+      const targetImg = window._allGalleryImages.find(x => x._id === id);
+      if (targetImg) {
+        targetImg.likesCount = Math.max(0, (targetImg.likesCount || 0) + (newLikedState ? 1 : -1));
+      }
+
+      const cardLikeBtn = document.getElementById('g-like-' + id);
+      const { isLiked, count } = getGalleryLikes(id);
+      if (cardLikeBtn) {
+        cardLikeBtn.classList.toggle('liked', isLiked);
+        cardLikeBtn.querySelector('.g-like-count').textContent = count;
+        cardLikeBtn.querySelector('i').className = isLiked ? 'ri-heart-fill' : 'ri-heart-line';
+      }
+
+      const activeImg = window._filteredGalleryImages[window._currentLightboxIndex];
+      if (activeImg && activeImg._id === id) {
+        updateLightboxLikeUI(id);
+      }
+
+      try {
+        const _IS_CAPACITOR_NATIVE = !!(window.Capacitor?.isNativePlatform?.());
+        const API_BASE = _IS_CAPACITOR_NATIVE ? 'https://elnasrcsit.website' : '';
+        const res = await fetch(API_BASE + '/api/public/gallery/' + id + '/like', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ action: newLikedState ? 'like' : 'unlike' })
+        });
+        const data = await res.json();
+        if (res.ok && data.data && targetImg) {
+          targetImg.likesCount = data.data.likesCount;
+          const updated = getGalleryLikes(id);
+          if (cardLikeBtn) cardLikeBtn.querySelector('.g-like-count').textContent = updated.count;
+          if (activeImg && activeImg._id === id) updateLightboxLikeUI(id);
+        }
+      } catch { /* fallback to local count */ }
+    }
+
+    function updateLightboxLikeUI(id) {
+      const { isLiked, count } = getGalleryLikes(id);
+      const btn = document.getElementById('lightbox-like-btn');
+      const icon = document.getElementById('lightbox-heart-icon');
+      const countEl = document.getElementById('lightbox-like-count');
+      if (btn && icon && countEl) {
+        btn.classList.toggle('liked', isLiked);
+        icon.className = isLiked ? 'ri-heart-fill' : 'ri-heart-line';
+        countEl.textContent = count;
+      }
+    }
+
+    function toggleCurrentGalleryLike() {
+      const currentImg = window._filteredGalleryImages[window._currentLightboxIndex];
+      if (currentImg && currentImg._id) {
+        toggleGalleryLike(null, currentImg._id);
+      }
+    }
+
+    /* العرض التدريجي لصور المعرض */
+    const GALLERY_PAGE_SIZE = 8;
+    window._galleryVisibleCount = GALLERY_PAGE_SIZE;
+
+    function showMoreGallery() {
+      window._galleryVisibleCount += GALLERY_PAGE_SIZE;
+      renderGalleryCards();
+    }
+
+    function showMoreNews() {
+      window._newsVisibleCount += NEWS_PAGE_SIZE;
+      // نمرّر نفس المرجع كي لا يُصفَّر العدّاد داخل دالة الرسم
+      renderWelcomeNewsCards(window._newsCurrentList);
+    }
+
+    function filterGalleryCategory(cat, btnEl) {
+      window._activeGalleryCategory = cat;
+      window._galleryVisibleCount = GALLERY_PAGE_SIZE;   // تصنيف جديد يبدأ من الأول
+      document.querySelectorAll('.gallery-filter-btn').forEach(b => b.classList.remove('active'));
+      if (btnEl) btnEl.classList.add('active');
+      renderGalleryCards();
+    }
+
+    function renderGalleryCards() {
+      const container = document.getElementById('dynamic-gallery-container');
+      const cat = window._activeGalleryCategory;
+      window._filteredGalleryImages = window._allGalleryImages.filter(img => {
+        if (cat === 'all') return true;
+        return (img.category || '').toLowerCase() === cat.toLowerCase();
+      });
+
+      const moreWrap = document.getElementById('gallery-load-more-wrap');
+
+      if (!window._filteredGalleryImages.length) {
+        container.innerHTML = '<div style="text-align:center; padding: 40px; color: var(--text-muted); grid-column: 1 / -1;"><i class="ri-image-line" style="font-size:2rem;display:block;margin-bottom:8px;opacity:0.5;"></i>لا توجد صور في هذا التصنيف حالياً.</div>';
+        if (moreWrap) moreWrap.style.display = 'none';
+        return;
+      }
+
+      const _IS_CAPACITOR_NATIVE = !!(window.Capacitor?.isNativePlatform?.());
+      const API_BASE = _IS_CAPACITOR_NATIVE ? 'https://elnasrcsit.website' : '';
+
+      // نرسم دفعة واحدة فقط؛ الباقي عبر زر «عرض المزيد» حتى لا تطول الصفحة.
+      // ملاحظة: الفهرس المستخدم في openLightboxIndex يظل فهرس القائمة الكاملة
+      // المفلترة، فيبقى التنقل بين الصور داخل العارض يشمل كل صور التصنيف.
+      const totalFiltered = window._filteredGalleryImages.length;
+      const visible = window._filteredGalleryImages.slice(0, window._galleryVisibleCount);
+
+      if (moreWrap) {
+        const remaining = totalFiltered - visible.length;
+        moreWrap.style.display = remaining > 0 ? 'block' : 'none';
+        const btn = document.getElementById('gallery-load-more-btn');
+        if (btn) btn.innerHTML = `<i class="ri-arrow-down-line"></i> عرض المزيد من الصور (${remaining})`;
+      }
+
+      container.innerHTML = visible.map((img, idx) => {
+        let fullUrl = img.imageUrl || '';
+        if (fullUrl && !fullUrl.startsWith('http') && !fullUrl.startsWith('data:')) {
+          fullUrl = API_BASE + fullUrl;
+        }
+        const caption = img.caption || 'صورة من معرض الجامعة';
+        const category = img.category || 'عامة';
+        const imgId = img._id || ('img_' + idx);
+        img._id = imgId;
+        img.fullUrl = fullUrl;
+        const { isLiked, count } = getGalleryLikes(imgId);
+
+        return `
+          <div class="gallery-card" onclick="openLightboxIndex(${idx})">
+            <img src="${escHtml(fullUrl)}" alt="${escHtml(caption)}" loading="lazy" decoding="async" />
+            <div id="g-like-${imgId}" class="gallery-card-like ${isLiked ? 'liked' : ''}" onclick="toggleGalleryLike(event, '${imgId}')" title="إعجاب بالصورة">
+              <i class="${isLiked ? 'ri-heart-fill' : 'ri-heart-line'}"></i>
+              <span class="g-like-count">${count}</span>
+            </div>
+            <div class="gallery-overlay">
+              <span class="gallery-category">${escHtml(category)}</span>
+              <p class="gallery-caption">${escHtml(caption)}</p>
+              <div class="gallery-zoom-icon"><i class="ri-zoom-in-line"></i></div>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    async function loadGallery() {
+      const container = document.getElementById('dynamic-gallery-container');
+      try {
+        const _IS_CAPACITOR_NATIVE = !!(window.Capacitor?.isNativePlatform?.());
+        const API_BASE = _IS_CAPACITOR_NATIVE ? 'https://elnasrcsit.website' : '';
+        const res = await fetch(API_BASE + '/api/public/gallery');
+        const data = await res.json();
+        
+        const images = data.data?.images || data.images || (Array.isArray(data.data) ? data.data : []);
+        
+        if (res.ok && Array.isArray(images) && images.length > 0) {
+          window._allGalleryImages = images;
+          renderGalleryCards();
+
+          // فتح الصورة المشاركة عبر ?imageId= — نظير ?newsId= للأخبار
+          const targetImageId = new URLSearchParams(window.location.search).get('imageId');
+          if (targetImageId) openSharedGalleryImage(targetImageId);
+        } else {
+          container.innerHTML = '<div style="text-align:center; padding: 20px; color: var(--text-muted); grid-column: 1 / -1;">لا توجد صور في المعرض حالياً.</div>';
+        }
+      } catch (err) {
+        console.warn('Failed to load gallery:', err);
+        container.innerHTML = '<div style="text-align:center; padding: 20px; color: var(--text-muted); grid-column: 1 / -1;">فشل تحميل المعرض.</div>';
+      }
+    }
+
+    /* يفتح صورة قادمة من رابط مشاركة. الصورة قد تكون في تصنيف غير المعروض
+       أو خارج الدفعة الأولى، لذا نعيد الضبط إلى «الكل» ونوسّع العرض حتى تصلها. */
+    function openSharedGalleryImage(imageId) {
+      const exists = window._allGalleryImages.some(x => x._id === imageId);
+      if (!exists) return;
+
+      window._activeGalleryCategory = 'all';
+      document.querySelectorAll('.gallery-filter-btn').forEach((b, i) => b.classList.toggle('active', i === 0));
+
+      window._filteredGalleryImages = window._allGalleryImages.slice();
+      const idx = window._filteredGalleryImages.findIndex(x => x._id === imageId);
+      if (idx < 0) return;
+
+      window._galleryVisibleCount = Math.max(window._galleryVisibleCount, idx + 1);
+      renderGalleryCards();
+
+      // تأخير بسيط ليكتمل رسم الشبكة قبل فتح العارض
+      setTimeout(() => {
+        openLightboxIndex(idx);
+        document.getElementById('gallery')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }, 200);
+    }
+
+    function openLightboxIndex(index) {
+      if (index < 0 || index >= window._filteredGalleryImages.length) return;
+      window._currentLightboxIndex = index;
+      const img = window._filteredGalleryImages[index];
+
+      const modal = document.getElementById('lightbox-modal');
+      const imgEl = document.getElementById('lightbox-img');
+      const capEl = document.getElementById('lightbox-caption');
+      const catEl = document.getElementById('lightbox-category');
+      const counterEl = document.getElementById('lightbox-counter');
+      const downloadBtn = document.getElementById('lightbox-download-btn');
+
+      if (imgEl) {
+        imgEl.src = img.fullUrl;
+        imgEl.classList.add('zoom-enabled');
+        imgEl.classList.remove('is-zoomed');
+        imgEl.onclick = () => imgEl.classList.toggle('is-zoomed');
+      }
+      capEl.textContent = img.caption || '';
+      catEl.textContent = img.category || 'معرض الجامعة';
+      counterEl.textContent = `${index + 1} من ${window._filteredGalleryImages.length}`;
+
+      if (downloadBtn) {
+        downloadBtn.href = img.fullUrl;
+      }
+
+      updateLightboxLikeUI(img._id);
+
+      modal.classList.add('active');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function changeLightboxImage(dir) {
+      const newIdx = window._currentLightboxIndex + dir;
+      if (newIdx >= 0 && newIdx < window._filteredGalleryImages.length) {
+        openLightboxIndex(newIdx);
+      }
+    }
+
+    function shareCurrentGalleryImage() {
+      const img = window._filteredGalleryImages[window._currentLightboxIndex];
+      if (!img || !img._id) return;
+
+      // كان يشارك img.fullUrl — أي رابط ملف الصورة الخام، فيفتح صورة عارية
+      // خارج الموقع بلا عنوان ولا سياق. الآن نشارك رابط الصفحة نفسها مع
+      // ?imageId=<id> ليفتح العارض داخل الموقع تماماً كما يفعل رابط الخبر.
+      const shareUrl = getPublicBaseUrl() + '/welcome.html?imageId=' + encodeURIComponent(img._id);
+      const title = img.caption || 'صورة من معرض جامعة النصر التقنية';
+
+      if (navigator.share) {
+        navigator.share({ title: title, url: shareUrl }).catch(() => {});
+      } else {
+        navigator.clipboard.writeText(shareUrl).then(() => {
+          alert('تم نسخ رابط الصورة بنجاح!');
+        }).catch(() => {});
+      }
+    }
+
+    function closeLightbox() {
+      const modal = document.getElementById('lightbox-modal');
+      const imgEl = document.getElementById('lightbox-img');
+      if (imgEl) imgEl.classList.remove('is-zoomed');
+      if (modal) modal.classList.remove('active');
+      document.body.style.overflow = '';
+    }
+
+    document.addEventListener('keydown', e => {
+      const modal = document.getElementById('lightbox-modal');
+      if (modal && modal.classList.contains('active')) {
+        if (e.key === 'ArrowLeft') changeLightboxImage(1);
+        if (e.key === 'ArrowRight') changeLightboxImage(-1);
+        if (e.key === 'Escape') closeLightbox();
+      }
+    });
+
+    // Touch Swipe Support for Lightbox
+    let _touchStartX = 0, _touchStartY = 0;
+    const lboxModal = document.getElementById('lightbox-modal');
+    if (lboxModal) {
+      lboxModal.addEventListener('touchstart', e => {
+        _touchStartX = e.changedTouches[0].screenX;
+        _touchStartY = e.changedTouches[0].screenY;
+      }, { passive: true });
+
+      lboxModal.addEventListener('touchmove', e => {
+        if (lboxModal.classList.contains('active')) {
+          if (e.cancelable) e.preventDefault();
+        }
+      }, { passive: false });
+
+      lboxModal.addEventListener('touchend', e => {
+        if (!lboxModal.classList.contains('active')) return;
+        const endX = e.changedTouches[0].screenX;
+        const endY = e.changedTouches[0].screenY;
+        const diffX = endX - _touchStartX;
+        const diffY = endY - _touchStartY;
+        if (Math.abs(diffX) > 40 && Math.abs(diffX) > Math.abs(diffY)) {
+          if (diffX < 0) changeLightboxImage(1);
+          else changeLightboxImage(-1);
+        }
+      }, { passive: true });
+    }
+
+    // تشغيل الجلب عند تحميل الصفحة
+    window.addEventListener('DOMContentLoaded', () => {
+      loadNews();
+      loadGallery();
+    });
+  </script>
+</body>
+</html>

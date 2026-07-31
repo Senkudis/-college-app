@@ -1,0 +1,1481 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>تفاصيل المقرر | كلية تقنية المعلومات</title>
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css?v=2026073125">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026073125">
+  <style>
+    /* ===== PDF Modal Header Responsive ===== */
+    .pdf-header-wrap {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: max(12px, calc(env(safe-area-inset-top, 20px) + 6px)) 12px 10px;
+      background: #161b22; border-bottom: 1px solid rgba(255,255,255,0.15);
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3); z-index: 9001; gap: 8px;
+    }
+    @media (max-width: 580px) {
+      .pdf-header-wrap { padding: max(10px, calc(env(safe-area-inset-top, 16px) + 4px)) 8px 8px !important; gap: 6px !important; }
+      .pdf-btn-label { display: none !important; }
+      .pdf-header-actions { gap: 5px !important; }
+      .pdf-header-actions button, .pdf-header-actions a { padding: 7px 9px !important; }
+    }
+
+    /* ===== AI Study Assistant ===== */
+    #aiPanel {
+      position: fixed; inset: 0; z-index: 9100;
+      background: rgba(0,0,0,0.5); display: none;
+      align-items: flex-end; justify-content: center;
+    }
+    #aiPanel.show { display: flex; }
+    .ai-sheet {
+      width: 100%; max-width: 680px; max-height: 85vh;
+      background: var(--bg-card); border-radius: 24px 24px 0 0;
+      display: flex; flex-direction: column;
+      animation: slideUp 0.3s ease;
+      overflow: hidden;
+    }
+    @keyframes slideUp { from{transform:translateY(100%)} to{transform:translateY(0)} }
+    .ai-sheet-header {
+      padding: 20px 20px 0;
+      display: flex; align-items: center; justify-content: space-between;
+      border-bottom: 1px solid var(--border); padding-bottom: 14px;
+      flex-shrink: 0;
+    }
+    .ai-sheet-title {
+      display: flex; align-items: center; gap: 10px;
+      font-size: 1.05rem; font-weight: 800; color: var(--text-main);
+    }
+    .ai-sheet-title .ai-badge {
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      color: #fff; font-size: 0.65rem; font-weight: 800;
+      padding: 2px 7px; border-radius: 20px; letter-spacing: 0.5px;
+    }
+    .ai-tabs {
+      display: flex; gap: 6px; padding: 14px 20px 0; flex-shrink: 0; flex-wrap: wrap;
+    }
+    .ai-tab {
+      border: 1.5px solid var(--border); background: var(--bg-card);
+      color: var(--text-muted); border-radius: 20px;
+      padding: 6px 14px; font-size: 0.8rem; font-weight: 700;
+      cursor: pointer; transition: all 0.2s; font-family: 'Cairo',sans-serif;
+      display: flex; align-items: center; gap: 5px;
+    }
+    .ai-tab.active {
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      color: #fff; border-color: transparent;
+      box-shadow: 0 4px 12px rgba(79,70,229,0.35);
+    }
+    .ai-body { padding: 16px 20px 24px; overflow-y: auto; flex: 1; }
+    .ai-question-row {
+      display: flex; gap: 8px; margin-bottom: 14px;
+    }
+    .ai-question-input {
+      flex: 1; padding: 10px 14px;
+      border: 2px solid var(--border); border-radius: var(--radius-md);
+      background: var(--bg-main); color: var(--text-main);
+      font-family: 'Cairo',sans-serif; font-size: 0.88rem;
+      outline: none; transition: border-color 0.2s;
+    }
+    .ai-question-input:focus { border-color: #4f46e5; }
+    .ai-send-btn {
+      padding: 10px 18px; border: none; border-radius: var(--radius-md);
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      color: #fff; font-weight: 800; font-size: 0.88rem;
+      cursor: pointer; transition: opacity 0.2s; white-space: nowrap;
+      font-family: 'Cairo',sans-serif;
+    }
+    .ai-send-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .ai-result {
+      background: var(--bg-main); border-radius: var(--radius-lg);
+      padding: 16px; font-size: 0.9rem; line-height: 1.8;
+      color: var(--text-main); min-height: 80px; white-space: pre-wrap;
+      border: 1px solid var(--border);
+    }
+    .ai-result.loading {
+      display: flex; align-items: center; justify-content: center;
+      gap: 10px; color: var(--text-muted); font-size: 0.88rem;
+    }
+    .ai-spinner {
+      width: 20px; height: 20px; border: 3px solid var(--border);
+      border-top-color: #4f46e5; border-radius: 50%;
+      animation: spin 0.8s linear infinite; flex-shrink: 0;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    /* Flashcards */
+    .flashcard-grid { display: flex; flex-direction: column; gap: 10px; }
+    .flashcard {
+      border: 1.5px solid var(--border); border-radius: var(--radius-lg);
+      overflow: hidden; cursor: pointer;
+    }
+    .flashcard-q {
+      padding: 12px 16px; font-weight: 700; font-size: 0.88rem;
+      background: var(--primary-light); color: var(--primary);
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .flashcard-a {
+      padding: 12px 16px; font-size: 0.85rem; color: var(--text-main);
+      background: var(--bg-card); display: none; line-height: 1.7;
+    }
+    .flashcard.open .flashcard-a { display: block; }
+    /* Quiz preview */
+    .quiz-q-item {
+      background: var(--bg-main); border-radius: var(--radius-md);
+      padding: 14px; margin-bottom: 10px; border: 1px solid var(--border);
+    }
+    .quiz-q-text { font-weight: 700; font-size: 0.88rem; margin-bottom: 10px; }
+    .quiz-option {
+      padding: 6px 12px; border-radius: 8px; font-size: 0.82rem;
+      margin-bottom: 5px; cursor: pointer;
+      background: var(--bg-card); border: 1.5px solid var(--border);
+      transition: all 0.2s; display: flex; align-items: center; gap: 8px;
+    }
+    .quiz-option.correct { background: var(--success-bg); border-color: var(--success); color: var(--success); }
+    .quiz-option.wrong   { background: var(--danger-bg);  border-color: var(--danger);  color: var(--danger); }
+    .ai-action-btn {
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      color: #fff; border: none; border-radius: var(--radius-md);
+      padding: 11px 20px; font-weight: 800; font-size: 0.88rem;
+      cursor: pointer; width: 100%; font-family: 'Cairo',sans-serif;
+      display: flex; align-items: center; justify-content: center; gap: 8px;
+      margin-bottom: 14px; transition: opacity 0.2s;
+    }
+    .ai-action-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* ===== Kedy AI Enhancements ===== */
+    .kedy-avatar {
+      width: 38px; height: 38px; border-radius: 12px;
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      color: #fff; display: flex; align-items: center; justify-content: center;
+      font-size: 1.2rem; box-shadow: 0 4px 12px rgba(124,58,237,0.3);
+      flex-shrink: 0;
+    }
+    .kedy-chat-container {
+      display: flex; flex-direction: column; gap: 12px; margin-bottom: 14px;
+    }
+    .chat-bubble {
+      max-width: 88%; padding: 12px 16px; border-radius: 16px; font-size: 0.88rem;
+      line-height: 1.7; position: relative; animation: fadeIn 0.25s ease;
+      white-space: pre-wrap; word-break: break-word;
+    }
+    @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
+    .chat-bubble.user {
+      align-self: flex-start; background: linear-gradient(135deg, #4f46e5, #6366f1);
+      color: #fff; border-bottom-right-radius: 4px; font-weight: 600;
+    }
+    .chat-bubble.kedy {
+      align-self: flex-end; background: var(--bg-main); color: var(--text-main);
+      border: 1px solid var(--border); border-bottom-left-radius: 4px;
+    }
+    .chat-bubble-author {
+      font-size: 0.72rem; font-weight: 800; margin-bottom: 4px; opacity: 0.85;
+      display: flex; align-items: center; justify-content: space-between; gap: 8px;
+    }
+    .quick-prompts {
+      display: flex; flex-wrap: wrap; gap: 8px; padding-bottom: 8px; margin-bottom: 12px;
+    }
+    .prompt-chip {
+      background: var(--bg-main); border: 1.5px solid var(--border);
+      color: var(--text-main); border-radius: 20px; padding: 6px 13px;
+      font-size: 0.78rem; font-weight: 700; cursor: pointer; white-space: nowrap;
+      transition: all 0.2s; display: flex; align-items: center; gap: 6px; flex-shrink: 0;
+    }
+    .prompt-chip:hover {
+      border-color: #4f46e5; color: #4f46e5; transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(79,70,229,0.15);
+    }
+    .save-note-btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      background: var(--bg-card); border: 1px solid var(--border);
+      color: var(--text-muted); padding: 5px 12px; border-radius: 12px;
+      font-size: 0.75rem; font-weight: 700; cursor: pointer; margin-top: 10px;
+      transition: all 0.2s; font-family: inherit;
+    }
+    .save-note-btn:hover { background: var(--primary-light); color: var(--primary); border-color: var(--primary); }
+    .typewriter-cursor::after {
+      content: '▋'; animation: blink 0.7s infinite; color: #4f46e5; margin-right: 2px;
+    }
+    @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+
+    [data-theme='dark'] #pdfCanvasWrap canvas {
+      filter: invert(0.85) hue-rotate(180deg);
+    }
+    .subject-hero {
+      background: linear-gradient(135deg, #0d3b66, #1e6091);
+      border-radius: var(--radius-xl);
+      padding: 28px 32px;
+      color: white;
+      margin-bottom: 28px;
+      display: flex;
+      align-items: center;
+      gap: 20px;
+    }
+    .subject-hero-icon {
+      width: 64px; height: 64px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1.8rem; flex-shrink: 0;
+    }
+    .subject-hero-title { font-size: 1.6rem; font-weight: 800; margin: 0 0 4px; }
+    .subject-hero-meta  { font-size: 0.9rem; opacity: 0.8; display: flex; gap: 16px; flex-wrap: wrap; }
+
+    .section-block { margin-bottom: 32px; }
+    .section-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px; padding-bottom: 12px;
+      border-bottom: 2px solid var(--border);
+    }
+    .section-header-left { display: flex; align-items: center; gap: 10px; }
+    .section-icon {
+      width: 36px; height: 36px; border-radius: var(--radius-md);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 1rem;
+    }
+    .section-title { font-size: 1.05rem; font-weight: 700; color: var(--text-main); }
+
+    .items-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      gap: 14px;
+    }
+    .item-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 18px;
+      box-shadow: var(--shadow-sm);
+      transition: var(--transition);
+    }
+    .item-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); border-color: var(--primary); }
+    .item-title { font-weight: 700; font-size: 0.95rem; color: var(--text-main); margin-bottom: 12px; }
+    .item-links { display: flex; flex-direction: column; gap: 8px; }
+    .item-link {
+      display: flex; align-items: center; gap: 8px;
+      padding: 8px 12px; border-radius: var(--radius-md);
+      font-size: 0.83rem; font-weight: 600; text-decoration: none;
+      transition: var(--transition);
+    }
+    .item-link.video { background: var(--danger-bg); color: var(--danger); }
+    .item-link.video:hover { background: var(--danger); color: white; }
+    .item-link.file  { background: var(--success-bg); color: var(--success); }
+    .item-link.file:hover  { background: var(--success); color: white; }
+    .item-link.link  { background: var(--primary-light); color: var(--primary); }
+    .item-link.link:hover  { background: var(--primary); color: white; }
+
+    .search-sort { display: flex; gap: 10px; }
+    .search-sort .search-wrapper { flex: 1; }
+    .search-sort select { padding: 9px 14px; border: 2px solid var(--border); border-radius: var(--radius-md); background: var(--bg-card); color: var(--text-main); font-family: 'Cairo', sans-serif; }
+
+    @media (max-width: 768px) {
+      .items-grid {
+        grid-template-columns: 1fr;
+      }
+      .section-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+      }
+      .search-sort {
+        flex-direction: column;
+      }
+      .subject-hero {
+        flex-direction: column;
+        text-align: center;
+        padding: 20px;
+      }
+      .subject-hero-meta {
+        justify-content: center;
+      }
+    }
+  
+/* Prevent PTR / Overscroll inside AI sidebar and scrollable tabs */
+.subject-sidebar, .tab-content, #aiTab, #notesTab, #plannerTab, .ai-chat-messages, [class*="ai-"] {
+  overscroll-behavior: contain !important;
+  overscroll-behavior-y: contain !important;
+  -webkit-overflow-scrolling: touch;
+}
+</style>
+
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+</head>
+<body>
+
+<header class="main-header">
+  <div class="header-brand">
+    <img src="/assets/logo.png" class="header-logo" alt="Logo">
+    <div class="header-title-group">
+      <strong>كلية تقنية المعلومات</strong>
+      <small id="headerSub">جاري التحميل...</small>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="CBS.goHome()" title="الرئيسية"><i class="ri-home-4-line"></i></button>
+  </div>
+</header>
+
+<div class="page-content">
+
+    <!-- Welcome Banner -->
+    <div class="welcome-banner" style="background: linear-gradient(135deg,#7c3aed,#6d28d9,#5b21b6);">
+      <div class="welcome-banner-icon-wrap">
+        <i class="ri-book-open-line welcome-banner-icon"></i>
+      </div>
+      <div class="welcome-banner-body">
+        <h2>تفاصيل المقرر</h2>
+        <p>تصفح المحاضرات والمراجع والتمارين</p>
+      </div>
+    </div>
+  <!-- Hero -->
+  <div class="subject-hero">
+    <div class="subject-hero-icon"><i class="ri-book-open-fill"></i></div>
+    <div>
+      <div class="subject-hero-title" id="subjectName">جاري التحميل...</div>
+      <div class="subject-hero-meta">
+        <span id="subjectLevel"></span>
+        <span id="subjectDoctor"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- المحاضرات -->
+  <div class="section-block">
+    <div class="section-header">
+      <div class="section-header-left">
+        <div class="section-icon" style="background:var(--primary-light); color:var(--primary);"><i class="ri-slideshow-3-line"></i></div>
+        <div class="section-title">المحاضرات</div>
+      </div>
+      <div class="search-sort">
+        <div class="search-wrapper">
+          <i class="ri-search-line"></i>
+          <input type="text" class="search-input" id="searchLecture" placeholder="بحث...">
+        </div>
+        <select id="sortSelect" onchange="applyFilters()">
+          <option value="new">الأحدث أولاً</option>
+          <option value="old">الأقدم أولاً</option>
+        </select>
+      </div>
+    </div>
+    <div class="items-grid" id="lecturesGrid"></div>
+  </div>
+
+  <!-- الفيديوهات (VOD) -->
+  <div class="section-block">
+    <div class="section-header">
+      <div class="section-header-left">
+        <div class="section-icon" style="background:var(--danger-bg); color:var(--danger);"><i class="ri-play-circle-line"></i></div>
+        <div class="section-title">الفيديوهات</div>
+      </div>
+    </div>
+    <div class="items-grid" id="videosGrid"></div>
+  </div>
+
+  <!-- المراجع -->
+  <div class="section-block">
+    <div class="section-header">
+      <div class="section-header-left">
+        <div class="section-icon" style="background:var(--accent-light,#ede9fe); color:var(--accent);"><i class="ri-book-2-line"></i></div>
+        <div class="section-title">المراجع</div>
+      </div>
+    </div>
+    <div class="items-grid" id="refsGrid"></div>
+  </div>
+
+  <!-- التمارين -->
+  <div class="section-block">
+    <div class="section-header">
+      <div class="section-header-left">
+        <div class="section-icon" style="background:var(--warning-bg); color:var(--warning);"><i class="ri-file-list-3-line"></i></div>
+        <div class="section-title">التمارين</div>
+      </div>
+    </div>
+    <div class="items-grid" id="exercisesGrid"></div>
+  </div>
+
+  <!-- الأبحاث -->
+  <div class="section-block">
+    <div class="section-header">
+      <div class="section-header-left">
+        <div class="section-icon" style="background:var(--success-bg); color:var(--success);"><i class="ri-search-eye-line"></i></div>
+        <div class="section-title">الأبحاث</div>
+      </div>
+    </div>
+    <div class="items-grid" id="researchGrid"></div>
+  </div>
+
+  <!-- المشاريع -->
+  <div class="section-block">
+    <div class="section-header">
+      <div class="section-header-left">
+        <div class="section-icon" style="background:var(--danger-bg); color:var(--danger);"><i class="ri-rocket-2-line"></i></div>
+        <div class="section-title">المشاريع</div>
+      </div>
+    </div>
+    <div class="items-grid" id="projectsGrid"></div>
+  </div>
+
+</div>
+
+<div id="toast-container"></div>
+
+<footer class="main-footer">
+  جميع الحقوق محفوظة &copy; <span id="year"></span> النظام الجامعي المتكامل
+</footer>
+
+<script src="/js/app.js?v=2026073125"></script>
+<script src="/js/socket-client.js?v=2026073125" defer></script>
+<script>
+  CBS.init();
+  const subjectId = new URLSearchParams(location.search).get('id');
+  if (!subjectId) location.href = '/subjects.html';
+
+  let lecturesData = [];
+  let cachedUrls = new Set();
+
+  function getFileUrl(file, defaultSubdir = 'lectures') {
+    if (!file) return '';
+    if (file.startsWith('http://') || file.startsWith('https://')) return file;
+    let clean = String(file).trim();
+    if (clean.startsWith('/')) clean = clean.substring(1);
+    if (clean.startsWith('uploads/')) clean = clean.substring(8);
+    if (!clean.includes('/')) clean = defaultSubdir + '/' + clean;
+    return API_BASE + '/uploads/' + clean;
+  }
+
+  async function checkOfflineFiles() {
+    try {
+      // المصدر الموحّد: فهرس CBS (يغطّي Filesystem في التطبيق و Cache API في المتصفح)
+      cachedUrls = new Set(CBS.offlineList());
+    } catch(e) { cachedUrls = new Set(); }
+  }
+
+  window.saveOffline = async function(url, btn) {
+    // الحفظ للتصفح لاحقاً يتطلب تنزيل الملف الآن — فلا بد من اتصال في هذه اللحظة
+    if (!navigator.onLine) {
+      return CBS.toast('تحتاج إنترنت', 'لحفظ الملف للتصفح لاحقاً يجب تنزيله الآن أثناء الاتصال بالإنترنت.', 'warning', 5000);
+    }
+    const ogHtml = btn.innerHTML;
+    btn.innerHTML = '<i class="ri-loader-4-line" style="animation:spin 1s linear infinite"></i> جاري الحفظ...';
+    btn.style.pointerEvents = 'none';
+
+    try {
+      const fetchTarget = url.startsWith('http') ? url : (API_BASE + (url.startsWith('/') ? '' : '/') + url);
+      await CBS.offlineSave(fetchTarget);
+      try { cachedUrls.add(new URL(fetchTarget, location.origin).pathname); } catch(e) { cachedUrls.add(fetchTarget); }
+      CBS.toast('نجاح', 'تم حفظ الملف، يمكنك فتحه بدون إنترنت!', 'success');
+      btn.innerHTML = '<i class="ri-checkbox-circle-fill" style="color:var(--success)"></i> متاح بدون نت';
+    } catch (e) {
+      console.warn('saveOffline failed:', e);
+      // نميّز بين انقطاع النت أثناء التنزيل وبين خطأ من الخادم
+      const msg = !navigator.onLine
+        ? 'انقطع الاتصال أثناء التنزيل، حاول مرة أخرى.'
+        : 'تعذّر تنزيل الملف من الخادم. حاول لاحقاً.';
+      CBS.toast('فشل الحفظ', msg, 'error');
+      btn.innerHTML = '<i class="ri-error-warning-line"></i> فشل الحفظ';
+      setTimeout(() => { btn.innerHTML = ogHtml; btn.style.pointerEvents = 'auto'; }, 3000);
+    }
+  };
+
+  function getOfflineBtn(fileUrl) {
+    let filePath = fileUrl;
+    try { filePath = new URL(fileUrl, location.origin).pathname; } catch(e){}
+    if (cachedUrls.has(fileUrl) || cachedUrls.has(filePath)) {
+      return `<button class="item-link" style="border:none;background:rgba(16,185,129,0.1);color:var(--success);"><i class="ri-checkbox-circle-fill"></i> متاح بدون نت</button>`;
+    }
+    return `<button class="item-link link" style="border:none;background:transparent;cursor:pointer;" onclick="saveOffline('${fileUrl}', this)"><i class="ri-download-offline-line"></i> حفظ بدون نت</button>`;
+  }
+
+  async function loadSubject() {
+    try {
+      const res = await CBS.apiGet(`/api/subjects/${subjectId}`);
+      if (!res.ok) return;
+      const _resData = await res.json();
+      const s = _resData.data?.subject || _resData.subject || _resData.data || _resData;
+      document.getElementById('subjectName').textContent = s.name;
+      document.getElementById('headerSub').textContent  = s.name;
+      document.title = `${s.name} | كلية تقنية المعلومات`;
+      if (s.level)  document.getElementById('subjectLevel').innerHTML = `<i class="ri-graduation-cap-line"></i> ${CBS.escapeHTML(s.level)}`;
+      if (s.doctor) document.getElementById('subjectDoctor').innerHTML = `<i class="ri-user-voice-line"></i> د. ${CBS.escapeHTML(s.doctor.name)}`;
+    } catch(e) {}
+  }
+
+  function renderItems(containerId, items, buildFn) {
+    const el = document.getElementById(containerId);
+    if (!items || !items.length) { CBS.showEmpty(containerId, 'لا توجد بيانات', 'ri-inbox-line'); return; }
+    el.innerHTML = items.map(buildFn).join('');
+  }
+
+  async function loadLectures() {
+    try {
+      const res = await CBS.apiGet(`/api/lectures/by-subject/${subjectId}`);
+      lecturesData = res.ok ? await res.json() : [];
+      applyFilters();
+    } catch(e) { CBS.showEmpty('lecturesGrid','فشل التحميل','ri-wifi-off-line'); }
+  }
+
+  function applyFilters() {
+    const q    = document.getElementById('searchLecture').value.toLowerCase();
+    const sort = document.getElementById('sortSelect').value;
+    let list = lecturesData.filter(l => l.title.toLowerCase().includes(q));
+    list.sort((a,b) => sort === 'new' ? new Date(b.createdAt) - new Date(a.createdAt) : new Date(a.createdAt) - new Date(b.createdAt));
+    renderItems('lecturesGrid', list, l => `
+      <div class="item-card">
+        <div class="item-title">${CBS.escapeHTML(l.title)}</div>
+        <div class="item-links">
+          ${l.videoUrl ? `<a href="${CBS.escapeHTML(l.videoUrl)}" target="_blank" class="item-link video"><i class="ri-play-circle-line"></i> مشاهدة</a>` : ''}
+          ${l.file ? `<button class='item-link file' style='border:none;cursor:pointer;' onclick="openPdfModal('${getFileUrl(l.file, 'lectures')}', '${CBS.escapeHTML(l.title)}')"><i class='ri-file-text-line'></i> فتح الملف</button>
+                      ${getOfflineBtn(getFileUrl(l.file, 'lectures'))}` : ''}
+        </div>
+      </div>`);
+  }
+
+  async function loadRefs() {
+    try {
+      const res  = await CBS.apiGet(`/api/references/by-subject/${subjectId}`);
+      const data = res.ok ? await res.json() : [];
+      renderItems('refsGrid', data, r => {
+        let delBtn = '';
+        if (CBS.hasRole('admin') || CBS.hasRole('dean') || (CBS.hasRole('doctor') && CBS.isMe(r.addedBy))) {
+          delBtn = `<button class='item-link' style='border:none;cursor:pointer;color:var(--danger);background:rgba(239,68,68,0.1);' onclick="deleteRef('${r._id}')"><i class="ri-delete-bin-line"></i> حذف</button>`;
+        }
+        return `
+        <div class="item-card">
+          <div class="item-title">${CBS.escapeHTML(r.title)}</div>
+          <div class="item-links">
+          ${r.link ? `<a href="${CBS.escapeHTML(r.link)}" target="_blank" class="item-link link"><i class="ri-external-link-line"></i> رابط خارجي</a>` : ''}
+          ${r.file ? `<button class='item-link file' style='border:none;cursor:pointer;' onclick="openPdfModal('${getFileUrl(r.file, 'references')}', '${CBS.escapeHTML(r.title)}')"><i class='ri-file-text-line'></i> فتح الملف</button>
+                      ${getOfflineBtn(getFileUrl(r.file, 'references'))}` : ''}
+          ${delBtn}
+        </div>
+        </div>`;
+      });
+    } catch(e) {}
+  }
+
+  window.deleteRef = async function(id) {
+    if (!confirm('هل أنت متأكد من حذف هذا المرجع؟')) return;
+    try {
+      const res = await CBS.apiDelete(`/api/references/${id}`);
+      if (res.ok) {
+        CBS.toast('نجاح', 'تم حذف المرجع بنجاح', 'success');
+        loadRefs();
+      } else {
+        const err = await res.json();
+        CBS.toast('خطأ', err.message || 'فشل الحذف', 'error');
+      }
+    } catch(e) {
+      CBS.toast('خطأ', 'تعذر الاتصال بالخادم', 'error');
+    }
+  }
+
+  async function loadByType(type, gridId) {
+    try {
+      const res  = await CBS.apiGet(`/api/assignments/by-subject/${subjectId}/${type}`);
+      const data = res.ok ? await res.json() : [];
+      renderItems(gridId, data, item => `
+        <div class="item-card">
+          <div class="item-title">${CBS.escapeHTML(item.title)}</div>
+          ${item.description ? `<div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:10px;">${CBS.escapeHTML(item.description)}</div>` : ''}
+          ${item.dueDate ? `<div style="font-size:0.78rem;color:var(--warning);margin-bottom:10px;"><i class="ri-time-line"></i> آخر موعد: ${CBS.formatDate(item.dueDate)}</div>` : ''}
+          <div class="item-links">
+            ${item.file ? `<button class='item-link file' style='border:none;cursor:pointer;' onclick="openPdfModal('${getFileUrl(item.file, 'assignments')}', '${CBS.escapeHTML(item.title)}')"><i class='ri-file-text-line'></i> فتح الملف</button>` : ''}
+            ${item.file ? getOfflineBtn(getFileUrl(item.file, 'assignments')) : ''}
+          </div>
+        </div>`);
+    } catch(e) {}
+  }
+
+  async function loadVideos() {
+    try {
+      const res = await CBS.apiGet(`/api/videos/by-subject/${subjectId}`);
+      const data = res.ok ? await res.json() : { videos: [] };
+      const videos = data.videos || [];
+      renderItems('videosGrid', videos, v => {
+        const dur = v.duration ? `${Math.floor(v.duration/60)}:${String(v.duration%60).padStart(2,'0')}` : '';
+        return `
+        <div class="item-card" onclick="location.href='/watch-video.html?id=${v._id}'" style="cursor:pointer;">
+          <div class="item-title">${CBS.escapeHTML(v.title)}</div>
+          <div class="item-links">
+            <span class="item-link video" style="cursor:pointer;"><i class="ri-play-circle-line"></i> مشاهدة${dur ? ' (' + dur + ')' : ''}</span>
+          </div>
+        </div>`;
+      });
+    } catch(e) { CBS.showEmpty('videosGrid','فشل التحميل','ri-wifi-off-line'); }
+  }
+
+  document.getElementById('searchLecture').addEventListener('input', applyFilters);
+
+  async function initAll() {
+    await checkOfflineFiles();
+    loadSubject();
+    loadLectures();
+    loadVideos();
+    loadRefs();
+    loadByType('exercise', 'exercisesGrid');
+    loadByType('research',  'researchGrid');
+    loadByType('project',   'projectsGrid');
+  }
+
+  initAll();
+
+  // ===== عارض PDF داخلي (PDF.js) — يعمل داخل التطبيق و WebView أندرويد =====
+  let _pdfjsLoading = null;
+  function loadPdfJs() {
+    if (window.pdfjsLib) return Promise.resolve();
+    if (_pdfjsLoading) return _pdfjsLoading;
+    _pdfjsLoading = new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = '/vendor/pdfjs/pdf.min.js';
+      s.onload = () => {
+        try {
+          const workerUrl = new URL('/vendor/pdfjs/pdf.worker.min.js', window.location.href).href;
+          window.pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
+        } catch (e) {
+          try { window.pdfjsLib.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.min.js'; } catch (err) {}
+        }
+        resolve();
+      };
+      s.onerror = () => { _pdfjsLoading = null; reject(new Error('pdfjs load failed')); };
+      document.head.appendChild(s);
+    });
+    return _pdfjsLoading;
+  }
+
+  // كشف نوع الملف من محتواه (magic bytes) لا من امتداده — يعالج ملفات .bin التي هي PDF فعلياً
+  function sniffType(buf) {
+    if (!buf || !buf.byteLength) return 'unknown';
+    const b = new Uint8Array(buf.slice(0, 12));
+    if (b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46) return 'pdf';   // %PDF
+    if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0x47) return 'image'; // PNG
+    if (b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF) return 'image';                  // JPEG
+    if (b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46) return 'image';                  // GIF
+    if (b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[8] === 0x57 && b[9] === 0x45) return 'image'; // WebP
+    return 'unknown';
+  }
+
+  /* عرض عبر محرك أندرويد الأصلي (PDFium).
+     pdf.js يرسم الحروف من الخط المضمّن داخل الملف؛ وملفات المحاضرات المصدَّرة
+     من PowerPoint كثيراً ما لا تُضمّن الخط العربي، فيستبدله pdf.js بخط لا يعرف
+     التشكيل وتظهر الحروف منفصلة ومبعثرة. المحرك الأصلي يستخدم خطوط النظام
+     العربية ويطبّق التشكيل — والصفحات تُعرض صوراً داخل التطبيق نفسه. */
+  async function renderPdfNative(buf, container, plugin) {
+    const bytes = new Uint8Array(buf);
+    let bin = '';
+    const CHUNK = 0x8000;
+    for (let i = 0; i < bytes.length; i += CHUNK) {
+      bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
+    }
+    const { pageCount } = await plugin.load({ data: btoa(bin) });
+    if (!pageCount) throw new Error('ملف بلا صفحات');
+
+    container.innerHTML = '';
+    const targetWidth = Math.min(1600, Math.round(
+      (container.clientWidth || window.innerWidth) * (window.devicePixelRatio || 2)
+    ));
+
+    for (let i = 0; i < pageCount; i++) {
+      const { data } = await plugin.renderPage({ page: i, width: targetWidth });
+      const img = document.createElement('img');
+      img.src = 'data:image/jpeg;base64,' + data;
+      img.style.cssText = 'display:block;margin:0 auto 16px;width:100%;max-width:950px;' +
+                          'box-shadow:0 6px 24px rgba(0,0,0,0.45);background:#fff;border-radius:6px;';
+      container.appendChild(img);
+    }
+  }
+
+  async function renderPdfBuffer(buf, container) {
+    // نُجرّب المحرك الأصلي أولاً داخل التطبيق، ونعود إلى pdf.js عند تعذّره
+    const nativePdf = window.Capacitor?.Plugins?.NativePdf;
+    const isNativeApp = !!(window.Capacitor?.isNativePlatform?.());
+    if (nativePdf) {
+      try {
+        await renderPdfNative(buf, container, nativePdf);
+        console.log('[PDF] عُرض عبر محرك أندرويد الأصلي (PDFium) ✅');
+        return;
+      } catch (e) {
+        console.warn('[PDF] العارض الأصلي فشل، نعود إلى pdf.js:', e.message || e);
+      }
+    } else if (isNativeApp) {
+      // إضافة NativePdf غير موجودة في هذا البناء — يلزم إعادة بناء التطبيق
+      console.warn('[PDF] إضافة NativePdf غير متاحة في هذا البناء — سيُستخدم pdf.js (قد تتكسر العربية)');
+    }
+    await loadPdfJs();
+    // ننسخ الـ ArrayBuffer (buf.slice(0)) لأن pdfjsLib يفكّكه ويربطه بالـ Web Worker فيصبح Detached ArrayBuffer
+    const typedarray = new Uint8Array(buf.slice(0));
+    const pdfJsVer = window.pdfjsLib?.version || '3.11.174';
+
+    const origin = (window.location.origin && window.location.origin !== 'null' && !window.location.origin.includes('localhost')) ? window.location.origin : 'https://elnasrcsit.website';
+    const absStandardFonts = new URL('/vendor/pdfjs/standard_fonts/', origin).href;
+    const absCmaps = new URL('/vendor/pdfjs/cmaps/', origin).href;
+
+    const cdnStandardFonts = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfJsVer}/standard_fonts/`;
+    const cdnCmaps = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfJsVer}/cmaps/`;
+
+    let pdf;
+    try {
+      pdf = await pdfjsLib.getDocument({
+        data: typedarray,
+        cMapUrl: absCmaps,
+        cMapPacked: true,
+        standardFontDataUrl: absStandardFonts,
+        disableFontFace: false,
+        isEvalSupported: true,
+        useSystemFonts: true
+      }).promise;
+    } catch (err) {
+      pdf = await pdfjsLib.getDocument({
+        data: typedarray,
+        cMapUrl: cdnCmaps,
+        cMapPacked: true,
+        standardFontDataUrl: cdnStandardFonts,
+        disableFontFace: false,
+        isEvalSupported: true,
+        useSystemFonts: true
+      }).promise;
+    }
+
+    container.innerHTML = '';
+    
+    const containerW = container.clientWidth || (window.innerWidth - 32);
+    const targetWidth = Math.max(280, Math.min(containerW - 20, 920));
+    const dpr = Math.max(2, window.devicePixelRatio || 1);
+
+    for (let n = 1; n <= pdf.numPages; n++) {
+      const page = await pdf.getPage(n);
+      const baseViewport = page.getViewport({ scale: 1.0 });
+      const displayScale = targetWidth / baseViewport.width;
+      const displayHeight = Math.round(baseViewport.height * displayScale);
+
+      const renderViewport = page.getViewport({ scale: displayScale * dpr });
+      
+      const canvas = document.createElement('canvas');
+      canvas.width = renderViewport.width;
+      canvas.height = renderViewport.height;
+      canvas.style.cssText = `display:block;margin:0 auto 16px;width:${targetWidth}px;height:${displayHeight}px;max-width:100%;box-shadow:0 6px 24px rgba(0,0,0,0.45);background:#fff;border-radius:6px;`;
+      container.appendChild(canvas);
+      
+      await page.render({
+        canvasContext: canvas.getContext('2d', { alpha: false }),
+        viewport: renderViewport
+      }).promise;
+    }
+  }
+
+  // الملف المعروض حالياً والذي تعذّر عرضه داخلياً (لفتحه خارجياً عند الطلب)
+  let _pendingFile = null;
+
+  async function openCurrentPdfExternally(btn) {
+    if (!_pendingFile || !_pendingFile.buf) return;
+    const original = btn ? btn.innerHTML : '';
+    if (btn) { btn.disabled = true; btn.innerHTML = 'جاري التجهيز...'; }
+    try {
+      // نمرّر نسخة من البايتات
+      const bufCopy = _pendingFile.buf.slice(0);
+      const result = await CBS.openFileExternally(bufCopy, _pendingFile.name, _pendingFile.url);
+      if (result === 'shared') CBS.toast('اختر قارئ PDF لفتح الملف بالشكـل الأصلي', '', 'info');
+    } catch (err) {
+      console.warn('openFileExternally failed:', err);
+      CBS.toast('تعذّر فتح الملف', err.message || '', 'error');
+      try { window.open(_pendingFile.url, '_system'); } catch (e) {}
+    } finally {
+      if (btn) { btn.disabled = false; btn.innerHTML = original; }
+    }
+  }
+
+  async function openPendingFileExternally(btn) {
+    return openCurrentPdfExternally(btn);
+  }
+
+  async function openPdfModal(url, title) {
+    const isNative = !!(window.Capacitor?.isNativePlatform?.());
+    document.getElementById('pdfModalTitle').textContent = title || 'عرض الملف';
+    const frame = document.getElementById('pdfFrame');
+    const wrap = document.getElementById('pdfCanvasWrap');
+    const dlBtn = document.getElementById('pdfDownloadLink');
+    if (dlBtn) {
+      dlBtn.href = url;
+      dlBtn.onclick = (e) => { if (isNative) { e.preventDefault(); window.open(url, '_system'); } };
+    }
+    document.getElementById('pdfModal').style.display = 'flex';
+    frame.style.display = 'none'; frame.src = '';
+    wrap.style.display = 'block';
+    wrap.innerHTML = '<div style="color:#fff;text-align:center;padding:40px;"><i class="ri-loader-4-line" style="animation:spin 1s linear infinite;font-size:1.6rem;"></i><div style="margin-top:8px;font-size:0.9rem;">جاري تحميل الملف...</div></div>';
+
+    try {
+      let buf = await CBS.offlineGet(url);
+      if (!buf) {
+        const resp = await fetch(url);
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        buf = await resp.arrayBuffer();
+      }
+
+      let kind = sniffType(buf);
+      if (kind === 'unknown') {
+        const u = url.toLowerCase();
+        if (u.includes('.pdf')) kind = 'pdf';
+        else if (/\.(png|jpe?g|gif|webp|bmp)/.test(u)) kind = 'image';
+      }
+
+      let fileName = CBS.fileNameFromUrl(url, (title || 'محاضرة'));
+      if (kind === 'pdf') {
+        // إصلاح الامتدادات المقصوصة أو ملفات .bin لتكون دائماً .pdf
+        if (!fileName.toLowerCase().endsWith('.pdf')) {
+          fileName = fileName.replace(/\.[^/.]+$/, '') + '.pdf';
+        }
+      }
+      _pendingFile = { buf, name: fileName, url };
+
+      if (kind === 'pdf') {
+        if (isNative) {
+          /* نعرضه داخل التطبيق: renderPdfBuffer تستخدم محرك أندرويد الأصلي
+             (PDFium عبر إضافة NativePdf) وهو يملك خطوط النظام العربية ويطبّق
+             التشكيل، فيعرض الملفات التي لا تُضمّن خطها بشكل صحيح — وهو ما
+             يعجز عنه pdf.js. وإن فشل المحرك الأصلي تعود الدالة إلى pdf.js.
+             زر "فتح بقارئ خارجي" يبقى في الترويسة خياراً للمستخدم لا إجباراً. */
+          wrap.style.display = 'block';
+          frame.style.display = 'none';
+          await renderPdfBuffer(buf, wrap);
+          return;
+        }
+        // على المتصفح (localhost / DevTools): اعرضه بـ blob في iframe
+        try {
+          const blobUrl = URL.createObjectURL(new Blob([buf.slice(0)], { type: 'application/pdf' }));
+          wrap.style.display = 'none';
+          frame.style.display = 'block';
+          frame.src = blobUrl;
+          return;
+        } catch(e) {}
+        await renderPdfBuffer(buf, wrap);
+      } else if (kind === 'image') {
+        const blobUrl = URL.createObjectURL(new Blob([buf.slice(0)]));
+        wrap.innerHTML = '<img src="' + blobUrl + '" style="display:block;margin:0 auto;max-width:100%;border-radius:6px;">';
+      } else {
+        wrap.innerHTML =
+          '<div style="color:#fff;text-align:center;padding:40px;font-size:0.9rem;">' +
+          'هذا النوع من الملفات لا يُعرض داخل التطبيق' +
+          '<div style="opacity:0.7;font-size:0.82rem;margin-top:6px;">' + CBS.escapeHTML(_pendingFile.name) + '</div>' +
+          '<button onclick="openPendingFileExternally(this)" style="margin-top:16px;padding:11px 24px;border:none;border-radius:10px;background:#2563eb;color:#fff;font-family:inherit;font-weight:700;font-size:0.9rem;cursor:pointer;">' +
+          '<i class="ri-external-link-line"></i> فتح بتطبيق آخر</button></div>';
+      }
+    } catch (err) {
+      console.warn('file view failed:', err);
+      const isOffline = !navigator.onLine;
+      wrap.style.display = 'block';
+      frame.style.display = 'none';
+      if (isOffline) {
+        wrap.innerHTML =
+          '<div style="color:#fff;text-align:center;padding:40px;font-size:0.9rem;">' +
+          '<i class="ri-wifi-off-line" style="font-size:2.5rem;display:block;margin-bottom:12px;color:#f87171;"></i>' +
+          '<strong style="font-size:1rem;">لا يوجد اتصال بالإنترنت</strong>' +
+          '<div style="opacity:0.7;font-size:0.85rem;margin-top:8px;line-height:1.5;">هذا الملف لم يُفتح من قبل وغير محفوظ على جهازك.<br>افتحه مرة واحدة بالإنترنت ليصبح متاحاً بدون نت.</div>' +
+          '</div>';
+      } else if (isNative) {
+        wrap.innerHTML = '<div style="color:#fff;text-align:center;padding:40px;font-size:0.9rem;">تعذّر تحميل الملف.<br><button onclick="window.open(\'' + url + '\',\'_system\')" style="margin-top:14px;padding:10px 22px;border:none;border-radius:10px;background:#2563eb;color:#fff;font-family:inherit;font-weight:700;cursor:pointer;">فتح خارجياً</button></div>';
+      } else {
+        frame.style.display = 'block';
+        wrap.style.display = 'none';
+        frame.src = url;
+      }
+    }
+  }
+
+  let _readingMode = false;
+  function toggleReadingMode() {
+    _readingMode = !_readingMode;
+    const btn = document.getElementById('readingModeBtn');
+    const bnav = document.getElementById('bottomNavContainer') || document.querySelector('.bottom-nav');
+    const header = document.querySelector('.main-header');
+    if (_readingMode) {
+      if (bnav) bnav.style.display = 'none';
+      if (header) header.style.display = 'none';
+      btn.innerHTML = '<i class="ri-fullscreen-exit-line"></i>';
+      btn.title = 'خروج وضع القراءة';
+    } else {
+      if (bnav) bnav.style.display = '';
+      if (header) header.style.display = '';
+      btn.innerHTML = '<i class="ri-fullscreen-line"></i>';
+      btn.title = 'وضع القراءة';
+    }
+  }
+
+  function closePdfModal() {
+    if (_readingMode) toggleReadingMode();
+    document.getElementById('pdfModal').style.display = 'none';
+    document.getElementById('pdfFrame').src = '';
+    const wrap = document.getElementById('pdfCanvasWrap');
+    if (wrap) { wrap.innerHTML = ''; wrap.style.display = 'none'; } // تحرير ذاكرة الصفحات
+  }
+
+  // ===== IMPROVEMENT 7: Swipe Gestures (scrolls between section-blocks) =====
+  (function() {
+    let touchStartX = 0;
+    document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+    document.addEventListener('touchend', e => {
+      // Ignore swipes inside the PDF modal
+      if (document.getElementById('pdfModal')?.style.display === 'flex') return;
+      const dx = e.changedTouches[0].clientX - touchStartX;
+      if (Math.abs(dx) < 60) return;
+      const sections = Array.from(document.querySelectorAll('.section-block'));
+      if (!sections.length) return;
+      // Find the section closest to the viewport center
+      const mid = window.innerHeight / 2;
+      let closest = 0, minDist = Infinity;
+      sections.forEach((s, i) => {
+        const rect = s.getBoundingClientRect();
+        const dist = Math.abs(rect.top + rect.height / 2 - mid);
+        if (dist < minDist) { minDist = dist; closest = i; }
+      });
+      const target = dx < 0
+        ? sections[Math.min(closest + 1, sections.length - 1)]
+        : sections[Math.max(closest - 1, 0)];
+      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, { passive: true });
+  })();
+</script>
+<!-- ===== IMPROVEMENT 5 & 8: PDF Modal ===== -->
+<div id='pdfModal' data-no-ptr="true" style='display:none;position:fixed;inset:0;z-index:9000;background:#0d1117;flex-direction:column;overscroll-behavior:none;overscroll-behavior-y:contain;'>
+  <div class='pdf-header-wrap'>
+    <div style='display:flex;align-items:center;gap:8px;min-width:0;flex:1;'>
+      <button onclick='closePdfModal()' class='btn btn-secondary' style='display:inline-flex;align-items:center;gap:4px;font-size:0.85rem;font-weight:700;padding:7px 11px;border-radius:10px;background:rgba(255,255,255,0.14);color:#fff;border:1px solid rgba(255,255,255,0.22);cursor:pointer;flex-shrink:0;' title='إغلاق وتراجع'>
+        <i class='ri-arrow-right-line' style='font-size:1.1rem;'></i> <span class='pdf-btn-label'>رجوع</span>
+      </button>
+      <span id='pdfModalTitle' style='font-weight:800;color:#fff;font-size:0.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;'></span>
+    </div>
+    <div class='pdf-header-actions' style='display:flex;gap:7px;align-items:center;flex-shrink:0;'>
+      <button onclick='openCurrentPdfExternally(this)' class='btn btn-secondary' style='font-size:0.8rem;padding:7px 11px;border-radius:10px;display:inline-flex;align-items:center;gap:5px;font-weight:700;background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.22);cursor:pointer;' title='فتح قارئ PDF الخاص بالهاتف (الشكل الأصلي)'><i class='ri-external-link-line'></i> <span class='pdf-btn-label'>فتح قارئ PDF</span></button>
+      <a id='pdfDownloadLink' href='#' target='_blank' class='btn btn-primary' style='font-size:0.8rem;padding:7px 11px;border-radius:10px;display:inline-flex;align-items:center;gap:5px;font-weight:700;text-decoration:none;'><i class='ri-download-line'></i> <span class='pdf-btn-label'>تحميل</span></a>
+      <button onclick='openAiPanel()' style='background:linear-gradient(135deg,#4f46e5,#7c3aed);border:none;border-radius:10px;cursor:pointer;color:#fff;padding:7px 11px;display:flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:800;font-family:inherit;' title='مساعد الدراسة بالذكاء الاصطناعي'><i class='ri-sparkling-2-fill'></i> <span>AI</span></button>
+      <button id='readingModeBtn' onclick='toggleReadingMode()' style='background:rgba(255,255,255,0.1);border:none;border-radius:10px;cursor:pointer;font-size:1.05rem;color:#fff;width:34px;height:34px;display:flex;align-items:center;justify-content:center;' title='وضع القراءة'><i class='ri-fullscreen-line'></i></button>
+    </div>
+  </div>
+  <div id='pdfCanvasWrap' data-no-ptr="true" style='flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding:12px;display:none;overscroll-behavior:none;overscroll-behavior-y:contain;touch-action:pan-y;'></div>
+  <iframe id='pdfFrame' data-no-ptr="true" src='' style='flex:1;width:100%;border:none;background:#fff;display:none;overscroll-behavior:none;overscroll-behavior-y:contain;'></iframe>
+</div>
+
+<!-- ===== Kedy AI Floating Action Button ===== -->
+<!-- ===== AI Study Assistant Panel (Kedy AI) ===== -->
+<div id='aiPanel' onclick='if(event.target===this)closeAiPanel()'>
+  <div class='ai-sheet'>
+    <div class='ai-sheet-header'>
+      <div class='ai-sheet-title'>
+        <div class='kedy-avatar'><i class='ri-robot-2-fill'></i></div>
+        <div>
+          <div style='display:flex;align-items:center;gap:6px;'>
+            <strong style='font-size:1.05rem;'>كيدي | Kedy</strong>
+            <span class='ai-badge'>AI 2.0</span>
+          </div>
+          <small style='font-size:0.72rem;color:var(--text-muted);font-weight:700;'>مساعدك الأكاديمي (تطوير م. ضياء الدين)</small>
+        </div>
+      </div>
+      <button onclick='closeAiPanel()' style='background:var(--bg-main);border:none;border-radius:50%;width:34px;height:34px;cursor:pointer;color:var(--text-muted);font-size:1.1rem;display:flex;align-items:center;justify-content:center;'><i class='ri-close-line'></i></button>
+    </div>
+    <div class='ai-tabs'>
+      <button class='ai-tab active' id='aiTabSum'   onclick='switchAiTab("summarize")'><i class='ri-file-text-line'></i> تلخيص</button>
+      <button class='ai-tab'        id='aiTabAsk'   onclick='switchAiTab("ask")'><i class='ri-chat-3-line'></i> دردشة كيدي</button>
+      <button class='ai-tab'        id='aiTabFlash' onclick='switchAiTab("flashcards")'><i class='ri-stack-line'></i> بطاقات مراجعة</button>
+      <button class='ai-tab'        id='aiTabQuiz'  onclick='switchAiTab("quiz")'><i class='ri-question-line'></i> اختبار تجريبي</button>
+      <button class='ai-tab'        id='aiTabNotes' onclick='switchAiTab("notes")'><i class='ri-bookmark-3-line'></i> ملاحظاتي 📝</button>
+      <button class='ai-tab'        id='aiTabPlan'  onclick='switchAiTab("plan")'><i class='ri-calendar-check-line'></i> خطة المذاكرة</button>
+    </div>
+    <div class='ai-body' id='aiBody'></div>
+  </div>
+</div>
+
+<script>
+// ===== AI Study Assistant (Kedy AI 2.0) =====
+let _aiCurrentTab = 'summarize';
+let _aiExtractedText = '';
+let _kedyChatHistory = []; // ذاكرة المحادثة لـ كيدي
+
+function openAiPanel() {
+  document.getElementById('aiPanel').classList.add('show');
+  switchAiTab(_aiCurrentTab);
+}
+function closeAiPanel() {
+  document.getElementById('aiPanel').classList.remove('show');
+}
+
+// استخراج النص من الـ PDF المعروض حالياً مع دعم fallback ذكي
+async function extractPdfText() {
+  if (_aiExtractedText && _aiExtractedText.length > 50) return _aiExtractedText;
+  const subjectTitle = (document.getElementById('subjectName') || document.getElementById('subjectTitle'))?.textContent || document.title || 'محاضرة مجهولة';
+  const lectureTitle = document.getElementById('pdfModalTitle')?.textContent || '';
+
+  try {
+    const wrap = document.getElementById('pdfCanvasWrap');
+    if (window._pdfDocRef) {
+      let allText = '';
+      const numPages = _pdfDocRef.numPages;
+      // استخراج حتى 100 صفحة (RAG عميق للـ PDF بالكامل)
+      for (let p = 1; p <= Math.min(numPages, 100); p++) {
+        const page = await _pdfDocRef.getPage(p);
+        const tc = await page.getTextContent();
+        allText += tc.items.map(i => i.str).join(' ') + '\n';
+      }
+      if (allText.trim().length > 50) {
+        _aiExtractedText = allText.trim();
+        return _aiExtractedText;
+      }
+    }
+    const textEls = wrap ? wrap.querySelectorAll('.textLayer span') : [];
+    if (textEls.length) {
+      const txt = Array.from(textEls).map(e=>e.textContent).join(' ');
+      if (txt.trim().length > 50) {
+        _aiExtractedText = txt.trim();
+        return _aiExtractedText;
+      }
+    }
+  } catch(e) {
+    console.warn('PDF text extraction failed:', e);
+  }
+  // Fallback context if PDF text is empty or image-based
+  _aiExtractedText = `المادة: ${subjectTitle} · المحاضرة: ${lectureTitle || 'شرح المنهج والأفكار الرئيسية'}`;
+  return _aiExtractedText;
+}
+
+function switchAiTab(tab) {
+  _aiCurrentTab = tab;
+  document.querySelectorAll('.ai-tab').forEach(t => t.classList.remove('active'));
+  document.getElementById('aiTabSum').classList.toggle('active', tab==='summarize');
+  document.getElementById('aiTabAsk').classList.toggle('active', tab==='ask');
+  document.getElementById('aiTabFlash').classList.toggle('active', tab==='flashcards');
+  document.getElementById('aiTabQuiz').classList.toggle('active', tab==='quiz');
+  document.getElementById('aiTabNotes').classList.toggle('active', tab==='notes');
+  document.getElementById('aiTabPlan').classList.toggle('active', tab==='plan');
+  renderAiTab(tab);
+}
+
+// تأثير الطباعة الحية (Typewriter Effect)
+let _lastGeneratedCards = [];
+
+function typeWriter(element, fullText, speed = 12, onComplete = null) {
+  element.innerHTML = '';
+  element.classList.add('typewriter-cursor');
+  let i = 0;
+  const formattedHtml = CBS.formatAiResponse ? CBS.formatAiResponse(fullText) : fullText.replace(/\n/g, '<br>');
+  element.innerHTML = formattedHtml;
+  element.classList.remove('typewriter-cursor');
+  if (onComplete) onComplete();
+}
+
+function renderAiTab(tab) {
+  const body = document.getElementById('aiBody');
+  if (tab === 'summarize') {
+    body.innerHTML = `
+      <div style="text-align:center;padding:20px;">
+        <button class="ai-action-btn" id="aiSumBtn" onclick="doAiSummarize()">
+          <i class="ri-magic-line"></i> استخراج التلخيص الذكي
+        </button>
+      </div>
+      <div id="aiSumResult" class="ai-result" style="display:none;"></div>
+      <div id="aiSumSaveWrap" style="display:none;text-align:center;margin-top:12px;">
+        <button class="save-note-btn" onclick="saveKedyNote('ملخص ' + (document.getElementById('pdfModalTitle')?.textContent || 'محاضرة'), document.getElementById('aiSumResult').textContent, 'summary')">
+          <i class="ri-cloud-line"></i> حفظ الملخص في بنك الملاحظات
+        </button>
+      </div>`;
+  } else if (tab === 'ask') {
+    body.innerHTML = `
+      <div class="quick-prompts">
+        <button class="prompt-chip" onclick="useQuickPrompt('اشرح لي هذه المحاضرة بأسلوب مبسط')">💡 اشرح بأسلوب مبسط</button>
+        <button class="prompt-chip" onclick="useQuickPrompt('ما هي أهم 3 مفاهيم وحقائق هنا؟')">🎯 أهم المفاهيم</button>
+        <button class="prompt-chip" onclick="useQuickPrompt('ما هي الأسئلة المتوقعة في الامتحان؟')">❓ أسئلة متوقعة</button>
+        <button class="prompt-chip" onclick="useQuickPrompt('من هو مصممك وكيف أتواصل معه؟')">👨‍💻 المطور والتواصل</button>
+      </div>
+      <div class="kedy-chat-container" id="kedyChatStream">
+        ${_kedyChatHistory.length === 0 ? `
+          <div style="text-align:center;padding:24px 12px;color:var(--text-muted);font-size:0.85rem;">
+            <i class="ri-robot-2-line" style="font-size:2.4rem;color:#4f46e5;display:block;margin-bottom:8px;"></i>
+            مرحباً بك! أنا <strong>كيدي</strong>. اسألني أي سؤال عن المحاضرة وسأجيبك فوراً!
+          </div>` : ''}
+      </div>
+      <div class="ai-question-row">
+        <input class="ai-question-input" id="aiAskInput" placeholder="اسأل كيدي شيئاً عن المحاضرة..." onkeydown="if(event.key==='Enter')doAiAsk()">
+        <button class="ai-send-btn" id="aiAskBtn" onclick="doAiAsk()"><i class="ri-send-plane-fill"></i> أرسل</button>
+      </div>`;
+    renderKedyChatHistory();
+    setTimeout(() => document.getElementById('aiAskInput')?.focus(), 100);
+  } else if (tab === 'flashcards') {
+    body.innerHTML = `
+      <button class="ai-action-btn" id="aiFlashBtn" onclick="doAiFlashcards()">
+        <i class="ri-stack-line"></i> توليد بطاقات مراجعة مع كيدي
+      </button>
+      <div id="aiFlashResult"></div>`;
+  } else if (tab === 'quiz') {
+    body.innerHTML = '<div style="text-align:center;padding:20px;"><button class="ai-action-btn" id="aiQuizBtn" onclick="doAiQuiz()"><i class="ri-gamepad-line"></i> إنشاء اختبار ذكي من المحاضرة</button></div><div id="aiQuizResult"></div>';
+  } else if (tab === 'notes') {
+    renderNotesTab();
+  } else if (tab === 'plan') {
+    body.innerHTML = `
+      <div style="padding:20px;">
+        <div style="text-align:center;margin-bottom:16px;">
+          <i class="ri-calendar-check-line" style="font-size:3rem;color:var(--primary);opacity:0.8;"></i>
+          <h3 style="margin-bottom:8px;">الخطة الدراسية الذكية</h3>
+          <p style="font-size:0.85rem;color:var(--text-muted);">سأقوم بتحليل عدد محاضرات هذه المادة ومستواها، وإنشاء جدول مذاكرة ذكي لك.</p>
+        </div>
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
+          <label style="flex:1;font-weight:bold;font-size:0.9rem;">كم عدد الأيام المتبقية للامتحان؟</label>
+          <input type="number" id="aiPlanDays" min="1" max="60" value="7" style="width:70px;padding:8px;border:1px solid var(--border);border-radius:8px;text-align:center;">
+        </div>
+        <button class="ai-action-btn" id="aiPlanBtn" onclick="doAiPlan()" style="width:100%;"><i class="ri-magic-line"></i> توليد الخطة</button>
+        <div id="aiPlanResult" class="ai-result" style="display:none;margin-top:20px;"></div>
+      </div>
+    `;
+  }
+}
+
+function useQuickPrompt(text) {
+  const input = document.getElementById('aiAskInput');
+  if (input) {
+    input.value = text;
+    doAiAsk();
+  }
+}
+
+function renderKedyChatHistory() {
+  const container = document.getElementById('kedyChatStream');
+  if (!container || !_kedyChatHistory.length) return;
+  
+  container.innerHTML = _kedyChatHistory.map((m, i) => {
+    if (m.role === 'user') {
+      return `<div class="chat-bubble user">
+        <div class="chat-bubble-author"><span>أنت</span></div>
+        ${CBS.escapeHTML(m.content)}
+      </div>`;
+    } else {
+      return `<div class="chat-bubble kedy">
+        <div class="chat-bubble-author"><span style="color:#4f46e5;"><i class="ri-robot-2-line"></i> كيدي</span></div>
+        <div>${CBS.formatAiResponse ? CBS.formatAiResponse(m.content) : CBS.escapeHTML(m.content)}</div>
+      </div>`;
+    }
+  }).join('');
+  container.scrollTop = container.scrollHeight;
+}
+
+function saveKedyChatNote(idx) {
+  const item = _kedyChatHistory[idx];
+  if (!item) return;
+  const question = _kedyChatHistory[idx - 1]?.content || 'إجابة كيدي';
+  saveKedyNote(question, item.content);
+}
+
+async function doAiSummarize() {
+  const btn = document.getElementById('aiSumBtn');
+  btn.disabled = true;
+  const resultEl = document.getElementById('aiSumResult');
+  const saveWrap = document.getElementById('aiSumSaveWrap');
+  resultEl.style.display = '';
+  resultEl.className = 'ai-result loading';
+  resultEl.innerHTML = '<div class="ai-spinner"></div> كيدي يقرأ المحاضرة ويلخص الأفكار...';
+
+  try {
+    const text = await extractPdfText();
+    const subjectTitle = (document.getElementById('subjectName') || document.getElementById('subjectTitle'))?.textContent || document.title || '';
+    const lectureTitle = document.getElementById('pdfModalTitle')?.textContent || '';
+    const r = await CBS.apiPost('/api/ai/summarize', { text: text || ' ', subjectTitle, lectureTitle });
+    const data = await r.json();
+    if (data.success) {
+      resultEl.className = 'ai-result';
+      typeWriter(resultEl, data.summary, 12, () => {
+        saveWrap.style.display = 'block';
+      });
+    } else {
+      resultEl.className = 'ai-result';
+      resultEl.innerHTML = `<span style="color:var(--danger);"><i class="ri-error-warning-line"></i> ${CBS.escapeHTML(data.message || 'حدث خطأ')}</span>`;
+    }
+  } catch(e) {
+    resultEl.className = 'ai-result';
+    resultEl.innerHTML = '<span style="color:var(--danger);"><i class="ri-error-warning-line"></i> تعذّر الاتصال بالخادم</span>';
+  }
+  btn.disabled = false;
+}
+
+async function doAiAsk() {
+  const input = document.getElementById('aiAskInput');
+  const question = input.value.trim();
+  if (!question) return;
+
+  const btn = document.getElementById('aiAskBtn');
+  btn.disabled = true;
+  input.value = '';
+
+  const container = document.getElementById('kedyChatStream');
+  // 1. إضافة فقاعة المستخدم
+  const userBubble = document.createElement('div');
+  userBubble.className = 'chat-bubble user';
+  userBubble.innerHTML = `<div class="chat-bubble-author"><span>أنت</span></div>${CBS.escapeHTML(question)}`;
+  container.appendChild(userBubble);
+
+  // 2. إضافة فقاعة جاري التفكير لـ كيدي
+  const loadingBubble = document.createElement('div');
+  loadingBubble.className = 'chat-bubble kedy';
+  loadingBubble.id = 'kedyLoadingBubble';
+  loadingBubble.innerHTML = `<div class="chat-bubble-author"><span style="color:#4f46e5;"><i class="ri-robot-2-line"></i> كيدي</span></div><div class="ai-result loading" style="padding:4px 0;background:none;border:none;min-height:auto;"><div class="ai-spinner"></div> كيدي يفكّر...</div>`;
+  container.appendChild(loadingBubble);
+  container.scrollTop = container.scrollHeight;
+
+  try {
+    const text = await extractPdfText();
+    const subjectTitle = (document.getElementById('subjectName') || document.getElementById('subjectTitle'))?.textContent || document.title || '';
+    const lectureTitle = document.getElementById('pdfModalTitle')?.textContent || '';
+    const r = await CBS.apiPost('/api/ai/ask', { text, question, prompt: question, history: _kedyChatHistory, subjectTitle, lectureTitle });
+    const data = await r.json();
+
+    loadingBubble.remove();
+    if (data.success) {
+      const kedyBubble = document.createElement('div');
+      kedyBubble.className = 'chat-bubble kedy';
+      const bodyDiv = document.createElement('div');
+      kedyBubble.innerHTML = `<div class="chat-bubble-author"><span style="color:#4f46e5;"><i class="ri-robot-2-line"></i> كيدي</span></div>`;
+      kedyBubble.appendChild(bodyDiv);
+      container.appendChild(kedyBubble);
+
+      _kedyChatHistory.push({ role: 'user', content: question });
+      _kedyChatHistory.push({ role: 'assistant', content: data.answer });
+      const currentIdx = _kedyChatHistory.length - 1;
+
+      typeWriter(bodyDiv, data.answer, 12, () => {
+        const saveBtn = document.createElement('button');
+        saveBtn.className = 'save-note-btn';
+        saveBtn.innerHTML = '<i class="ri-bookmark-3-line"></i> حفظ في ملاحظاتي';
+        saveBtn.onclick = () => saveKedyChatNote(currentIdx);
+        kedyBubble.appendChild(saveBtn);
+        container.scrollTop = container.scrollHeight;
+      });
+    } else {
+      const errBubble = document.createElement('div');
+      errBubble.className = 'chat-bubble kedy';
+      errBubble.innerHTML = `<span style="color:var(--danger);"><i class="ri-error-warning-line"></i> ${CBS.escapeHTML(data.message || 'حدث خطأ')}</span>`;
+      container.appendChild(errBubble);
+    }
+  } catch(e) {
+    loadingBubble.remove();
+    const errBubble = document.createElement('div');
+    errBubble.className = 'chat-bubble kedy';
+    errBubble.innerHTML = '<span style="color:var(--danger);"><i class="ri-error-warning-line"></i> تعذّر الاتصال بالخادم</span>';
+    container.appendChild(errBubble);
+  }
+  btn.disabled = false;
+  container.scrollTop = container.scrollHeight;
+}
+
+async function doAiFlashcards() {
+  const btn = document.getElementById('aiFlashBtn');
+  btn.disabled = true;
+  const res = document.getElementById('aiFlashResult');
+  res.innerHTML = '<div class="ai-result loading"><div class="ai-spinner"></div> كيدي يستخرج أهم الأسئلة والإجابات...</div>';
+  try {
+    const text = await extractPdfText();
+    const subjectTitle = (document.getElementById('subjectName') || document.getElementById('subjectTitle'))?.textContent || document.title || '';
+    const lectureTitle = document.getElementById('pdfModalTitle')?.textContent || '';
+    const r = await CBS.apiPost('/api/ai/flashcards', { text: text || ' ', subjectTitle, lectureTitle });
+    const data = await r.json();
+    if (data.success && data.cards) {
+      _lastGeneratedCards = data.cards;
+      res.innerHTML = '<div class="flashcard-grid">' +
+        data.cards.map((c,i) =>
+          `<div class="flashcard" onclick="this.classList.toggle('open')">
+        <button class="flashcard-q"><span>${i+1}. ${CBS.escapeHTML(c.q)}</span><i class="ri-arrow-down-s-line"></i></div>
+            <div class="flashcard-a">${CBS.escapeHTML(c.a)}</div>
+          </div>`
+        ).join('') + '</div>' +
+        `<div style="margin-top:12px;text-align:center;">
+          <button class="save-note-btn" onclick="saveKedyFlashcardsNote()">
+            <i class="ri-bookmark-3-line"></i> حفظ كل البطاقات في ملاحظاتي 📝
+          </button>
+        </div>`;
+    } else {
+      res.innerHTML = `<div class="ai-result"><span style="color:var(--danger);"><i class="ri-error-warning-line"></i> ${CBS.escapeHTML(data.message||'حدث خطأ')}</span></div>`;
+    }
+  } catch(e) {
+    res.innerHTML = '<div class="ai-result"><span style="color:var(--danger);">تعذّر الاتصال بالخادم</span></div>';
+  }
+  btn.disabled = false;
+}
+
+async function doAiPlan() {
+    const btn = document.getElementById('aiPlanBtn');
+    const res = document.getElementById('aiPlanResult');
+    const days = document.getElementById('aiPlanDays').value || 7;
+    const subjectTitle = (document.getElementById('subjectName') || document.getElementById('subjectTitle'))?.textContent || document.title || '';
+    
+    const lectureEls = document.querySelectorAll('.lecture-item .lecture-title');
+    let lecturesList = Array.from(lectureEls).map((el, i) => `${i+1}. ${el.textContent.trim()}`).join('\n');
+    if(!lecturesList) lecturesList = "غير متوفرة";
+
+    btn.disabled = true;
+    res.style.display = 'block';
+    res.className = 'ai-result loading';
+    res.innerHTML = '<div class="ai-spinner"></div> جاري تحليل المادة وبناء الخطة...';
+
+    try {
+      const prompt = `أنا طالب أدرس مادة "${subjectTitle}".
+باقي للامتحان ${days} أيام فقط.
+عدد وعناوين المحاضرات في هذه المادة هي:
+${lecturesList}
+
+بناءً على طبيعة واسم هذه المادة وصعوبتها المتوقعة، قم بعمل خطة دراسية ذكية وتفصيلية لي لختم المادة خلال ${days} أيام، وتأكد من تخصيص اليوم الأخير للمراجعة.
+اطبع الخطة بتنسيق Markdown جميل.`;
+
+      const r = await CBS.apiPost('/api/ai/ask', { text: '', question: prompt, prompt, history: [] });
+      const data = await r.json();
+      
+      if (data.success) {
+        res.className = 'ai-result';
+        typeWriter(res, data.answer, 12, () => {
+          res.innerHTML += `<div style="margin-top:12px;text-align:center;">
+            <button class="save-note-btn" onclick="saveKedyNote('خطة دراسة ${subjectTitle}', document.getElementById('aiPlanResult').innerText, 'plan')">
+              <i class="ri-cloud-line"></i> حفظ الخطة في بنك الملاحظات
+            </button>
+          </div>`;
+        });
+      } else {
+        res.className = 'ai-result';
+        res.innerHTML = `<span style="color:var(--danger);"><i class="ri-error-warning-line"></i> ${CBS.escapeHTML(data.message||'خطأ')}</span>`;
+      }
+    } catch(e) {
+      res.className = 'ai-result';
+      res.innerHTML = '<span style="color:var(--danger);"><i class="ri-error-warning-line"></i> تعذر الاتصال</span>';
+    }
+    btn.disabled = false;
+  }
+
+  async function saveKedyNote(title, content, type = 'summary') {
+    try {
+      const subjectTitle = (document.getElementById('subjectName') || document.getElementById('subjectTitle'))?.textContent || document.title || 'عام';
+      const r = await CBS.apiPost('/api/ai/notes', { title, subject: subjectTitle, content, type });
+      const data = await r.json();
+      if (data.success) {
+        if (window.CBS && CBS.toast) CBS.toast('تم الحفظ في بنك الملاحظات السحابي', '', 'success');
+        else alert('تم الحفظ بنجاح');
+      } else {
+        if (window.CBS && CBS.toast) CBS.toast('خطأ أثناء الحفظ', data.message, 'error');
+        else alert(data.message);
+      }
+    } catch(e) {
+      console.error('Save note error:', e);
+    }
+  }
+
+  async function renderNotesTab() {
+    const body = document.getElementById('aiBody');
+    body.innerHTML = '<div style="text-align:center;padding:40px;"><div class="ai-spinner"></div> جاري تحميل بنك الملاحظات...</div>';
+    try {
+      const r = await CBS.apiGet('/api/ai/notes');
+      const data = await r.json();
+      if (!data.success || !data.notes || !data.notes.length) {
+        body.innerHTML = `
+          <div style="text-align:center;padding:40px 20px;color:var(--text-muted);">
+            <i class="ri-cloud-windy-line" style="font-size:3rem;opacity:0.3;display:block;margin-bottom:12px;"></i>
+            بنك الأسئلة والملاحظات السحابي فارغ.<br>
+            <small>قم بتوليد بطاقات أو خطط واحفظها لتجدها هنا من أي جهاز.</small>
+          </div>`;
+        return;
+      }
+      
+      let html = '<div style="display:flex;flex-direction:column;gap:12px;">';
+      data.notes.forEach(n => {
+        let icon = 'ri-bookmark-3-line';
+        if(n.type === 'quiz') icon = 'ri-question-answer-line';
+        if(n.type === 'flashcards') icon = 'ri-stack-line';
+        if(n.type === 'plan') icon = 'ri-calendar-check-line';
+        const d = new Date(n.createdAt).toLocaleDateString('ar-SD');
+        html += `
+          <div style="background:var(--bg-main);border:1px solid var(--border);border-radius:12px;padding:14px;position:relative;">
+            <div style="font-weight:800;color:var(--primary);display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+              <i class="${icon}"></i> ${CBS.escapeHTML(n.title)}
+            </div>
+            <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:8px;">
+              ${CBS.escapeHTML(n.subject)} • ${d}
+            </div>
+            <div style="font-size:0.85rem;color:var(--text-main);white-space:pre-wrap;max-height:150px;overflow-y:auto;background:var(--bg-card);padding:10px;border-radius:8px;">
+              ${n.content}
+            </div>
+            <button onclick="deleteKedyNote('${n._id}')" style="position:absolute;top:10px;left:10px;background:none;border:none;color:var(--danger);cursor:pointer;" title="حذف"><i class="ri-delete-bin-line"></i></button>
+          </div>`;
+      });
+      html += '</div>';
+      body.innerHTML = html;
+    } catch(e) {
+      body.innerHTML = '<div style="color:var(--danger);text-align:center;">حدث خطأ أثناء تحميل الملاحظات</div>';
+    }
+  }
+
+  async function deleteKedyNote(id) {
+    if(!confirm('هل أنت متأكد من حذف هذه الملاحظة؟')) return;
+    try {
+      const r = await CBS.apiDelete('/api/ai/notes/' + id);
+      const data = await r.json();
+      if(data.success) {
+        if(window.CBS && CBS.toast) CBS.toast('تم الحذف بنجاح', '', 'success');
+        renderNotesTab();
+      }
+    } catch(e) {}
+  }
+
+function saveKedyFlashcardsNote() {
+  if(!_lastGeneratedCards || !_lastGeneratedCards.length) return;
+  const content = _lastGeneratedCards.map((c,i)=>`${i+1}. ${c.q}\nالجواب: ${c.a}`).join('\n\n');
+  saveKedyNote('بطاقات ' + (document.getElementById('pdfModalTitle')?.textContent || 'محاضرة'), content, 'flashcards');
+}
+
+async function doAiQuiz() {
+  const btn = document.getElementById('aiQuizBtn');
+  btn.disabled = true;
+  const res = document.getElementById('aiQuizResult');
+  res.innerHTML = '<div class="ai-result loading"><div class="ai-spinner"></div> كيدي يبني الاختبار التجريبي...</div>';
+  try {
+    const text = await extractPdfText();
+    const subjectTitle = (document.getElementById('subjectName') || document.getElementById('subjectTitle'))?.textContent || document.title || '';
+    const lectureTitle = document.getElementById('pdfModalTitle')?.textContent || '';
+    const r = await CBS.apiPost('/api/ai/quiz-gen', { text: text || ' ', count: 5, subjectTitle, lectureTitle });
+    const data = await r.json();
+    if (data.success && data.questions) {
+      res.innerHTML = data.questions.map((q,qi) =>
+        `<div class="quiz-q-item">
+          <div class="quiz-q-text">${qi+1}. ${CBS.escapeHTML(q.question)}</div>
+          ${q.options.map((o,oi) =>
+            `<div class="quiz-option" id="qo_${qi}_${oi}" onclick="checkQuizOption(${qi},${oi},${q.correct},this)">
+              <span style="font-weight:800;min-width:20px;">${['أ','ب','ج','د'][oi]}.</span>
+              ${CBS.escapeHTML(o)}
+            </div>`
+          ).join('')}
+        </div>`
+      ).join('') + 
+      `<div style="margin-top:12px;text-align:center;">
+        <button class="save-note-btn" onclick="saveKedyNote('اختبار ' + (document.getElementById('pdfModalTitle')?.textContent || 'محاضرة'), 'اختبار تجريبي', 'quiz')">
+          <i class="ri-cloud-line"></i> حفظ الاختبار في بنك الملاحظات
+        </button>
+      </div>`;
+    } else {
+      res.innerHTML = `<div class="ai-result"><span style="color:var(--danger);"><i class="ri-error-warning-line"></i> ${CBS.escapeHTML(data.message||'حدث خطأ')}</span></div>`;
+    }
+  } catch(e) {
+    res.innerHTML = '<div class="ai-result"><span style="color:var(--danger);">تعذّر الاتصال بالخادم</span></div>';
+  }
+  btn.disabled = false;
+}
+
+function checkQuizOption(qi, oi, correct, el) {
+  const row = el.closest('.quiz-q-item');
+  row.querySelectorAll('.quiz-option').forEach((o,i) => {
+    o.style.pointerEvents = 'none';
+    if (i === correct) o.classList.add('correct');
+  });
+  if (oi !== correct) el.classList.add('wrong');
+}
+
+// ===== حفظ وإدارة ملاحظات كيدي (Save to Notes) =====
+async function clearAllKedyNotes() {
+  if (!confirm('هل تريد مسح جميع الملاحظات المحفوظة؟')) return;
+  localStorage.removeItem('cbs_saved_notes');
+  renderNotesTab();
+}
+</script>
+
+</body>
+</html>
+

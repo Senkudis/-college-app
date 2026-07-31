@@ -1,0 +1,1904 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <title>الرسوم المالية | كلية تقنية المعلومات</title>
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css?v=2026073125">
+  
+  <link rel="stylesheet" href="/css/mobile.css?v=2026073125">
+  <style>
+    .financials-wrap {
+      max-width: 1200px;
+      margin: auto;
+      padding: 20px 20px 100px;
+    }
+    .financials-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 20px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 900px) {
+      .financials-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    .balance-summary {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 15px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 600px) {
+      .balance-summary {
+        grid-template-columns: 1fr;
+      }
+    }
+    .form-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+    }
+    .form-card h3 {
+      margin-top: 0;
+      margin-bottom: 16px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--text-primary);
+    }
+    .registry-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+      margin-top: 24px;
+    }
+    .registry-section h3 {
+      margin-top: 0;
+      margin-bottom: 16px;
+      color: var(--text-primary);
+    }
+    .form-group-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 480px) {
+      .form-group-row {
+        grid-template-columns: 1fr;
+      }
+    }
+    /* Modal styles */
+    .modal-details-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    @media (max-width: 600px) {
+      .modal-details-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+    /* Fixed Table Styles for Financials */
+    .table-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 24px;
+      box-shadow: var(--shadow-sm);
+      margin-top: 24px;
+    }
+    .table-wrapper {
+      width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      border-radius: var(--radius-md);
+      background: var(--bg-card);
+      box-shadow: inset 0 0 0 1px var(--border);
+    }
+    .table {
+      width: 100%;
+      min-width: 700px;
+      border-collapse: collapse;
+      text-align: right;
+    }
+    .table th, .table td {
+      padding: 16px;
+      white-space: nowrap;
+      border-bottom: 1px solid var(--border);
+      vertical-align: middle;
+    }
+    .table th {
+      background: var(--bg-body);
+      color: var(--text-secondary);
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    .table tbody tr:hover {
+      background: var(--bg-body);
+    }
+    .badge {
+      padding: 6px 12px;
+      border-radius: 50px;
+      font-size: 0.85rem;
+      font-weight: 500;
+    }
+    .badge-success { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
+    .badge-primary { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
+    .badge-warning { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+    .badge-danger { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
+
+    /* ====================================================
+       Hero Balance Card (Student)
+       ==================================================== */
+    .hero-balance-card {
+      background: linear-gradient(135deg, #0d3b66 0%, #1a6fc4 55%, #2176c7 100%);
+      border-radius: 20px;
+      padding: 22px 20px 18px;
+      color: white;
+      margin-bottom: 16px;
+      position: relative;
+      overflow: hidden;
+      box-shadow: 0 10px 32px rgba(13,59,102,0.35);
+    }
+    .hero-blob {
+      position: absolute;
+      border-radius: 50%;
+      pointer-events: none;
+    }
+    .hero-blob-1 {
+      width: 160px; height: 160px;
+      top: -40px; left: -40px;
+      background: rgba(255,255,255,0.05);
+    }
+    .hero-blob-2 {
+      width: 200px; height: 200px;
+      bottom: -60px; right: -30px;
+      background: rgba(255,255,255,0.03);
+    }
+    .hero-card-label {
+      font-size: 0.72rem;
+      opacity: 0.75;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+      position: relative;
+      z-index: 1;
+    }
+    .hero-student-name {
+      font-size: 0.92rem;
+      opacity: 0.85;
+      margin-bottom: 12px;
+      position: relative;
+      z-index: 1;
+    }
+    .hero-amount-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 6px;
+      margin-bottom: 16px;
+      position: relative;
+      z-index: 1;
+    }
+    .hero-amount {
+      font-size: clamp(1.8rem, 8vw, 2.6rem);
+      font-weight: 800;
+      line-height: 1;
+    }
+    .hero-amount-label {
+      font-size: 0.95rem;
+      font-weight: 600;
+      opacity: 0.8;
+      padding-bottom: 4px;
+    }
+    .hero-stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      position: relative;
+      z-index: 1;
+    }
+    .hero-stat-box {
+      background: rgba(255,255,255,0.12);
+      border-radius: 12px;
+      padding: 10px 12px;
+      backdrop-filter: blur(8px);
+    }
+    .hero-stat-label {
+      font-size: 0.68rem;
+      opacity: 0.75;
+      margin-bottom: 3px;
+      font-weight: 600;
+    }
+    .hero-stat-val {
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+    .hero-paid { color: #86efac; }
+
+    .hero-pay-btn {
+      width: 100%;
+      margin-top: 14px;
+      background: white;
+      color: #0d3b66;
+      border: none;
+      border-radius: 12px;
+      padding: 12px;
+      font-size: 0.95rem;
+      font-weight: 800;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      transition: transform 0.2s, box-shadow 0.2s;
+      font-family: inherit;
+      position: relative;
+      z-index: 1;
+    }
+    .hero-pay-btn:active {
+      transform: scale(0.97);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+
+    /* ====================================================
+       Admin Tabs - Modern pill style
+       ==================================================== */
+    .admin-tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 24px;
+      background: rgba(255,255,255,0.03);
+      backdrop-filter: blur(12px);
+      border: 1px solid rgba(255,255,255,0.06);
+      border-radius: 16px;
+      padding: 6px;
+      overflow-x: auto;
+    }
+    [data-theme="dark"] .admin-tabs { background: rgba(0,0,0,0.2); }
+    .admin-tab-btn {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 10px 18px;
+      border: none;
+      border-radius: 12px;
+      background: transparent;
+      color: var(--text-muted);
+      font-weight: 700;
+      font-size: 0.88rem;
+      font-family: inherit;
+      flex-shrink: 0;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+      cursor: pointer;
+    }
+    .admin-tab-btn i { font-size: 1.1rem; }
+    .admin-tab-btn.active {
+      background: var(--primary);
+      color: #fff;
+      box-shadow: 0 4px 15px rgba(37,99,235,0.3);
+    }
+    .admin-tab-btn:not(.active):hover {
+      background: rgba(255,255,255,0.05);
+      color: var(--text-main);
+      transform: translateY(-1px);
+    }
+
+    /* ====================================================
+       Admin Summary Stat Cards - Premium & Modern
+       ==================================================== */
+    .admin-summary-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+    @media (max-width: 600px) {
+      .admin-summary-grid { grid-template-columns: 1fr; gap: 12px; }
+    }
+    .admin-stat-card {
+      border-radius: 20px;
+      padding: 20px;
+      color: white;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.2);
+      transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
+      position: relative;
+      overflow: hidden;
+    }
+    .admin-stat-card:hover {
+      transform: translateY(-4px) scale(1.02);
+      box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+    }
+    .admin-stat-icon {
+      width: 48px;
+      height: 48px;
+      border-radius: 14px;
+      background: rgba(255,255,255,0.2);
+      backdrop-filter: blur(8px);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 1.5rem;
+      flex-shrink: 0;
+      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    .admin-stat-card:hover .admin-stat-icon {
+      transform: scale(1.1) rotate(5deg);
+    }
+    .admin-stat-body { flex: 1; min-width: 0; }
+    .admin-stat-label {
+      font-size: 0.8rem;
+      opacity: 0.9;
+      font-weight: 600;
+      margin-bottom: 4px;
+    }
+    .admin-stat-val {
+      font-size: 1.25rem;
+      font-weight: 800;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .admin-stat-blue  { background: linear-gradient(135deg, #1e40af, #3b82f6); }
+    .admin-stat-green { background: linear-gradient(135deg, #065f46, #10b981); }
+    .admin-stat-red   { background: linear-gradient(135deg, #7f1d1d, #ef4444); }
+
+    /* ====================================================
+       Table action buttons — smaller on mobile
+       ==================================================== */
+    .btn-sm {
+      padding: 5px 10px !important;
+      font-size: 0.78rem !important;
+      border-radius: 8px !important;
+    }
+    @media (max-width: 600px) {
+      .btn-sm {
+        padding: 5px 8px !important;
+        font-size: 0.72rem !important;
+      }
+      .table th, .table td { padding: 10px 8px; font-size: 0.82rem; }
+    }
+
+    /* ====================================================
+       Modal overlay — .modal/.modal-content غير معرّفين في style.css
+       (المعرّف هو .modal-overlay). بدونها تظهر النوافذ داخل تدفّق
+       الصفحة بالأسفل بدل الانبثاق — سبب ظهور "رفع إشعار سداد" للعميد
+       وعدم ظهور كشف الحساب عند الضغط على اسم الطالب.
+       ==================================================== */
+    .modal {
+      display: none;
+      position: fixed;
+      inset: 0;
+      z-index: 2000;
+      background: rgba(2, 8, 23, 0.6);
+      -webkit-backdrop-filter: blur(4px);
+      backdrop-filter: blur(4px);
+      padding: 20px;
+      overflow-y: auto;
+      align-items: flex-start;
+      justify-content: center;
+    }
+    .modal.show { display: flex; }
+    .modal .modal-content {
+      width: 100%;
+      margin: auto;
+      background: var(--bg-card);
+      box-shadow: var(--shadow-xl);
+      animation: modalPop 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+    }
+    @keyframes modalPop {
+      from { opacity: 0; transform: translateY(24px) scale(0.97); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    /* ===== أصناف مساعدة بنمط Bootstrap مستخدمة في هذه الصفحة =====
+       الصفحة لا تحمّل Bootstrap، فكانت هذه الأصناف بلا أي تنسيق:
+       الجداول غير موسّطة، الشارات بلا لون، وأزرار btn-block/btn-outline-* بلا شكل. */
+    .text-center  { text-align: center; }
+    .text-muted   { color: var(--text-muted); }
+    .text-primary { color: var(--primary); }
+    .text-success { color: var(--success, #16a34a); }
+    .text-danger  { color: var(--danger, #dc2626); }
+    .text-warning { color: var(--warning, #d97706); }
+    .fw-bold, .font-bold { font-weight: 700; }
+    .d-flex       { display: flex; }
+    .flex-column  { flex-direction: column; }
+    .mb-3 { margin-bottom: 1rem; }
+    .mb-4 { margin-bottom: 1.5rem; }
+    .px-4 { padding-inline: 1.5rem; }
+    .py-2 { padding-block: 0.5rem; }
+    .py-4 { padding-block: 1.5rem; }
+
+    .btn-block { display: block; width: 100%; }
+
+    .btn-outline-primary,
+    .btn-outline-success {
+      background: transparent;
+      border: 1px solid currentColor;
+    }
+    .btn-outline-primary { color: var(--primary); }
+    .btn-outline-success { color: var(--success, #16a34a); }
+    .btn-outline-primary:hover { background: var(--primary); color: #fff; }
+    .btn-outline-success:hover { background: var(--success, #16a34a); color: #fff; }
+
+    /* شارات ملوّنة بخلفية خفيفة */
+    .bg-primary-subtle { background: rgba(37, 99, 235, 0.12); }
+    .bg-success-subtle { background: rgba(22, 163, 74, 0.12); }
+    .bg-danger-subtle  { background: rgba(220, 38, 38, 0.12); }
+
+    /* بطاقة/حاوية البحث */
+    .dialog-card { border-radius: var(--radius-md, 14px); }
+    .search-box  { display: flex; gap: 8px; align-items: center; margin-bottom: 12px; }
+    .search-box input { flex: 1; }
+  </style>
+
+
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+</head>
+<body>
+
+  <!-- Header -->
+  <header class="main-header">
+    <div class="header-brand">
+      <img src="/assets/logo.png" class="header-logo" alt="شعار">
+      <div class="header-title-group">
+        <strong>الرسوم والمدفوعات</strong>
+        <small id="userRoleSubtitle">نظام الإدارة المالية</small>
+      </div>
+    </div>
+    <div class="header-actions">
+      <button class="btn-icon" onclick="CBS.toggleDark()"><i class="ri-moon-line" id="themeIcon"></i></button>
+      <button class="btn-icon" onclick="CBS.goHome()"><i class="ri-home-4-line"></i></button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <div class="page-content">
+    <div class="financials-wrap">
+        
+        <!-- ================= Students View ================= -->
+        <div id="studentView" style="display: none;">
+
+          <!-- ── Hero Balance Card (للطالب فقط) ── -->
+          <div id="balanceHeroCard" class="hero-balance-card">
+            <div class="hero-blob hero-blob-1"></div>
+            <div class="hero-blob hero-blob-2"></div>
+            <div class="hero-card-label">كشف الحساب المالي</div>
+            <div class="hero-student-name" id="heroStudentName">—</div>
+            <div class="hero-amount-row">
+              <div id="heroBalanceDue" class="hero-amount">0.00</div>
+              <div class="hero-amount-label">ج.س مستحق</div>
+            </div>
+            <div class="hero-stats-grid">
+              <div class="hero-stat-box">
+                <div class="hero-stat-label">إجمالي الرسوم</div>
+                <div id="heroTotalFees" class="hero-stat-val">0.00 ج.س</div>
+              </div>
+              <div class="hero-stat-box">
+                <div class="hero-stat-label">إجمالي المدفوع</div>
+                <div id="heroTotalPaid" class="hero-stat-val hero-paid">0.00 ج.س</div>
+              </div>
+            </div>
+            <!-- زر السداد فقط للطلاب — يظهر/يُخفى بالـ JS -->
+            <button id="payNowBtn" onclick="CBS.openModal('payNowModal')" class="hero-pay-btn" style="display:none">
+              <i class="ri-bank-card-line"></i> سداد الرسوم الآن
+            </button>
+          </div>
+
+          <!-- ── Fees List ── -->
+          <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:20px;padding:20px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,0.06);">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border);">
+              <div style="width:34px;height:34px;background:linear-gradient(135deg,#0d3b66,#2176c7);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                <i class="ri-file-list-3-line" style="color:white;font-size:1rem;"></i>
+              </div>
+              <h3 style="margin:0;font-size:0.95rem;font-weight:700;color:var(--text-primary);">تفاصيل الرسوم الدراسية</h3>
+            </div>
+            <div id="feesListContainer">
+              <div style="text-align:center;padding:32px 0;color:var(--text-muted);">
+                <i class="ri-loader-4-line" style="font-size:1.8rem;display:block;margin-bottom:8px;"></i>
+                جاري تحميل الرسوم...
+              </div>
+            </div>
+          </div>
+
+          <!-- ── Payment Requests History ── -->
+          <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:20px;padding:20px;box-shadow:0 2px 12px rgba(0,0,0,0.06);">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border);">
+              <div style="width:34px;height:34px;background:linear-gradient(135deg,#7c3aed,#a855f7);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                <i class="ri-history-line" style="color:white;font-size:1rem;"></i>
+              </div>
+              <h3 style="margin:0;font-size:0.95rem;font-weight:700;color:var(--text-primary);">طلبات السداد المرفوعة</h3>
+            </div>
+            <div id="paymentRequestsContainer">
+              <div style="text-align:center;padding:32px 0;color:var(--text-muted);">
+                <i class="ri-loader-4-line" style="font-size:1.8rem;display:block;margin-bottom:8px;"></i>
+                جاري التحميل...
+              </div>
+            </div>
+          </div>
+
+        </div>
+
+        <!-- ================= Deans View (Admin Financials) ================= -->
+        <div id="deanView" style="display: none;">
+          <!-- Admin Tabs Navigation -->
+          <div class="admin-tabs">
+            <button class="admin-tab-btn active" id="tabBtn_dashboard" onclick="switchAdminTab('dashboard')">
+              <i class="ri-dashboard-line"></i>
+              <span>نظرة عامة</span>
+            </button>
+            <button class="admin-tab-btn" id="tabBtn_registry" onclick="switchAdminTab('registry')">
+              <i class="ri-group-line"></i>
+              <span>سجل الطلاب</span>
+            </button>
+            <button class="admin-tab-btn" id="tabBtn_actions" onclick="switchAdminTab('actions')">
+              <i class="ri-add-box-line"></i>
+              <span>رسوم ودفعات</span>
+            </button>
+            <button class="admin-tab-btn" id="tabBtn_settings" onclick="switchAdminTab('settings')">
+              <i class="ri-bank-line"></i>
+              <span>إعدادات البنك</span>
+            </button>
+          </div>
+
+          <!-- TAB 1: Dashboard & Pending Requests -->
+          <div id="adminTab_dashboard">
+            <!-- Admin Summary Cards -->
+            <div class="admin-summary-grid" id="adminBalanceSummary">
+              <div class="admin-stat-card admin-stat-blue">
+                <div class="admin-stat-icon"><i class="ri-funds-box-line"></i></div>
+                <div class="admin-stat-body">
+                  <div class="admin-stat-label">إجمالي المتوقع تحصيله</div>
+                  <div class="admin-stat-val" id="adminTotalExpected">0.00 ج.س</div>
+                </div>
+              </div>
+              <div class="admin-stat-card admin-stat-green">
+                <div class="admin-stat-icon"><i class="ri-safe-2-line"></i></div>
+                <div class="admin-stat-body">
+                  <div class="admin-stat-label">إجمالي المحصل</div>
+                  <div class="admin-stat-val" id="adminTotalCollected">0.00 ج.س</div>
+                </div>
+              </div>
+              <div class="admin-stat-card admin-stat-red">
+                <div class="admin-stat-icon"><i class="ri-alert-line"></i></div>
+                <div class="admin-stat-body">
+                  <div class="admin-stat-label">المتبقي (ديون)</div>
+                  <div class="admin-stat-val" id="adminTotalRemaining">0.00 ج.س</div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pending Payment Requests Review Table -->
+            <div class="registry-section dialog-card mb-4" id="pendingRequestsSection" style="margin-top: 0;">
+              <h3 style="margin-bottom: 20px;"><i class="ri-file-search-line text-warning"></i> مراجعة إشعارات السداد المرفوعة من الطلاب</h3>
+              <div class="table-wrapper">
+                <table class="table" id="pendingRequestsTable">
+                  <thead>
+                    <tr>
+                      <th>الطالب</th>
+                      <th>المبلغ المدفوع</th>
+                      <th>المرجع / ملاحظات</th>
+                      <th>تاريخ الرفع</th>
+                      <th>صورة الإشعار</th>
+                      <th>الإجراء</th>
+                    </tr>
+                  </thead>
+                  <tbody id="pendingRequestsBody">
+                    <tr>
+                      <td colspan="6" class="text-center">جاري تحميل إشعارات السداد...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 2: Balances Registry -->
+          <div id="adminTab_registry" style="display: none;">
+            <div class="registry-section dialog-card" style="margin-top: 0;">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px;">
+                <h3 style="margin: 0;"><i class="ri-group-line text-primary"></i> سجل الأرصدة والمدفوعات الشامل للطلاب</h3>
+                <div class="search-box" style="flex: 1; max-width: 600px; display: flex; gap: 10px; position: relative; flex-wrap: wrap;">
+                  <select id="filterBalancesBatch" class="form-control" style="width: auto; padding: 4px 12px; border-radius: 12px; border: 1px solid var(--border);" onchange="filterBalancesRegistry()">
+                    <option value="">كل الدفعات</option>
+                  </select>
+                  <div style="flex: 1; position: relative; min-width: 200px;">
+                    <i class="ri-search-line" style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
+                    <input type="text" id="balancesSearchInput" placeholder="ابحث باسم الطالب أو الإيميل..." class="form-control" onkeyup="filterBalancesRegistry()" style="padding-right: 40px; width: 100%; border-radius: 12px; border: 1px solid var(--border);">
+                  </div>
+                  <button class="btn btn-outline-primary" onclick="exportBalancesToCSV()" style="border-radius: 12px; white-space: nowrap; font-weight: 600;">
+                    <i class="ri-file-excel-line"></i> تصدير
+                  </button>
+                  <button class="btn btn-secondary" onclick="exportFinancialsExcel()"><i class="ri-file-excel-2-line"></i> تصدير Excel</button>
+                </div>
+              </div>
+              <div class="table-wrapper">
+                <table class="table" id="balancesRegistryTable">
+                  <thead>
+                    <tr>
+                      <th>الطالب / الحساب</th>
+                      <th>الدفعة</th>
+                      <th>إجمالي الرسوم المطلوبة</th>
+                      <th>إجمالي المُسدّد</th>
+                      <th>المديونية (المتبقي)</th>
+                      <th>الإجراءات (التفاصيل)</th>
+                    </tr>
+                  </thead>
+                  <tbody id="balancesRegistryBody">
+                    <tr>
+                      <td colspan="6" class="text-center">جاري تحميل سجل الأرصدة...</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 3: Financial Actions -->
+          <div id="adminTab_actions" style="display: none;">
+            <div class="financials-grid">
+              
+              <!-- Create Fee Form -->
+              <div class="form-card dialog-card" style="align-self: start;">
+                <h3 style="color: var(--primary);"><i class="ri-add-box-line"></i> فرض / إضافة رسوم جديدة</h3>
+                <hr style="border-top: 1px solid var(--border); margin: 15px 0;">
+                <form id="createFeeForm">
+                  <div class="form-group">
+                    <label>تطبيق الرسوم على:</label>
+                    <select id="feeDistType" onchange="toggleFeeDistType()" required class="form-control">
+                      <option value="student">طالب محدد فقط</option>
+                      <option value="batch">دفعة كاملة (جميع طلاب الدفعة)</option>
+                    </select>
+                  </div>
+                  
+                  <div class="form-group" id="feeStudentGroup">
+                    <label>اختر الطالب المعني:</label>
+                    <select id="feeStudentId" style="width: 100%;" class="form-control">
+                      <option value="">جاري تحميل قائمة الطلاب...</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group" id="feeBatchGroup" style="display: none;">
+                    <label>اختر الدفعة المستهدفة:</label>
+                    <select id="feeBatchId" class="form-control">
+                      <option value="">جاري تحميل الدفعات الأكاديمية...</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group">
+                    <label>عنوان / سبب الرسوم</label>
+                    <input type="text" id="feeTitle" placeholder="مثال: رسوم التسجيل للفصل الدراسي الأول" class="form-control" required>
+                  </div>
+
+                  <div class="form-group-row">
+                    <div class="form-group">
+                      <label>المبلغ المطلوب ($)</label>
+                      <input type="number" id="feeAmount" min="0" step="0.01" placeholder="0.00" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                      <label>آخر موعد للسداد (الاستحقاق)</label>
+                      <input type="date" id="feeDueDate" class="form-control" required>
+                    </div>
+                  </div>
+
+                  <button type="submit" class="btn btn-primary btn-block" style="font-weight: 700; padding: 12px;"><i class="ri-add-circle-line"></i> إضافة وتطبيق الرسوم</button>
+                </form>
+              </div>
+
+              <!-- Record Payment Form -->
+              <div class="form-card dialog-card" style="align-self: start;">
+                <h3 style="color: var(--success);"><i class="ri-hand-coin-line"></i> تسجيل دفعة مالية يدوياً</h3>
+                <hr style="border-top: 1px solid var(--border); margin: 15px 0;">
+                <form id="recordPaymentForm">
+                  <div class="form-group">
+                    <label>اسم الطالب المسدِّد</label>
+                    <select id="paymentStudentId" required class="form-control">
+                      <option value="">جاري تحميل قائمة الطلاب...</option>
+                    </select>
+                  </div>
+
+                  <div class="form-group-row">
+                    <div class="form-group">
+                      <label>المبلغ المدفوع ($)</label>
+                      <input type="number" id="paymentAmount" min="0.01" step="0.01" placeholder="0.00" class="form-control" required>
+                    </div>
+                    <div class="form-group">
+                      <label>وسيلة الدفع</label>
+                      <select id="paymentMethod" required class="form-control">
+                        <option value="cash">نقداً (Cash)</option>
+                        <option value="bank_transfer">تحويل بنكي</option>
+                        <option value="card">بطاقة صراف</option>
+                        <option value="deposit">إيداع مباشر</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div class="form-group">
+                    <label>رقم إيصال الدفع / المرجع</label>
+                    <input type="text" id="paymentReference" placeholder="رقم المعاملة لتسهيل المراجعة مستقبلاً" class="form-control" required>
+                  </div>
+
+                  <div class="form-group">
+                    <label>ملاحظات حول الدفعة (اختياري)</label>
+                    <textarea id="paymentNotes" rows="2" placeholder="أية تفاصيل إضافية..." class="form-control"></textarea>
+                  </div>
+
+                  <button type="submit" class="btn btn-success btn-block" style="font-weight: 700; padding: 12px;"><i class="ri-check-double-line"></i> اعتماد وتسجيل المدفوع</button>
+                </form>
+              </div>
+            </div>
+          </div>
+
+          <!-- TAB 4: Bank Settings -->
+          <div id="adminTab_settings" style="display: none;">
+            <div class="registry-section dialog-card" style="margin-top: 0; max-width: 700px; margin: auto;">
+              <h3 style="margin-bottom: 20px;"><i class="ri-bank-card-line text-primary"></i> بيانات الحساب البنكي لاستقبال مدفوعات الطلاب</h3>
+              <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 20px;">البيانات المدخلة هنا ستظهر للطلاب عند ضغطهم على خيار "سداد الرسوم الآن" في لوحاتهم الخاصة.</p>
+              <form id="bankSettingsForm">
+                <div class="form-group-row">
+                  <div class="form-group">
+                    <label>اسم البنك</label>
+                    <input type="text" id="settingBankName" placeholder="مثال: بنك الخرطوم" class="form-control" required>
+                  </div>
+                  <div class="form-group">
+                    <label>رقم الحساب البنكي</label>
+                    <input type="text" id="settingBankAccount" class="form-control" required>
+                  </div>
+                </div>
+                <div class="form-group-row">
+                  <div class="form-group">
+                    <label>رقم الآيبان (IBAN)</label>
+                    <input type="text" id="settingBankIban" dir="ltr" placeholder="SA00..." class="form-control" required>
+                  </div>
+                  <div class="form-group">
+                    <label>اسم المستفيد (الكلية/الإدارة)</label>
+                    <input type="text" id="settingBankBeneficiary" class="form-control" required>
+                  </div>
+                </div>
+                <hr style="border-top: 1px solid var(--border); margin: 20px 0;">
+                <button type="submit" class="btn btn-primary" style="padding: 12px 30px; font-weight: 700;"><i class="ri-save-3-line"></i> حفظ إعدادات البنك</button>
+              </form>
+            </div>
+          </div>
+
+          <!-- Script to toggle Admin Tabs -->
+          <script>
+            function switchAdminTab(tabName) {
+              const tabs = ['dashboard', 'registry', 'actions', 'settings'];
+              tabs.forEach(t => {
+                const content = document.getElementById('adminTab_' + t);
+                const btn = document.getElementById('tabBtn_' + t);
+                if (content && btn) {
+                  content.style.display = (t === tabName) ? 'block' : 'none';
+                  btn.classList.toggle('active', t === tabName);
+                }
+              });
+            }
+          </script>
+        </div>
+
+      </div>
+  </div>
+
+  <!-- Student Billing Detail Modal -->
+  <div class="modal-overlay" id="billingModal">
+    <div class="modal-box" style="max-width: 850px; padding: 0; border-radius: 20px; overflow: hidden;">
+      
+      <!-- Gradient Hero Header -->
+      <div style="background: linear-gradient(135deg, #0d3b66, #1a6fc4); padding: 30px; position: relative; color: white;">
+        <div style="position:absolute;top:-40px;left:-40px;width:200px;height:200px;background:rgba(255,255,255,0.04);border-radius:50%;pointer-events:none;"></div>
+        <div style="position:absolute;bottom:-60px;right:-30px;width:240px;height:240px;background:rgba(255,255,255,0.03);border-radius:50%;pointer-events:none;"></div>
+        
+        <button onclick="CBS.closeModal('billingModal')" style="position:absolute;top:20px;right:20px;background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:34px;height:34px;color:white;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2;transition:background 0.2s;">
+          <i class="ri-close-line"></i>
+        </button>
+
+        <div style="display: flex; justify-content: space-between; align-items: flex-end; position: relative; z-index: 1; flex-wrap: wrap; gap: 20px;">
+          <div>
+            <div style="font-size: 0.85rem; text-transform: uppercase; letter-spacing: 1px; opacity: 0.8; font-weight: 700; margin-bottom: 5px;">كشف حساب الطالب</div>
+            <h2 id="modalStudentName" style="margin: 0 0 5px 0; font-size: 1.6rem; font-weight: 800;">-</h2>
+            <div style="display: flex; gap: 10px; align-items: center;">
+              <span id="modalStudentEmail" style="opacity: 0.9; font-size: 0.9rem;">-</span>
+              <span id="modalStudentBatch" style="background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: 700;">-</span>
+            </div>
+          </div>
+          
+          <div style="text-align: left; background: rgba(0,0,0,0.15); padding: 15px 25px; border-radius: 16px; backdrop-filter: blur(10px);">
+            <div style="font-size: 0.85rem; opacity: 0.8; margin-bottom: 5px;">المديونية المتبقية</div>
+            <div id="modalBalance" style="font-size: 2.2rem; font-weight: 900; line-height: 1;">0.00 $</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Stats Strip -->
+      <div style="display: grid; grid-template-columns: 1fr 1fr; background: var(--bg-card); border-bottom: 1px solid var(--border);">
+        <div style="padding: 15px 30px; border-left: 1px solid var(--border);">
+          <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; margin-bottom: 4px;"><i class="ri-wallet-3-line"></i> إجمالي الرسوم المطلوبة</div>
+          <div id="modalTotalFees" style="font-size: 1.3rem; font-weight: 800; color: var(--text-main);">0.00 $</div>
+        </div>
+        <div style="padding: 15px 30px;">
+          <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; margin-bottom: 4px;"><i class="ri-checkbox-circle-line"></i> إجمالي ما تم سداده</div>
+          <div id="modalTotalPaid" style="font-size: 1.3rem; font-weight: 800; color: var(--success);">0.00 $</div>
+        </div>
+      </div>
+
+      <div class="modal-body" style="padding: 30px;">
+        <!-- Breakdown tables in Modal -->
+        <h4 style="margin-bottom: 15px; font-weight: 800; display: flex; align-items: center; gap: 8px; color: var(--text-main);"><i class="ri-file-list-3-line text-primary"></i> الرسوم الدراسية المطبقة</h4>
+        <div class="table-wrapper mb-4" style="border-radius: 12px; border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow-sm);">
+          <table class="table" style="margin: 0;">
+            <thead style="background: var(--bg-body);">
+              <tr>
+                <th>البيان</th>
+                <th>القيمة</th>
+                <th>المدفوع</th>
+                <th>المتبقي</th>
+                <th>تاريخ الاستحقاق</th>
+                <th>الحالة</th>
+              </tr>
+            </thead>
+            <tbody id="modalFeesBody">
+              <tr><td colspan="6" class="text-center">لا توجد رسوم مسجلة</td></tr>
+            </tbody>
+          </table>
+        </div>
+
+        <h4 style="margin-bottom: 15px; font-weight: 800; display: flex; align-items: center; gap: 8px; color: var(--text-main);"><i class="ri-history-line text-primary"></i> سجل الدفعات المسددة</h4>
+        <div class="table-wrapper" style="border-radius: 12px; border: 1px solid var(--border); overflow: hidden; box-shadow: var(--shadow-sm);">
+          <table class="table" style="margin: 0;">
+            <thead style="background: var(--bg-body);">
+              <tr>
+                <th>المبلغ</th>
+                <th>طريقة الدفع</th>
+                <th>رقم الإيصال</th>
+                <th>التاريخ</th>
+                <th>ملاحظات</th>
+              </tr>
+            </thead>
+            <tbody id="modalPaymentsBody">
+              <tr><td colspan="5" class="text-center">لا توجد مدفوعات مسجلة</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+      
+      <div style="padding: 20px 30px; background: var(--bg-body); border-top: 1px solid var(--border); display: flex; justify-content: flex-start;">
+        <button class="btn btn-primary" onclick="printStatement()" style="font-weight: 700; display: flex; align-items: center; gap: 8px; padding: 12px 24px; border-radius: 30px;">
+          <i class="ri-printer-line"></i> طباعة كشف الحساب (PDF)
+        </button>
+      </div>
+    </div>
+  </div>
+
+  
+  <!-- ================= Pay Now Modal ================= -->
+  <div id="payNowModal" class="modal-overlay">
+    <div class="modal-box" style="max-width: 480px; padding: 0; border-radius: 20px; overflow: hidden;">
+      <!-- Header -->
+      <div style="background: linear-gradient(135deg, #0d3b66, #1a6fc4); padding: 22px 20px 18px; display:flex; align-items:center; justify-content:space-between;">
+        <div>
+          <div style="font-size:1.15rem;font-weight:800;color:white;display:flex;align-items:center;gap:8px;">
+            <i class="ri-bank-card-line"></i> رفع إشعار سداد
+          </div>
+          <div style="font-size:0.78rem;color:rgba(255,255,255,0.7);margin-top:3px;">سدد ثم ارفع الإيصال للإدارة</div>
+        </div>
+        <button onclick="CBS.closeModal('payNowModal')" style="background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:34px;height:34px;color:white;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+          <i class="ri-close-line"></i>
+        </button>
+      </div>
+      <div class="modal-body" style="padding: 20px;">
+        <!-- Bank Info Card -->
+        <div style="background:var(--bg-body);border:1px solid var(--border);border-radius:14px;padding:14px 16px;margin-bottom:18px;">
+          <div style="font-size:0.72rem;font-weight:700;color:var(--text-muted);letter-spacing:0.5px;text-transform:uppercase;margin-bottom:10px;">بيانات التحويل البنكي</div>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+            <div style="background:var(--bg-card);border-radius:10px;padding:10px;">
+              <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:3px;">اسم البنك</div>
+              <div id="bankNameSpan" style="font-size:0.88rem;font-weight:600;color:var(--text-primary);">...</div>
+            </div>
+            <div style="background:var(--bg-card);border-radius:10px;padding:10px;">
+              <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:3px;">اسم المستفيد</div>
+              <div id="bankBeneficiarySpan" style="font-size:0.88rem;font-weight:600;color:var(--text-primary);">...</div>
+            </div>
+            <div style="background:var(--bg-card);border-radius:10px;padding:10px;">
+              <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:3px;">رقم الحساب</div>
+              <div id="bankAccountSpan" style="font-size:0.88rem;font-weight:600;color:var(--text-primary);">...</div>
+            </div>
+            <div style="background:var(--bg-card);border-radius:10px;padding:10px;">
+              <div style="font-size:0.7rem;color:var(--text-muted);margin-bottom:3px;">IBAN</div>
+              <div id="bankIbanSpan" dir="ltr" style="font-size:0.78rem;font-weight:600;color:var(--text-primary);word-break:break-all;">...</div>
+            </div>
+          </div>
+        </div>
+
+        <form id="studentPaymentRequestForm">
+          <div class="form-group" style="margin-bottom:14px;">
+            <label style="font-weight:600;font-size:0.88rem;color:var(--text-secondary);display:block;margin-bottom:6px;">المبلغ المحوَّل (ج.س)</label>
+            <input type="number" id="requestAmount" min="0.01" step="0.01" placeholder="0.00" class="form-control" required style="font-size:1.1rem;font-weight:700;text-align:center;">
+          </div>
+          <div class="form-group" style="margin-bottom:14px;">
+            <label style="font-weight:600;font-size:0.88rem;color:var(--text-secondary);display:block;margin-bottom:6px;">طريقة الدفع</label>
+            <select id="requestPaymentMethod" class="form-control" required>
+              <option value="bank_transfer">تحويل بنكي</option>
+              <option value="deposit">إيداع مباشر</option>
+              <option value="cash">نقداً</option>
+              <option value="card">بطاقة صراف</option>
+            </select>
+          </div>
+          <div class="form-group" style="margin-bottom:14px;">
+            <label style="font-weight:600;font-size:0.88rem;color:var(--text-secondary);display:block;margin-bottom:6px;">صورة الإيصال / وصل التحويل</label>
+            <input type="file" id="requestFile" accept="image/*,.pdf" class="form-control" style="padding-top: 7px;" required>
+          </div>
+          <div class="form-group" style="margin-bottom:18px;">
+            <label style="font-weight:600;font-size:0.88rem;color:var(--text-secondary);display:block;margin-bottom:6px;">رقم المرجع (اختياري)</label>
+            <input type="text" id="requestReference" placeholder="رقم العملية أو أي ملاحظة..." class="form-control">
+          </div>
+          <button type="submit" class="btn btn-primary btn-block" style="padding: 13px; font-size: 1rem; font-weight:800; border-radius:14px;">
+            <i class="ri-upload-cloud-2-line"></i> إرسال الإشعار للإدارة
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+
+<div id="toast-container" class="toast-container"></div>
+
+  <script src="/js/app.js?v=2026073125"></script>
+  <script src="/js/socket-client.js?v=2026073125" defer></script>
+  <script>
+    /* كشف الحساب: كان يُطبع عبر iframe + window.print()، وهذا لا يعمل إطلاقاً
+       داخل WebView أندرويد (زر الطباعة لا يستجيب على الهاتف). صار يولّد PDF
+       ويُنزّله في المتصفح أو يفتح نافذة الحفظ/المشاركة داخل التطبيق. */
+    function printStatement() {
+      const txt = id => (document.getElementById(id)?.innerText || '').trim();
+      const studentName  = txt('modalStudentName');
+      const studentEmail = txt('modalStudentEmail');
+      const studentBatch = txt('modalStudentBatch');
+      const totalFees    = txt('modalTotalFees');
+      const totalPaid    = txt('modalTotalPaid');
+      const totalBalance = txt('modalBalance');
+
+      const body = document.querySelector('#billingModal .modal-body');
+      if (!body) {
+        CBS.toast('لا يوجد كشف حساب معروض', '', 'warning');
+        return;
+      }
+      const printContents = body.innerHTML;
+
+      // كل المُحدِّدات مقيَّدة بـ .cbs-pdf-stage حتى لا تتسرب لتنسيق الصفحة الحية
+      const html = `
+        <style>
+          .cbs-pdf-stage { line-height: 1.6; }
+          .cbs-pdf-stage .invoice-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 3px solid #0d3b66; padding-bottom: 20px; margin-bottom: 26px; }
+          .cbs-pdf-stage .invoice-header h1 { margin: 0; color: #0d3b66; font-size: 24px; font-weight: 800; }
+          .cbs-pdf-stage .invoice-header p { margin: 5px 0 0; color: #64748b; font-size: 13px; }
+          .cbs-pdf-stage .invoice-meta { text-align: left; font-size: 12px; color: #64748b; }
+          .cbs-pdf-stage .invoice-meta strong { color: #0f172a; }
+          .cbs-pdf-stage .info-grid { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 24px; background: #f8fafc; padding: 18px; border-radius: 12px; border: 1px solid #e2e8f0; }
+          .cbs-pdf-stage .info-box { flex: 1; }
+          .cbs-pdf-stage .info-label { font-size: 11px; color: #64748b; margin-bottom: 4px; }
+          .cbs-pdf-stage .info-val { font-size: 15px; font-weight: bold; color: #0f172a; word-break: break-word; }
+          .cbs-pdf-stage .summary-grid { display: flex; gap: 14px; margin-bottom: 28px; }
+          .cbs-pdf-stage .summary-box { flex: 1; padding: 16px; border: 1px solid #e2e8f0; border-radius: 10px; text-align: center; background: #ffffff !important; }
+          .cbs-pdf-stage .summary-box.balance { background: #fee2e2 !important; border-color: #fca5a5; }
+          .cbs-pdf-stage .summary-box.balance .info-val { color: #b91c1c; font-size: 20px; }
+          .cbs-pdf-stage .summary-box.paid .info-val { color: #15803d; }
+          .cbs-pdf-stage h4 { color: #0d3b66; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; margin: 26px 0 14px; font-size: 16px; }
+          .cbs-pdf-stage table { width: 100%; border-collapse: collapse; margin-bottom: 24px; font-size: 12px; }
+          .cbs-pdf-stage th { background: #f1f5f9 !important; padding: 10px; text-align: right; border-bottom: 2px solid #cbd5e1; color: #334155; font-weight: 700; }
+          .cbs-pdf-stage td { padding: 10px; border-bottom: 1px solid #e2e8f0; color: #1e293b; }
+          .cbs-pdf-stage .badge { display: inline-block; padding: 4px 8px; border-radius: 6px; font-size: 10px; font-weight: bold; }
+          .cbs-pdf-stage .badge-success { background: #dcfce7 !important; color: #166534; }
+          .cbs-pdf-stage .badge-warning { background: #fef9c3 !important; color: #854d0e; }
+          .cbs-pdf-stage .badge-primary { background: #e0e7ff !important; color: #3730a3; }
+          .cbs-pdf-stage .footer-note { margin-top: 36px; text-align: center; font-size: 11px; color: #94a3b8; border-top: 1px dashed #cbd5e1; padding-top: 16px; }
+          .cbs-pdf-stage .table-wrapper { overflow: visible !important; max-height: none !important; }
+        </style>
+
+        <div class="invoice-header">
+          <div>
+            <h1>جامعة النصر التقنية</h1>
+            <p>كشف الحساب المالي المعتمد</p>
+          </div>
+          <div class="invoice-meta">
+            <div>تاريخ الإصدار: <strong>${new Date().toLocaleDateString('ar-EG')}</strong></div>
+            <div>وقت الإصدار: <strong>${new Date().toLocaleTimeString('ar-EG')}</strong></div>
+          </div>
+        </div>
+
+        <div class="info-grid">
+          <div class="info-box">
+            <div class="info-label">اسم الطالب</div>
+            <div class="info-val">${CBS.escapeHTML(studentName)}</div>
+          </div>
+          <div class="info-box">
+            <div class="info-label">البريد الإلكتروني</div>
+            <div class="info-val">${CBS.escapeHTML(studentEmail)}</div>
+          </div>
+          <div class="info-box">
+            <div class="info-label">الدفعة</div>
+            <div class="info-val">${CBS.escapeHTML(studentBatch)}</div>
+          </div>
+        </div>
+
+        <div class="summary-grid">
+          <div class="summary-box">
+            <div class="info-label">إجمالي الرسوم المطلوبة</div>
+            <div class="info-val">${CBS.escapeHTML(totalFees)}</div>
+          </div>
+          <div class="summary-box paid">
+            <div class="info-label">إجمالي ما تم سداده</div>
+            <div class="info-val">${CBS.escapeHTML(totalPaid)}</div>
+          </div>
+          <div class="summary-box balance">
+            <div class="info-label">المديونية المتبقية</div>
+            <div class="info-val">${CBS.escapeHTML(totalBalance)}</div>
+          </div>
+        </div>
+
+        ${printContents}
+
+        <div class="footer-note">
+          هذا المستند صادر من النظام المالي الإلكتروني لجامعة النصر التقنية ولا يحتاج إلى توقيع.
+        </div>`;
+
+      const safeName = (studentName || 'statement').replace(/[^\p{L}\p{N}]+/gu, '_');
+      CBS.exportPdfWithFeedback(html, { filename: `statement_${safeName}.pdf` });
+    }
+
+    // State management
+    let studentsCached = [];
+    let balancesCache = [];
+    let batchesCached = [];
+
+    // Authenticate and initialize
+    if (CBS.init()) {
+      renderDashboardByRole();
+    }
+
+    // Role switcher
+    async function renderDashboardByRole() {
+      const user = CBS.getUser();
+      const roles = user.roles || [];
+      const isDean = roles.includes('dean');
+      const isStudentOrLeader = roles.includes('student') || roles.includes('leader');
+
+      if (isDean) {
+        document.getElementById('deanView').style.display = 'block';
+        const studentView = document.getElementById('studentView');
+        if(studentView) studentView.remove();
+        document.getElementById('userRoleSubtitle').innerText = 'لوحة التحكم المالية للعمادة';
+        await initDeanView();
+      } else if (isStudentOrLeader) {
+        document.getElementById('studentView').style.display = 'block';
+        const deanView = document.getElementById('deanView');
+        if(deanView) deanView.remove();
+        document.getElementById('userRoleSubtitle').innerText = 'لوحة كشف الحساب المالي';
+        // ✅ إظهار زر السداد فقط للطلاب
+        const payBtn = document.getElementById('payNowBtn');
+        if (payBtn) payBtn.style.display = 'flex';
+        await initStudentView(user.id || user._id);
+      } else {
+        const studentView = document.getElementById('studentView');
+        const deanView = document.getElementById('deanView');
+        if(studentView) studentView.remove();
+        if(deanView) deanView.remove();
+        document.getElementById('userRoleSubtitle').innerText = 'صلاحيات الوصول المالية';
+        
+        const container = document.querySelector('.financials-wrap') || document.body;
+        const alertCard = document.createElement('div');
+        alertCard.className = 'card p-5 text-center mt-4';
+        alertCard.style.background = 'var(--bg-card, #1e293b)';
+        alertCard.style.borderRadius = '16px';
+        alertCard.style.border = '1px solid var(--border)';
+        alertCard.innerHTML = `
+          <div style="font-size: 3.5rem; color: #64748b; margin-bottom: 15px;"><i class="ri-shield-keyhole-line"></i></div>
+          <h3 style="color: var(--text-main, #fff); font-weight: 700; margin-bottom: 10px;">لا توجد معاملات مالية لهذا الحساب</h3>
+          <p style="color: var(--text-muted, #94a3b8); font-size: 1rem; max-width: 500px; margin: 0 auto 20px;">
+            نظام المالية مخصص للطلاب لمعرفة الرسوم وسدادها، ولعمادة الكلية لإدارة الخزينة ومراجعة الإيصالات. أعضاء هيئة التدريس لا يمتلكون سجلات رسوم في هذا القسم.
+          </p>
+          <button onclick="location.href='/dashboard.html'" class="btn btn-primary px-4 py-2" style="border-radius: 10px; font-weight: 600;">
+            <i class="ri-arrow-right-line"></i> العودة للرئيسية
+          </button>
+        `;
+        container.appendChild(alertCard);
+      }
+    }
+
+    // ================= STUDENT SCRIPTS =================
+    async function initStudentView(studentId) {
+      await loadBankSettings(false);
+      await loadStudentBillingData(studentId);
+      await loadStudentPaymentRequests();
+
+      const requestForm = document.getElementById('studentPaymentRequestForm');
+      if (requestForm) {
+        requestForm.addEventListener('submit', handleStudentPaymentRequestSubmit);
+      }
+    }
+
+    function renderStudentBillingData(data) {
+        const user = CBS.getUser();
+        const name = user.name || 'الطالب';
+
+        // Hero card
+        document.getElementById('heroStudentName').textContent = name;
+        document.getElementById('heroBalanceDue').textContent = (data.balance || 0).toFixed(2);
+        document.getElementById('heroTotalFees').textContent = (data.totalFees || 0).toFixed(2) + ' ج.س';
+        document.getElementById('heroTotalPaid').textContent = (data.totalPaid || 0).toFixed(2) + ' ج.س';
+
+        // Color hero card red if all paid, green if balance=0
+        const heroCard = document.getElementById('balanceHeroCard');
+        if (heroCard) {
+          if ((data.balance || 0) <= 0) {
+            heroCard.style.background = 'linear-gradient(135deg, #065f46 0%, #059669 60%, #10b981 100%)';
+            heroCard.style.boxShadow = '0 12px 40px rgba(6,95,70,0.35)';
+          } else if ((data.balance || 0) > 0) {
+            heroCard.style.background = 'linear-gradient(135deg, #0d3b66 0%, #1a6fc4 60%, #2176c7 100%)';
+            heroCard.style.boxShadow = '0 12px 40px rgba(13,59,102,0.35)';
+          }
+        }
+
+        // Fees list as clean cards/rows
+        const feesContainer = document.getElementById('feesListContainer');
+        if (!feesContainer) return;
+        if (!data.fees || data.fees.length === 0) {
+          feesContainer.innerHTML = `
+            <div style="text-align:center;padding:32px 16px;color:var(--text-muted);">
+              <i class="ri-inbox-line" style="font-size:2.5rem;display:block;margin-bottom:10px;"></i>
+              لا توجد رسوم دراسية مسجلة عليك حالياً.
+            </div>`;
+        } else {
+          // الحالات كما هي في نموذج Fee بالخادم: paid / partially_paid / pending
+          const statusConfig = {
+            paid:           { label: 'مدفوع بالكامل', color: '#22c55e', bg: 'rgba(34,197,94,0.1)', icon: 'ri-checkbox-circle-fill' },
+            partially_paid: { label: 'مدفوع جزئياً',  color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', icon: 'ri-time-line' },
+            pending:        { label: 'غير مدفوع',     color: '#ef4444', bg: 'rgba(239,68,68,0.1)',  icon: 'ri-close-circle-fill' },
+          };
+          feesContainer.innerHTML = data.fees.map((f, idx) => {
+            const paid = f.paidAmount || 0;
+            const sc = statusConfig[f.status] || statusConfig.pending;
+            const remaining = Math.max(0, f.amount - paid).toFixed(2);
+            const pct = f.amount > 0 ? Math.min(100, (paid / f.amount) * 100) : 0;
+            const dueDate = f.dueDate ? new Date(f.dueDate).toLocaleDateString('ar-EG', { year:'numeric', month:'short', day:'numeric' }) : '—';
+            return `
+              <div style="
+                padding: 16px;
+                border-radius: 14px;
+                border: 1px solid var(--border);
+                background: var(--bg-body);
+                margin-bottom: ${idx < data.fees.length - 1 ? '10px' : '0'};
+              ">
+                <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:10px;">
+                  <div>
+                    <div style="font-size:0.95rem;font-weight:700;color:var(--text-primary);margin-bottom:3px;">${CBS.escapeHTML ? CBS.escapeHTML(f.title) : f.title}</div>
+                    <div style="font-size:0.78rem;color:var(--text-muted);">استحقاق: ${dueDate}</div>
+                  </div>
+                  <div style="
+                    background:${sc.bg}; color:${sc.color};
+                    border-radius:20px; padding:4px 10px;
+                    font-size:0.75rem; font-weight:700; white-space:nowrap;
+                    display:flex;align-items:center;gap:4px;
+                  ">
+                    <i class="${sc.icon}"></i> ${sc.label}
+                  </div>
+                </div>
+                <!-- Progress bar -->
+                <div style="height:6px;background:var(--border);border-radius:99px;overflow:hidden;margin-bottom:10px;">
+                  <div style="height:100%;width:${pct.toFixed(1)}%;background:${sc.color};border-radius:99px;transition:width 0.6s;"></div>
+                </div>
+                <div style="display:flex;gap:12px;font-size:0.8rem;flex-wrap:wrap;">
+                  <div style="color:var(--text-muted);">الإجمالي: <strong style="color:var(--text-primary);">${f.amount.toFixed(2)} ج.س</strong></div>
+                  <div style="color:var(--text-muted);">المدفوع: <strong style="color:#22c55e;">${paid.toFixed(2)} ج.س</strong></div>
+                  <div style="color:var(--text-muted);">المتبقي: <strong style="color:${parseFloat(remaining) > 0 ? '#ef4444' : '#22c55e'};">${remaining} ج.س</strong></div>
+                </div>
+              </div>`;
+          }).join('');
+        }
+    }
+
+    async function loadStudentBillingData(studentId) {
+      try {
+        const cachedStr = localStorage.getItem('studentBillingCache_' + studentId);
+        if (cachedStr) {
+          try { renderStudentBillingData(JSON.parse(cachedStr)); } catch(e){}
+        }
+
+        const res = await CBS.apiGet(`/api/financials/balance/${studentId}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'حدث خطأ في تحميل كشف الحساب');
+        
+        localStorage.setItem('studentBillingCache_' + studentId, JSON.stringify(data));
+        renderStudentBillingData(data);
+      } catch (err) {
+        CBS.toast('فشل التحديث', err.message, 'error');
+      }
+    }
+
+    async function loadStudentPaymentRequests() {
+      try {
+        const res = await CBS.apiGet('/api/financials/payment-requests/my');
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'حدث خطأ في تحميل إشعارات السداد');
+
+        const container = document.getElementById('paymentRequestsContainer');
+        if (!container) return;
+
+        if (!data.requests || data.requests.length === 0) {
+          container.innerHTML = `
+            <div style="text-align:center;padding:32px 16px;color:var(--text-muted);">
+              <i class="ri-file-upload-line" style="font-size:2.5rem;display:block;margin-bottom:10px;opacity:0.5;"></i>
+              <div style="font-weight:600;margin-bottom:6px;color:var(--text-secondary);">لا يوجد طلبات سداد مرفوعة</div>
+              <div style="font-size:0.85rem;">بعد تحويل المبلغ، اضغط "سداد الرسوم" لرفع الإشعار.</div>
+            </div>`;
+        } else {
+          const stMap = {
+            pending:  { label: 'قيد المراجعة', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', icon: 'ri-time-line' },
+            approved: { label: 'مقبول',         color: '#22c55e', bg: 'rgba(34,197,94,0.1)',  icon: 'ri-checkbox-circle-fill' },
+            rejected: { label: 'مرفوض',         color: '#ef4444', bg: 'rgba(239,68,68,0.1)',  icon: 'ri-close-circle-fill' },
+          };
+          container.innerHTML = data.requests.map((r, idx) => {
+            const st = stMap[r.status] || stMap.pending;
+            const dateStr = CBS.formatDateTime ? CBS.formatDateTime(r.createdAt) : new Date(r.createdAt).toLocaleDateString('ar-EG');
+            const rejNote = r.rejectionReason ? `
+              <div style="margin-top:10px;padding:8px 12px;background:rgba(239,68,68,0.08);border-radius:10px;border-right:3px solid #ef4444;font-size:0.82rem;color:var(--text-secondary);">
+                <i class="ri-information-line"></i> ملاحظة الإدارة: ${CBS.escapeHTML ? CBS.escapeHTML(r.rejectionReason) : r.rejectionReason}
+              </div>` : '';
+            return `
+              <div style="
+                display:flex;align-items:flex-start;gap:14px;padding:14px 16px;
+                border-radius:14px;border:1px solid var(--border);background:var(--bg-body);
+                margin-bottom:${idx < data.requests.length - 1 ? '10px' : '0'};
+              ">
+                <!-- Receipt thumbnail -->
+                <a href="/uploads/misc/${r.receiptFile}" target="_blank" style="flex-shrink:0;display:block;border-radius:10px;overflow:hidden;border:1px solid var(--border);">
+                  <img src="/uploads/misc/${r.receiptFile}" alt="إشعار"
+                       onerror="this.parentElement.innerHTML='<div style=\'width:52px;height:52px;display:flex;align-items:center;justify-content:center;background:var(--bg-input);border-radius:10px;\'><i class=\'ri-image-line\' style=\'font-size:1.4rem;color:var(--text-muted);\'></i></div>'"
+                       style="width:52px;height:52px;object-fit:cover;display:block;">
+                </a>
+                <div style="flex:1;min-width:0;">
+                  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px;">
+                    <div>
+                      <div style="font-size:1rem;font-weight:700;color:var(--text-primary);">${(r.amount || 0).toFixed(2)} <span style="font-size:0.75rem;font-weight:500;color:var(--text-muted);">ج.س</span></div>
+                      <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">${dateStr}${r.reference ? ' · مرجع: ' + CBS.escapeHTML(r.reference) : ''}</div>
+                    </div>
+                    <div style="background:${st.bg};color:${st.color};border-radius:20px;padding:4px 10px;font-size:0.75rem;font-weight:700;white-space:nowrap;display:flex;align-items:center;gap:4px;">
+                      <i class="${st.icon}"></i> ${st.label}
+                    </div>
+                  </div>
+                  ${rejNote}
+                </div>
+              </div>`;
+          }).join('');
+        }
+      } catch (err) {
+        CBS.toast('فشل جلب إشعارات السداد', err.message, 'error');
+      }
+    }
+
+    // ================= DEAN/ADMIN SCRIPTS =================
+    async function initDeanView() {
+      // 1. Load active batches and student lists simultaneously
+      await Promise.all([
+        loadStudentsDropdowns(),
+        loadBatchesDropdown(),
+        loadBankSettings(true)
+      ]);
+
+      // 2. Load Balances Registry
+      await loadBalancesRegistry();
+      
+      // 3. Load Pending Payment Requests
+      await loadPendingRequests();
+
+      // 4. Register Form Event Listeners
+      document.getElementById('createFeeForm').addEventListener('submit', handleCreateFeeSubmit);
+      document.getElementById('recordPaymentForm').addEventListener('submit', handleRecordPaymentSubmit);
+      document.getElementById('bankSettingsForm').addEventListener('submit', handleBankSettingsSubmit);
+    }
+
+    async function loadBankSettings(isAdminForm) {
+      try {
+        const res = await CBS.apiGet('/api/settings?keys=bank_name,bank_account,bank_iban,bank_beneficiary');
+        if (res.ok) {
+          const settings = await res.json();
+          if (isAdminForm) {
+            document.getElementById('settingBankName').value = settings.bank_name || '';
+            document.getElementById('settingBankAccount').value = settings.bank_account || '';
+            document.getElementById('settingBankIban').value = settings.bank_iban || '';
+            document.getElementById('settingBankBeneficiary').value = settings.bank_beneficiary || '';
+          } else {
+            document.getElementById('bankNameSpan').innerText = settings.bank_name || 'غير محدد';
+            document.getElementById('bankAccountSpan').innerText = settings.bank_account || 'غير محدد';
+            document.getElementById('bankIbanSpan').innerText = settings.bank_iban || 'غير محدد';
+            document.getElementById('bankBeneficiarySpan').innerText = settings.bank_beneficiary || 'غير محدد';
+          }
+        }
+      } catch (err) {
+        console.error('Failed to load bank settings', err);
+      }
+    }
+
+    async function handleBankSettingsSubmit(e) {
+      e.preventDefault();
+      const body = {
+        bank_name: document.getElementById('settingBankName').value.trim(),
+        bank_account: document.getElementById('settingBankAccount').value.trim(),
+        bank_iban: document.getElementById('settingBankIban').value.trim(),
+        bank_beneficiary: document.getElementById('settingBankBeneficiary').value.trim()
+      };
+      
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      const originalText = submitBtn.innerHTML;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="ri-loader-4-line"></i> جاري الحفظ...';
+
+      try {
+        const res = await CBS.apiPost('/api/settings', body);
+        const data = await res.json();
+        if (res.ok) {
+          CBS.toast('تم الحفظ', 'تم تحديث بيانات الحساب البنكي بنجاح.', 'success');
+        } else {
+          CBS.toast('فشل الحفظ', data.message || 'حدث خطأ غير متوقع', 'error');
+        }
+      } catch (err) {
+        CBS.toast('خطأ', err.message, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+      }
+    }
+
+    
+    // --- EXPORT & CACHE LOGIC ---
+    function exportBalancesToCSV() {
+      if (!balancesCache || balancesCache.length === 0) {
+        CBS.toast('تنبيه', 'لا توجد بيانات لتصديرها', 'warning');
+        return;
+      }
+      
+      let csvContent = "data:text/csv;charset=utf-8,\uFEFF";
+      csvContent += "اسم الطالب,الدفعة,إجمالي الرسوم,إجمالي المدفوع,الرصيد المتبقي\n";
+      
+      balancesCache.forEach(b => {
+        const studentName = b.student?.name || 'غير معروف';
+        const batchName = b.student?.batch?.name || 'غير محدد';
+        const total = b.totalFees || 0;
+        const paid = b.totalPaid || 0;
+        const remaining = total - paid;
+        
+        const row = `"${studentName}","${batchName}",${total},${paid},${remaining}`;
+        csvContent += row + "\n";
+      });
+      
+      const encodedUri = encodeURI(csvContent);
+      const link = document.createElement("a");
+      link.setAttribute("href", encodedUri);
+      link.setAttribute("download", "financial_balances_" + new Date().toISOString().split('T')[0] + ".csv");
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    async function loadStudentsDropdowns() {
+      try {
+        // Try the users API which the dean can always access
+        const res = await CBS.apiGet('/api/users?roles=student&limit=500');
+        const data = await CBS.readJson(res);
+        
+        let students = [];
+        if (Array.isArray(data)) students = data;
+        else if (data.users) students = data.users;
+        else if (data.data) students = data.data;
+        
+        if (students.length === 0) {
+          // Fallback: try attendance/students
+          const res2 = await CBS.apiGet('/api/attendance/students');
+          const data2 = await res2.json();
+          if (Array.isArray(data2)) students = data2;
+        }
+
+        studentsCached = students;
+
+        if (students.length === 0) {
+          const emptyOpt = `<option value="">لا يوجد طلاب مسجلون</option>`;
+          document.getElementById('feeStudentId').innerHTML = emptyOpt;
+          document.getElementById('paymentStudentId').innerHTML = emptyOpt;
+          return;
+        }
+
+        const options = students.map(s => `<option value="${s._id}">${CBS.escapeHTML(s.name)} — ${CBS.escapeHTML(s.email)}</option>`).join('');
+        
+        document.getElementById('feeStudentId').innerHTML = `<option value="">اختر الطالب...</option>` + options;
+        document.getElementById('paymentStudentId').innerHTML = `<option value="">اختر الطالب...</option>` + options;
+      } catch (err) {
+        CBS.toast('فشل جلب قائمة الطلاب', err.message, 'error');
+        const errOpt = `<option value="">خطأ في تحميل الطلاب</option>`;
+        document.getElementById('feeStudentId').innerHTML = errOpt;
+        document.getElementById('paymentStudentId').innerHTML = errOpt;
+      }
+    }
+
+    async function loadBatchesDropdown() {
+      try {
+        const res = await CBS.apiGet('/api/batches?status=active');
+        const data = await CBS.readJson(res);
+        if (data.success) {
+          batchesCached = data.batches;
+          const options = data.batches.map(b => `<option value="${b._id}">${CBS.escapeHTML(b.name)} (${CBS.escapeHTML(b.code)})</option>`).join('');
+          document.getElementById('feeBatchId').innerHTML = `<option value="">اختر الدفعة...</option>` + options;
+          
+          const filterBatchSelect = document.getElementById('filterBalancesBatch');
+          if (filterBatchSelect) {
+            filterBatchSelect.innerHTML = `<option value="">كل الدفعات</option>` + data.batches.map(b => `<option value="${b._id}">${CBS.escapeHTML(b.name)}</option>`).join('');
+          }
+        }
+      } catch (err) {
+        CBS.toast('فشل جلب قائمة الدفعات', err.message, 'error');
+      }
+    }
+
+    function toggleFeeDistType() {
+      const type = document.getElementById('feeDistType').value;
+      if (type === 'student') {
+        document.getElementById('feeStudentGroup').style.display = 'block';
+        document.getElementById('feeStudentId').setAttribute('required', 'true');
+        document.getElementById('feeBatchGroup').style.display = 'none';
+        document.getElementById('feeBatchId').removeAttribute('required');
+      } else {
+        document.getElementById('feeStudentGroup').style.display = 'none';
+        document.getElementById('feeStudentId').removeAttribute('required');
+        document.getElementById('feeBatchGroup').style.display = 'block';
+        document.getElementById('feeBatchId').setAttribute('required', 'true');
+      }
+    }
+
+    // تحديث بطاقات الملخص العلوية للعميد من بيانات السجل
+    function updateAdminSummaryCards(dataList) {
+      let totalExpected = 0, totalCollected = 0;
+      (dataList || []).forEach(b => {
+        totalExpected  += b.totalFees || 0;
+        totalCollected += b.totalPaid || 0;
+      });
+      const remaining = Math.max(0, totalExpected - totalCollected);
+      const fmt = n => n.toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ج.س';
+      const elE = document.getElementById('adminTotalExpected');
+      const elC = document.getElementById('adminTotalCollected');
+      const elR = document.getElementById('adminTotalRemaining');
+      if (elE) elE.textContent = fmt(totalExpected);
+      if (elC) elC.textContent = fmt(totalCollected);
+      if (elR) elR.textContent = fmt(remaining);
+    }
+
+    function renderBalancesRegistry(dataList) {
+        updateAdminSummaryCards(dataList);
+        const tbody = document.getElementById('balancesRegistryBody');
+        if (!dataList || dataList.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center">لا توجد سجلات حالياً</td></tr>';
+        } else {
+          const esc = CBS.escapeHTML.bind(CBS);
+          tbody.innerHTML = dataList.map((b, idx) => {
+            const studentName = b.student?.name || 'غير معروف';
+            const studentEmail = b.student?.email || '';
+            const batchName = b.student?.batch?.name || 'غير محدد';
+
+            return `
+              <tr>
+                <td>
+                  <div class="d-flex flex-column">
+                    <span class="fw-bold">${esc(studentName)}</span>
+                    <small class="text-muted">${esc(studentEmail)}</small>
+                  </div>
+                </td>
+                <td><span class="badge" style="background:var(--bg-hover);color:var(--text-main);font-size:0.75rem; border:1px solid var(--border)">${esc(batchName)}</span></td>
+                <td><span class="badge bg-primary-subtle text-primary">${(b.totalFees || 0).toFixed(2)} ج.س</span></td>
+                <td><span class="badge bg-success-subtle text-success">${(b.totalPaid || 0).toFixed(2)} ج.س</span></td>
+                <td><span class="badge bg-danger-subtle text-danger fw-bold">${Math.max(0, (b.totalFees || 0) - (b.totalPaid || 0)).toFixed(2)} ج.س</span></td>
+                <td>
+                  <button class="btn btn-sm btn-outline-primary" data-registry-idx="${idx}" onclick="openBillingFromRegistry(this)" title="عرض التفاصيل المالية"><i class="ri-eye-line"></i> كشف الحساب</button>
+                  <button class="btn btn-sm btn-outline-success" data-student-id="${esc(String(b.student?._id || ''))}" onclick="quickAddPayment(this)" title="إضافة دفعة سريعة"><i class="ri-money-dollar-circle-line"></i></button>
+                </td>
+              </tr>
+            `;
+          }).join('');
+        }
+    }
+
+    // فتح كشف الحساب عبر فهرس السجل — يتفادى كسر onclick بأسماء تحتوي علامات اقتباس
+    function openBillingFromRegistry(btn) {
+      const b = balancesCache[parseInt(btn.dataset.registryIdx, 10)];
+      if (!b || !b.student?._id) return;
+      viewStudentBillingDetails(
+        b.student._id,
+        b.student.name || 'غير معروف',
+        b.student.email || '',
+        b.student.batch?.name || 'غير محدد'
+      );
+    }
+
+    // إضافة دفعة سريعة: ينتقل لتبويب الإجراءات ويحدد الطالب مسبقاً
+    function quickAddPayment(btn) {
+      const studentId = btn.dataset.studentId;
+      switchAdminTab('actions');
+      const sel = document.getElementById('paymentStudentId');
+      if (sel && studentId) sel.value = studentId;
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    async function loadBalancesRegistry() {
+      try {
+        const cachedStr = localStorage.getItem('balancesRegistryCache');
+        if (cachedStr) {
+          try {
+            balancesCache = JSON.parse(cachedStr);
+            renderBalancesRegistry(balancesCache);
+          } catch(e){}
+        }
+
+        const res = await CBS.apiGet('/api/financials/registry');
+        if (!res || !res.ok) return;
+        const data = await res.json();
+        if (data && (data.success || Array.isArray(data))) {
+          balancesCache = Array.isArray(data) ? data : (data.data || []);
+          localStorage.setItem('balancesRegistryCache', JSON.stringify(balancesCache));
+          renderBalancesRegistry(balancesCache);
+        }
+      } catch (err) {
+        console.warn('Failed to load balances registry', err);
+      }
+    }
+
+    function filterBalancesRegistry() {
+      const searchTerm = document.getElementById('balancesSearchInput').value.toLowerCase();
+      const filterSelect = document.getElementById('filterBalancesBatch');
+      const filterBatchName = filterSelect.options[filterSelect.selectedIndex]?.text;
+      const isBatchFilterActive = filterSelect.value !== '';
+
+      const rows = document.querySelectorAll('#balancesRegistryBody tr');
+      rows.forEach(row => {
+        if(row.children.length === 1) return; // skip "No records" row
+        const name = row.children[0].innerText.toLowerCase();
+        const batch = row.children[1].innerText;
+        
+        const matchesSearch = name.includes(searchTerm) || batch.toLowerCase().includes(searchTerm);
+        const matchesBatch = !isBatchFilterActive || batch === filterBatchName;
+
+        if(matchesSearch && matchesBatch) {
+          row.style.display = '';
+        } else {
+          row.style.display = 'none';
+        }
+      });
+    }
+
+    async function handleCreateFeeSubmit(e) {
+      e.preventDefault();
+      
+      const distType = document.getElementById('feeDistType').value;
+      const studentId = document.getElementById('feeStudentId').value;
+      const batchId = document.getElementById('feeBatchId').value;
+      const title = document.getElementById('feeTitle').value;
+      const amount = parseFloat(document.getElementById('feeAmount').value);
+      const dueDate = document.getElementById('feeDueDate').value;
+
+      const body = {
+        title,
+        amount,
+        dueDate
+      };
+
+      if (distType === 'student') {
+        if (!studentId) {
+          CBS.toast('تنبيه', 'يجب اختيار الطالب لتوزيع الرسوم عليه', 'warning');
+          return;
+        }
+        body.studentId = studentId;
+      } else {
+        if (!batchId) {
+          CBS.toast('تنبيه', 'يجب تحديد الدفعة لتوزيع الرسوم على طلابها', 'warning');
+          return;
+        }
+        body.batchId = batchId;
+      }
+
+      try {
+        const res = await CBS.apiPost('/api/financials/fees', body);
+        const data = await res.json();
+        if (res.ok) {
+          CBS.toast('تمت العملية', data.message || 'تم إضافة الرسوم المالية بنجاح', 'success');
+          document.getElementById('createFeeForm').reset();
+          toggleFeeDistType();
+          await loadBalancesRegistry();
+        } else {
+          throw new Error(data.message || 'فشل إدخال الرسوم');
+        }
+      } catch (err) {
+        CBS.toast('خطأ في إضافة الرسوم', err.message, 'error');
+      }
+    }
+
+    async function handleRecordPaymentSubmit(e) {
+      e.preventDefault();
+
+      const studentId  = document.getElementById('paymentStudentId').value.trim();
+      const amountRaw  = document.getElementById('paymentAmount').value;
+      const amount     = parseFloat(amountRaw);
+      const paymentMethod = document.getElementById('paymentMethod').value;
+      const reference  = document.getElementById('paymentReference').value.trim();
+      const notes      = document.getElementById('paymentNotes').value.trim();
+
+      // ===== Frontend Validation =====
+      if (!studentId) {
+        CBS.toast('حقل مطلوب', 'يجب اختيار الطالب أولاً', 'warning');
+        document.getElementById('paymentStudentId').focus();
+        return;
+      }
+      if (!amountRaw || isNaN(amount) || amount <= 0) {
+        CBS.toast('حقل مطلوب', 'يجب إدخال مبلغ أكبر من صفر', 'warning');
+        document.getElementById('paymentAmount').focus();
+        return;
+      }
+      if (!reference) {
+        CBS.toast('حقل مطلوب', 'يجب إدخال رقم المرجع / الإيصال', 'warning');
+        document.getElementById('paymentReference').focus();
+        return;
+      }
+
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      const originalText = submitBtn.innerHTML;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="ri-loader-4-line"></i> جاري التسجيل...';
+
+      const body = { studentId, amount, paymentMethod, reference, notes };
+
+      try {
+        const res = await CBS.apiPost('/api/financials/payments', body);
+        const data = await res.json();
+        if (res.ok) {
+          CBS.toast('تم تسجيل الدفع', data.message || 'تم تسجيل الدفعة بنجاح وتحديث الرسوم', 'success');
+          document.getElementById('recordPaymentForm').reset();
+          await loadBalancesRegistry();
+        } else {
+          CBS.toast('فشل تسجيل الدفعة', data.message || 'حدث خطأ غير متوقع', 'error');
+        }
+      } catch (err) {
+        CBS.toast('خطأ في الاتصال', err.message, 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+      }
+    }
+
+    // Modal Details populating
+    async function viewStudentBillingDetails(studentId, name, email, batchName) {
+      try {
+        const res = await CBS.apiGet(`/api/financials/balance/${studentId}`);
+        const data = await res.json();
+        if (!res.ok) throw new Error(data.message || 'فشل تحميل تفاصيل الكشف');
+
+        // Populate header details
+        document.getElementById('modalStudentName').innerText = name || 'غير معروف';
+        document.getElementById('modalStudentEmail').innerText = email || 'لا يوجد بريد';
+        document.getElementById('modalStudentBatch').innerText = batchName || 'غير محدد';
+
+        // Populate summary
+        document.getElementById('modalTotalFees').innerText = data.totalFees.toFixed(2) + ' ج.س';
+        document.getElementById('modalTotalPaid').innerText = data.totalPaid.toFixed(2) + ' ج.س';
+        document.getElementById('modalBalance').innerText = data.balance.toFixed(2) + ' ج.س';
+
+        // Populate Fees Modal List
+        const feesBody = document.getElementById('modalFeesBody');
+        if (!data.fees || data.fees.length === 0) {
+          feesBody.innerHTML = '<tr><td colspan="6" class="text-center">لا توجد رسوم دراسية مسجلة</td></tr>';
+        } else {
+          feesBody.innerHTML = data.fees.map(f => {
+            const statusLabel = f.status === 'paid' ? 'مدفوع كامل' : (f.status === 'partially_paid' ? 'مدفوع جزئي' : 'قيد الانتظار');
+            const statusClass = f.status === 'paid' ? 'success' : (f.status === 'partially_paid' ? 'primary' : 'warning');
+            const remaining = Math.max(0, f.amount - f.paidAmount);
+            return `
+              <tr>
+                <td data-label="البيان">${CBS.escapeHTML(f.title)}</td>
+                <td data-label="القيمة">${f.amount.toFixed(2)} ج.س</td>
+                <td data-label="المدفوع">${(f.paidAmount || 0).toFixed(2)} ج.س</td>
+                <td data-label="المتبقي">${remaining.toFixed(2)} ج.س</td>
+                <td data-label="تاريخ الاستحقاق">${CBS.formatDate(f.dueDate)}</td>
+                <td data-label="الحالة"><span class="badge badge-${statusClass}">${statusLabel}</span></td>
+              </tr>
+            `;
+          }).join('');
+        }
+
+        // Populate Payments Modal List
+        const paymentsBody = document.getElementById('modalPaymentsBody');
+        if (!data.payments || data.payments.length === 0) {
+          paymentsBody.innerHTML = '<tr><td colspan="5" class="text-center">لا توجد مدفوعات مسجلة</td></tr>';
+        } else {
+          paymentsBody.innerHTML = data.payments.map(p => {
+            let methodLabel = p.paymentMethod;
+            if (p.paymentMethod === 'cash') methodLabel = 'نقدي';
+            else if (p.paymentMethod === 'bank_transfer') methodLabel = 'تحويل بنكي';
+            else if (p.paymentMethod === 'card') methodLabel = 'بطاقة صراف';
+            else if (p.paymentMethod === 'deposit') methodLabel = 'إيداع مباشر';
+
+            return `
+              <tr>
+                <td data-label="المبلغ">${p.amount.toFixed(2)} ج.س</td>
+                <td data-label="طريقة الدفع">${methodLabel}</td>
+                <td data-label="رقم الإيصال">${CBS.escapeHTML(p.reference || '')}</td>
+                <td data-label="التاريخ">${CBS.formatDateTime(p.paymentDate)}</td>
+                <td data-label="ملاحظات">${CBS.escapeHTML(p.notes || '—')}</td>
+              </tr>
+            `;
+          }).join('');
+        }
+
+        // النافذة الآن طبقة عائمة ثابتة (position:fixed) — تنبثق فوراً بلا حاجة للتمرير
+        CBS.openModal('billingModal');
+      } catch (err) {
+        CBS.toast('تعذر جلب تفاصيل كشف الحساب', err.message, 'error');
+      }
+    }
+
+    // ================= PAYMENT REQUESTS SCRIPTS =================
+    
+    // 1. Student submits a request
+    async function handleStudentPaymentRequestSubmit(e) {
+      e.preventDefault();
+      
+      const amount = document.getElementById('requestAmount').value;
+      const fileInput = document.getElementById('requestFile');
+      const reference = document.getElementById('requestReference').value.trim();
+      
+      if (!amount || !fileInput.files[0]) {
+        return CBS.toast('تنبيه', 'يجب إدخال المبلغ وإرفاق صورة الإشعار', 'warning');
+      }
+
+      const submitBtn = e.target.querySelector('button[type="submit"]');
+      const originalText = submitBtn.innerHTML;
+      submitBtn.disabled = true;
+      submitBtn.innerHTML = '<i class="ri-loader-4-line"></i> جاري الرفع...';
+
+      const formData = new FormData();
+      formData.append('amount', amount);
+      // الخادم يرفض الطلب بدون طريقة الدفع — حقل إلزامي
+      formData.append('paymentMethod', document.getElementById('requestPaymentMethod').value || 'bank_transfer');
+      formData.append('receiptFile', await CBS.compressImage(fileInput.files[0]));
+      if (reference) formData.append('reference', reference);
+
+      try {
+        const token = localStorage.getItem('token');
+        const res = await fetch(API_BASE + '/api/financials/payment-requests', {
+          method: 'POST',
+          headers: { 'Authorization': 'Bearer ' + token },
+          body: formData
+        });
+        
+        const data = await res.json();
+        if (res.ok) {
+          CBS.toast('تم بنجاح', data.message || 'تم الرفع بنجاح', 'success');
+          e.target.reset();
+          CBS.closeModal('payNowModal');
+          loadStudentPaymentRequests();
+        } else {
+          CBS.toast('فشل الرفع', data.message || 'حدث خطأ', 'error');
+        }
+      } catch (err) {
+        CBS.toast('خطأ اتصال', !navigator.onLine ? 'عذراً، يجب أن تكون متصلاً بالإنترنت لرفع الإشعار' : 'حدث خطأ أثناء الاتصال بالخادم', 'error');
+      } finally {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = originalText;
+      }
+    }
+
+    // 2. Dean loads pending requests
+    async function loadPendingRequests() {
+      try {
+        const res = await CBS.apiGet('/api/financials/payment-requests?status=pending');
+        if (!res || !res.ok) return;
+        const data = await res.json();
+        
+        const tbody = document.getElementById('pendingRequestsBody');
+        const requestsList = data.data?.requests || data.requests || (Array.isArray(data) ? data : []);
+        if (!requestsList || requestsList.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="text-center text-muted py-4">لا توجد إشعارات سداد معلقة</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = requestsList.map(r => {
+          const fileUrl = API_BASE + '/uploads/misc/' + encodeURIComponent(r.receiptFile || '');
+          return `
+            <tr>
+              <td class="font-bold">${CBS.escapeHTML(r.student?.name || 'طالب محذوف')}</td>
+              <td class="text-success font-bold">${r.amount.toFixed(2)} ج.س</td>
+              <td>${CBS.escapeHTML(r.reference || r.notes || '-')}</td>
+              <td>${CBS.formatDate(r.createdAt)}</td>
+              <td>
+                <a href="${fileUrl}" target="_blank" style="display: inline-block; position: relative; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); box-shadow: var(--shadow-sm); transition: transform 0.2s; background: var(--bg-card);" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+                  <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; color: white; pointer-events: none;"><i class="ri-zoom-in-line" style="font-size: 1.5rem;"></i></div>
+                  <img src="${fileUrl}" onerror="this.src='/img/placeholder.jpg'" alt="إشعار" style="width: 60px; height: 60px; object-fit: cover; display: block;" onmouseover="this.previousElementSibling.style.opacity='1'" onmouseout="this.previousElementSibling.style.opacity='0'">
+                </a>
+              </td>
+              <td>
+                <div style="display: flex; gap: 8px;">
+                  <button onclick="approvePaymentRequest('${r._id}')" class="btn btn-sm btn-success" style="padding: 4px 10px;" title="موافقة واعتماد المبلغ">
+                    <i class="ri-check-line"></i> موافقة
+                  </button>
+                  <button onclick="rejectPaymentRequest('${r._id}')" class="btn btn-sm btn-danger" style="padding: 4px 10px;" title="رفض الإشعار">
+                    <i class="ri-close-line"></i> رفض
+                  </button>
+                </div>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        console.error('Failed to load pending requests', err);
+      }
+    }
+
+    // 3. Dean Approves
+    async function approvePaymentRequest(id) {
+      if (!confirm('هل أنت متأكد من اعتماد هذا الإشعار وتحديث أرصدة الطالب؟')) return;
+      
+      try {
+        const res = await CBS.apiPost(`/api/financials/payment-requests/${id}/action`, { action: 'approve' });
+        const data = await res.json();
+        if (res.ok) {
+          CBS.toast('تم الاعتماد', data.message, 'success');
+          loadPendingRequests();
+          loadBalancesRegistry(); // Refresh main table
+        } else {
+          CBS.toast('فشل الاعتماد', data.message, 'error');
+        }
+      } catch (err) {
+        CBS.toast('خطأ اتصال', err.message, 'error');
+      }
+    }
+
+    // 4. Dean Rejects
+    async function rejectPaymentRequest(id) {
+      const reason = prompt('يرجى كتابة سبب الرفض (اختياري):');
+      if (reason === null) return; // Cancelled
+      
+      try {
+        const res = await CBS.apiPost(`/api/financials/payment-requests/${id}/action`, { 
+          action: 'reject', 
+          rejectionReason: reason 
+        });
+        const data = await res.json();
+        if (res.ok) {
+          CBS.toast('تم الرفض', data.message, 'success');
+          loadPendingRequests();
+        } else {
+          CBS.toast('فشل الرفض', data.message, 'error');
+        }
+      } catch (err) {
+        CBS.toast('خطأ اتصال', err.message, 'error');
+      }
+    }
+
+    function exportFinancialsExcel() {
+      const tableEl = document.querySelector('table');
+      if (!tableEl) { CBS.toast('لا توجد بيانات للتصدير', '', 'warning'); return; }
+      tableEl.id = tableEl.id || '__finTable';
+      CBS.exportTableToExcel(tableEl.id, `Financials_${new Date().toISOString().slice(0,10)}.xlsx`);
+    }
+
+  </script>
+</body>
+</html>
+
+

@@ -1,0 +1,725 @@
+/* ===================================================
+   mobile.css â€” Mobile-First Premium Optimizations
+   Ø¬Ø§Ù…Ø¹Ø© Ø§Ù„Ù†ØµØ± Ø§Ù„ØªÙ‚Ù†ÙŠØ© | IT College App
+   =================================================== */
+
+/* ===== Base Mobile PWA/Capacitor Feel ===== */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior-y: contain;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Prevent font scaling issues on iOS */
+html { -webkit-text-size-adjust: 100%; }
+
+/* ===== Touch-Friendly Inputs (prevent iOS zoom) ===== */
+@media (max-width: 768px) {
+  input, select, textarea { font-size: 16px !important; }
+}
+
+/* ===================================================
+   SECTION 1: Layout & Spacing (Mobile Tighter)
+   =================================================== */
+@media (max-width: 768px) {
+  .page-content {
+    padding: 12px 14px;
+    padding-bottom: 84px; /* bottom nav clearance */
+  }
+
+  /* ===== Header â€” compact ===== */
+  .main-header {
+    padding: 10px 14px;
+    padding-top: calc(10px + env(safe-area-inset-top, 0px));
+    min-height: 52px;
+  }
+
+  .header-brand { gap: 10px; }
+
+  .header-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+  }
+
+  .header-title-group strong {
+    font-size: 0.92rem;
+    letter-spacing: -0.3px;
+  }
+
+  .header-title-group small { font-size: 0.72rem; }
+
+  .header-actions { gap: 6px; }
+
+  .btn-icon {
+    width: 34px;
+    height: 34px;
+    font-size: 1rem;
+    border-radius: 10px;
+  }
+
+  /* ===== Welcome Banner â€” compact ===== */
+  .welcome-banner {
+    padding: 18px 16px;
+    gap: 12px;
+    margin-bottom: 16px;
+    border-radius: var(--radius-lg);
+    flex-direction: row;    /* side-by-side on mobile too */
+    text-align: right;
+  }
+
+  .welcome-banner-icon-wrap {
+    width: 48px;
+    height: 48px;
+    font-size: 1.5rem;
+    flex-shrink: 0;
+  }
+
+  .welcome-banner-body h2 {
+    font-size: 1.15rem;
+    margin-bottom: 2px;
+  }
+
+  .welcome-banner-body p {
+    font-size: 0.8rem;
+    opacity: 0.85;
+  }
+
+  /* ===== Stats Bar â€” 2Ã—2 grid, compact ===== */
+  .stats-bar {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 8px;
+    margin-bottom: 14px;
+  }
+
+  .stat-item {
+    padding: 11px 10px;
+    gap: 8px;
+    border-radius: var(--radius-md);
+  }
+
+  .stat-item > i {
+    width: 36px;
+    height: 36px;
+    font-size: 1.2rem;
+    border-radius: 9px;
+    flex-shrink: 0;
+  }
+
+  .stat-num { font-size: 1.2rem; }
+  .stat-label { font-size: 0.72rem; }
+
+  /* ===== Dashboard Cards â€” single col, compact ===== */
+  .dash-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  .dash-card {
+    padding: 13px 14px;
+    gap: 12px;
+    border-radius: var(--radius-md);
+  }
+
+  .dash-card-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 1.2rem;
+    border-radius: var(--radius-sm);
+  }
+
+  .dash-card-text .title { font-size: 0.88rem; }
+  .dash-card-text .subtitle { font-size: 0.75rem; }
+
+  /* ===== Section Divider ===== */
+  .section-divider {
+    font-size: 0.92rem;
+    margin: 18px 0 10px;
+  }
+
+  /* ===== Page Header ===== */
+  .page-header {
+    margin-bottom: 14px;
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .page-header-left { gap: 10px; }
+
+  .page-icon {
+    width: 38px;
+    height: 38px;
+    font-size: 1.1rem;
+    border-radius: 10px;
+  }
+
+  .page-title { font-size: 1.05rem; }
+  .page-subtitle { font-size: 0.78rem; }
+
+  /* ===== Controls Bar ===== */
+  .controls-bar {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin-bottom: 14px;
+  }
+
+  .search-input {
+    padding: 11px 40px 11px 14px;
+    font-size: 0.9rem;
+    border-radius: var(--radius-md);
+  }
+
+  /* ===== Buttons â€” compact ===== */
+  .btn {
+    padding: 11px 18px;
+    font-size: 0.88rem;
+    border-radius: var(--radius-md);
+    gap: 6px;
+  }
+
+  .btn-small {
+    padding: 7px 12px;
+    font-size: 0.78rem;
+  }
+
+  /* ===== Tables — mobile scroll ===== */
+  .table-wrapper, .table-container, .data-table-wrap, .data-table-container {
+    border-radius: var(--radius-md);
+    width: 100%;
+    max-width: 100%;
+    box-sizing: border-box;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  th, td {
+    padding: 10px 12px;
+    font-size: 0.82rem;
+  }
+
+  /* ===== Notification Cards â€” compact ===== */
+  .notif-card {
+    padding: 13px 14px;
+    border-radius: var(--radius-md);
+    margin-bottom: 8px;
+  }
+
+  .notif-title { font-size: 0.88rem; }
+  .notif-body { font-size: 0.8rem; }
+
+  /* ===== Modals â€” mobile sheet style ===== */
+  .modal-overlay {
+    align-items: flex-end; /* bottom sheet on mobile */
+  }
+
+  .modal-box {
+    width: 100%;
+    max-width: 100%;
+    max-height: 92vh;
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    transform: translateY(60px);
+  }
+
+  .modal-overlay.show .modal-box {
+    transform: translateY(0);
+  }
+
+  /* Add drag handle to modals */
+  .modal-box::before {
+    content: '';
+    display: block;
+    width: 36px;
+    height: 4px;
+    background: var(--border);
+    border-radius: 2px;
+    margin: 10px auto 0;
+    flex-shrink: 0;
+  }
+
+  .modal-header { padding: 14px 18px; }
+  .modal-body { padding: 16px 18px; }
+  .modal-footer { padding: 14px 18px; gap: 8px; }
+  .modal-title { font-size: 1rem; }
+
+  /* ===== Form Elements â€” compact ===== */
+  .form-group { margin-bottom: 14px; }
+  .form-label { font-size: 0.85rem; margin-bottom: 6px; }
+
+  .form-control {
+    padding: 10px 14px;
+    font-size: 0.9rem;
+    border-radius: var(--radius-md);
+  }
+
+  .input-wrapper .form-control { padding-right: 42px; }
+  .input-icon { right: 12px; font-size: 1rem; }
+
+  /* ===== Form group native inputs ===== */
+  .form-group input,
+  .form-group select,
+  .form-group textarea {
+    padding: 10px 14px;
+    border-radius: var(--radius-md);
+  }
+
+  /* ===== Badges â€” compact ===== */
+  .badge {
+    padding: 3px 9px;
+    font-size: 0.7rem;
+  }
+
+  /* ===== Bottom Nav â€” safe area ===== */
+  #bottom-nav {
+    padding: 5px 4px;
+    padding-bottom: calc(5px + env(safe-area-inset-bottom, 0px));
+    gap: 0;
+  }
+
+  .bnav-item {
+    font-size: 0.6rem;
+    padding: 4px 4px;
+    gap: 2px;
+    border-radius: 8px;
+  }
+
+  .bnav-item i { font-size: 1.15rem; }
+
+  .bnav-item.active i { transform: scale(1.1); }
+
+  /* ===== Grids ===== */
+  .subjects-grid,
+  .history-grid,
+  .items-grid {
+    grid-template-columns: 1fr;
+    gap: 8px;
+  }
+
+  /* ===== Cards ===== */
+  .card { border-radius: var(--radius-md); }
+
+  /* ===== Empty & Loading States ===== */
+  .empty-state,
+    .empty-state,
+  .loading-state {
+    padding: 32px 16px;
+  }
+
+  .empty-state i { font-size: 2.2rem; }
+  .calendar-date-header { padding: 12px; }
+  .calendar-date-header h3 { font-size: 1.05rem; }
+}
+
+/* ====================================================
+   PREMIUM AI-STYLE UI OVERRIDES (MOBILE SPECIFIC)
+   ==================================================== */
+@media (max-width: 768px) {
+  /* Smaller, Tighter Cards */
+  .dash-card, .stat-item, .panel, .form-card, .registry-section, .table-section, .metrics .metric {
+    padding: 14px 16px !important;
+    gap: 12px !important;
+    border-radius: 16px !important;
+  }
+  
+  /* Icons & Text */
+  .dash-card-icon, .stat-item i, .metrics .metric i {
+    width: 38px !important;
+    height: 38px !important;
+    font-size: 1.15rem !important;
+    border-radius: 10px !important;
+  }
+  .dash-card-text .title {
+    font-size: 0.92rem !important;
+  }
+  .dash-card-text .subtitle {
+    font-size: 0.75rem !important;
+    margin-top: 2px !important;
+  }
+
+  /* Financials Hero Card */
+  .hero-balance-card {
+    padding: 16px 16px 14px !important;
+    border-radius: 16px !important;
+  }
+  .hero-balance-card h2 {
+    font-size: 1.35rem !important;
+  }
+
+  /* Compact Forms */
+  .form-control, .search-input, .form input, .form select, .form textarea {
+    padding-block: 10px !important;
+    font-size: 0.85rem !important;
+  }
+  
+  /* Compact Buttons */
+  .btn, button {
+    padding: 9px 14px !important;
+    font-size: 0.85rem !important;
+  }
+}
+
+/* ====================================================
+   PREMIUM AI-STYLE UI OVERRIDES (MOBILE SPECIFIC)
+   ==================================================== */
+@media (max-width: 768px) {
+  /* Smaller, Tighter Cards */
+  .dash-card, .stat-item, .panel, .form-card, .registry-section, .table-section, .metrics .metric {
+    padding: 14px 16px !important;
+    gap: 12px !important;
+    border-radius: 16px !important;
+  }
+  
+  /* Icons & Text */
+  .dash-card-icon, .stat-item i, .metrics .metric i {
+    width: 38px !important;
+    height: 38px !important;
+    font-size: 1.15rem !important;
+    border-radius: 10px !important;
+  }
+  .dash-card-text .title {
+    font-size: 0.92rem !important;
+  }
+  .dash-card-text .subtitle {
+    font-size: 0.75rem !important;
+    margin-top: 2px !important;
+  }
+
+  /* Financials Hero Card */
+  .hero-balance-card {
+    padding: 16px 16px 14px !important;
+    border-radius: 16px !important;
+  }
+  .hero-balance-card h2 {
+    font-size: 1.35rem !important;
+  }
+
+  /* Compact Forms */
+  .form-control, .search-input, .form input, .form select, .form textarea {
+    padding-block: 10px !important;
+    font-size: 0.85rem !important;
+  }
+  
+  /* Compact Buttons */
+  .btn, button {
+    padding: 9px 14px !important;
+    font-size: 0.85rem !important;
+  }
+
+  /* ===== Inline Batch Switcher ===== */
+  .inline-batch-btn {
+    padding: 12px 14px;
+    border-radius: var(--radius-md);
+  }
+
+  .inline-batch-name { font-size: 0.95rem; }
+  .inline-batch-label { font-size: 0.7rem; }
+
+  .inline-batch-action {
+    font-size: 0.8rem;
+    padding: 5px 10px;
+    border-radius: 8px;
+  }
+
+  /* ===== Toast — bottom center on mobile ===== */
+  #toast-container {
+    position: fixed;
+    left: 50% !important;
+    right: auto !important;
+    bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important;
+    transform: translateX(-50%) !important;
+    width: min(340px, calc(100vw - 32px)) !important;
+    max-width: 340px;
+    z-index: 99999 !important;
+  }
+
+  .toast {
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    font-size: 0.85rem;
+    transform: translateY(20px);
+    opacity: 0;
+    justify-content: center;
+    text-align: center;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .toast.show {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+/* ===================================================
+   SECTION 2: Premium Micro-animations
+   =================================================== */
+
+/* Ripple effect on tap for cards */
+.dash-card,
+.notif-card,
+.stat-item,
+.bsd-item {
+  position: relative;
+  overflow: hidden;
+}
+
+.dash-card::after,
+.notif-card::after,
+.bsd-item::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at var(--x, 50%) var(--y, 50%), rgba(var(--primary-rgb, 49,130,206), 0.12) 0%, transparent 60%);
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+  border-radius: inherit;
+}
+
+.dash-card:active::after,
+.notif-card:active::after,
+.bsd-item:active::after {
+  opacity: 1;
+}
+
+/* Card press effect */
+.dash-card:active,
+.stat-item:active,
+.btn:active,
+.bnav-item:active {
+  transform: scale(0.97);
+  transition: transform 0.1s ease;
+}
+
+/* Smooth icon bounce on active nav item */
+.bnav-item.active i {
+  animation: navBounce 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes navBounce {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.25); }
+  100% { transform: scale(1.1); }
+}
+
+/* Skeleton pulse */
+.skeleton {
+  animation: skeletonPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes skeletonPulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+
+/* Button loading spinner */
+.btn .btn-spinner {
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(255,255,255,0.3);
+  border-top-color: white;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+  display: none;
+}
+
+.btn.loading .btn-spinner { display: block; }
+.btn.loading > *:not(.btn-spinner) { opacity: 0.6; }
+
+/* Fade-in stagger for list items */
+.dash-card,
+.notif-card,
+.stat-item {
+  animation: itemFadeUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.dash-card:nth-child(1) { animation-delay: 0ms; }
+.dash-card:nth-child(2) { animation-delay: 50ms; }
+.dash-card:nth-child(3) { animation-delay: 100ms; }
+.dash-card:nth-child(4) { animation-delay: 150ms; }
+.dash-card:nth-child(5) { animation-delay: 200ms; }
+.dash-card:nth-child(6) { animation-delay: 250ms; }
+.dash-card:nth-child(n+7) { animation-delay: 300ms; }
+
+.stat-item:nth-child(1) { animation-delay: 60ms; }
+.stat-item:nth-child(2) { animation-delay: 110ms; }
+.stat-item:nth-child(3) { animation-delay: 160ms; }
+.stat-item:nth-child(4) { animation-delay: 210ms; }
+
+@keyframes itemFadeUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ===================================================
+   SECTION 3: Dark Mode Polish
+   =================================================== */
+[data-theme="dark"] .main-header {
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+[data-theme="dark"] #bottom-nav {
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+}
+
+[data-theme="dark"] .stat-item:hover,
+[data-theme="dark"] .dash-card:hover {
+  box-shadow: 0 8px 24px rgba(0,0,0,0.5);
+}
+
+[data-theme="dark"] .modal-box {
+  background: #1a2540;
+  border: 1px solid rgba(255,255,255,0.06);
+}
+
+/* ===================================================
+   SECTION 4: Active Nav Indicator (Pill Style)
+   =================================================== */
+.bnav-item.active {
+  position: relative;
+}
+
+.bnav-item.active::before {
+  content: '';
+  position: absolute;
+  top: -1px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 3px;
+  background: var(--primary);
+  border-radius: 0 0 3px 3px;
+  animation: navIndicator 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes navIndicator {
+  from { width: 0; opacity: 0; }
+  to   { width: 20px; opacity: 1; }
+}
+
+/* ===================================================
+   SECTION 5: Status Bar & Safe Areas
+   =================================================== */
+@supports (padding: env(safe-area-inset-top)) {
+  .main-header {
+    padding-top: calc(10px + env(safe-area-inset-top));
+  }
+
+  #bottom-nav {
+    padding-bottom: calc(5px + env(safe-area-inset-bottom));
+  }
+
+  /* الصفحات التي بلا هيدر رئيسي (login, welcome...) كانت تدخل تحت النوتش */
+  body:not(:has(.main-header)) {
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* توحيد الأحجام بين الأجهزة: نمنع المتصفح من تضخيم الخط تلقائياً حسب إعدادات الهاتف */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+/* ===================================================
+   SECTION 6: Scrollbar Hidden on Mobile
+   =================================================== */
+@media (max-width: 768px) {
+  ::-webkit-scrollbar { display: none; }
+  * { scrollbar-width: none; }
+}
+
+/* ===================================================
+   SECTION 7: Focus States (Accessibility)
+   =================================================== */
+@media (hover: none) {
+  /* Remove hover effects on touch devices */
+  .dash-card:hover,
+  .stat-item:hover,
+  .btn:hover,
+  .card:hover {
+    transform: none;
+    box-shadow: var(--shadow-sm);
+  }
+
+  .btn-icon:hover {
+    background: var(--bg-hover);
+    color: var(--text-muted);
+    transform: none;
+  }
+}
+
+
+
+/* ====================================================
+   PREMIUM AI-STYLE UI OVERRIDES (MOBILE SPECIFIC)
+   ==================================================== */
+@media (max-width: 768px) {
+  /* Smaller, Tighter Cards */
+  .dash-card, .stat-item, .panel, .form-card, .registry-section, .table-section, .metrics .metric {
+    padding: 14px 16px !important;
+    gap: 12px !important;
+    border-radius: 16px !important;
+  }
+  
+  /* Icons & Text */
+  .dash-card-icon, .stat-item i, .metrics .metric i {
+    width: 38px !important;
+    height: 38px !important;
+    font-size: 1.15rem !important;
+    border-radius: 10px !important;
+  }
+  .dash-card-text .title {
+    font-size: 0.92rem !important;
+  }
+  .dash-card-text .subtitle {
+    font-size: 0.75rem !important;
+    margin-top: 2px !important;
+  }
+
+  /* Financials Hero Card */
+  .hero-balance-card {
+    padding: 16px 16px 14px !important;
+    border-radius: 16px !important;
+  }
+  .hero-balance-card h2 {
+    font-size: 1.35rem !important;
+  }
+
+  /* Compact Forms */
+  .form-control, .search-input, .form input, .form select, .form textarea {
+    padding-block: 10px !important;
+    font-size: 0.85rem !important;
+  }
+  
+  /* Compact Buttons */
+  .btn, button {
+    padding: 9px 14px !important;
+    font-size: 0.85rem !important;
+  }
+}
+
+/* ===================================================
+   SECTION 9: Edge-to-Edge — الحواف الأفقية على الهاتف
+   الحشو المختصر (padding: 10px 14px) أعلاه يلغي أي padding-left/right
+   قادم من style.css، لذلك نعيد تطبيق الحواف الآمنة هنا بقيمة دنيا
+   تساوي حشو الهاتف الأصلي (14px) حتى لا تتغير المسافات المعتادة.
+   يظهر أثرها في الوضع الأفقي وعلى الأجهزة ذات النوتش.
+   =================================================== */
+@media (max-width: 768px) {
+  .page-content {
+    padding-left: max(14px, env(safe-area-inset-left, 0px));
+    padding-right: max(14px, env(safe-area-inset-right, 0px));
+  }
+
+  .main-header {
+    padding-left: max(14px, env(safe-area-inset-left, 0px));
+    padding-right: max(14px, env(safe-area-inset-right, 0px));
+  }
+}
