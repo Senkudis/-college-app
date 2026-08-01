@@ -11,7 +11,7 @@ const API_BASE = _IS_CAPACITOR_NATIVE ? 'https://elnasrcsit.website' : '';
 const CBS = {
 
   VERSION: '1.4.0',
-  ASSET_VERSION: '2026073127',
+  ASSET_VERSION: '2026073128',
 
   /* ===== Auth ===== */
   getToken() { return localStorage.getItem('token'); },
@@ -2055,6 +2055,42 @@ const CBS = {
     this._kedyHistory = [];
   },
 
+  /* المادة التي اختارها الطالب من قائمة كيدي (خارج صفحة المادة) */
+  _kedySubjectId: null,
+  _kedySubjectName: '',
+
+  /* معرّف المادة المقصودة حالياً:
+     أولاً صفحة المادة المفتوحة (subject.html?id=)، وإلا آخر مادة اختارها
+     الطالب في المحادثة. بهذا يقرأ كيدي المحتوى مباشرة في الحالتين. */
+  _currentSubjectId() {
+    if (window.location.pathname.endsWith('/subject.html')) {
+      const id = new URLSearchParams(window.location.search).get('id');
+      if (id && id !== 'null' && id !== 'undefined') return id;
+    }
+    return this._kedySubjectId;
+  },
+
+  _currentSubjectName() {
+    const onPage = document.getElementById('subjectName')?.textContent?.trim();
+    if (onPage && window.location.pathname.endsWith('/subject.html')) return onPage;
+    return this._kedySubjectName || '';
+  },
+
+  /* هل الرسالة طلب تلخيص/شرح لمادة كاملة؟ */
+  _isSubjectWideRequest(msg) {
+    return /ملخص شامل|لخص لي المادة|لخّص المادة|اشرح لي المادة|المنهج كامل|المادة كاملة|أسئلة متوقعة/.test(msg);
+  },
+
+  /* يجلب نص كل محاضرات المادة (يستخرجه الخادم من ملفات PDF عند اللزوم) */
+  async _fetchSubjectContext(subjectId) {
+    try {
+      const res = await this.apiGet('/api/ai/subject-context/' + subjectId);
+      if (!res || !res.ok) return null;
+      const data = await res.json();
+      return data && data.success ? data : null;
+    } catch { return null; }
+  },
+
   async _sendKedyMsg() {
     const input = document.getElementById('gkInput');
     const container = document.getElementById('gkChatContainer');
@@ -2077,14 +2113,42 @@ const CBS = {
     container.scrollTop = container.scrollHeight;
 
     try {
-      const subjectTitle = document.getElementById('subjectTitle')?.textContent || document.title || '';
-      const lectureTitle = document.getElementById('pdfModalTitle')?.textContent || '';
-      const res = await this.apiPost('/api/ai/ask', {
+      /* العنصر كان يُقرأ بمعرّف خاطئ ('subjectTitle' غير موجود؛ الصحيح
+         'subjectName')، فيسقط دائماً إلى document.title — وهو غير فارغ أبداً.
+         النتيجة أن الخادم يظن أن الطالب حدّد مادة فلا يعرض قائمة المواد
+         إطلاقاً، ويجيب من فراغ بأنه «لا يستطيع قراءة الملفات». */
+      const subjectId = this._currentSubjectId();
+      const subjectTitle = this._currentSubjectName();
+      const lectureTitle = document.getElementById('pdfModalTitle')?.textContent?.trim() || '';
+
+      const payload = {
         prompt: msg,
-        subjectTitle,
         lectureTitle,
         history: this._kedyHistory.slice()   // يُرسل قبل إضافة الرسالة الحالية
-      });
+      };
+      // لا نرسل subjectTitle فارغاً؛ غيابه هو ما يجعل الخادم يعرض قائمة المواد
+      if (subjectTitle) payload.subjectTitle = subjectTitle;
+      if (subjectId)    payload.subjectId = subjectId;
+
+      // داخل صفحة مادة + طلب يخص المادة كاملة → اقرأ محتواها فوراً بلا سؤال
+      if (subjectId && this._isSubjectWideRequest(msg)) {
+        botMsg.innerHTML = '<i class="ri-loader-4-line" style="animation:spin 1s linear infinite;display:inline-block"></i> جاري قراءة محاضرات المادة...';
+        const ctx = await this._fetchSubjectContext(subjectId);
+        if (ctx && ctx.hasText) {
+          payload.text = ctx.text;
+          payload.subjectTitle = ctx.subjectName || subjectTitle;
+          const missing = (ctx.skippedLectures || []).length;
+          payload.prompt = `${msg}\n\n(محتوى ${ctx.includedLectures.length} محاضرة من أصل ${ctx.lectureCount} مرفق أدناه.)`;
+          if (missing) {
+            botMsg.innerHTML = `<i class="ri-loader-4-line" style="animation:spin 1s linear infinite;display:inline-block"></i> قرأت ${ctx.includedLectures.length} محاضرة، جاري التلخيص...`;
+          }
+        } else {
+          // لا نص قابل للاستخراج (فيديو أو PDF مصوَّر) — نصارح الطالب
+          payload.prompt = `${msg}\n\n(ملاحظة: محاضرات هذه المادة لا تحتوي نصاً قابلاً للقراءة — فيديو أو ملفات ممسوحة ضوئياً. وضّح ذلك للطالب في سطر واحد ثم اشرح الموضوع من معرفتك العامة.)`;
+        }
+      }
+
+      const res = await this.apiPost('/api/ai/ask', payload);
       const data = await res.json();
       if (data.success && data.answer) {
         this._kedyPushHistory('user', msg);
@@ -2118,6 +2182,9 @@ const CBS = {
   },
 
   _kedySelectSubject(subjectId, subjectName) {
+    // نثبّتها ليعرف الطلب التالي («ملخص شامل») أي مادة يقرأ دون سؤال جديد
+    this._kedySubjectId = subjectId;
+    this._kedySubjectName = subjectName;
     const input = document.getElementById('gkInput');
     if (input) {
       input.value = `اخترت مادة: ${subjectName}`;

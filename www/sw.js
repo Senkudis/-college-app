@@ -1,5 +1,5 @@
-// Service Worker for CBS College LMS — v1.4.9 (Offline + Speed Boost)
-const CACHE_VERSION = 'cbs-v1.4.9';
+// Service Worker for CBS College LMS — v1.5.0 (Offline + Speed Boost)
+const CACHE_VERSION = 'cbs-v1.5.0';
 const STATIC_CACHE  = CACHE_VERSION + '-static';
 const API_CACHE     = CACHE_VERSION + '-api';
 const FILES_CACHE   = 'cbs-offline-files'; // الثبات للحفاظ على الملفات المحملة يدوياً

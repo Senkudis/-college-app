@@ -721,10 +721,8 @@ router.get('/lecture-context/:id', auth, async (req, res) => {
         const fs = require('fs');
         const filePath = require('path').join(__dirname, '../uploads', lecture.file);
         if (fs.existsSync(filePath) && lecture.file.toLowerCase().endsWith('.pdf')) {
-          const pdfParse = require('pdf-parse');
-          const buffer = fs.readFileSync(filePath);
-          const parsed = await pdfParse(buffer);
-          extractedText = (parsed.text || '').replace(/\s+/g, ' ').trim().slice(0, 25000);
+          const { extractPdfText } = require('../utils/pdfText');
+          extractedText = await extractPdfText(fs.readFileSync(filePath));
           // حفظ النص لتسريع الطلبات القادمة
           if (extractedText) {
             await Lecture.findByIdAndUpdate(req.params.id, { extractedText });
@@ -746,6 +744,105 @@ router.get('/lecture-context/:id', auth, async (req, res) => {
   } catch (err) {
     console.error('[AI/lecture-context]', err.message);
     res.status(500).json({ success: false, message: 'خطأ في جلب المحاضرة' });
+  }
+});
+
+/* =========================================================
+   0b. سياق المادة كاملة — GET /api/ai/subject-context/:id
+
+   كان المساعد يعتذر بـ«لا أستطيع قراءة ملفات PDF» عند طلب «ملخص شامل
+   للمادة»، لأن مسار lecture-context يخدم محاضرة واحدة فقط ولا شيء يجمع
+   محتوى المادة. هنا نجمع نصوص كل محاضرات المادة (ونستخرج ما لم يُستخرج
+   بعد من ملفات PDF قديمة) ونعيدها دفعة واحدة.
+   ========================================================= */
+const SUBJECT_CONTEXT_CHAR_LIMIT = 60000; // حد أعلى يتّسع لنافذة النماذج
+
+async function extractLectureText(lecture) {
+  if (lecture.extractedText && lecture.extractedText.length > 50) return lecture.extractedText;
+  if (!lecture.file || !lecture.file.toLowerCase().endsWith('.pdf')) return '';
+
+  try {
+    const fs = require('fs');
+    const path = require('path');
+    // الملفات تُحفظ في مجلدات فرعية حسب النوع؛ نبحث فيها كما يفعل مسار /uploads
+    const candidates = [
+      path.join(__dirname, '../uploads', lecture.file),
+      path.join(__dirname, '../uploads/lectures', path.basename(lecture.file))
+    ];
+    const filePath = candidates.find(p => fs.existsSync(p));
+    if (!filePath) return '';
+
+    const { extractPdfText } = require('../utils/pdfText');
+    const text = await extractPdfText(fs.readFileSync(filePath));
+
+    if (text) {
+      const Lecture = require('../models/Lecture');
+      await Lecture.findByIdAndUpdate(lecture._id, { extractedText: text });
+      console.log(`[AI] استُخرج ${text.length} حرف من: ${lecture.title}`);
+    }
+    return text;
+  } catch (e) {
+    console.warn(`[AI] فشل استخراج PDF (${lecture.title}):`, e.message);
+    return '';
+  }
+}
+
+router.get('/subject-context/:id', auth, async (req, res) => {
+  try {
+    const mongoose = require('mongoose');
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ success: false, message: 'معرف المادة غير صالح' });
+    }
+
+    const Subject = require('../models/Subject');
+    const Lecture = require('../models/Lecture');
+    const User = require('../models/User');
+
+    const subject = await Subject.findById(req.params.id).select('name batches doctor').lean();
+    if (!subject) return res.status(404).json({ success: false, message: 'المادة غير موجودة' });
+
+    // نفس منطق الصلاحيات المتّبع في reference/lecture: الطالب لدفعته فقط
+    const user = await User.findById(req.user.id).select('roles batch batches').lean();
+    const isStaff = ['dean', 'doctor', 'leader', 'admin'].some(r => user.roles?.includes(r));
+    if (!isStaff) {
+      const userBatch = user.batch || (user.batches && user.batches[0]);
+      const hasAccess = (subject.batches || []).some(b => b?.toString() === userBatch?.toString());
+      if (!hasAccess) {
+        return res.status(403).json({ success: false, message: 'لا تملك صلاحية الوصول لهذه المادة' });
+      }
+    }
+
+    const lectures = await Lecture.find({ subject: subject._id })
+      .select('title extractedText file order createdAt')
+      .sort({ order: 1, createdAt: 1 })
+      .lean();
+
+    let combined = '';
+    const included = [];
+    const skipped = [];
+
+    for (const lec of lectures) {
+      if (combined.length >= SUBJECT_CONTEXT_CHAR_LIMIT) { skipped.push(lec.title); continue; }
+      const text = await extractLectureText(lec);
+      if (!text) { skipped.push(lec.title); continue; }
+
+      const remaining = SUBJECT_CONTEXT_CHAR_LIMIT - combined.length;
+      combined += `\n\n===== محاضرة: ${lec.title} =====\n${text.slice(0, remaining)}`;
+      included.push(lec.title);
+    }
+
+    res.json({
+      success: true,
+      subjectName: subject.name,
+      lectureCount: lectures.length,
+      includedLectures: included,
+      skippedLectures: skipped,   // محاضرات بلا نص (فيديو أو PDF مصوَّر)
+      text: combined.trim(),
+      hasText: combined.trim().length > 100
+    });
+  } catch (err) {
+    console.error('[AI/subject-context]', err.message);
+    res.status(500).json({ success: false, message: 'تعذّر تجميع محتوى المادة' });
   }
 });
 
@@ -783,8 +880,14 @@ router.post('/ask', aiGuard, async (req, res) => {
 
     const liveContext = await getLiveStudentContext(req.user.id, req.activeBatch);
 
-    // 1. إذا طلب الطالب اختيار مادة أو طلب ملخص للمادة بوجه عام دون تحديد مادة
-    if ((q.includes('ملخص شامل للمادة') || q.includes('اشرح لي مادة') || q.includes('اختر مادة')) && !subjectTitle && !selectedSubjectId) {
+    /* 1. طلب يخص مادة كاملة دون تحديد أي مادة → نعرض قائمة موادّه ليختار.
+       الشرط كان يطابق صياغة واحدة حرفياً فقط، فأي صياغة أخرى تمر إلى النموذج
+       بلا محتوى فيعتذر بأنه «لا يستطيع قراءة الملفات». ونشترط غياب النص
+       المرفق أيضاً: وجوده يعني أن الواجهة جلبت محتوى المادة بالفعل. */
+    const wantsWholeSubject = /ملخص شامل|لخص لي المادة|لخّص المادة|اشرح لي مادة|اشرح لي المادة|المنهج كامل|المادة كاملة|اختر مادة|أسئلة متوقعة/.test(q);
+    const hasAttachedContent = !!(text && text.trim().length >= 50);
+
+    if (wantsWholeSubject && !hasAttachedContent && !subjectTitle && !selectedSubjectId) {
       const Subject = require('../models/Subject');
       const User = require('../models/User');
       const user = await User.findById(req.user.id).select('batch batches').lean();

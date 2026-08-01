@@ -79,10 +79,9 @@ router.post("/", auth, role("dean", "doctor", "leader", "admin"), uploadLimiter,
       // استخراج نص الـ PDF تلقائياً ليتمكن المساعد الذكي من قراءته
       if (req.file.mimetype === 'application/pdf' || req.file.originalname?.toLowerCase().endsWith('.pdf')) {
         try {
-          const pdfParse = require('pdf-parse');
-          const parsed = await pdfParse(fileBuffer);
-          // نخزّن أول 25000 حرف فقط للتحكم في حجم المستند
-          extractedText = (parsed.text || '').replace(/\s+/g, ' ').trim().slice(0, 25000);
+          // pdf-parse@2 لا يُصدّر دالة؛ الاستدعاء المباشر كان يفشل صامتاً
+          const { extractPdfText } = require('../utils/pdfText');
+          extractedText = await extractPdfText(fileBuffer);
           console.log(`[Lecture] تم استخراج ${extractedText.length} حرف من الـ PDF: ${title}`);
         } catch (pdfErr) {
           console.warn('[Lecture] تعذّر قراءة الـ PDF:', pdfErr.message);
