@@ -1,0 +1,69 @@
+name: Build iOS App
+
+on:
+  workflow_dispatch: # يتيح لك زر تشغيل يدوي في أي وقت
+  push:
+    branches:
+      - main
+    paths:
+      - 'ios/**'
+      - 'www/**'
+      - 'capacitor.config.json'
+      - 'package.json'
+      - '.github/workflows/build-ios.yml'
+
+jobs:
+  build:
+    name: Build iOS (Xcode & Capacitor)
+    runs-on: macos-15
+
+    steps:
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: 🟢 Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: 'npm'
+
+      - name: 📦 Install Dependencies
+        run: npm install
+
+      - name: 🔄 Sync Capacitor iOS Project
+        run: npx cap sync ios
+
+      - name: 🛠️ Setup Xcode
+        uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+
+      - name: 📱 Build iOS Archive
+        run: |
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/App.xcarchive \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGN_IDENTITY="" \
+            archive
+
+      - name: 📦 Package App into IPA
+        run: |
+          mkdir -p build/Payload
+          cp -r build/App.xcarchive/Products/Applications/App.app build/Payload/
+          cd build
+          zip -r App-unsigned.ipa Payload
+          cd ..
+
+      - name: 📤 Upload iOS App Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: iOS-App-Build
+          path: |
+            build/App-unsigned.ipa
+            build/App.xcarchive/Products/Applications/App.app
+          retention-days: 14
