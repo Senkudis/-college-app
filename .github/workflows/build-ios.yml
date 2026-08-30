@@ -1,4 +1,4 @@
-﻿name: Build iOS App
+name: Build iOS App
 
 on:
   workflow_dispatch: # تشغيل يدوي بضغطة زر
