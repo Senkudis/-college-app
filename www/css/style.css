@@ -1579,17 +1579,66 @@ textarea.form-control {
   .stat-num {
     font-size: 1.3rem;
   }
+  /* ===== الوصول السريع على الهاتف: عمودان لا عمود =====
+     كان `1fr` يضع 17 بطاقة فوق بعضها بارتفاع ~2000 بكسل، أي 4.2 شاشة
+     تمرير للوصول إلى آخر زر — وهو سبب شكوى الطلاب من عدم فهم التطبيق:
+     لا يرون إلا زرّاً أو اثنين في المرة.
+
+     minmax(0, 1fr) لا 1fr وحدها: العمود بـ1fr لا يقلّ عن عرض محتواه،
+     فعنوان طويل واحد كان سيوسّع العمود ويكسر الصف على الهواتف الضيقة. */
   .dash-grid {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
   }
+
+  /* التخطيط يصير رأسياً: أيقونة فوق ثم النص. الصف الأفقي (أيقونة | نص)
+     يترك للنص ~90 بكسل داخل عمود نصف الشاشة، فتتكسّر الكلمات. */
   .dash-card {
-    padding: 16px;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 10px;
+    padding: 14px 13px;
+    /* ارتفاع أدنى موحّد يبقي بطاقتَي الصف متساويتين مهما اختلف النص */
+    min-height: 118px;
   }
   .dash-card-icon {
-    width: 44px;
-    height: 44px;
-    font-size: 1.3rem;
+    width: 42px;
+    height: 42px;
+    font-size: 1.25rem;
+  }
+  .dash-card-text { width: 100%; gap: 3px; }
+  .dash-card-text .title {
+    font-size: 0.86rem;
+    line-height: 1.35;
+    /* سطران كحد أقصى: عنوان أطول يُقصّ بدل أن يدفع البطاقة ويكسر الصف */
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .dash-card-text .subtitle {
+    font-size: 0.72rem;
+    line-height: 1.35;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* الهواتف الضيقة جداً (iPhone SE وما شابه، 320–359 بكسل):
+     الوصف الفرعي يُخفى ليبقى العنوان والأيقونة واضحين بلا ازدحام. */
+  @media (max-width: 359px) {
+    .dash-grid { gap: 8px; }
+    .dash-card { padding: 12px 10px; min-height: 104px; }
+    .dash-card-icon { width: 38px; height: 38px; font-size: 1.1rem; }
+    .dash-card-text .title { font-size: 0.8rem; }
+    .dash-card-text .subtitle { display: none; }
+  }
+
+  /* رفع الإصبع لا يترك البطاقة مرفوعة على اللمس — hover لا معنى له هنا */
+  @media (hover: none) {
+    .dash-card:hover { transform: none; box-shadow: var(--shadow-sm); }
   }
   #bottom-nav {
     padding: 6px 0;
@@ -3542,4 +3591,86 @@ body.cbs-keyboard-open #pwa-install-banner { display: none !important; }
   overflow: visible;
   clip: auto;
   white-space: normal;
+}
+
+/* ===== استجابة اللمس للعناصر القابلة للنقر =====
+   الـreset في أعلى الملف يضبط -webkit-tap-highlight-color: transparent
+   على كل عنصر، فيلغي وميض اللمس الذي يوفّره النظام — دون أن يضع بديلاً.
+   النتيجة: المستخدم يلمس بطاقة خبر فلا يرى أي أثر حتى تفتح النافذة،
+   فيظنّ أن اللمسة لم تُسجَّل ويلمس مراراً. الحدث يعمل، لكن لا تغذية
+   راجعة بصرية — وهذا ما يُقرأ كـ"لا يستجيب للمس".
+
+   نعيد الأثر يدوياً عبر :active لأنه يعمل على اللمس والفأرة معاً. */
+[onclick],
+[role="button"],
+.card[onclick],
+.dash-card,
+.news-card,
+.gallery-card {
+  -webkit-touch-callout: none; /* يمنع قائمة الضغط المطوّل على الروابط */
+}
+
+@media (hover: none) {
+  [onclick]:active,
+  [role="button"]:active,
+  .dash-card:active,
+  .card[onclick]:active {
+    /* انكماش خفيف + تعتيم: يُقرأ فوراً كاستجابة دون أن يزحزح التخطيط */
+    transform: scale(0.975);
+    filter: brightness(0.96);
+    transition: transform 0.08s ease-out, filter 0.08s ease-out;
+  }
+}
+
+/* النص داخل بطاقة قابلة للنقر لا يُحدَّد بالضغط المطوّل — يجعلها
+   تتصرّف كزر لا كفقرة نصية. */
+[onclick]:not(input):not(textarea),
+[role="button"] {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [onclick]:active, [role="button"]:active,
+  .dash-card:active, .card[onclick]:active { transform: none; }
+}
+
+/* ===== شبكة الأخبار =====
+   كانت مكتوبة inline بـ minmax(260px, 1fr): على شاشة 375 بكسل لا يتّسع
+   إلا عمود واحد، وبطاقة الخبر بارتفاع 177 بكسل تعني تمريراً طويلاً
+   لثلاثة أخبار فقط. والقيمة المضمّنة تتفوّق على أي قاعدة هنا. */
+.news-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 14px;
+}
+
+@media (max-width: 768px) {
+  /* عمودان على الهاتف، بنفس منطق بطاقات الوصول السريع */
+  .news-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .news-grid > .card {
+    padding: 13px !important;
+    /* ارتفاع أدنى موحّد: بطاقة بملخّص أقصر كانت تترك فجوة تحتها فيبدو
+       الصف مكسوراً — وهي شكوى "غير متناسقة في العرض". */
+    min-height: 232px;
+  }
+  .news-grid h4 {
+    font-size: 0.86rem !important;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+  .news-grid p {
+    font-size: 0.76rem !important;
+    -webkit-line-clamp: 2;
+  }
+}
+
+/* الشاشات الضيقة جداً: عمود واحد أوضح من عمودين مزدحمين بنص طويل */
+@media (max-width: 359px) {
+  .news-grid { grid-template-columns: 1fr; }
 }

@@ -331,13 +331,13 @@
             ${escH(n.title)}
             <small>${escH(n.summary.substring(0,60))}...</small>
           </td>
-          <td style="white-space:nowrap;color:var(--text-muted);font-size:.75rem">${fmtDate(n.publishedAt||n.createdAt)}</td>
-          <td>
+          <td data-label="التاريخ" style="white-space:nowrap;color:var(--text-muted);font-size:.75rem">${fmtDate(n.publishedAt||n.createdAt)}</td>
+          <td data-label="الحالة">
             <span class="${n.isPublished ? 'badge-pub' : 'badge-draft'}">
               ${n.isPublished ? 'منشور' : 'مسودة'}
             </span>
           </td>
-          <td>
+          <td data-label="إجراءات">
             <div style="display:flex;gap:6px;flex-wrap:wrap">
               <button class="btn btn-ghost btn-xs" onclick="editNews('${n._id}')" aria-label="تعديل"><i class="ri-edit-line"></i></button>
               <button class="btn btn-ghost btn-xs" onclick="toggleNewsPublish('${n._id}',${n.isPublished})" title="${n.isPublished ? 'إخفاء' : 'نشر'}">

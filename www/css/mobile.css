@@ -110,22 +110,24 @@ html { -webkit-text-size-adjust: 100%; }
   .stat-num { font-size: 1.2rem; }
   .stat-label { font-size: 0.72rem; }
 
-  /* ===== Dashboard Cards â€” single col, compact ===== */
+  /* ===== Dashboard Cards — عمودان، مضغوطة =====
+     كان هنا عمود واحد يُلغي قاعدة style.css اللاحقة (هذا الملف يُحمَّل
+     بعده)، فيبقى الوصول السريع شريطاً رأسياً طويلاً مهما عُدّل هناك. */
   .dash-grid {
-    grid-template-columns: 1fr;
-    gap: 8px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
   }
 
   .dash-card {
-    padding: 13px 14px;
-    gap: 12px;
+    padding: 14px 13px;
+    gap: 10px;
     border-radius: var(--radius-md);
   }
 
   .dash-card-icon {
-    width: 40px;
-    height: 40px;
-    font-size: 1.2rem;
+    width: 42px;
+    height: 42px;
+    font-size: 1.25rem;
     border-radius: var(--radius-sm);
   }
 
@@ -654,5 +656,73 @@ html {
     color: var(--text-muted, #64748b);
     margin-inline-end: 12px;
     flex-shrink: 0;
+  }
+}
+
+/* ===== جداول الإدارة على الهاتف: بطاقات لا جدول =====
+   الجدول "يتّسع" في 375 بكسل لكنه يفعل ذلك بسحق الأعمدة: عمود العنوان
+   يتكسّر على أربعة أسطر، وأزرار الإجراءات الثلاثة تنزل تحت بعضها لأن
+   عمودها لا يتجاوز 50 بكسل — فيصير ارتفاع الصف الواحد ~150 بكسل وتُقرأ
+   الصفحة كفوضى. نفس معالجة جداول المالية، معمَّمة على .data-table.
+
+   يعتمد على data-label في كل <td> — وهو موجود في الترميز أصلاً. */
+@media (max-width: 768px) {
+  .data-table thead { display: none; }
+
+  .data-table tbody tr {
+    display: block;
+    margin-bottom: 10px;
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: var(--radius-md, 10px);
+    padding: 12px 14px;
+    background: var(--bg-card, #fff);
+  }
+  .data-table tbody tr:last-child { margin-bottom: 0; }
+
+  .data-table tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    padding: 7px 0;
+    border: none;
+    border-bottom: 1px solid var(--rule-soft, rgba(148,163,184,0.18));
+    white-space: normal;
+    text-align: start;
+  }
+  .data-table tbody td:last-child { border-bottom: none; padding-bottom: 0; }
+
+  .data-table tbody td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    font-size: 0.78rem;
+    color: var(--text-muted, #64748b);
+    flex: none;
+  }
+  /* خلية بلا تسمية (صف "لا توجد بيانات") تبقى كما هي */
+  .data-table tbody td[colspan]::before { content: none; }
+  .data-table tbody td[colspan] { justify-content: center; }
+
+  /* العنوان يأخذ عرض البطاقة كاملاً — هو المحتوى الأهم */
+  .data-table tbody td.td-title {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 3px;
+    font-weight: 700;
+  }
+  .data-table tbody td.td-title::before { content: none; }
+  .data-table tbody td.td-title small {
+    font-weight: 400;
+    font-size: 0.76rem;
+    color: var(--text-muted, #64748b);
+    line-height: 1.45;
+  }
+
+  /* الإجراءات في سطر أفقي واحد بدل عمود رأسي */
+  .data-table tbody td:last-child > div {
+    display: flex !important;
+    flex-wrap: nowrap !important;
+    gap: 8px;
+    justify-content: flex-end;
   }
 }
