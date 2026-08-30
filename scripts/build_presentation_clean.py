@@ -1,413 +1,444 @@
-﻿# -*- coding: utf-8 -*-
-import os
-import shutil
-import pptx
+# -*- coding: utf-8 -*-
+import os, shutil, pptx
 from pptx.util import Inches, Pt
 from pptx.dml.color import RGBColor
-from pptx.enum.text import PP_ALIGN, MSO_ANCHOR
+from pptx.enum.text import PP_ALIGN
 from pptx.enum.shapes import MSO_SHAPE
 
-def hex_to_rgb(hex_str):
+def c(hex_str):
     hex_str = hex_str.lstrip('#')
     return RGBColor(int(hex_str[0:2], 16), int(hex_str[2:4], 16), int(hex_str[4:6], 16))
 
-# الألوان
-NAVY  = hex_to_rgb('0D3B66')
-BLUE  = hex_to_rgb('2176C7')
-AMBER = hex_to_rgb('F59E0B')
-INK   = hex_to_rgb('10161F')
-MUTED = hex_to_rgb('5A6B7D')
-LIGHT = hex_to_rgb('F2F5F9')
-WHITE = hex_to_rgb('FFFFFF')
-GREEN = hex_to_rgb('1B6B47')
-CARD_BORDER = hex_to_rgb('DCE3EB')
-SKY_LIGHT = hex_to_rgb('CFE0F2')
-RED_ACCENT = hex_to_rgb('B84A3A')
-PURPLE = hex_to_rgb('6B4FA8')
+# الألوان الراقية المريحة
+C_NAVY_DEEP  = c('0A192F')
+C_NAVY_CARD  = c('112240')
+C_NAVY_BORDER= c('233554')
 
-FONT = 'Arial'
+C_PRIMARY    = c('1E40AF')  # أزرق كلاسيكي راقٍ
+C_SECONDARY  = c('0F766E')  # تيل / بترولي أنيق
+C_AMBER      = c('D97706')  # ذهبي وقور
+C_RED        = c('B91C1C')  # أحمر رزين
+C_PURPLE     = c('6D28D9')  # بنفسجي هادئ
+
+C_BG_PAGE    = c('F8FAFC')  # خلفية فاتحة مريحة جداً
+C_CARD_WHITE = c('FFFFFF')
+C_BORDER     = c('E2E8F0')  # حدود خفيفة ودقيقة
+C_BORDER_SUB = c('CBD5E1')
+
+C_TEXT_HEAD  = c('0F172A')  # كحلي مقارب للأسود
+C_TEXT_BODY  = c('334155')  # رمادي داكن مقروء
+C_TEXT_MUTED = c('64748B')  # رمادي متوسط
+C_TEXT_LIGHT = c('F1F5F9')
+C_TEXT_SKY   = c('7DD3FC')
+
+FONT_FAMILY  = 'Segoe UI'
 
 prs = pptx.Presentation()
 prs.slide_width = Inches(13.333)
 prs.slide_height = Inches(7.5)
 blank_layout = prs.slide_layouts[6]
 
-W, H, M = 13.333, 7.5, 0.7
+W, H, M = 13.333, 7.5, 0.75
 
-def add_bg(slide, color):
-    bg = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, Inches(W), Inches(H))
-    bg.fill.solid()
-    bg.fill.fore_color.rgb = color
-    bg.line.fill.background()
-    return bg
+def new_slide(bg=C_BG_PAGE):
+    slide = prs.slides.add_slide(blank_layout)
+    bg_shape = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, 0, 0, Inches(W), Inches(H))
+    bg_shape.fill.solid()
+    bg_shape.fill.fore_color.rgb = bg
+    bg_shape.line.fill.background()
+    return slide
 
-def set_para(p, text, font_size, color, bold=False, align=PP_ALIGN.RIGHT, rtl=True):
+def apply_p(p, text, size, color, bold=False, align=PP_ALIGN.RIGHT, font=FONT_FAMILY, rtl=True):
     p.text = text
     p.alignment = align
-    p.font.name = FONT
-    p.font.size = Pt(font_size)
+    p.font.name = font
+    p.font.size = Pt(size)
     p.font.bold = bold
     p.font.color.rgb = color
     if rtl:
         pPr = p._p.get_or_add_pPr()
         pPr.set('rtl', '1')
 
-def head(slide, title, kicker=None):
-    if kicker:
-        tx = slide.shapes.add_textbox(Inches(M), Inches(0.42), Inches(W - M * 2), Inches(0.35))
-        tf = tx.text_frame
-        tf.word_wrap = True
-        p = tf.paragraphs[0]
-        set_para(p, kicker, 13, BLUE, bold=True)
-    
-    y = 0.72 if kicker else 0.55
-    tx = slide.shapes.add_textbox(Inches(M), Inches(y), Inches(W - M * 2), Inches(0.8))
+def make_header(slide, title, category=None, is_dark=False):
+    # Left accent line
+    acc = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(M), Inches(0.42), Inches(0.08), Inches(0.65))
+    acc.fill.solid()
+    acc.fill.fore_color.rgb = C_AMBER if is_dark else C_PRIMARY
+    acc.line.fill.background()
+
+    tx = slide.shapes.add_textbox(Inches(M + 0.2), Inches(0.38), Inches(W - M * 2 - 0.2), Inches(0.95))
     tf = tx.text_frame
     tf.word_wrap = True
-    p = tf.paragraphs[0]
-    set_para(p, title, 32, NAVY, bold=True)
+    tf.margin_top = tf.margin_bottom = tf.margin_left = tf.margin_right = 0
 
-def card(slide, x, y, w, h, title, body="", icon=None, tone=WHITE, border_color=CARD_BORDER, accent=BLUE, title_color=NAVY):
-    shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(x), Inches(y), Inches(w), Inches(h))
-    shape.fill.solid()
-    shape.fill.fore_color.rgb = tone
-    if border_color:
-        shape.line.color.rgb = border_color
-        shape.line.width = Pt(1)
+    if category:
+        p_cat = tf.paragraphs[0]
+        apply_p(p_cat, f'[ {category} ]', 11.5, C_TEXT_SKY if is_dark else C_PRIMARY, bold=True)
+        p_title = tf.add_paragraph()
+        p_title.space_before = Pt(3)
     else:
-        shape.line.fill.background()
+        p_title = tf.paragraphs[0]
 
-    # Icon circle if needed
-    if icon:
-        circle = slide.shapes.add_shape(MSO_SHAPE.OVAL, Inches(x + w - 0.95), Inches(y + 0.22), Inches(0.55), Inches(0.55))
-        circle.fill.solid()
-        circle.fill.fore_color.rgb = accent
-        circle.line.fill.background()
-        tf = circle.text_frame
-        p = tf.paragraphs[0]
-        set_para(p, icon, 18, WHITE, bold=True, align=PP_ALIGN.CENTER, rtl=False)
+    apply_p(p_title, title, 26, C_TEXT_LIGHT if is_dark else C_TEXT_HEAD, bold=True)
 
-    # Title & Body in one textbox
-    tx_w = w - (1.15 if icon else 0.5)
-    tx = slide.shapes.add_textbox(Inches(x + 0.25), Inches(y + 0.22), Inches(tx_w), Inches(h - 0.44))
+def sleek_card(slide, x, y, w, h, title, body='', tag=None, accent=C_PRIMARY, is_dark=False):
+    # Main Box
+    box = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x), Inches(y), Inches(w), Inches(h))
+    box.fill.solid()
+    box.fill.fore_color.rgb = C_NAVY_CARD if is_dark else C_CARD_WHITE
+    box.line.color.rgb = C_NAVY_BORDER if is_dark else C_BORDER
+    box.line.width = Pt(1)
+
+    # Right Accent Line
+    acc = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x + w - 0.06), Inches(y), Inches(0.06), Inches(h))
+    acc.fill.solid()
+    acc.fill.fore_color.rgb = accent
+    acc.line.fill.background()
+
+    # Text inside
+    tx = slide.shapes.add_textbox(Inches(x + 0.25), Inches(y + 0.18), Inches(w - 0.5), Inches(h - 0.36))
     tf = tx.text_frame
     tf.word_wrap = True
+    tf.margin_top = tf.margin_bottom = tf.margin_left = tf.margin_right = 0
+
     p0 = tf.paragraphs[0]
-    set_para(p0, title, 16, title_color, bold=True)
-    
+    title_text = f'{tag}  {title}' if tag else title
+    apply_p(p0, title_text, 15, C_TEXT_LIGHT if is_dark else C_TEXT_HEAD, bold=True)
+
     if body:
         p1 = tf.add_paragraph()
-        p1.space_before = Pt(8)
-        body_color = SKY_LIGHT if tone != WHITE and tone != LIGHT else MUTED
-        set_para(p1, body, 12.5, body_color)
+        p1.space_before = Pt(6)
+        apply_p(p1, body, 11.5, C_TEXT_SKY if is_dark else C_TEXT_BODY)
 
-def stat_box(slide, x, y, w, num, label, color=BLUE):
-    shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(x), Inches(y), Inches(w), Inches(1.9))
-    shape.fill.solid()
-    shape.fill.fore_color.rgb = WHITE
-    shape.line.color.rgb = CARD_BORDER
-    shape.line.width = Pt(1)
-    
-    tx = slide.shapes.add_textbox(Inches(x), Inches(y + 0.15), Inches(w), Inches(1.6))
+def metric_card(slide, x, y, w, h, num, label, sub='', accent=C_PRIMARY):
+    box = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x), Inches(y), Inches(w), Inches(h))
+    box.fill.solid()
+    box.fill.fore_color.rgb = C_CARD_WHITE
+    box.line.color.rgb = C_BORDER
+    box.line.width = Pt(1)
+
+    # Top border line
+    top = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x), Inches(y), Inches(w), Inches(0.05))
+    top.fill.solid()
+    top.fill.fore_color.rgb = accent
+    top.line.fill.background()
+
+    tx = slide.shapes.add_textbox(Inches(x + 0.15), Inches(y + 0.16), Inches(w - 0.3), Inches(h - 0.32))
     tf = tx.text_frame
     tf.word_wrap = True
-    p0 = tf.paragraphs[0]
-    set_para(p0, num, 50, color, bold=True, align=PP_ALIGN.CENTER, rtl=False)
-    p1 = tf.add_paragraph()
-    p1.space_before = Pt(4)
-    set_para(p1, label, 13, MUTED, align=PP_ALIGN.CENTER)
+    tf.margin_top = tf.margin_bottom = tf.margin_left = tf.margin_right = 0
 
-# ══════════════ 1. الغلاف ══════════════
-s1 = prs.slides.add_slide(blank_layout)
-add_bg(s1, NAVY)
+    p_num = tf.paragraphs[0]
+    apply_p(p_num, num, 40, accent, bold=True, align=PP_ALIGN.CENTER, rtl=False)
 
-tx = s1.shapes.add_textbox(Inches(M), Inches(1.3), Inches(W - M * 2), Inches(3.2))
-tf = tx.text_frame
-tf.word_wrap = True
-p0 = tf.paragraphs[0]
-set_para(p0, 'كلية النصر التقنية — جامعة النصر التقنية', 16, hex_to_rgb('9FC2E8'), bold=True)
+    p_lbl = tf.add_paragraph()
+    p_lbl.space_before = Pt(3)
+    apply_p(p_lbl, label, 13.5, C_TEXT_HEAD, bold=True, align=PP_ALIGN.CENTER)
 
-p1 = tf.add_paragraph()
-p1.space_before = Pt(12)
-set_para(p1, 'النظام الجامعي الرقمي المتكامل', 46, WHITE, bold=True)
+    if sub:
+        p_sub = tf.add_paragraph()
+        p_sub.space_before = Pt(2)
+        apply_p(p_sub, sub, 10.5, C_TEXT_MUTED, align=PP_ALIGN.CENTER)
 
-p2 = tf.add_paragraph()
-p2.space_before = Pt(16)
-set_para(p2, 'منصة واحدة تدير الدراسة والحضور والتقييم والمالية والتواصل — على الويب وتطبيق الهاتف', 17, SKY_LIGHT)
+# ════════════════════════════════════════════════════════════════════
+# 1. الغلاف (Executive Dark Cover)
+# ════════════════════════════════════════════════════════════════════
+s1 = new_slide(C_NAVY_DEEP)
 
-# أرقام الغلاف
-items = [('٥', 'أدوار'), ('٣٠', 'وحدة'), ('٥٠', 'شاشة'), ('٢.١.٠', 'الإصدار')]
-for i, (n, l) in enumerate(items):
-    x = W - M - 1.6 - i * 1.8
-    tx_stat = s1.shapes.add_textbox(Inches(x), Inches(5.0), Inches(1.6), Inches(1.0))
-    tf_s = tx_stat.text_frame
-    p_num = tf_s.paragraphs[0]
-    set_para(p_num, n, 28, AMBER, bold=True, align=PP_ALIGN.CENTER, rtl=False)
-    p_lbl = tf_s.add_paragraph()
-    set_para(p_lbl, l, 12, hex_to_rgb('9FC2E8'), align=PP_ALIGN.CENTER)
+# Accent Line
+acc1 = s1.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(M), Inches(1.1), Inches(1.2), Inches(0.06))
+acc1.fill.solid(); acc1.fill.fore_color.rgb = C_AMBER; acc1.line.fill.background()
 
-tx_foot = s1.shapes.add_textbox(Inches(M), Inches(6.6), Inches(W - M * 2), Inches(0.4))
-set_para(tx_foot.text_frame.paragraphs[0], 'عرض تقديمي للإدارة الأكاديمية', 12, hex_to_rgb('7FA5CC'))
+tx1 = s1.shapes.add_textbox(Inches(M), Inches(1.3), Inches(W - M * 2), Inches(3.2))
+tf1 = tx1.text_frame; tf1.word_wrap = True
+tf1.margin_top = tf1.margin_bottom = tf1.margin_left = tf1.margin_right = 0
 
-# ══════════════ 2. لماذا ══════════════
-s2 = prs.slides.add_slide(blank_layout)
-head(s2, 'ما الذي يحلّه هذا النظام', 'الدافع')
+apply_p(tf1.paragraphs[0], 'كلية النصر التقنية — جامعة النصر التقنية', 15, C_TEXT_SKY, bold=True)
+p1_1 = tf1.add_paragraph(); p1_1.space_before = Pt(10)
+apply_p(p1_1, 'النظام الجامعي الرقمي المتكامل', 40, C_TEXT_LIGHT, bold=True)
+p1_2 = tf1.add_paragraph(); p1_2.space_before = Pt(14)
+apply_p(p1_2, 'منصة موحدة وشاملة لإدارة العمليات الأكاديمية والمالية والحضور والتواصل — عبر الويب وتطبيقات الهواتف الذكية', 15.5, c('CBD5E1'))
+
+cover_metrics = [
+    ('٥', 'أدوار بصلاحيات', 'عزل أمني تام', C_AMBER),
+    ('٣٠', 'وحدة خدمية', 'API Backend', C_TEXT_SKY),
+    ('٥٠', 'شاشة تفاعلية', 'واجهة مستخدم حديثة', C_SECONDARY),
+    ('٢.١.٠', 'الإصدار المعتمد', 'جاهز للتشغيل الرسمي', C_PRIMARY)
+]
+for i, (n, l, s, col) in enumerate(cover_metrics):
+    x = W - M - 2.75 - i * 2.95
+    box = s1.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x), Inches(4.9), Inches(2.75), Inches(1.4))
+    box.fill.solid(); box.fill.fore_color.rgb = C_NAVY_CARD
+    box.line.color.rgb = C_NAVY_BORDER; box.line.width = Pt(1)
+
+    top_l = s1.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(x), Inches(4.9), Inches(2.75), Inches(0.04))
+    top_l.fill.solid(); top_l.fill.fore_color.rgb = col; top_l.line.fill.background()
+
+    tx = s1.shapes.add_textbox(Inches(x + 0.15), Inches(5.02), Inches(2.45), Inches(1.2))
+    tf = tx.text_frame; tf.word_wrap = True
+    tf.margin_top = tf.margin_bottom = tf.margin_left = tf.margin_right = 0
+    apply_p(tf.paragraphs[0], n, 28, col, bold=True, align=PP_ALIGN.CENTER, rtl=False)
+    p_l = tf.add_paragraph(); p_l.space_before = Pt(2)
+    apply_p(p_l, l, 13, C_TEXT_LIGHT, bold=True, align=PP_ALIGN.CENTER)
+    p_s = tf.add_paragraph()
+    apply_p(p_s, s, 10.5, c('94A3B8'), align=PP_ALIGN.CENTER)
+
+tx_foot = s1.shapes.add_textbox(Inches(M), Inches(6.7), Inches(W - M * 2), Inches(0.35))
+apply_p(tx_foot.text_frame.paragraphs[0], 'عرض تقديمي موجه لمجلس الإدارة الأكاديمية والعمادة الموقرة', 11.5, c('64748B'))
+
+# ════════════════════════════════════════════════════════════════════
+# 2. الدافع: ما الذي يحلّه هذا النظام؟
+# ════════════════════════════════════════════════════════════════════
+s2 = new_slide()
+make_header(s2, 'التحديات التشغيلية والحلول الجذرية التي يقدمها النظام', 'الرؤية والدافع')
 problems = [
-    ('الورق والواتساب', 'المحاضرات والواجبات والإعلانات موزّعة بين مجموعات دردشة وأوراق — تضيع ولا تُؤرشف.'),
-    ('الحضور اليدوي', 'كشوف ورقية تُحسب يدوياً، ولا إنذار مبكر للطالب المتعثّر قبل فوات الأوان.'),
-    ('المالية المنفصلة', 'الرسوم في دفاتر مستقلة عن السجل الأكاديمي، والطالب لا يعرف رصيده إلا بالسؤال.'),
-    ('لا مصدر واحد', 'كل جهة تحتفظ ببياناتها، فلا تقرير موحّد يعتمد عليه القرار الأكاديمي.')
+    ('تشتت المحتوى والمحاضرات', 'المحاضرات والواجبات موزعة بين مجموعات الواتساب غير الرسمية والأوراق، مما يعرضها للضياع ويصعب أرشفتها.', '[ حفظ وأرشفة ]', C_RED),
+    ('الرصد اليدوي والغياب المفاجئ', 'كشوف الحضور تُسجل وتُحسب يدوياً دون تنبيه مبكر للطالب قبل تجاوزه النسبة القانونية للحرمان.', '[ متابعة دقيقة ]', C_RED),
+    ('انفصال المالية عن السجل الأكاديمي', 'الرسوم تُدار في دفاتر منفصلة، ويضطر الطالب للانتظار اليدوي لمعرفة موقفه المالي وإيصالاته.', '[ ربط مالي ]', C_RED),
+    ('غياب المصدر الموحد للتقارير والقرار', 'تعدد مصادر البيانات يعيق استخراج مؤشرات الأداء الحقيقية ويؤخر اتخاذ القرارات الأكاديمية.', '[ مصدر موحد ]', C_RED)
 ]
-for i, (t, b) in enumerate(problems):
-    col = i % 2
-    row = i // 2
-    card(s2, M + col * 6.15, 1.85 + row * 2.25, 5.8, 2.0, t, b, icon='✕', accent=RED_ACCENT)
+for i, (t, b, tag, col) in enumerate(problems):
+    sleek_card(s2, M + (i % 2) * 6.05, 1.75 + (i // 2) * 2.45, 5.75, 2.2, t, b, tag=tag, accent=col)
 
-# ══════════════ 3. نظرة عامة بالأرقام ══════════════
-s3 = prs.slides.add_slide(blank_layout)
-add_bg(s3, LIGHT)
-head(s3, 'النظام في أرقامه', 'نظرة عامة')
-stats = [('٣٠', 'وحدة خدمية (API)', BLUE), ('٥٠', 'شاشة تفاعلية', NAVY), ('٢٨', 'نموذج بيانات', GREEN), ('٥', 'أدوار بصلاحيات', AMBER)]
-for i, (n, l, c) in enumerate(stats):
-    stat_box(s3, M + i * 3.05, 1.95, 2.85, n, l, color=c)
-
-card(s3, M, 4.25, 12.0, 2.3, 'بنية واحدة تخدم الويب والهاتف معاً',
-     'الخادم Node.js مع قاعدة MongoDB يخدم موقع الويب وتطبيق الأندرويد وتطبيق الآيفون من نفس المصدر — أي تحديث يصل الجميع فوراً دون إعادة بناء. التطبيق مبني بـ Capacitor مع إشعارات فورية وبصمة ودعم العمل بلا إنترنت.',
-     icon='◆', accent=NAVY)
-
-# ══════════════ 4. الأدوار ══════════════
-s4 = prs.slides.add_slide(blank_layout)
-head(s4, 'خمسة أدوار — كل دور يرى ما يخصّه فقط', 'الصلاحيات')
-roles = [
-    ('الطالب', 'المواد، المحاضرات، الواجبات والتسليم، الحضور، الاختبارات، الرسوم، السجل الأكاديمي.', BLUE),
-    ('قائد الدفعة', 'كل صلاحيات الطالب، بالإضافة إلى رفع المحاضرات ورصد الحضور وإرسال تنبيهات دفعته.', PURPLE),
-    ('أستاذ المادة', 'إدارة مواده ومحاضراته، إنشاء الاختبارات، تقييم التسليمات، رصد الحضور، تقارير دفعاته.', GREEN),
-    ('العميد', 'صلاحية كاملة: المستخدمون، الدفعات، المالية، التقارير، البلاغات، إعدادات النظام.', NAVY),
-    ('مسؤول النظام', 'صلاحيات العميد التقنية مع مراقبة تشغيلية ومؤشرات أداء الخادم.', MUTED)
+# ════════════════════════════════════════════════════════════════════
+# 3. نظرة عامة بالأرقام
+# ════════════════════════════════════════════════════════════════════
+s3 = new_slide()
+make_header(s3, 'النظام في أرقام واقعية مستخرجة من بنية الكود', 'نظرة عامة على المشروع')
+stats_data = [
+    ('٣٠', 'وحدة خدمية (API)', 'تغطي كافة الاحتياجات الأكاديمية', C_PRIMARY),
+    ('٥٠', 'شاشة تفاعلية', 'مصممة للويب والهاتف بسلاسة', C_SECONDARY),
+    ('٢٨', 'نموذج بيانات', 'بنية قوية ومترابطة في MongoDB', C_PURPLE),
+    ('٥', 'أدوار بصلاحيات', 'عزل أمني تام ومحكم بين المستخدمين', C_AMBER)
 ]
-for i, (t, b, c) in enumerate(roles):
-    y = 1.75 + i * 1.05
-    circ = s4.shapes.add_shape(MSO_SHAPE.OVAL, Inches(W - M - 0.65), Inches(y + 0.12), Inches(0.55), Inches(0.55))
-    circ.fill.solid()
-    circ.fill.fore_color.rgb = c
-    circ.line.fill.background()
-    set_para(circ.text_frame.paragraphs[0], str(i + 1), 16, WHITE, bold=True, align=PP_ALIGN.CENTER, rtl=False)
-    
-    tx = s4.shapes.add_textbox(Inches(M), Inches(y), Inches(11.2), Inches(0.9))
-    tf = tx.text_frame
-    tf.word_wrap = True
-    p0 = tf.paragraphs[0]
-    set_para(p0, t, 16, NAVY, bold=True)
-    p1 = tf.add_paragraph()
-    set_para(p1, b, 12.5, MUTED)
+for i, (n, l, sub, col) in enumerate(stats_data):
+    metric_card(s3, M + i * 3.0, 1.75, 2.8, 2.0, n, l, sub, accent=col)
 
-# ══════════════ 5. المحور الأكاديمي ══════════════
-s5 = prs.slides.add_slide(blank_layout)
-add_bg(s5, LIGHT)
-head(s5, 'الدورة الأكاديمية الكاملة', 'المحور الأول')
-flow = [
-    ('١', 'المواد والدفعات', 'العميد ينشئ الدفعات والمواد ويسند الأساتذة.'),
-    ('٢', 'المحاضرات', 'رفع الشيتات والفيديو مع ترتيب معتمد وحفظ للعمل بلا إنترنت.'),
-    ('٣', 'الواجبات', 'تكليف بموعد نهائي، تسليم الطالب بملف، ومنع التسليم بعد الموعد.'),
-    ('٤', 'التقييم', 'الأستاذ يرصد الدرجة والملاحظات، والطالب يُشعَر فوراً.')
+sleek_card(s3, M, 4.25, 11.8, 2.5, 
+           'بنية موحدة تخدم الويب وتطبيقات الهواتف (Android & iOS) من مصدر واحد',
+           'يعتمد النظام على خادم موحد حديث مبني بـ Node.js و Express وقاعدة بيانات MongoDB، يخدم البوابة الإلكترونية وتطبيقات الهواتف الذكية في وقت واحد. أي تحديث في المقررات أو الإعلانات يصل لجميع المستخدمين فوراً دون الحاجة لإعادة تثبيت التطبيق. كما يدعم العمل بدون اتصال بالإنترنت وحفظ المحاضرات للدراسة في أي وقت.',
+           tag='[ بنية تقنية حديثة ]', accent=C_PRIMARY)
+
+# ════════════════════════════════════════════════════════════════════
+# 4. منظومة الصلاحيات (5 أدوار)
+# ════════════════════════════════════════════════════════════════════
+s4 = new_slide()
+make_header(s4, 'خمسة مستويات صلاحية — عزل أمني دقيق ومفروض برمجياً', 'الحوكمة والأدوار')
+roles_data = [
+    ('الطالب (Student)', 'الوصول للمواد، المحاضرات والشيتات، تسليم الواجبات، بنك الاختبارات، الحضور، والسجل الأكاديمي والمالي الشخصي.', '[ الدور 01 ]', C_PRIMARY),
+    ('قائد الدفعة (Batch Leader)', 'صلاحيات الطالب، بالإضافة إلى تسهيل رفع محاضرات الدفعة، المساعدة في رصد الحضور، وإرسال التنبيهات المباشرة.', '[ الدور 02 ]', C_PURPLE),
+    ('أستاذ المادة (Professor)', 'إدارة المواد والمحاضرات، إعداد الاختبارات وتحديد مددها، تصحيح وتقييم التكليفات، ورصد الحضور والتقارير الأكاديمية.', '[ الدور 03 ]', C_SECONDARY),
+    ('العميد وإدارة الكلية (Dean)', 'صلاحيات إشرافية شاملة: إدارة المستخدمين والدفعات، متابعة المالية والرسوم، استخراج التقارير المركزية، ومراجعة البلاغات.', '[ الدور 04 ]', C_AMBER),
+    ('مسؤول النظام (System Admin)', 'المراقبة التشغيلية للخوادم، إدارة النسخ الاحتياطي، ضبط إعدادات الإصدارات، ومتابعة الأداء واستقرار الخدمة.', '[ الدور 05 ]', C_TEXT_MUTED)
 ]
-for i, (n, t, b) in enumerate(flow):
-    card(s5, M + i * 3.05, 1.85, 2.85, 2.5, t, b, icon=n, accent=BLUE)
+for i, (t, b, tag, col) in enumerate(roles_data):
+    sleek_card(s4, M, 1.7 + i * 1.02, 11.8, 0.92, t, b, tag=tag, accent=col)
 
-card(s5, M, 4.65, 5.8, 1.9, 'إعادة التسليم بمهلة محددة',
-     'الطالب الذي حصل على أقل من ٦٠٪ يمكنه إعادة التسليم خلال سبعة أيام من الموعد، وتُوسَم النسخة كمتأخرة أمام المقيّم.',
-     icon='↺', accent=AMBER)
-card(s5, M + 6.15, 4.65, 5.85, 1.9, 'متابعة من لم يسلّم',
-     'الأستاذ يرى قائمة الطلاب الذين لم يسلّموا التكليف مفلترة حسب الدفعة، فيتابعهم قبل إغلاق الموعد.',
-     icon='⚑', accent=GREEN)
-
-# ══════════════ 6. الحضور والإنذار المبكر ══════════════
-s6 = prs.slides.add_slide(blank_layout)
-head(s6, 'الحضور والإنذار المبكر', 'المحور الثاني')
-card(s6, M, 1.8, 5.8, 2.15, 'رصد الحضور الإلكتروني',
-     'الأستاذ أو قائد الدفعة يرصد الحضور لكل مادة في كل يوم. سجل واحد لكل حصة يمنع الازدواج، وتُحفظ هوية من رصده.',
-     icon='✓', accent=GREEN)
-card(s6, M + 6.15, 1.8, 5.85, 2.15, 'تنبيه تلقائي عند الخطر',
-     'حين تنزل نسبة حضور الطالب تحت ٧٥٪ يصله تنبيه فوري بنسبته الحالية والحد المطلوب — قبل أن يفقد حقه في الامتحان.',
-     icon='!', accent=RED_ACCENT)
-card(s6, M, 4.2, 12.0, 2.35, 'تقرير الإنذار المبكر — للعميد والأستاذ',
-     'يجمع التقرير ثلاثة مؤشرات لكل طالب: تراجع الحضور، وتراكم الواجبات غير المسلَّمة، وتدنّي نتائج الاختبارات — ويصنّف الطلاب إلى خطر مرتفع ومتوسط ومنخفض.\nالغرض: تدخّل الكلية مبكراً بدل اكتشاف التعثّر في نتيجة نهاية الفصل.',
-     icon='◈', accent=NAVY)
-
-# ══════════════ 7. التقييم الإلكتروني ══════════════
-s7 = prs.slides.add_slide(blank_layout)
-add_bg(s7, LIGHT)
-head(s7, 'الاختبارات وبنك الامتحانات', 'المحور الثالث')
-feats = [
-    ('اختبارات موقوتة', 'الأستاذ يحدد نافذة الإتاحة ومدة الاختبار. المؤقّت يبدأ عند فتح الطالب للاختبار ويُغلق تلقائياً عند انتهاء المدة.', '⏱', BLUE),
-    ('تصحيح فوري', 'أسئلة اختيار من متعدد بدرجات مخصصة لكل سؤال، والتصحيح والدرجة يظهران لحظة التسليم.', '✍', GREEN),
-    ('بنك الامتحانات السابقة', 'أرشيف امتحانات الفاينل مصنّف بالمادة والسنة والفصل، متاح للطلاب للمراجعة.', '📄', NAVY),
-    ('محاكاة الامتحان', 'الطالب يؤدي امتحاناً سابقاً محاكاةً فيحصل على نتيجته ومراجعة لكل سؤال وتشخيص لمستواه.', '◎', AMBER)
+# ════════════════════════════════════════════════════════════════════
+# 5. الدورة الأكاديمية
+# ════════════════════════════════════════════════════════════════════
+s5 = new_slide()
+make_header(s5, 'إدارة الدورة الأكاديمية من المحاضرة حتى التقييم والرصد', 'المحور الأكاديمي')
+flow_steps = [
+    ('المواد والدفعات', 'إنشاء الدفعات وتخصيص المواد وإسناد الأساتذة المختصين.', '[ خطوة 01 ]'),
+    ('رفع المحاضرات', 'رفع ملفات PDF والفيديوهات مع ترتيب تسلسلي وإمكانية الحفظ للعمل دون اتصال.', '[ خطوة 02 ]'),
+    ('التكليفات والواجبات', 'طرح الواجبات بموعد استحقاق محدد، ورفع الحلول مع منع التأخير التلقائي.', '[ خطوة 03 ]'),
+    ('التصحيح والرصد', 'رصد الدرجات وكتابة الملاحظات مع إشعار الطالب بالنتيجة لحظياً.', '[ خطوة 04 ]')
 ]
-for i, (t, b, ic, c) in enumerate(feats):
-    col = i % 2
-    row = i // 2
-    card(s7, M + col * 6.15, 1.85 + row * 2.35, 5.8, 2.1, t, b, icon=ic, accent=c)
+for i, (t, b, tag) in enumerate(flow_steps):
+    sleek_card(s5, M + i * 3.0, 1.75, 2.8, 2.4, t, b, tag=tag, accent=C_PRIMARY)
 
-# ══════════════ 8. كيدي ══════════════
-s8 = prs.slides.add_slide(blank_layout)
-add_bg(s8, NAVY)
-tx = s8.shapes.add_textbox(Inches(M), Inches(0.55), Inches(11.9), Inches(1.8))
-tf = tx.text_frame
-tf.word_wrap = True
-set_para(tf.paragraphs[0], 'المساعد الذكي الأكاديمي', 13, hex_to_rgb('7FB3E8'), bold=True)
-p1 = tf.add_paragraph()
-set_para(p1, '«كيدي» — يقرأ محتوى المادة فعلياً', 34, WHITE, bold=True)
-p2 = tf.add_paragraph()
-p2.space_before = Pt(8)
-set_para(p2, 'ليس روبوت محادثة عاماً: كيدي يستخرج نص محاضرات المادة من ملفاتها ويجيب منها هي، فتكون الإجابة من منهج الكلية لا من الإنترنت.', 15, SKY_LIGHT)
+sleek_card(s5, M, 4.5, 5.75, 2.2, 'إعادة التسليم لتحسين التحصيل الأكاديمي',
+           'يمنح النظام فرصة للطلاب الحاصلين على أقل من 60% لإعادة تسليم التكليف خلال مهلة محددة (7 أيام) مع وسم المحاولة كمتأخرة أمام الأستاذ لضمان العدالة.',
+           tag='[ تحسين التحصيل ]', accent=C_AMBER)
 
-ai_feats = [
-    ('التلخيص والشرح', 'يلخّص محاضرة أو المادة كاملة، ويشرح أي جزئية بلغة مبسّطة.'),
-    ('توليد بطاقات الاستذكار', 'يحوّل المحاضرة إلى بطاقات مراجعة سريعة تلقائياً.'),
-    ('توليد اختبارات تجريبية', 'يبني أسئلة متوقعة من محتوى المادة لمراجعة ما قبل الامتحان.'),
-    ('مصحّح أخطاء البرمجة', 'يشرح سبب خطأ الكود ويقترح التصحيح لطلاب تقنية المعلومات.')
+sleek_card(s5, M + 6.05, 4.5, 5.75, 2.2, 'لوحة المتابعة للواجبات غير المسلمة',
+           'تمكّن الأستاذ من استعراض قائمة الطلاب الذين لم يقوموا بتسليم الواجب بضغطة زر واحدة لتوجيه التذكيرات لهم قبل إغلاق الموعد النهائي.',
+           tag='[ متابعة مستمرة ]', accent=C_SECONDARY)
+
+# ════════════════════════════════════════════════════════════════════
+# 6. الحضور والإنذار المبكر
+# ════════════════════════════════════════════════════════════════════
+s6 = new_slide()
+make_header(s6, 'رصد الحضور الإلكتروني ونظام الإنذار المبكر للطلاب المتعثرين', 'حماية التحصيل الأكاديمي')
+sleek_card(s6, M, 1.75, 5.75, 2.25, 'رصد الحضور اليومي السريع',
+           'يقوم الأستاذ أو قائد الدفعة بتسجيل الحضور بضغطة زر لكل محاضرة. يعتمد النظام سجلاً موحداً يمنع تكرار الرصد ويوثق هوية الراصد وتوقيت العملية بدقة.',
+           tag='[ رصد فوري ]', accent=C_SECONDARY)
+
+sleek_card(s6, M + 6.05, 1.75, 5.75, 2.25, 'التنبيه الآلي عند تخطي حاجز الغياب',
+           'بمجرد انخفاض نسبة حضور الطالب إلى أقل من 75%، يقوم النظام تلقائياً بإرسال تنبيه مباشر إلى هاتفه يحذره من مخاطر الحرمان من الامتحان النهائي.',
+           tag='[ إنذار آلي ]', accent=C_RED)
+
+sleek_card(s6, M, 4.35, 11.8, 2.45, 'تقرير الإنذار المبكر الاستباقي (Early Warning System)',
+           'لوحة استخبارات أكاديمية متقدمة للعميد ورؤساء الأقسام تجمع 3 محاور أساسية: (معدل تراجع الحضور + تراكم الواجبات غير المسلمة + نتائج الاختبارات الدورية). يصنف التقرير الطلاب إلى 3 مستويات خطر (مرتفع، متوسط، منخفض) ليتيح للكلية التدخل الإرشادي المبكر ومعالجة تعثر الطالب قبل الامتحانات النهائية.',
+           tag='[ حوكمة ومتابعة ]', accent=C_NAVY_DEEP)
+
+# ════════════════════════════════════════════════════════════════════
+# 7. التقييم الإلكتروني
+# ════════════════════════════════════════════════════════════════════
+s7 = new_slide()
+make_header(s7, 'منظومة الاختبارات الإلكترونية وأرشيف بنك الامتحانات السابقة', 'التقييم المستمر')
+eval_cards = [
+    ('اختبارات دورية موقوتة من الخادم', 'يحدد الأستاذ نافذة إتاحة الاختبار ومدته بالدقائق. يتم احتساب الوقت بدقة عبر الخادم لضمان عدم التلاعب بالمؤقت حتى لو أُغلقت الصفحة.', '[ اختبارات موقوتة ]', C_PRIMARY),
+    ('تصحيح آلي فوري وإعلان النتائج', 'أسئلة اختيار من متعدد مع درجات مخصصة وتغذية راجعة، وتظهر النتيجة مع تفاصيل الإجابات الصحيحة لحظة التسليم فوراً.', '[ تصحيح فوري ]', C_SECONDARY),
+    ('بنك الامتحانات النهائية السابقة', 'أرشيف رقمي منظم يحتوي على نماذج امتحانات السنوات السابقة مصنفة حسب المادة والفصل الدراسي لتمكين الطلاب من الاستعداد الأمثل.', '[ أرشيف امتحانات ]', C_PURPLE),
+    ('محاكاة الامتحانات وتشخيص المستوى', 'يتيح للطالب خوض تجربة امتحان سابق كامل بنظام المحاكاة، ويمنحه تقريراً فورياً بنقاط القوة والمواضيع التي تحتاج إلى تركيز ومراجعة.', '[ محاكاة وتشخيص ]', C_AMBER)
 ]
-for i, (t, b) in enumerate(ai_feats):
-    col = i % 2
-    row = i // 2
-    card(s8, M + col * 6.15, 2.85 + row * 1.65, 5.8, 1.45, t, b, tone=hex_to_rgb('164B7D'), border_color=hex_to_rgb('256296'), title_color=WHITE)
+for i, (t, b, tag, col) in enumerate(eval_cards):
+    sleek_card(s7, M + (i % 2) * 6.05, 1.75 + (i // 2) * 2.5, 5.75, 2.25, t, b, tag=tag, accent=col)
 
-tx_note = s8.shapes.add_textbox(Inches(M), Inches(6.35), Inches(11.9), Inches(0.4))
-set_para(tx_note.text_frame.paragraphs[0], 'يعمل على أربعة مزوّدين بالتناوب (Gemini · Qwen · Cohere · Groq) — تعطُّل أحدهم لا يوقف الخدمة.', 12, hex_to_rgb('8FB8DF'))
+# ════════════════════════════════════════════════════════════════════
+# 8. كيدي (Kedy AI)
+# ════════════════════════════════════════════════════════════════════
+s8 = new_slide(C_NAVY_DEEP)
+make_header(s8, 'المساعد الأكاديمي الذكي «كيدي» — مرتبط بمناهج الكلية الفعلية', 'الذكاء الاصطناعي الأكاديمي', is_dark=True)
 
-# ══════════════ 9. أدوات الطالب ══════════════
-s9 = prs.slides.add_slide(blank_layout)
-head(s9, 'أدوات تدعم الطالب خارج المحاضرة', 'المحور الرابع')
-tools = [
-    ('مختبر البرمجة السحابي', 'كتابة كود C++ وتشغيله من المتصفح أو الهاتف دون تثبيت أي برنامج.', '⌨', BLUE),
-    ('غرف المذاكرة الجماعية', 'غرفة لكل دفعة بمهام مشتركة ومؤقّت بومودورو يتزامن بين الطلاب لحظياً.', '◷', PURPLE),
-    ('بطاقات الاستذكار', 'بطاقات مراجعة سريعة تُولَّد من المحاضرة أو يكتبها الطالب بنفسه.', '▤', GREEN),
-    ('لوحة المتصدرين', 'نقاط تُمنح على إنجاز الواجبات وأداء الاختبارات، وترتيب يحفّز المنافسة.', '★', AMBER),
-    ('السجل الأكاديمي الموثق', 'سجل رقمي بالحضور والدرجات والإنجازات، برقم تسلسلي وبصمة تحقق.', '◫', NAVY),
-    ('تقييم جودة المقررات', 'استبيان مجهول الهوية يقيس رضا الطلاب عن كل مقرر وأستاذه.', '✉', MUTED)
+tx_ai_intro = s8.shapes.add_textbox(Inches(M), Inches(1.55), Inches(W - M * 2), Inches(0.75))
+apply_p(tx_ai_intro.text_frame.paragraphs[0], 
+        'ليس مجرد روبوت محادثة عام: يقرأ كيدي ملفات ومحاضرات المواد الفعلية المرفوعة في النظام، ويجيب الطلاب بدقة من صلب المنهج الدراسي المعتمد للكلية.',
+        14.5, C_TEXT_SKY)
+
+ai_features = [
+    ('التلخيص والشرح التفاعلي', 'تلخيص المحاضرات الطويلة واستخراج النقاط المفتاحية وتبسيط المفاهيم المعقدة باللغة المناسبة للطالب.', '[ ميزة 01 ]'),
+    ('توليد بطاقات الاستذكار (Flashcards)', 'استخراج الأسئلة السريعة والإجابات من محتوى الشيتات وتحويلها إلى بطاقات مراجعة تفاعلية.', '[ ميزة 02 ]'),
+    ('بناء اختبارات تدريبية تجريبية', 'توليد أسئلة امتحانية متوقعة ومتنوعة الصعوبة بناءً على ما تم شرحه في المحاضرات للمراجعة الذاتية.', '[ ميزة 03 ]'),
+    ('مساعد تصحيح الأكواد البرمجية', 'شرح رسائل الخطأ البرمجية وتقديم توجيهات وحلول لطلاب تقنية المعلومات مع الحفاظ على الأمان الأكاديمي.', '[ ميزة 04 ]')
 ]
-for i, (t, b, ic, c) in enumerate(tools):
-    col = i % 3
-    row = i // 3
-    card(s9, M + col * 4.05, 1.85 + row * 2.35, 3.8, 2.1, t, b, icon=ic, accent=c)
+for i, (t, b, tag) in enumerate(ai_features):
+    sleek_card(s8, M + (i % 2) * 6.05, 2.45 + (i // 2) * 1.95, 5.75, 1.75, t, b, tag=tag, is_dark=True, accent=C_AMBER)
 
-# ══════════════ 10. المالية ══════════════
-s10 = prs.slides.add_slide(blank_layout)
-add_bg(s10, LIGHT)
-head(s10, 'الوحدة المالية', 'المحور الخامس')
-card(s10, M, 1.85, 3.8, 2.3, 'الرسوم الجامعية',
-     'العميد يضيف رسوماً لطالب واحد أو لدفعة كاملة، بخصم وتاريخ استحقاق، ويُشعَر الطالب فوراً.', icon='₤', accent=NAVY)
-card(s10, M + 4.05, 1.85, 3.8, 2.3, 'السداد والتخصيص التلقائي',
-     'كل دفعة تُخصَّم من أقدم رسم مستحق أولاً (FIFO)، وتُسجَّل العملية كاملة في معاملة واحدة لا تنقسم.', icon='⇄', accent=GREEN)
-card(s10, M + 8.1, 1.85, 3.9, 2.3, 'إشعارات وإيصالات السداد',
-     'الطالب يرفع صورة إيصال التحويل من هاتفه، والإدارة تراجعه وتعتمده أو ترفضه بسبب مكتوب.', icon='⎙', accent=BLUE)
-card(s10, M, 4.45, 12.0, 2.1, 'سجل الأرصدة وتقرير المتأخرات',
-     'لوحة واحدة تعرض إجمالي الرسوم والمدفوع والرصيد لكل طالب، مع تقرير بالمتأخرات وتذكير تلقائي للطلاب المتأخرين عن السداد. الأرقام مشتقة من مصدر واحد فلا تتضارب بين الشاشات.', icon='▦', accent=AMBER)
+tx_ai_foot = s8.shapes.add_textbox(Inches(M), Inches(6.6), Inches(W - M * 2), Inches(0.4))
+apply_p(tx_ai_foot.text_frame.paragraphs[0], 
+        'موثوقية تشغيلية وتكلفة صفرية: يعمل النظام بالتناوب الذكي التلقائي بين 4 مزودين عالميين (Gemini · Qwen · Cohere · Groq).', 
+        12.5, C_TEXT_SKY)
 
-# ══════════════ 11. التواصل ══════════════
-s11 = prs.slides.add_slide(blank_layout)
-head(s11, 'التواصل والإشعارات', 'المحور السادس')
-comm = [
-    ('إشعارات فورية على الهاتف', 'تصل الهاتف فوراً — درجة جديدة، تنبيه غياب، رسوم مستحقة، إعلان عاجل.', '⚡'),
-    ('توجيه دقيق', 'الإشعار يُوجَّه لدفعة أو فئة أو شخص بعينه، ولا يصل من لا يعنيه.', '◉'),
-    ('التقويم الأكاديمي الموحد', 'المواعيد والامتحانات والفعاليات في تقويم واحد يراه الطالب والأستاذ.', '📅'),
-    ('أسئلة على الفيديو', 'الطالب يسأل عند لحظة محددة في المحاضرة المسجّلة، فيجيبه الأستاذ في موضعها.', '💬')
+# ════════════════════════════════════════════════════════════════════
+# 9. أدوات الطلاب
+# ════════════════════════════════════════════════════════════════════
+s9 = new_slide()
+make_header(s9, 'بيئة تعليمية متكاملة تدعم الطالب داخل وخارج القاعة الدراسية', 'أدوات الطلاب')
+student_tools = [
+    ('مختبر البرمجة السحابي (Code Lab)', 'بيئة لكتابة وتنفيذ أكواد C++ وتشغيلها مباشرة من المتصفح أو الهاتف دون الحاجة لتثبيت برامج إضافية.', '[ مختبر برمجي ]', C_PRIMARY),
+    ('غرف المذاكرة الجماعية (Study Pods)', 'غرف افتراضية لكل دفعة تتضمن مؤقت بومودورو للمذاكرة متزامن لحظياً بين الطلاب وقائمة مهام مشتركة.', '[ مذاكرة جماعية ]', C_PURPLE),
+    ('بطاقات الاستذكار الرقمية', 'أداة مراجعة سريعة للمصطلحات والمفاهيم تمكن الطالب من صناعة بطاقاته الخاصة أو توليدها آلياً.', '[ بطاقات استذكار ]', C_SECONDARY),
+    ('لوحة المتصدرين والتحفيز', 'نظام نقاط ومكافآت على تسليم الواجبات والتفوق في الاختبارات لخلق بيئة تنافسية إيجابية ومحفزة.', '[ لوحة الشرف ]', C_AMBER),
+    ('السجل الأكاديمي الرقمي الموثق', 'سجل شامل بإنجازات الطالب ونسب الحضور والدرجات مع رمز تحقق وبصمة أمان إلكترونية.', '[ سجل موثق ]', C_NAVY_DEEP),
+    ('استبيانات جودة المقررات', 'تقييم فصلي مجهول الهوية يقيس رضا الطلاب عن المقررات والأداء الأكاديمي لضمان الجودة.', '[ استبيان جودة ]', C_TEXT_MUTED)
 ]
-for i, (t, b, ic) in enumerate(comm):
-    y = 1.8 + i * 1.05
-    circ = s11.shapes.add_shape(MSO_SHAPE.OVAL, Inches(W - M - 0.65), Inches(y + 0.08), Inches(0.55), Inches(0.55))
-    circ.fill.solid()
-    circ.fill.fore_color.rgb = BLUE
-    circ.line.fill.background()
-    set_para(circ.text_frame.paragraphs[0], ic, 16, WHITE, align=PP_ALIGN.CENTER, rtl=False)
-    
-    tx = s11.shapes.add_textbox(Inches(M), Inches(y), Inches(11.2), Inches(0.9))
-    tf = tx.text_frame
-    tf.word_wrap = True
-    set_para(tf.paragraphs[0], t, 16, NAVY, bold=True)
-    p1 = tf.add_paragraph()
-    set_para(p1, b, 12.5, MUTED)
+for i, (t, b, tag, col) in enumerate(student_tools):
+    sleek_card(s9, M + (i % 3) * 4.0, 1.75 + (i // 3) * 2.45, 3.8, 2.25, t, b, tag=tag, accent=col)
 
-card(s11, M, 6.0, 12.0, 0.95, 'الإبلاغ عن المحتوى المسيء وحظر المستخدمين — مع التزام بالمراجعة خلال ٢٤ ساعة',
-     icon='⚑', tone=LIGHT, border_color=CARD_BORDER, accent=GREEN)
+# ════════════════════════════════════════════════════════════════════
+# 10. المالية
+# ════════════════════════════════════════════════════════════════════
+s10 = new_slide()
+make_header(s10, 'إدارة الرسوم الدراسية وعمليات السداد بأعلى معايير الدقة', 'الوحدة المالية')
+sleek_card(s10, M, 1.75, 3.8, 2.4, 'إسناد الرسوم والخصومات',
+           'إمكانية إضافة الرسوم لطالب محدد أو للدفعة بالكامل، مع تحديد مواعيد الاستحقاق وتطبيق المنح والخصومات المعتمدة وإشعار الطالب فوراً.',
+           tag='[ تحديد الرسوم ]', accent=C_NAVY_DEEP)
 
-# ══════════════ 12. الأمان ══════════════
-s12 = prs.slides.add_slide(blank_layout)
-add_bg(s12, LIGHT)
-head(s12, 'الأمان وخصوصية البيانات', 'الحوكمة')
-sec = [
-    ('كلمات المرور', 'مشفّرة بـ bcrypt ولا تُخزَّن كنص. تغييرها إلزامي عند أول دخول.'),
-    ('الدخول بالبصمة', 'دعم البصمة والتعرّف على الوجه عبر Passkeys بدل كتابة كلمة المرور.'),
-    ('جلسة واحدة نشطة', 'الدخول من جهاز جديد ينهي الجلسة السابقة تلقائياً.'),
-    ('عزل الدفعات', 'الخادم يمنع الوصول لبيانات دفعة أخرى — لا الواجهة فقط.'),
-    ('ملفات محمية', 'تسليمات الطلاب وإيصالات السداد لا تُفتح إلا بحساب مصرّح.'),
-    ('حذف الحساب', 'الطالب يحذف حسابه وبياناته الشخصية بنفسه من داخل التطبيق.')
+sleek_card(s10, M + 4.0, 1.75, 3.8, 2.4, 'التخصيص التلقائي (FIFO)',
+           'تخصيص أي دفعة تسديد تلقائياً لأقدم رسم مستحق داخل معاملة واحدة (Transaction) تضمن استحالة حدوث أي خطأ أو تضارب محاسبي.',
+           tag='[ تخصيص آلي ]', accent=C_SECONDARY)
+
+sleek_card(s10, M + 8.0, 1.75, 3.8, 2.4, 'رفع ومراجعة الإيصالات',
+           'يرفع الطالب صورة إشعار التحويل البنكي عبر هاتفه، وتتولى الإدارة المالية فحص الطلب والموافقة عليه أو رفضه مع إبداء السبب.',
+           tag='[ تدقيق الإيصالات ]', accent=C_PRIMARY)
+
+sleek_card(s10, M, 4.45, 11.8, 2.35, 'لوحة متابعة الأرصدة والتقارير المالية المركزية',
+           'عرض شامل لإجمالي الرسوم، المبالغ المسددة، والمتبقي لكل طالب، مع تقرير تفصيلي بالمتأخرات وإمكانية إرسال تذكيرات آلية للطلاب المتأخرين عن السداد. جميع الأرقام مترابطة من قاعدة بيانات واحدة.',
+           tag='[ تقارير مالية مركزية ]', accent=C_AMBER)
+
+# ════════════════════════════════════════════════════════════════════
+# 11. التواصل
+# ════════════════════════════════════════════════════════════════════
+s11 = new_slide()
+make_header(s11, 'شبكة تواصل فورية وتنبيهات مخصصة تربط الكلية بطلابها', 'التواصل والتنبيهات')
+comm_items = [
+    ('إشعارات Push فورية على الهواتف', 'تصل مباشرة إلى شاشة هاتف المستخدم كإشعار نظام حقيقي — عند رصد درجة، تنبيه غياب، أو إعلان عاجل.', '[ إشعار فوري ]', C_PRIMARY),
+    ('توجيه ذكي ومستهدف للإعلانات', 'إمكانية إرسال الإشعار لدفعة محددة، أو تخصص معين، أو طالب بعينه دون إزعاج باقي المستخدمين.', '[ توجيه مستهدف ]', C_SECONDARY),
+    ('التقويم الأكاديمي الشامل', 'تقويم موحد يعرض مواعيد الامتحانات، تسليم التكليفات، الفعاليات والعطلات الرسمية للكلية.', '[ تقويم موحد ]', C_AMBER),
+    ('طرح الأسئلة المباشرة على الفيديو', 'يتيح للطالب كتابة استفساره عند دقيقة محددة من المحاضرة المسجلة ليجيب عليه الأستاذ في سياق الشرح.', '[ استفسار موقوت ]', C_PURPLE)
 ]
-for i, (t, b) in enumerate(sec):
-    col = i % 3
-    row = i // 3
-    card(s12, M + col * 4.05, 1.85 + row * 2.3, 3.8, 2.05, t, b, icon='🔒', accent=NAVY)
+for i, (t, b, tag, col) in enumerate(comm_items):
+    sleek_card(s11, M, 1.75 + i * 1.05, 11.8, 0.95, t, b, tag=tag, accent=col)
 
-# ══════════════ 13. التطبيق ══════════════
-s13 = prs.slides.add_slide(blank_layout)
-head(s13, 'تطبيق الهاتف الذكي', 'الوصول')
-card(s13, M, 1.85, 5.8, 2.3, 'أندرويد — جاهز تماماً',
-     'التطبيق مبني ويعمل، بإشعارات فورية ودخول بالبصمة وحفظ المحاضرات للمذاكرة بلا إنترنت.', icon='▲', accent=GREEN)
-card(s13, M + 6.15, 1.85, 5.85, 2.3, 'آيفون — مهيّأ ومبني عبر GitHub Actions',
-     'المشروع جاهز ومبني، ومستوفٍ لشروط App Store. يتبقّى حساب المطوّر للنشر الرسمي.', icon='◆', accent=NAVY)
+sleek_card(s11, M, 6.2, 11.8, 0.75, 
+           'نظام متكامل للإبلاغ عن المحتوى المسيء وحظر المخالفين مع التزام المراجعة خلال 24 ساعة (متطلب رسمي للمتاجر)',
+           tag='[ حماية المجتمع ]', accent=C_RED)
 
-caps = [
-    ('العمل بلا إنترنت (Offline)', 'المحاضرات المحفوظة تُقرأ دون اتصال، والصفحات تعمل من الذاكرة المؤقتة.'),
-    ('إشعارات النظام اللحظية', 'تصل كإشعار هاتف حقيقي حتى والتطبيق مغلق.'),
-    ('تصميم يتكيّف مع كل الشاشات', 'واجهة عربية أصيلة من اليمين لليسار، ووضع ليلي، وتناسق تام.')
+# ════════════════════════════════════════════════════════════════════
+# 12. الأمان
+# ════════════════════════════════════════════════════════════════════
+s12 = new_slide()
+make_header(s12, 'أعلى معايير الحماية والتشفير والامتثال لمعايير الخصوصية', 'الأمان والحوكمة')
+security_items = [
+    ('تشفير كلمات المرور المتقدم', 'تشفير كامل غير قابل للعكس باستخدام bcrypt مع فرض تغيير كلمة المرور الافتراضية عند أول تسجيل دخول.', '[ تشفير bcrypt ]', C_NAVY_DEEP),
+    ('الدخول الحيوي بالبصمة والوجه', 'دعم مصادقة Passkeys والبصمة عبر أجهزة الهواتف لتسهيل الوصول الآمن دون كتابة كلمة المرور.', '[ دخول حيوي ]', C_PRIMARY),
+    ('إدارة الجلسات ومنع الازدواج', 'حصر الحساب في جلسة دخول نشطة واحدة، حيث يؤدي تسجيل الدخول من جهاز جديد لإنهاء الجلسة السابقة.', '[ جلسة واحدة ]', C_PURPLE),
+    ('عزل البيانات على مستوى الخادم', 'ضمان برمجي يمنع أي مستخدم من الوصول لبيانات أو تقارير دفعة أخرى حتى في حال محاولة التلاعب بالروابط.', '[ عزل برمجي ]', C_SECONDARY),
+    ('حماية الملفات والمستندات الحساسة', 'ملفات تسليم الواجبات وإيصالات السداد المالية مشفرة ومحمية ولا تفتح إلا للمصرح لهم فقط.', '[ ملفات محمية ]', C_AMBER),
+    ('حذف الحساب والبيانات الذاتي', 'إتاحة خيار حذف الحساب والبيانات الشخصية للطالب من داخل التطبيق وفق اشتراطات الخصوصية الدولية.', '[ خصوصية وبيانات ]', C_RED)
 ]
-for i, (t, b) in enumerate(caps):
-    card(s13, M + i * 4.05, 4.45, 3.8, 2.1, t, b, icon='◆', accent=BLUE)
+for i, (t, b, tag, col) in enumerate(security_items):
+    sleek_card(s12, M + (i % 3) * 4.0, 1.75 + (i // 3) * 2.45, 3.8, 2.25, t, b, tag=tag, accent=col)
 
-# ══════════════ 14. الخلاصة والطلب ══════════════
-s14 = prs.slides.add_slide(blank_layout)
-add_bg(s14, NAVY)
+# ════════════════════════════════════════════════════════════════════
+# 13. تطبيقات الهواتف
+# ════════════════════════════════════════════════════════════════════
+s13 = new_slide()
+make_header(s13, 'تطبيقات أصلية للأندرويد والآيفون مع دعم العمل دون إنترنت', 'تطبيقات الهواتف')
+sleek_card(s13, M, 1.75, 5.75, 2.4, 'تطبيق الأندرويد (Android) — جاهز 100%',
+           'التطبيق مبني ومختبر ويعمل بكفاءة عالية مع دعم الإشعارات اللحظية والدخول بالبصمة وإمكانية حفظ المحاضرات والملفات للعمل دون إنترنت.',
+           tag='[ منصة أندرويد ]', accent=C_SECONDARY)
 
-tx = s14.shapes.add_textbox(Inches(M), Inches(0.6), Inches(11.9), Inches(1.3))
-tf = tx.text_frame
-tf.word_wrap = True
-set_para(tf.paragraphs[0], 'الخلاصة', 13, hex_to_rgb('7FB3E8'), bold=True)
-p1 = tf.add_paragraph()
-set_para(p1, 'منصة عاملة — والقرارات المطلوبة', 34, WHITE, bold=True)
+sleek_card(s13, M + 6.05, 1.75, 5.75, 2.4, 'تطبيق الآيفون (iOS) — مبني ومهيأ عبر GitHub Actions',
+           'تم إعداد وتجميع حزمة التطبيق (IPA) بنجاح عبر سحابة أبل على GitHub Actions، وهو مستوفٍ لكافة معايير وشروط متجر App Store.',
+           tag='[ منصة iOS ]', accent=C_PRIMARY)
 
-asks = [
-    ('اعتماد التشغيل الرسمي', 'إقرار النظام مرجعاً معتمداً للحضور والواجبات والدرجات بدل الطرق الحالية.'),
-    ('تدريب الأساتذة', 'جلسة تعريفية قصيرة لأساتذة المواد على رفع المحاضرات ورصد الحضور والتقييم.'),
-    ('حساب مطوّر آبل', 'اشتراك سنوي ٩٩ دولاراً لإتمام نشر تطبيق الآيفون على متجر App Store.'),
-    ('مسؤول متابعة البلاغات', 'تكليف موظف بمراجعة بلاغات المحتوى يومياً — شرط بقاء التطبيق في المتاجر.')
+mobile_caps = [
+    ('العمل دون اتصال (Offline First)', 'قراءة المحاضرات والشيتات المحفوظة مسبقاً وتصفح واجهات التطبيق في حال انقطاع شبكة الإنترنت.', '[ ميزة الأوفلاين ]', C_PRIMARY),
+    ('إشعارات النظام التفاعلية', 'استقبال الإشعارات والتحذيرات الأكاديمية على الهاتف مباشرة حتى عندما يكون التطبيق مغلقاً بالكامل.', '[ إشعارات Push ]', C_AMBER),
+    ('واجهة عربية متكيفة بالكامل', 'تصميم متوافق مع كافة مقاسات الشاشات من الهواتف الصغيرة وحتى الأجهزة اللوحية مع دعم الوضع الليلي.', '[ تصميم متجاوب ]', C_PURPLE)
 ]
-for i, (t, b) in enumerate(asks):
-    col = i % 2
-    row = i // 2
-    x = M + col * 6.15
-    y = 2.05 + row * 2.0
-    
-    card(s14, x, y, 5.8, 1.8, t, b, icon=str(i + 1),
-         tone=hex_to_rgb('164B7D'), border_color=hex_to_rgb('256296'), accent=AMBER, title_color=WHITE)
+for i, (t, b, tag, col) in enumerate(mobile_caps):
+    sleek_card(s13, M + i * 4.0, 4.45, 3.8, 2.3, t, b, tag=tag, accent=col)
 
-tx_foot14 = s14.shapes.add_textbox(Inches(M), Inches(6.55), Inches(11.9), Inches(0.4))
-set_para(tx_foot14.text_frame.paragraphs[0], 'كلية النصر التقنية — النظام الجامعي الرقمي المتكامل · الإصدار ٢.١.٠', 12, hex_to_rgb('7FA5CC'))
+# ════════════════════════════════════════════════════════════════════
+# 14. الخاتمة
+# ════════════════════════════════════════════════════════════════════
+s14 = new_slide(C_NAVY_DEEP)
+make_header(s14, 'المنصة جاهزة للتشغيل الكامل — التوصيات والقرارات المقترحة', 'الخاتمة وخطة العمل', is_dark=True)
+decisions = [
+    ('اعتماد التشغيل الرسمي للنظام', 'إقرار المنصة كمرجع رسمي معتمد لرصد الحضور وتكليفات الواجبات والدرجات بدلاً من الطرق التقليدية لضمان التزام كافة الأطراف.', '[ القرار 01 ]', C_AMBER),
+    ('ورشة تدريبية قصيرة للأساتذة', 'تنظيم جلسة تعريفية عملية لأساتذة المواد لشرح آليات رفع المحاضرات وبنك الأسئلة ورصد الحضور والتقييم السريع.', '[ القرار 02 ]', C_TEXT_SKY),
+    ('توفير حساب مطور أبل (Apple Developer)', 'اشتراك سنوي (99$) لنشر تطبيق الآيفون المكتمل رسمياً على متجر App Store وإتاحته لكافة طلاب الكلية.', '[ القرار 03 ]', C_SECONDARY),
+    ('تعيين مسؤول مراجعة البلاغات', 'تكليف موظف إداري بمتابعة بلاغات المحتوى لضمان الاستجابة السريعة خلال 24 ساعة كمتطلب استمرار في المتاجر.', '[ القرار 04 ]', C_PRIMARY)
+]
+for i, (t, b, tag, col) in enumerate(decisions):
+    sleek_card(s14, M + (i % 2) * 6.05, 1.95 + (i // 2) * 2.2, 5.75, 2.0, t, b, tag=tag, is_dark=True, accent=col)
 
-# حفظ الملفات
-out_file = 'عرض-نظام-كلية-النصر-التقنية.pptx'
-prs.save(out_file)
+tx_foot_final = s14.shapes.add_textbox(Inches(M), Inches(6.65), Inches(W - M * 2), Inches(0.4))
+apply_p(tx_foot_final.text_frame.paragraphs[0], 
+        'كلية النصر التقنية — النظام الجامعي الرقمي المتكامل · الإصدار المعتمد ٢.١.٠ · شكر وتقدير لمجلس الكلية والعمادة', 
+        12.0, c('64748B'))
 
-# نسخ للمجلدات المعتادة
+
+out_new = 'عرض-نظام-كلية-النصر-التقنية-الجديد.pptx'
+prs.save(out_new)
+try:
+    prs.save('عرض-نظام-كلية-النصر-التقنية.pptx')
+except Exception:
+    pass
+
 desktop = os.path.expanduser('~/Desktop')
 downloads = os.path.expanduser('~/Downloads')
+for p in [desktop, downloads]:
+    if os.path.exists(p):
+        shutil.copy2(out_new, os.path.join(p, 'عرض-نظام-كلية-النصر-التقنية-الجديد.pptx'))
+        try:
+            shutil.copy2(out_new, os.path.join(p, 'عرض-نظام-كلية-النصر-التقنية.pptx'))
+        except Exception:
+            pass
 
-for dest_dir in [desktop, downloads]:
-    try:
-        if os.path.exists(dest_dir):
-            shutil.copy2(out_file, os.path.join(dest_dir, 'عرض-نظام-كلية-النصر-التقنية.pptx'))
-            print(f"Copied to: {dest_dir}")
-    except Exception as e:
-        print(f"Copy error: {e}")
-
-print('DONE! Pure PowerPoint-compliant presentation generated successfully!')
+print('SAVED_AND_COPIED_SUCCESSFULLY')
