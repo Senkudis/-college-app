@@ -1,7 +1,7 @@
-name: Build iOS App
+﻿name: Build iOS App
 
 on:
-  workflow_dispatch: # يتيح لك زر تشغيل يدوي في أي وقت
+  workflow_dispatch: # تشغيل يدوي بضغطة زر
   push:
     branches:
       - main
@@ -24,11 +24,11 @@ jobs:
       - name: 🟢 Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
           cache: 'npm'
 
-      - name: 📦 Install Dependencies
-        run: npm install
+      - name: 📦 Install Node Dependencies
+        run: npm ci || npm install
 
       - name: 🔄 Sync Capacitor iOS Project
         run: npx cap sync ios
@@ -38,7 +38,7 @@ jobs:
         with:
           xcode-version: latest-stable
 
-      - name: 📱 Build iOS Archive
+      - name: 📱 Build iOS Archive (Unsigned)
         run: |
           xcodebuild \
             -project ios/App/App.xcodeproj \
@@ -51,7 +51,7 @@ jobs:
             CODE_SIGN_IDENTITY="" \
             archive
 
-      - name: 📦 Package App into IPA
+      - name: 📦 Package App into Payload / IPA
         run: |
           mkdir -p build/Payload
           cp -r build/App.xcarchive/Products/Applications/App.app build/Payload/
