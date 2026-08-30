@@ -324,7 +324,7 @@ router.post("/refresh", async (req, res) => {
 });
 
 // ========== طلب إعادة تعيين كلمة المرور ==========
-router.post("/forgot-password", forgotPasswordLimiter, async (req, res) => {
+router.post(["/forgot-password", "/resend-reset-code"], forgotPasswordLimiter, async (req, res) => {
   try {
     const { email } = req.body;
 

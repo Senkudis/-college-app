@@ -88,6 +88,8 @@ app.use((req, res, next) => {
 const APP_ORIGINS = [
   'https://elnasrcsit.website',
   'https://www.elnasrcsit.website',
+  'http://elnasrcsit.website',
+  'http://www.elnasrcsit.website',
   'http://localhost',
   'https://localhost',
   'capacitor://localhost',
