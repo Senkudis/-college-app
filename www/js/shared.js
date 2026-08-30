@@ -46,6 +46,43 @@
     return origin;
   }
 
+  function initNetworkListener() {
+    if (!global.addEventListener || typeof document === 'undefined') return;
+    global.addEventListener('offline', function () {
+      var banner = document.getElementById('cbs-offline-banner');
+      if (!banner) {
+        banner = document.createElement('div');
+        banner.id = 'cbs-offline-banner';
+        banner.setAttribute('role', 'status');
+        banner.setAttribute('aria-live', 'polite');
+        banner.style.cssText = 'position:fixed;top:0;left:0;right:0;background:#b91c1c;color:#fff;text-align:center;padding:6px 12px;font-size:0.8rem;font-weight:700;z-index:99999;box-shadow:0 4px 12px rgba(0,0,0,0.2);';
+        banner.innerHTML = '<i class="ri-wifi-off-line"></i> انقطع الاتصال بالإنترنت — التصفح المحلي مفعل';
+        if (document.body) document.body.appendChild(banner);
+      } else {
+        banner.style.background = '#ef4444';
+        banner.innerHTML = '<i class="ri-wifi-off-line"></i> انقطع الاتصال بالإنترنت — التصفح المحلي مفعل';
+        banner.style.display = 'block';
+      }
+    });
+
+    global.addEventListener('online', function () {
+      var banner = document.getElementById('cbs-offline-banner');
+      if (banner) {
+        banner.style.background = '#10b981';
+        banner.innerHTML = '<i class="ri-wifi-line"></i> تم استعادة الاتصال بالإنترنت';
+        setTimeout(function () { banner.style.display = 'none'; }, 2500);
+      }
+    });
+  }
+
+  if (typeof document !== 'undefined') {
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initNetworkListener);
+    } else {
+      initNetworkListener();
+    }
+  }
+
   global.CBSShared = {
     PUBLIC_BASE_URL: PUBLIC_BASE_URL,
     escapeHTML: escapeHTML,

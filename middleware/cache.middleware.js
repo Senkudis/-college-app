@@ -39,8 +39,9 @@ const cacheRoute = (duration = 60) => {
       return next();
     }
 
-    // بناء مفتاح الكاش بناءً على المسار والمتغيرات
-    const key = `__express__${req.originalUrl || req.url}`;
+    // بناء مفتاح الكاش بناءً على المسار ونطاق المستخدم (لتفادي تسريب بيانات الدفعات)
+    const userScope = req.user ? `:u_${req.user.id}:b_${req.user.batch || ''}:r_${(req.user.roles || []).join('_')}` : '';
+    const key = `__express__${req.originalUrl || req.url}${userScope}`;
 
     try {
       const cachedBody = await redis.get(key);

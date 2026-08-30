@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CAPACITOR_DEBUG</key>
+	<string>$(CAPACITOR_DEBUG)</string>
+
+	<!-- لغة التطبيق الأساسية عربية: تركها "en" يجعل App Store يعرض
+	     التطبيق كإنجليزي ويطالب المراجع بترجمة لا وجود لها. -->
+	<key>CFBundleDevelopmentRegion</key>
+	<string>ar</string>
+	<key>CFBundleLocalizations</key>
+	<array>
+		<string>ar</string>
+		<string>en</string>
+	</array>
+
+	<key>CFBundleDisplayName</key>
+	<string>كلية النصر التقنية</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string>$(PRODUCT_NAME)</string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>LSRequiresIPhoneOS</key>
+	<true/>
+
+	<!-- ===== أسباب طلب الأذونات =====
+	     غياب أيٍّ منها مع وجود استدعاء للـAPI في الكود = رفض فوري
+	     (ITMS-90683 / بند 5.1.1). التطبيق يرفع صور الإيصالات وصور
+	     المعرض وملفات التسليم، فيلمس الكاميرا ومكتبة الصور. النص يجب
+	     أن يشرح الاستخدام تحديداً لا أن يكون عاماً. -->
+	<key>NSCameraUsageDescription</key>
+	<string>يستخدم التطبيق الكاميرا لتصوير إيصالات السداد وصور الأنشطة الجامعية التي ترفعها بنفسك.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>يحتاج التطبيق للوصول إلى صورك لاختيار إيصال السداد أو ملف التكليف أو صورة نشاط ترفعها إلى معرض الكلية.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>لحفظ نسخة من الملفات والشهادات الأكاديمية التي تُنزّلها من التطبيق إلى صورك.</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>يستخدم الميكروفون فقط عند تسجيل ملاحظة صوتية ترفقها بتسليم تكليف.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>لتسجيل الدخول إلى حسابك الأكاديمي بأمان باستخدام Face ID بدل كتابة كلمة المرور في كل مرة.</string>
+
+	<!-- ===== الامتثال لتصدير التشفير =====
+	     غيابه يوقف كل رفعة عند "Missing Compliance" في App Store Connect.
+	     القيمة false تعني: لا نستخدم تشفيراً غير معفى — التطبيق يعتمد
+	     HTTPS القياسي فقط، وهو معفى بموجب الاستثناء. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIMainStoryboardFile</key>
+	<string>Main</string>
+
+	<!-- armv7 معمارية 32-بت لم تعد مدعومة منذ iOS 11؛ تركها قد يمنع
+	     التثبيت على الأجهزة الحديثة. -->
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>arm64</string>
+	</array>
+
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+	</array>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<true/>
+
+	<!-- الخادم يقدّم HTTPS بالكامل، فلا استثناءات ATS.
+	     أي استثناء هنا يستدعي تبريراً مكتوباً أمام المراجع. -->
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+	</dict>
+</dict>
+</plist>

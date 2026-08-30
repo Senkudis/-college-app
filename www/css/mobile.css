@@ -1,6 +1,6 @@
 /* ===================================================
    mobile.css â€” Mobile-First Premium Optimizations
-   Ø¬Ø§Ù…Ø¹Ø© Ø§Ù„Ù†ØµØ± Ø§Ù„ØªÙ‚Ù†ÙŠØ© | IT College App
+   جامعة النصر التقنية | IT College App
    =================================================== */
 
 /* ===== Base Mobile PWA/Capacitor Feel ===== */
@@ -253,8 +253,8 @@ html { -webkit-text-size-adjust: 100%; }
     border-radius: var(--radius-md);
   }
 
-  .input-wrapper .form-control { padding-right: 42px; }
-  .input-icon { right: 12px; font-size: 1rem; }
+  .input-wrapper .form-control { padding-inline-end: 42px; }
+  .input-icon { inset-inline-end: 12px; font-size: 1rem; }
 
   /* ===== Form group native inputs ===== */
   .form-group input,
@@ -270,12 +270,7 @@ html { -webkit-text-size-adjust: 100%; }
     font-size: 0.7rem;
   }
 
-  /* ===== Bottom Nav â€” safe area ===== */
-  #bottom-nav {
-    padding: 5px 4px;
-    padding-bottom: calc(5px + env(safe-area-inset-bottom, 0px));
-    gap: 0;
-  }
+  /* ===== Bottom Nav (Handled by style.css Floating Island) ===== */
 
   .bnav-item {
     font-size: 0.6rem;
@@ -311,53 +306,6 @@ html { -webkit-text-size-adjust: 100%; }
   .calendar-date-header h3 { font-size: 1.05rem; }
 }
 
-/* ====================================================
-   PREMIUM AI-STYLE UI OVERRIDES (MOBILE SPECIFIC)
-   ==================================================== */
-@media (max-width: 768px) {
-  /* Smaller, Tighter Cards */
-  .dash-card, .stat-item, .panel, .form-card, .registry-section, .table-section, .metrics .metric {
-    padding: 14px 16px !important;
-    gap: 12px !important;
-    border-radius: 16px !important;
-  }
-  
-  /* Icons & Text */
-  .dash-card-icon, .stat-item i, .metrics .metric i {
-    width: 38px !important;
-    height: 38px !important;
-    font-size: 1.15rem !important;
-    border-radius: 10px !important;
-  }
-  .dash-card-text .title {
-    font-size: 0.92rem !important;
-  }
-  .dash-card-text .subtitle {
-    font-size: 0.75rem !important;
-    margin-top: 2px !important;
-  }
-
-  /* Financials Hero Card */
-  .hero-balance-card {
-    padding: 16px 16px 14px !important;
-    border-radius: 16px !important;
-  }
-  .hero-balance-card h2 {
-    font-size: 1.35rem !important;
-  }
-
-  /* Compact Forms */
-  .form-control, .search-input, .form input, .form select, .form textarea {
-    padding-block: 10px !important;
-    font-size: 0.85rem !important;
-  }
-  
-  /* Compact Buttons */
-  .btn, button {
-    padding: 9px 14px !important;
-    font-size: 0.85rem !important;
-  }
-}
 
 /* ====================================================
    PREMIUM AI-STYLE UI OVERRIDES (MOBILE SPECIFIC)
@@ -430,7 +378,7 @@ html { -webkit-text-size-adjust: 100%; }
     transform: translateX(-50%) !important;
     width: min(340px, calc(100vw - 32px)) !important;
     max-width: 340px;
-    z-index: 99999 !important;
+    z-index: var(--z-toast) !important;
   }
 
   .toast {
@@ -561,11 +509,7 @@ html { -webkit-text-size-adjust: 100%; }
   -webkit-backdrop-filter: blur(16px);
 }
 
-[data-theme="dark"] #bottom-nav {
-  background: rgba(15, 23, 42, 0.95);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-}
+  /* Bottom nav dark theme handled in style.css */
 
 [data-theme="dark"] .stat-item:hover,
 [data-theme="dark"] .dash-card:hover {
@@ -610,9 +554,7 @@ html { -webkit-text-size-adjust: 100%; }
     padding-top: calc(10px + env(safe-area-inset-top));
   }
 
-  #bottom-nav {
-    padding-bottom: calc(5px + env(safe-area-inset-bottom));
-  }
+  /* Bottom nav padding handled in style.css */
 
   /* الصفحات التي بلا هيدر رئيسي (login, welcome...) كانت تدخل تحت النوتش */
   body:not(:has(.main-header)) {
@@ -657,53 +599,6 @@ html {
 
 
 
-/* ====================================================
-   PREMIUM AI-STYLE UI OVERRIDES (MOBILE SPECIFIC)
-   ==================================================== */
-@media (max-width: 768px) {
-  /* Smaller, Tighter Cards */
-  .dash-card, .stat-item, .panel, .form-card, .registry-section, .table-section, .metrics .metric {
-    padding: 14px 16px !important;
-    gap: 12px !important;
-    border-radius: 16px !important;
-  }
-  
-  /* Icons & Text */
-  .dash-card-icon, .stat-item i, .metrics .metric i {
-    width: 38px !important;
-    height: 38px !important;
-    font-size: 1.15rem !important;
-    border-radius: 10px !important;
-  }
-  .dash-card-text .title {
-    font-size: 0.92rem !important;
-  }
-  .dash-card-text .subtitle {
-    font-size: 0.75rem !important;
-    margin-top: 2px !important;
-  }
-
-  /* Financials Hero Card */
-  .hero-balance-card {
-    padding: 16px 16px 14px !important;
-    border-radius: 16px !important;
-  }
-  .hero-balance-card h2 {
-    font-size: 1.35rem !important;
-  }
-
-  /* Compact Forms */
-  .form-control, .search-input, .form input, .form select, .form textarea {
-    padding-block: 10px !important;
-    font-size: 0.85rem !important;
-  }
-  
-  /* Compact Buttons */
-  .btn, button {
-    padding: 9px 14px !important;
-    font-size: 0.85rem !important;
-  }
-}
 
 /* ===================================================
    SECTION 9: Edge-to-Edge — الحواف الأفقية على الهاتف
@@ -714,12 +609,50 @@ html {
    =================================================== */
 @media (max-width: 768px) {
   .page-content {
-    padding-left: max(14px, env(safe-area-inset-left, 0px));
-    padding-right: max(14px, env(safe-area-inset-right, 0px));
+    padding-inline-start: max(14px, env(safe-area-inset-left, 0px));
+    padding-inline-end: max(14px, env(safe-area-inset-right, 0px));
   }
 
   .main-header {
-    padding-left: max(14px, env(safe-area-inset-left, 0px));
-    padding-right: max(14px, env(safe-area-inset-right, 0px));
+    padding-inline-start: max(14px, env(safe-area-inset-left, 0px));
+    padding-inline-end: max(14px, env(safe-area-inset-right, 0px));
+  }
+}
+
+/* ===== Task 3.1: Minimum Touch Targets ===== */
+@media (max-width: 768px) {
+  button, .btn, [role="button"], a.btn, .btn-xs, .btn-sm, .btn-icon, .table-actions button, .small-btn {
+    min-height: 44px !important;
+    min-width: 44px !important;
+  }
+}
+
+/* ===== Task 3.2: Financials Mobile Tables Card Layout ===== */
+@media (max-width: 768px) {
+  .financials-wrap .table thead { display: none; }
+  .financials-wrap .table tbody tr {
+    display: block;
+    margin-bottom: 12px;
+    border: 1px solid var(--border, #e2e8f0);
+    border-radius: var(--radius-md, 10px);
+    padding: 12px;
+    background: var(--card-bg, #fff);
+  }
+  .financials-wrap .table tbody td {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    border: none;
+    border-bottom: 1px solid var(--border-light, #f1f5f9);
+    white-space: normal;
+  }
+  .financials-wrap .table tbody td:last-child { border-bottom: none; }
+  .financials-wrap .table tbody td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: var(--text-muted, #64748b);
+    margin-inline-end: 12px;
+    flex-shrink: 0;
   }
 }

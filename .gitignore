@@ -18,6 +18,8 @@ Thumbs.db
 # شخصية ولا علاقة لها بالكود، ولا يجوز أن تدخل سجل الإصدارات إطلاقاً.
 uploads/
 !uploads/.gitkeep
+backups/
+uploads.before-restore-*/
 
 # ===== IDE =====
 .vscode/
@@ -53,4 +55,9 @@ service-account*.json
 scratch/
 test_extract/
 test_deploy/
+playwright-report/
+test-results/
+match.txt
+styles_dump.txt
 *.zip
+

@@ -10,6 +10,10 @@ let baseUrl;
 let deanToken, doctorToken, studentToken, leaderToken;
 let deanUser, doctorUser, studentUser, leaderUser;
 const testBatchId = "6688f111e111111111111111"; // Mock ObjectId hex
+const otherBatchId = "6688f222e222222222222222";
+const aiSubjectId = "6688f333e333333333333333";
+const aiOtherSubjectId = "6688f444e444444444444444";
+const aiLectureId = "6688f555e555555555555555";
 let subjectId;
 let assignmentId;
 let submissionId;
@@ -96,7 +100,142 @@ test("Seeding users & initial data", async () => {
   assert.ok(studentUser._id);
 });
 
-// 2. Auth Module Tests
+// 2. Batch Authorization Scope Tests
+test("Batch authorization scope tests", async (t) => {
+  const Batch = mongoose.model("Batch");
+  const Subject = mongoose.model("Subject");
+
+  await Batch.create({
+    _id: otherBatchId,
+    name: "Class of 2027",
+    code: "CS2027",
+    themeColor: "#14b8a6",
+    status: "active"
+  });
+
+  const unassignedDoctor = await seedUser(
+    "Unassigned Doctor",
+    "unassigned.doctor@college.edu",
+    "password123",
+    "doctor",
+    { batches: [] }
+  );
+  const linkedDoctor = await seedUser(
+    "Linked Doctor",
+    "linked.doctor@college.edu",
+    "password123",
+    "doctor",
+    { batches: [] }
+  );
+  await Subject.create({
+    name: "Linked Batch Subject",
+    level: "Level 4",
+    doctor: linkedDoctor.user._id,
+    batches: [otherBatchId]
+  });
+
+  await t.test("GET /api/batches - unassigned doctor receives no batches", async () => {
+    const res = await apiCall("/api/batches", { token: unassignedDoctor.token });
+    assert.strictEqual(res.status, 200);
+    assert.deepStrictEqual(res.data.batches, []);
+  });
+
+  await t.test("GET /api/batches - assigned doctor receives only assigned batches", async () => {
+    const res = await apiCall("/api/batches", { token: doctorToken });
+    assert.strictEqual(res.status, 200);
+    assert.deepStrictEqual(res.data.batches.map(batch => batch._id.toString()), [testBatchId]);
+  });
+
+  await t.test("GET /api/batches/:id - doctor cannot open an unrelated batch", async () => {
+    const res = await apiCall(`/api/batches/${otherBatchId}`, { token: doctorToken });
+    assert.strictEqual(res.status, 403);
+  });
+
+  await t.test("GET /api/batches/:id - doctor can open a batch linked through a subject", async () => {
+    const res = await apiCall(`/api/batches/${otherBatchId}`, { token: linkedDoctor.token });
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.data.success, true);
+  });
+
+  await t.test("GET /api/batches/:id - student and leader cannot open another batch", async () => {
+    const studentRes = await apiCall(`/api/batches/${otherBatchId}`, { token: studentToken });
+    const leaderRes = await apiCall(`/api/batches/${otherBatchId}`, { token: leaderToken });
+    assert.strictEqual(studentRes.status, 403);
+    assert.strictEqual(leaderRes.status, 403);
+  });
+});
+
+// 3. AI Content Authorization Tests
+ test("AI content authorization scope tests", async (t) => {
+  const Subject = mongoose.model("Subject");
+  const Lecture = mongoose.model("Lecture");
+  const otherDoctor = await seedUser("AI Other Doctor", "ai.other.doctor@college.edu", "password123", "doctor", { batches: [otherBatchId] });
+  const otherStudent = await seedUser("AI Other Student", "ai.other.student@college.edu", "password123", "student", { batch: otherBatchId });
+
+  await Subject.create({
+    _id: aiSubjectId,
+    name: "AI Scoped Subject",
+    level: "Level 4",
+    doctor: doctorUser._id,
+    batches: [testBatchId]
+  });
+  await Subject.create({
+    _id: aiOtherSubjectId,
+    name: "AI Other Subject",
+    level: "Level 4",
+    doctor: otherDoctor.user._id,
+    batches: [otherBatchId]
+  });
+  await Lecture.create({
+    _id: aiLectureId,
+    title: "AI Scoped Lecture",
+    subject: aiSubjectId,
+    extractedText: "هذه محاضرة اختبارية عن قواعد البيانات والعلاقات بين الجداول والفهارس."
+  });
+
+  await t.test("subject-context allows the assigned batch and denies another batch", async () => {
+    const allowed = await apiCall(`/api/ai/subject-context/${aiSubjectId}`, { token: studentToken });
+    const denied = await apiCall(`/api/ai/subject-context/${aiSubjectId}`, { token: otherStudent.token });
+    assert.strictEqual(allowed.status, 200);
+    assert.strictEqual(allowed.data.success, true);
+    assert.strictEqual(denied.status, 403);
+  });
+
+  await t.test("subject-context restricts doctors to owned subjects", async () => {
+    const allowed = await apiCall(`/api/ai/subject-context/${aiSubjectId}`, { token: doctorToken });
+    const denied = await apiCall(`/api/ai/subject-context/${aiSubjectId}`, { token: otherDoctor.token });
+    assert.strictEqual(allowed.status, 200);
+    assert.strictEqual(denied.status, 403);
+  });
+
+  await t.test("lecture-context follows the linked subject scope", async () => {
+    const allowed = await apiCall(`/api/ai/lecture-context/${aiLectureId}`, { token: studentToken });
+    const deniedStudent = await apiCall(`/api/ai/lecture-context/${aiLectureId}`, { token: otherStudent.token });
+    const deniedDoctor = await apiCall(`/api/ai/lecture-context/${aiLectureId}`, { token: otherDoctor.token });
+    assert.strictEqual(allowed.status, 200);
+    assert.strictEqual(allowed.data.hasText, true);
+    assert.strictEqual(deniedStudent.status, 403);
+    assert.strictEqual(deniedDoctor.status, 403);
+  });
+
+  await t.test("selected-subject chat cannot enumerate another batch", async () => {
+    const allowed = await apiCall("/api/ai/ask", {
+      method: "POST",
+      token: studentToken,
+      body: { prompt: "اخترت مادة", selectedSubjectId: aiSubjectId }
+    });
+    const denied = await apiCall("/api/ai/ask", {
+      method: "POST",
+      token: otherStudent.token,
+      body: { prompt: "اخترت مادة", selectedSubjectId: aiSubjectId }
+    });
+    assert.strictEqual(allowed.status, 200);
+    assert.strictEqual(allowed.data.interactive?.type, "select_scope");
+    assert.strictEqual(denied.status, 403);
+  });
+});
+
+// 4. Auth Module Tests
 test("Auth Module Tests", async (t) => {
   await t.test("POST /api/auth/login - Success with correct credentials", async () => {
     const res = await apiCall("/api/auth/login", {
@@ -406,3 +545,73 @@ test("Notifications Module Tests", async (t) => {
     assert.strictEqual(res.data.message, "تم تحديد التنبيه كمقروء");
   });
 });
+
+// 10. App Version Tracking & Update Modal Module Tests
+test("App Version Module Tests", async (t) => {
+  await t.test("GET /api/app-version/check - Public check without params", async () => {
+    const res = await apiCall("/api/app-version/check");
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.data.success, true);
+    assert.strictEqual(res.data.data.latestVersion, "2.1.0");
+    assert.strictEqual(res.data.data.latestVersionCode, 28);
+  });
+
+  await t.test("GET /api/app-version/check - Outdated client version detected", async () => {
+    const res = await apiCall("/api/app-version/check?v=2.0.5&code=27");
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.data.success, true);
+    assert.strictEqual(res.data.data.isOutdated, true);
+    assert.strictEqual(res.data.data.isMandatory, true);
+    assert.ok(Array.isArray(res.data.data.releaseNotes));
+  });
+
+  await t.test("GET /api/app-version/check - Up-to-date client version detected", async () => {
+    const res = await apiCall("/api/app-version/check?v=2.1.0&code=28");
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.data.success, true);
+    assert.strictEqual(res.data.data.isOutdated, false);
+    assert.strictEqual(res.data.data.isMandatory, false);
+  });
+
+  await t.test("GET /api/app-version/check - Web platform is never outdated or mandatory", async () => {
+    const res = await apiCall("/api/app-version/check?v=1.0.0&code=1&platform=web");
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.data.success, true);
+    assert.strictEqual(res.data.data.isOutdated, false);
+    assert.strictEqual(res.data.data.isMandatory, false);
+  });
+
+  await t.test("GET /api/app-version/admin - Forbidden for student", async () => {
+    const res = await apiCall("/api/app-version/admin", { token: studentToken });
+    assert.strictEqual(res.status, 403);
+  });
+
+  await t.test("GET /api/app-version/admin - Allowed for Dean", async () => {
+    const res = await apiCall("/api/app-version/admin", { token: deanToken });
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.data.success, true);
+    assert.strictEqual(res.data.data.latestVersion, "2.1.0");
+  });
+
+  await t.test("POST /api/app-version/admin - Update version settings as Dean", async () => {
+    const res = await apiCall("/api/app-version/admin", {
+      method: "POST",
+      token: deanToken,
+      body: {
+        latestVersion: "2.1.0",
+        latestVersionCode: 28,
+        minSupportedVersion: "2.1.0",
+        minSupportedVersionCode: 28,
+        forceUpdate: true,
+        title: "تحديث أمني إجباري",
+        releaseNotes: ["ترقية الواجهات بالكامل", "تأمين الجلسات وتحديث النظام"]
+      }
+    });
+
+    assert.strictEqual(res.status, 200);
+    assert.strictEqual(res.data.success, true);
+    assert.strictEqual(res.data.data.forceUpdate, true);
+    assert.strictEqual(res.data.data.title, "تحديث أمني إجباري");
+  });
+});
+

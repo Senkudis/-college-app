@@ -1,12 +1,12 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>اختيار الدفعة الدراسية (العميد) | كلية تقنية المعلومات</title>
-  <link rel="stylesheet" href="/css/style.css?v=2026073128">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026073128">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>اختيار الدفعة الدراسية (العميد) | كلية النصر التقنية</title>
+  <link rel="stylesheet" href="/css/style.css?v=2026081907">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026081907">
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet"/>
   <style>
     body {
@@ -83,6 +83,7 @@
   </style>
 
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
 </head>
 <body>
@@ -90,15 +91,15 @@
   <!-- Topbar -->
   <header class="main-header">
     <div class="header-brand">
-      <img src="/assets/logo.png" class="header-logo" alt="شعار كلية تقنية المعلومات">
+      <img src="/assets/logo.png" class="header-logo" alt="شعار كلية النصر التقنية">
       <div class="header-title-group">
-        <strong>كلية تقنية المعلومات</strong>
-        <small>كلية تقنية المعلومات</small>
+        <strong>كلية النصر التقنية</strong>
+        <small>كلية النصر التقنية</small>
       </div>
     </div>
     <div class="header-actions">
-      <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
-      <button class="btn-icon" onclick="CBS.logout()" title="تسجيل الخروج"><i class="ri-logout-box-r-line"></i></button>
+      <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي" aria-label="تبديل الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+      <button class="btn-icon" onclick="CBS.logout()" title="تسجيل الخروج" aria-label="تسجيل الخروج"><i class="ri-logout-box-r-line"></i></button>
     </div>
   </header>
 
@@ -121,9 +122,9 @@
 
   <footer class="main-footer">جميع الحقوق محفوظة &copy; <span id="year"></span> النظام الجامعي المتكامل</footer>
 
-  <script src="/js/shared.js?v=2026073128"></script>
-<script src="/js/app.js?v=2026073128"></script>
-<script src="/js/socket-client.js?v=2026073128" defer></script>
+  <script src="/js/shared.js?v=2026081907"></script>
+<script src="/js/app.js?v=2026081907"></script>
+<script src="/js/socket-client.js?v=2026081907" defer></script>
   <script>
     CBS.init();
     const user = CBS.getUser();
@@ -165,7 +166,7 @@
           const bName = CBS.escapeHTML(batch.name || 'دفعة بدون اسم');
           const bCode = CBS.escapeHTML(batch.code || '');
           return `
-          <div class="batch-card" style="border-color: ${bColor};" onclick="selectBatch('${bId}', '${bColor}')">
+          <div class="batch-card" style="border-color: ${bColor};" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" onclick="selectBatch('${bId}', '${bColor}')">
             <div class="batch-icon" style="color: ${bColor};"><i class="ri-group-line"></i></div>
             <div class="batch-title">${bName}</div>
             <div class="batch-code">${bCode}</div>

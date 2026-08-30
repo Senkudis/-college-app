@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>استبيانات تقييم جودة المقررات | كلية النصر التقنية</title>
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css?v=2026081907">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026081907">
+  <style>
+    .survey-card-pro {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 20px;
+      margin-bottom: 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 14px;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+    }
+    .survey-card-pro:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 24px rgba(0,0,0,0.06);
+    }
+    .rating-box {
+      background: var(--bg-main);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      margin-bottom: 14px;
+    }
+    .rating-stars-pro {
+      display: flex;
+      gap: 8px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+    .star-btn-pro {
+      flex: 1;
+      min-width: 50px;
+      padding: 10px 6px;
+      border-radius: var(--radius-md);
+      border: 2px solid var(--border);
+      background: var(--bg-card);
+      color: var(--text-muted);
+      font-weight: 800;
+      font-size: 0.85rem;
+      cursor: pointer;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+      transition: all 0.2s;
+    }
+    .star-btn-pro:hover {
+      border-color: var(--primary);
+    }
+    .star-btn-pro.active {
+      background: var(--primary-light);
+      border-color: var(--primary);
+      color: var(--primary);
+    }
+    .meter-bar-container {
+      background: var(--bg-main);
+      height: 10px;
+      border-radius: 5px;
+      overflow: hidden;
+      margin-top: 6px;
+    }
+    .meter-bar-fill {
+      height: 100%;
+      background: var(--primary);
+      border-radius: 5px;
+      transition: width 0.6s ease;
+    }
+  </style>
+</head>
+<body>
+
+
+<main class="page-container" style="max-width:960px; margin:0 auto; padding:16px 16px 80px;">
+  <!-- Header Bar -->
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <a href="/dashboard.html" class="btn btn-icon btn-outline" style="width:36px; height:36px;"><i class="ri-arrow-right-line"></i></a>
+      <div>
+        <h1 style="font-size:1.25rem; font-weight:800; margin:0; color:var(--text-main);">
+          <i class="ri-survey-fill" style="color:var(--primary);"></i> استبيان تقييم جودة المقررات والتدريس
+        </h1>
+        <span style="font-size:0.78rem; color:var(--text-muted);">تقييم سري ومجهول الهوية لتحسين تجربة التعليم والمناهج</span>
+      </div>
+    </div>
+    <div id="analyticsToggleBtn" style="display:none;">
+      <button class="btn btn-outline" onclick="toggleViewMode()"><i class="ri-bar-chart-2-line"></i> لوحة التحليلات الأكاديمية</button>
+    </div>
+  </div>
+
+  <!-- Student Survey View -->
+  <div id="studentSurveysView">
+    <!-- Security & Anonymity Pledge Banner -->
+    <div class="card" style="padding:16px; margin-bottom:16px; background:var(--bg-main); border-right:4px solid var(--primary); border-radius:var(--radius-xl);">
+      <div style="display:flex; align-items:flex-start; gap:12px;">
+        <div style="width:40px; height:40px; border-radius:10px; background:var(--primary-light); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:1.3rem; flex-shrink:0;">
+          <i class="ri-shield-keyhole-line"></i>
+        </div>
+        <div>
+          <div style="font-weight:800; font-size:0.92rem; color:var(--text-main); margin-bottom:2px;">
+            تشفير كامل وضمان سرية الهوية (Anonymous Evaluation)
+          </div>
+          <div style="font-size:0.82rem; color:var(--text-muted); line-height:1.5;">
+            تُشفر إجاباتك بتوقيع رقمي مجهول (SHA-256 Hash) لمنع تكرار التقييم مع استحالة معرفة هوية أو اسم الطالب من قبل أي أستاذ أو مسؤول.
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Active Subjects Container -->
+    <div id="subjectsListContainer">
+      <div style="text-align:center; padding:40px;"><i class="ri-loader-4-line ri-spin" style="font-size:2rem; color:var(--primary);"></i></div>
+    </div>
+  </div>
+
+  <!-- Dean/Staff Analytics View -->
+  <div id="staffAnalyticsView" style="display:none;">
+    <div class="card" style="padding:24px; margin-bottom:16px; border-radius:var(--radius-xl);">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:18px;">
+        <div>
+          <h2 style="font-size:1.2rem; font-weight:800; margin:0 0 2px;">تحليلات مؤشر رضا الطلاب عن المقررات</h2>
+          <span style="font-size:0.8rem; color:var(--text-muted);">بيانات إحصائية مجمعة لتقييمات الفصول الدراسية</span>
+        </div>
+        <button class="btn btn-outline" style="font-size:0.82rem; padding:6px 12px;" onclick="toggleViewMode()" aria-label="رجوع"><i class="ri-arrow-right-line"></i> عودة للاستبيانات</button>
+      </div>
+      
+      <!-- Metrics Overview -->
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:14px; margin-bottom:24px;">
+        <div class="card" style="text-align:center; padding:18px; background:var(--bg-main); border-radius:var(--radius-lg);">
+          <div style="font-size:2.2rem; font-weight:900; color:var(--primary); font-family:monospace;" id="statTotalEvals">0</div>
+          <div style="font-size:0.82rem; font-weight:800; color:var(--text-muted);">إجمالي التقييمات المستلمة</div>
+        </div>
+        <div class="card" style="text-align:center; padding:18px; background:var(--bg-main); border-radius:var(--radius-lg);">
+          <div style="font-size:2.2rem; font-weight:900; color:var(--success); font-family:monospace;" id="statNsi">0%</div>
+          <div style="font-size:0.82rem; font-weight:800; color:var(--text-muted);">مؤشر الرضا الأكاديمي العام</div>
+        </div>
+      </div>
+
+      <!-- Criteria Breakdown Meters -->
+      <h3 style="font-size:1rem; font-weight:800; margin-bottom:14px; color:var(--text-main);">متوسط تقييم المعايير الأكاديمية (من 5 نقاط):</h3>
+      <div id="analyticsCriteriaList"></div>
+
+      <!-- Student Feedback Comments -->
+      <h3 style="font-size:1rem; font-weight:800; margin:28px 0 12px; color:var(--text-main);">آراء ومقترحات الطلاب السرية:</h3>
+      <div id="analyticsFeedbackList"></div>
+    </div>
+  </div>
+</main>
+
+<!-- Evaluate Modal Wizard -->
+<div id="evalModal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.65); z-index:9999; align-items:center; justify-content:center; padding:16px;">
+  <div class="card" style="max-width:620px; width:100%; padding:24px; max-height:92vh; overflow-y:auto; border-radius:var(--radius-xl);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:12px;">
+      <div>
+        <h3 id="evalModalSubjectTitle" style="font-size:1.15rem; font-weight:800; margin:0 0 2px; color:var(--text-main);">تقييم المقرر</h3>
+        <span id="evalModalDoc" style="font-size:0.82rem; color:var(--text-muted);">...</span>
+      </div>
+      <button class="btn btn-outline" style="padding:4px 8px;" onclick="closeEvalModal()" aria-label="إغلاق"><i class="ri-close-line"></i></button>
+    </div>
+
+    <!-- Rating 1 -->
+    <div class="rating-box">
+      <div style="font-weight:800; font-size:0.92rem; color:var(--text-main);">1. وضوح المحتوى العلمي والشيتات والسلايدات</div>
+      <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:6px;">مدى شمولية وتنسيق المذكرات والمراجع التابعة للمقرر</div>
+      <div class="rating-stars-pro" data-field="contentClarity" role="radiogroup">
+        <button type="button" class="star-btn-pro" role="radio" aria-checked="false" onclick="setRating('contentClarity', 1)"><span>1</span><small>ضعيف</small></button>
+        <button type="button" class="star-btn-pro" role="radio" aria-checked="false" onclick="setRating('contentClarity', 2)"><span>2</span><small>مقبول</small></button>
+        <button type="button" class="star-btn-pro" role="radio" aria-checked="false" onclick="setRating('contentClarity', 3)"><span>3</span><small>جيد</small></button>
+        <button type="button" class="star-btn-pro" role="radio" aria-checked="false" onclick="setRating('contentClarity', 4)"><span>4</span><small>جيد جداً</small></button>
+        <button type="button" class="star-btn-pro active" role="radio" aria-checked="true" onclick="setRating('contentClarity', 5)"><span>5</span><small>ممتاز</small></button>
+      </div>
+    </div>
+
+    <!-- Rating 2 -->
+    <div class="rating-box">
+      <div style="font-weight:800; font-size:0.92rem; color:var(--text-main);">2. أسلوب وطريقة تدريس المحاضر وإيصال المعلومة</div>
+      <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:6px;">تفاعل الدكتور، إدارة المحاضرة، وتوضيح المسائل المعقدة</div>
+      <div class="rating-stars-pro" data-field="teachingMethod" role="radiogroup">
+        <button type="button" class="star-btn-pro" role="radio" aria-checked="false" onclick="setRating('teachingMethod', 1)"><span>1</span><small>ضعيف</small></button>
+        <button type="button" class="star-btn-pro" role="radio" aria-checked="false" onclick="setRating('teachingMethod', 2)"><span>2</span><small>مقبول</small></button>
+        <button type="button" class="star-btn-pro" role="radio" aria-checked="false" onclick="setRating('teachingMethod', 3)"><span>3</span><small>جيد</small></button>
+        <button type="button" class="star-btn-pro" role="radio" aria-checked="false" onclick="setRating('teachingMethod', 4)"><span>4</span><small>جيد جداً</small></button>
+        <button type="button" class="star-btn-pro active" role="radio" aria-checked="true" onclick="setRating('teachingMethod', 5)"><span>5</span><small>ممتاز</small></button>
+      </div>
+    </div>
+
+    <!-- Rating 3 -->
+    <div class="rating-box">
+      <div style="font-weight:800; font-size:0.92rem; color:var(--text-main);">3. التطبيق العملي والمختبرات والتكاليف</div>
+      <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:6px;">الفائدة التطبيقية للشيتات والواجبات البرمجية والعملية</div>
+      <div class="rating-stars-pro" data-field="labUsefulness" role="radiogroup">
+        <button type="button" class="star-btn-pro" role="radio" aria-checked="false" onclick="setRating('labUsefulness', 1)"><span>1</span><small>ضعيف</small></button>
+        <button type="button" class="star-btn-pro" role="radio" aria-checked="false" onclick="setRating('labUsefulness', 2)"><span>2</span><small>مقبول</small></button>
+        <button type="button" class="star-btn-pro" role="radio" aria-checked="false" onclick="setRating('labUsefulness', 3)"><span>3</span><small>جيد</small></button>
+        <button type="button" class="star-btn-pro" role="radio" aria-checked="false" onclick="setRating('labUsefulness', 4)"><span>4</span><small>جيد جداً</small></button>
+        <button type="button" class="star-btn-pro active" role="radio" aria-checked="true" onclick="setRating('labUsefulness', 5)"><span>5</span><small>ممتاز</small></button>
+      </div>
+    </div>
+
+    <!-- Rating 4 -->
+    <div class="rating-box">
+      <div style="font-weight:800; font-size:0.92rem; color:var(--text-main);">4. عدالة وشمولية الاختبارات والتقييم</div>
+      <div style="font-size:0.78rem; color:var(--text-muted); margin-bottom:6px;">تناسب صعوبة الكويزات والامتحانات مع ما تم شرحه بالمحاضرات</div>
+      <div class="rating-stars-pro" data-field="examFairness" role="radiogroup">
+        <button type="button" class="star-btn-pro" role="radio" aria-checked="false" onclick="setRating('examFairness', 1)"><span>1</span><small>ضعيف</small></button>
+        <button type="button" class="star-btn-pro" role="radio" aria-checked="false" onclick="setRating('examFairness', 2)"><span>2</span><small>مقبول</small></button>
+        <button type="button" class="star-btn-pro" role="radio" aria-checked="false" onclick="setRating('examFairness', 3)"><span>3</span><small>جيد</small></button>
+        <button type="button" class="star-btn-pro" role="radio" aria-checked="false" onclick="setRating('examFairness', 4)"><span>4</span><small>جيد جداً</small></button>
+        <button type="button" class="star-btn-pro active" role="radio" aria-checked="true" onclick="setRating('examFairness', 5)"><span>5</span><small>ممتاز</small></button>
+      </div>
+    </div>
+
+    <!-- Optional Feedback -->
+    <div style="margin-bottom:18px;">
+      <label style="font-size:0.82rem; font-weight:800; color:var(--text-main); display:block; margin-bottom:4px;" for="evalFeedbackInput">ملاحظات ومقترحات لتطوير تدريس المقرر (سري تماماً):</label>
+      <textarea id="evalFeedbackInput" rows="3" class="form-control" placeholder="اكتب ملاحظاتك بحرية لتطوير المقرر..."></textarea>
+    </div>
+
+    <div style="display:flex; justify-content:flex-end; gap:8px;">
+      <button class="btn btn-outline" onclick="closeEvalModal()">إلغاء</button>
+      <button class="btn btn-primary" onclick="submitEvaluation()" style="font-weight:800; padding:8px 20px;">
+        <i class="ri-send-plane-fill"></i> إرسال التقييم السري
+      </button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="/js/shared.js?v=2026081907"></script>
+<script src="/js/app.js?v=2026081907"></script>
+<script>
+  CBS.init({ requireAuth: true });
+  const user = CBS.getUser();
+  let currentEvaluatingSubject = null;
+  let isAnalyticsMode = false;
+  let cachedSubjects = [];
+  const currentRatings = {
+    contentClarity: 5,
+    teachingMethod: 5,
+    labUsefulness: 5,
+    examFairness: 5
+  };
+
+  async function init() {
+    if (CBS.hasRole(['dean', 'doctor', 'admin'])) {
+      document.getElementById('analyticsToggleBtn').style.display = 'block';
+    }
+    await loadActiveSurveys();
+  }
+
+  async function loadActiveSurveys() {
+    const container = document.getElementById('subjectsListContainer');
+    try {
+      const res = await CBS.apiGet('/api/surveys/active');
+      const data = await CBS.readJson(res);
+
+      if (!data.success || !data.data?.subjects?.length) {
+        container.innerHTML = `
+          <div class="card" style="text-align:center; padding:50px 20px; border-radius:var(--radius-xl);">
+            <i class="ri-checkbox-circle-line" style="font-size:3.2rem; color:var(--success); display:block; margin-bottom:10px;"></i>
+            <h3 style="font-size:1.15rem; font-weight:800; margin-bottom:4px;">لا توجد استبيانات معلقة</h3>
+            <p style="font-size:0.85rem; color:var(--text-muted);">تم تقييم كافة المقررات أو لم يتم فتح استبيانات جديدة بعد.</p>
+          </div>`;
+        return;
+      }
+
+      cachedSubjects = data.data.subjects;
+      container.innerHTML = data.data.subjects.map(s => `
+        <div class="survey-card-pro">
+          <div>
+            <div style="font-weight:800; font-size:1.05rem; margin-bottom:4px; color:var(--text-main);">${CBS.escapeHTML(s.name)}</div>
+            <div style="font-size:0.82rem; color:var(--text-muted); display:flex; gap:12px; flex-wrap:wrap;">
+              <span><i class="ri-user-3-line"></i> ${CBS.escapeHTML(s.doctor)}</span>
+              <span><i class="ri-barcode-line"></i> ${CBS.escapeHTML(s.code || 'IT')}</span>
+            </div>
+          </div>
+          <div>
+            ${s.alreadySubmitted ? `
+              <span class="badge badge-success" style="font-size:0.82rem; padding:8px 14px; font-weight:800;">
+                <i class="ri-check-double-line"></i> تم إرسال تقييمك السري
+              </span>` : `
+              <button class="btn btn-primary" style="padding:8px 18px; font-size:0.85rem; font-weight:800;" onclick="openEvalModal('${s._id}')">
+                <i class="ri-star-line"></i> تقييم المقرر
+              </button>`}
+          </div>
+        </div>
+      `).join('');
+    } catch(e) {
+      container.innerHTML = '<div class="alert alert-danger show">تعذر جلب الاستبيانات</div>';
+    }
+  }
+
+  function setRating(field, val) {
+    currentRatings[field] = val;
+    const group = document.querySelector(`.rating-stars-pro[data-field="${field}"]`);
+    if (group) {
+      group.querySelectorAll('.star-btn-pro').forEach((btn, idx) => {
+        const isActive = idx + 1 === val;
+        btn.classList.toggle('active', isActive);
+        btn.setAttribute('aria-checked', isActive.toString());
+      });
+    }
+    CBS.haptic('selection');
+  }
+
+  function openEvalModal(id) {
+    currentEvaluatingSubject = id;
+    const s = cachedSubjects.find(x => x._id === id) || {};
+    document.getElementById('evalModalSubjectTitle').textContent = s.name || 'تقييم المقرر';
+    document.getElementById('evalModalDoc').textContent = 'أستاذ المادة: ' + (s.doctor || '');
+    document.getElementById('evalFeedbackInput').value = '';
+    ['contentClarity', 'teachingMethod', 'labUsefulness', 'examFairness'].forEach(f => setRating(f, 5));
+    document.getElementById('evalModal').style.display = 'flex';
+  }
+
+  function closeEvalModal() {
+    document.getElementById('evalModal').style.display = 'none';
+  }
+
+  async function submitEvaluation() {
+    if (!currentEvaluatingSubject) return;
+
+    try {
+      const res = await CBS.apiPost('/api/surveys/submit', {
+        subjectId: currentEvaluatingSubject,
+        ratings: currentRatings,
+        feedbackText: document.getElementById('evalFeedbackInput').value.trim()
+      });
+      const data = await CBS.readJson(res);
+
+      if (data.success) {
+        closeEvalModal();
+        CBS.toast('تم تسجيل تقييمك بنجاح', 'شكراً لمساهمتك في رفع جودة العملية التعليمية', 'success');
+        loadActiveSurveys();
+      } else {
+        CBS.toast(data.message || 'فشل إرسال التقييم', '', 'error');
+      }
+    } catch(e) {
+      CBS.toast('حدث خطأ أثناء الإرسال', '', 'error');
+    }
+  }
+
+  async function toggleViewMode() {
+    isAnalyticsMode = !isAnalyticsMode;
+    document.getElementById('studentSurveysView').style.display = isAnalyticsMode ? 'none' : 'block';
+    document.getElementById('staffAnalyticsView').style.display = isAnalyticsMode ? 'block' : 'none';
+    if (isAnalyticsMode) loadAnalytics();
+  }
+
+  async function loadAnalytics() {
+    try {
+      const res = await CBS.apiGet('/api/surveys/analytics');
+      const data = await CBS.readJson(res);
+      if (data.success && data.data) {
+        const d = data.data;
+        document.getElementById('statTotalEvals').textContent = d.totalEvaluations;
+        document.getElementById('statNsi').textContent = `${d.satisfactionIndex}%`;
+
+        const crit = d.averageRatings || {};
+        const items = [
+          { label: 'وضوح المحتوى العلمي والشيتات', val: crit.contentClarity || 0 },
+          { label: 'طريقة وأسلوب تدريس المحاضر', val: crit.teachingMethod || 0 },
+          { label: 'المختبرات والتطبيق العملي', val: crit.labUsefulness || 0 },
+          { label: 'عدالة وشمولية الاختبارات', val: crit.examFairness || 0 }
+        ];
+
+        document.getElementById('analyticsCriteriaList').innerHTML = items.map(it => {
+          const pct = Math.round((it.val / 5) * 100);
+          return `
+          <div style="margin-bottom:14px;">
+            <div style="display:flex; justify-content:space-between; font-size:0.88rem; font-weight:700;">
+              <span>${it.label}</span>
+              <strong style="color:var(--primary);">${it.val} / 5 (${pct}%)</strong>
+            </div>
+            <div class="meter-bar-container">
+              <div class="meter-bar-fill" style="width:${pct}%;"></div>
+            </div>
+          </div>`;
+        }).join('');
+
+        const fbList = document.getElementById('analyticsFeedbackList');
+        if (d.feedbacks && d.feedbacks.length) {
+          fbList.innerHTML = d.feedbacks.map(f => `
+            <div class="card" style="padding:14px; margin-bottom:10px; background:var(--bg-main); border-radius:var(--radius-md);">
+              <div style="font-size:0.82rem; font-weight:800; color:var(--primary); margin-bottom:4px;">
+                <i class="ri-chat-quote-line"></i> ${CBS.escapeHTML(f.subjectName)}
+              </div>
+              <div style="font-size:0.88rem; color:var(--text-main); line-height:1.6;">${CBS.escapeHTML(f.text)}</div>
+            </div>
+          `).join('');
+        } else {
+          fbList.innerHTML = '<div style="color:var(--text-muted); font-size:0.85rem; text-align:center; padding:16px 0;">لا توجد ملاحظات نصية مكتوبة بعد.</div>';
+        }
+      }
+    } catch(e) { CBS.toast('تعذر جلب بيانات التحليلات', '', 'error'); }
+  }
+
+  init();
+</script>
+</body>
+</html>

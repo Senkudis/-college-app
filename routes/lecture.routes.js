@@ -10,6 +10,7 @@ const auth = require("../middleware/auth.middleware");
 const role = require("../middleware/role.middleware");
 const upload = require("../config/multer");
 const { uploadLimiter } = require("../middleware/rateLimiter");
+const { clearCache } = require("../middleware/cache.middleware");
 const { success, fail, notFound, serverError } = require("../utils/response");
 
 async function getAccessibleSubjectFilter(user) {
@@ -44,7 +45,7 @@ router.post("/", auth, role("dean", "doctor", "leader", "admin"), uploadLimiter,
       }
     }
 
-    const isDean = req.user.roles.includes("dean");
+    const isDean = req.user.roles.includes("dean") || req.user.roles.includes("admin");
     const isDoctor = req.user.roles.includes("doctor");
     const isLeader = req.user.roles.includes("leader");
     let permitted = isDean;
@@ -98,10 +99,11 @@ router.post("/", auth, role("dean", "doctor", "leader", "admin"), uploadLimiter,
       extractedText,
       uploadedBy: req.user.id
     });
+    clearCache('/api/lectures');
     return success(res, lecture);
   } catch (err) {
     console.error("Lecture upload error:", err);
-    return res.status(400).json({ success: false, message: err.message || "فشل رفع المحاضرة" });
+    return serverError(res, err, "رفع المحاضرة");
   }
 });
 
@@ -138,6 +140,7 @@ router.post("/reorder", auth, role("dean", "doctor", "leader", "admin"), async (
     await Promise.all(
       lectureIds.map((id, index) => Lecture.findByIdAndUpdate(id, { order: index }))
     );
+    clearCache('/api/lectures');
     return success(res, null, "تم ترتيب المحاضرات بنجاح");
   } catch (err) {
     return serverError(res, err, "إعادة ترتيب المحاضرات");
@@ -172,6 +175,7 @@ router.put("/:id", auth, role("dean", "doctor", "leader", "admin"), async (req, 
     }
 
     await lecture.save();
+    clearCache('/api/lectures');
     return success(res, lecture, "تم تعديل المحاضرة بنجاح");
   } catch (err) {
     return serverError(res, err, "تعديل المحاضرة");
@@ -205,7 +209,7 @@ router.get("/", auth, async (req, res) => {
       .sort({ subject: 1, order: 1, createdAt: 1 });
     res.json(lectures);
   } catch (err) {
-    res.status(400).json({ message: "فشل جلب المحاضرات" });
+    serverError(res, err, "جلب المحاضرات");
   }
 });
 
@@ -226,13 +230,14 @@ router.delete("/:id", auth, role("dean", "doctor", "leader", "admin"), async (re
     }
 
     await Lecture.findByIdAndDelete(req.params.id);
+    clearCache('/api/lectures');
     success(res, null, 'تم حذف المحاضرة');
   } catch (err) {
     serverError(res, err, 'حذف محاضرة');
   }
 });
 
-// جلب محاضرات مادة معينة (تم تعديله لمنع خطأ 400)
+// جلب محاضرات مادة معينة (مرتبة حسب الترتيب المعتمد للمقرر)
 router.get("/by-subject/:subjectId", auth, async (req, res) => {
   try {
     const { subjectId } = req.params;
@@ -248,7 +253,7 @@ router.get("/by-subject/:subjectId", auth, async (req, res) => {
       return res.status(403).json({ success: false, message: "غير مصرح لك بعرض محاضرات هذا المقرر" });
     }
 
-    const lectures = await Lecture.find({ subject: subjectId }).sort({ order: 1, createdAt: -1 });
+    const lectures = await Lecture.find({ subject: subjectId }).sort({ order: 1, createdAt: 1 });
     
     res.json(lectures);
   } catch (err) {

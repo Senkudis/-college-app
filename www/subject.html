@@ -3,11 +3,11 @@
 <head>
   <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>تفاصيل المقرر | كلية تقنية المعلومات</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>تفاصيل المقرر | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=2026073128">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026073128">
+  <link rel="stylesheet" href="/css/style.css?v=2026081907">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026081907">
   <style>
     /* ===== PDF Modal Header Responsive ===== */
     .pdf-header-wrap {
@@ -195,7 +195,7 @@
     }
     .save-note-btn:hover { background: var(--primary-light); color: var(--primary); border-color: var(--primary); }
     .typewriter-cursor::after {
-      content: '▋'; animation: blink 0.7s infinite; color: #4f46e5; margin-right: 2px;
+      content: 'â–‹'; animation: blink 0.7s infinite; color: #4f46e5; margin-right: 2px;
     }
     @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
 
@@ -300,21 +300,22 @@
 </style>
 
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
 </head>
 <body>
 
 <header class="main-header">
   <div class="header-brand">
-    <img src="/assets/logo.png" class="header-logo" alt="Logo">
+    <img src="/assets/logo.png" class="header-logo" alt="شعار كلية النصر التقنية - جامعة النصر التقنية">
     <div class="header-title-group">
-      <strong>كلية تقنية المعلومات</strong>
+      <strong>كلية النصر التقنية</strong>
       <small id="headerSub">جاري التحميل...</small>
     </div>
   </div>
   <div class="header-actions">
-    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
-    <button class="btn-icon" onclick="CBS.goHome()" title="الرئيسية"><i class="ri-home-4-line"></i></button>
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي" aria-label="تبديل الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="CBS.goBack()" title="رجوع"><i class="ri-arrow-right-line"></i></button>
   </div>
 </header>
 
@@ -355,6 +356,7 @@
           <input type="text" class="search-input" id="searchLecture" placeholder="بحث...">
         </div>
         <select id="sortSelect" onchange="applyFilters()">
+          <option value="order">ترتيب المقرر (الافتراضي)</option>
           <option value="new">الأحدث أولاً</option>
           <option value="old">الأقدم أولاً</option>
         </select>
@@ -426,9 +428,9 @@
   جميع الحقوق محفوظة &copy; <span id="year"></span> النظام الجامعي المتكامل
 </footer>
 
-<script src="/js/shared.js?v=2026073128"></script>
-<script src="/js/app.js?v=2026073128"></script>
-<script src="/js/socket-client.js?v=2026073128" defer></script>
+<script src="/js/shared.js?v=2026081907"></script>
+<script src="/js/app.js?v=2026081907"></script>
+<script src="/js/socket-client.js?v=2026081907" defer></script>
 <script>
   CBS.init();
   const subjectId = new URLSearchParams(location.search).get('id');
@@ -498,10 +500,10 @@
       const s = _resData.data?.subject || _resData.subject || _resData.data || _resData;
       document.getElementById('subjectName').textContent = s.name;
       document.getElementById('headerSub').textContent  = s.name;
-      document.title = `${s.name} | كلية تقنية المعلومات`;
+      document.title = `${s.name} | كلية النصر التقنية`;
       if (s.level)  document.getElementById('subjectLevel').innerHTML = `<i class="ri-graduation-cap-line"></i> ${CBS.escapeHTML(s.level)}`;
       if (s.doctor) document.getElementById('subjectDoctor').innerHTML = `<i class="ri-user-voice-line"></i> د. ${CBS.escapeHTML(s.doctor.name)}`;
-    } catch(e) {}
+    } catch(e) { console.error('[subject/loadSubject]', e); }
   }
 
   function renderItems(containerId, items, buildFn) {
@@ -522,13 +524,19 @@
     const q    = document.getElementById('searchLecture').value.toLowerCase();
     const sort = document.getElementById('sortSelect').value;
     let list = lecturesData.filter(l => l.title.toLowerCase().includes(q));
-    list.sort((a,b) => sort === 'new' ? new Date(b.createdAt) - new Date(a.createdAt) : new Date(a.createdAt) - new Date(b.createdAt));
+    if (sort === 'new') {
+      list.sort((a,b) => new Date(b.createdAt) - new Date(a.createdAt));
+    } else if (sort === 'old') {
+      list.sort((a,b) => new Date(a.createdAt) - new Date(b.createdAt));
+    } else {
+      list.sort((a,b) => ((a.order ?? 0) - (b.order ?? 0)) || (new Date(a.createdAt) - new Date(b.createdAt)));
+    }
     renderItems('lecturesGrid', list, l => `
       <div class="item-card">
         <div class="item-title">${CBS.escapeHTML(l.title)}</div>
         <div class="item-links">
-          ${l.videoUrl ? `<a href="${CBS.escapeHTML(l.videoUrl)}" target="_blank" class="item-link video"><i class="ri-play-circle-line"></i> مشاهدة</a>` : ''}
-          ${l.file ? `<button class='item-link file' style='border:none;cursor:pointer;' onclick="openPdfModal('${getFileUrl(l.file, 'lectures')}', '${CBS.escapeHTML(l.title)}')"><i class='ri-file-text-line'></i> فتح الملف</button>
+          ${l.videoUrl ? `<a href="${CBS.escapeHTML(l.videoUrl)}" target="_blank" rel="noopener noreferrer" class="item-link video"><i class="ri-play-circle-line"></i> مشاهدة</a>` : ''}
+          ${l.file ? `<button class='item-link file' style='border:none;cursor:pointer;' onclick="openPdfModal('${getFileUrl(l.file, 'lectures')}', '${CBS.escapeHTML(l.title)}', '${l._id}')"><i class='ri-file-text-line'></i> فتح الملف</button>
                       ${getOfflineBtn(getFileUrl(l.file, 'lectures'))}` : ''}
         </div>
       </div>`);
@@ -541,20 +549,20 @@
       renderItems('refsGrid', data, r => {
         let delBtn = '';
         if (CBS.hasRole('admin') || CBS.hasRole('dean') || (CBS.hasRole('doctor') && CBS.isMe(r.addedBy))) {
-          delBtn = `<button class='item-link' style='border:none;cursor:pointer;color:var(--danger);background:rgba(239,68,68,0.1);' onclick="deleteRef('${r._id}')"><i class="ri-delete-bin-line"></i> حذف</button>`;
+          delBtn = `<button class='item-link' style='border:none;cursor:pointer;color:var(--danger);background:rgba(239,68,68,0.1);' onclick="deleteRef('${r._id}')" aria-label="حذف"><i class="ri-delete-bin-line"></i> حذف</button>`;
         }
         return `
         <div class="item-card">
           <div class="item-title">${CBS.escapeHTML(r.title)}</div>
           <div class="item-links">
-          ${r.link ? `<a href="${CBS.escapeHTML(r.link)}" target="_blank" class="item-link link"><i class="ri-external-link-line"></i> رابط خارجي</a>` : ''}
+          ${r.link ? `<a href="${CBS.escapeHTML(r.link)}" target="_blank" rel="noopener noreferrer" class="item-link link"><i class="ri-external-link-line"></i> رابط خارجي</a>` : ''}
           ${r.file ? `<button class='item-link file' style='border:none;cursor:pointer;' onclick="openPdfModal('${getFileUrl(r.file, 'references')}', '${CBS.escapeHTML(r.title)}')"><i class='ri-file-text-line'></i> فتح الملف</button>
                       ${getOfflineBtn(getFileUrl(r.file, 'references'))}` : ''}
           ${delBtn}
         </div>
         </div>`;
       });
-    } catch(e) {}
+    } catch(e) { console.error('[subject/loadRefs]', e); }
   }
 
   window.deleteRef = async function(id) {
@@ -587,7 +595,7 @@
             ${item.file ? getOfflineBtn(getFileUrl(item.file, 'assignments')) : ''}
           </div>
         </div>`);
-    } catch(e) {}
+    } catch(e) { console.error('[subject/loadByType]', e); }
   }
 
   async function loadVideos() {
@@ -655,7 +663,24 @@
     if (b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF) return 'image';                  // JPEG
     if (b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46) return 'image';                  // GIF
     if (b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[8] === 0x57 && b[9] === 0x45) return 'image'; // WebP
+    // ملفات أوفيس الحديثة حاويات ZIP (PK) والقديمة بصيغة OLE2 — نميّزها كي
+    // نُظهر رسالة دقيقة بدل «نوع غير مدعوم» الغامضة
+    if (b[0] === 0x50 && b[1] === 0x4B && b[2] === 0x03 && b[3] === 0x04) return 'zip';
+    if (b[0] === 0xD0 && b[1] === 0xCF && b[2] === 0x11 && b[3] === 0xE0) return 'ole';
     return 'unknown';
+  }
+
+  /* اسم نوع الملف بالعربية من امتداده — لرسالة مفهومة للطالب */
+  function describeFileKind(name) {
+    const ext = (name || '').toLowerCase().match(/\.([a-z0-9]+)$/)?.[1] || '';
+    const map = {
+      ppt: 'عرض PowerPoint', pptx: 'عرض PowerPoint',
+      doc: 'مستند Word', docx: 'مستند Word',
+      xls: 'جدول Excel', xlsx: 'جدول Excel',
+      zip: 'ملف مضغوط', rar: 'ملف مضغوط', '7z': 'ملف مضغوط',
+      txt: 'ملف نصي', csv: 'ملف بيانات'
+    };
+    return { label: map[ext] || 'هذا النوع من الملفات', ext };
   }
 
   /* عرض عبر محرك أندرويد الأصلي (PDFium).
@@ -695,7 +720,7 @@
     if (nativePdf) {
       try {
         await renderPdfNative(buf, container, nativePdf);
-        console.log('[PDF] عُرض عبر محرك أندرويد الأصلي (PDFium) ✅');
+        console.log('[PDF] عُرض عبر محرك أندرويد الأصلي (PDFium) ');
         return;
       } catch (e) {
         console.warn('[PDF] العارض الأصلي فشل، نعود إلى pdf.js:', e.message || e);
@@ -791,9 +816,14 @@
     return openCurrentPdfExternally(btn);
   }
 
-  async function openPdfModal(url, title) {
+  /* lectureId اختياري: نخزّنه على عنصر العنوان ليعرف كيدي أي محاضرة
+     مفتوحة أمام الطالب، فيقرأ نصها حين يقول "لخص لي" بدل أن يعتذر. */
+  async function openPdfModal(url, title, lectureId) {
     const isNative = !!(window.Capacitor?.isNativePlatform?.());
-    document.getElementById('pdfModalTitle').textContent = title || 'عرض الملف';
+    const titleEl = document.getElementById('pdfModalTitle');
+    titleEl.textContent = title || 'عرض الملف';
+    if (lectureId) titleEl.dataset.lectureId = lectureId;
+    else delete titleEl.dataset.lectureId;
     const frame = document.getElementById('pdfFrame');
     const wrap = document.getElementById('pdfCanvasWrap');
     const dlBtn = document.getElementById('pdfDownloadLink');
@@ -853,12 +883,21 @@
         await renderPdfBuffer(buf, wrap);
       } else if (kind === 'image') {
         const blobUrl = URL.createObjectURL(new Blob([buf.slice(0)]));
-        wrap.innerHTML = '<img src="' + blobUrl + '" style="display:block;margin:0 auto;max-width:100%;border-radius:6px;">';
+        wrap.innerHTML = '<img src="' + blobUrl + '" style="display:block;margin:0 auto;max-width:100%;border-radius:6px;" alt="">';
       } else {
+        const info = describeFileKind(_pendingFile.name);
+        const isOffice = ['ppt','pptx','doc','docx','xls','xlsx'].includes(info.ext);
+        const icon = isOffice ? 'ri-file-ppt-2-line' : 'ri-file-3-line';
         wrap.innerHTML =
-          '<div style="color:#fff;text-align:center;padding:40px;font-size:0.9rem;">' +
-          'هذا النوع من الملفات لا يُعرض داخل التطبيق' +
-          '<div style="opacity:0.7;font-size:0.82rem;margin-top:6px;">' + CBS.escapeHTML(_pendingFile.name) + '</div>' +
+          '<div style="color:#fff;text-align:center;padding:40px 24px;font-size:0.9rem;">' +
+          '<i class="' + icon + '" style="font-size:2.8rem;display:block;margin-bottom:12px;opacity:0.85;"></i>' +
+          '<strong style="font-size:1rem;">' + CBS.escapeHTML(info.label) + ' لا يُعرض داخل التطبيق</strong>' +
+          '<div style="opacity:0.7;font-size:0.82rem;margin-top:6px;word-break:break-all;">' + CBS.escapeHTML(_pendingFile.name) + '</div>' +
+          (isOffice
+            ? '<div style="opacity:0.65;font-size:0.8rem;margin-top:10px;line-height:1.6;">' +
+              'التطبيق يعرض ملفات PDF والصور داخلياً. افتح هذا الملف بتطبيق Office على جهازك،<br>' +
+              'أو اطلب من المحاضر رفعه بصيغة PDF ليُقرأ داخل التطبيق مباشرة.</div>'
+            : '') +
           '<button onclick="openPendingFileExternally(this)" style="margin-top:16px;padding:11px 24px;border:none;border-radius:10px;background:#2563eb;color:#fff;font-family:inherit;font-weight:700;font-size:0.9rem;cursor:pointer;">' +
           '<i class="ri-external-link-line"></i> فتح بتطبيق آخر</button></div>';
       }
@@ -948,7 +987,7 @@
     </div>
     <div class='pdf-header-actions' style='display:flex;gap:7px;align-items:center;flex-shrink:0;'>
       <button onclick='openCurrentPdfExternally(this)' class='btn btn-secondary' style='font-size:0.8rem;padding:7px 11px;border-radius:10px;display:inline-flex;align-items:center;gap:5px;font-weight:700;background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.22);cursor:pointer;' title='فتح قارئ PDF الخاص بالهاتف (الشكل الأصلي)'><i class='ri-external-link-line'></i> <span class='pdf-btn-label'>فتح قارئ PDF</span></button>
-      <a id='pdfDownloadLink' href='#' target='_blank' class='btn btn-primary' style='font-size:0.8rem;padding:7px 11px;border-radius:10px;display:inline-flex;align-items:center;gap:5px;font-weight:700;text-decoration:none;'><i class='ri-download-line'></i> <span class='pdf-btn-label'>تحميل</span></a>
+      <a id='pdfDownloadLink' href='#' target="_blank" rel="noopener noreferrer" class='btn btn-primary' style='font-size:0.8rem;padding:7px 11px;border-radius:10px;display:inline-flex;align-items:center;gap:5px;font-weight:700;text-decoration:none;'><i class='ri-download-line'></i> <span class='pdf-btn-label'>تحميل</span></a>
       <button onclick='openAiPanel()' style='background:linear-gradient(135deg,#4f46e5,#7c3aed);border:none;border-radius:10px;cursor:pointer;color:#fff;padding:7px 11px;display:flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:800;font-family:inherit;' title='مساعد الدراسة بالذكاء الاصطناعي'><i class='ri-sparkling-2-fill'></i> <span>AI</span></button>
       <button id='readingModeBtn' onclick='toggleReadingMode()' style='background:rgba(255,255,255,0.1);border:none;border-radius:10px;cursor:pointer;font-size:1.05rem;color:#fff;width:34px;height:34px;display:flex;align-items:center;justify-content:center;' title='وضع القراءة'><i class='ri-fullscreen-line'></i></button>
     </div>
@@ -972,14 +1011,14 @@
           <small style='font-size:0.72rem;color:var(--text-muted);font-weight:700;'>مساعدك الأكاديمي (تطوير م. ضياء الدين)</small>
         </div>
       </div>
-      <button onclick='closeAiPanel()' style='background:var(--bg-main);border:none;border-radius:50%;width:34px;height:34px;cursor:pointer;color:var(--text-muted);font-size:1.1rem;display:flex;align-items:center;justify-content:center;'><i class='ri-close-line'></i></button>
+      <button onclick='closeAiPanel()' title='إغلاق' aria-label='إغلاق مساعد كيدي' style='background:var(--bg-main);border:none;border-radius:50%;width:34px;height:34px;cursor:pointer;color:var(--text-muted);font-size:1.1rem;display:flex;align-items:center;justify-content:center;'><i class='ri-close-line'></i></button>
     </div>
     <div class='ai-tabs'>
       <button class='ai-tab active' id='aiTabSum'   onclick='switchAiTab("summarize")'><i class='ri-file-text-line'></i> تلخيص</button>
       <button class='ai-tab'        id='aiTabAsk'   onclick='switchAiTab("ask")'><i class='ri-chat-3-line'></i> دردشة كيدي</button>
       <button class='ai-tab'        id='aiTabFlash' onclick='switchAiTab("flashcards")'><i class='ri-stack-line'></i> بطاقات مراجعة</button>
       <button class='ai-tab'        id='aiTabQuiz'  onclick='switchAiTab("quiz")'><i class='ri-question-line'></i> اختبار تجريبي</button>
-      <button class='ai-tab'        id='aiTabNotes' onclick='switchAiTab("notes")'><i class='ri-bookmark-3-line'></i> ملاحظاتي 📝</button>
+      <button class='ai-tab'        id='aiTabNotes' onclick='switchAiTab("notes")'><i class='ri-bookmark-3-line'></i> ملاحظاتي </button>
       <button class='ai-tab'        id='aiTabPlan'  onclick='switchAiTab("plan")'><i class='ri-calendar-check-line'></i> خطة المذاكرة</button>
     </div>
     <div class='ai-body' id='aiBody'></div>
@@ -1081,10 +1120,10 @@ function renderAiTab(tab) {
   } else if (tab === 'ask') {
     body.innerHTML = `
       <div class="quick-prompts">
-        <button class="prompt-chip" onclick="useQuickPrompt('اشرح لي هذه المحاضرة بأسلوب مبسط')">💡 اشرح بأسلوب مبسط</button>
-        <button class="prompt-chip" onclick="useQuickPrompt('ما هي أهم 3 مفاهيم وحقائق هنا؟')">🎯 أهم المفاهيم</button>
-        <button class="prompt-chip" onclick="useQuickPrompt('ما هي الأسئلة المتوقعة في الامتحان؟')">❓ أسئلة متوقعة</button>
-        <button class="prompt-chip" onclick="useQuickPrompt('من هو مصممك وكيف أتواصل معه؟')">👨‍💻 المطور والتواصل</button>
+        <button class="prompt-chip" onclick="useQuickPrompt('اشرح لي هذه المحاضرة بأسلوب مبسط')"> اشرح بأسلوب مبسط</button>
+        <button class="prompt-chip" onclick="useQuickPrompt('ما هي أهم 3 مفاهيم وحقائق هنا؟')"> أهم المفاهيم</button>
+        <button class="prompt-chip" onclick="useQuickPrompt('ما هي الأسئلة المتوقعة في الامتحان؟')"> أسئلة متوقعة</button>
+        <button class="prompt-chip" onclick="useQuickPrompt('من هو مصممك وكيف أتواصل معه؟')">‍ المطور والتواصل</button>
       </div>
       <div class="kedy-chat-container" id="kedyChatStream">
         ${_kedyChatHistory.length === 0 ? `
@@ -1118,7 +1157,7 @@ function renderAiTab(tab) {
           <p style="font-size:0.85rem;color:var(--text-muted);">سأقوم بتحليل عدد محاضرات هذه المادة ومستواها، وإنشاء جدول مذاكرة ذكي لك.</p>
         </div>
         <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px;">
-          <label style="flex:1;font-weight:bold;font-size:0.9rem;">كم عدد الأيام المتبقية للامتحان؟</label>
+          <label style="flex:1;font-weight:bold;font-size:0.9rem;" for="aiPlanDays">كم عدد الأيام المتبقية للامتحان؟</label>
           <input type="number" id="aiPlanDays" min="1" max="60" value="7" style="width:70px;padding:8px;border:1px solid var(--border);border-radius:8px;text-align:center;">
         </div>
         <button class="ai-action-btn" id="aiPlanBtn" onclick="doAiPlan()" style="width:100%;"><i class="ri-magic-line"></i> توليد الخطة</button>
@@ -1279,13 +1318,13 @@ async function doAiFlashcards() {
       res.innerHTML = '<div class="flashcard-grid">' +
         data.cards.map((c,i) =>
           `<div class="flashcard" onclick="this.classList.toggle('open')">
-        <button class="flashcard-q"><span>${i+1}. ${CBS.escapeHTML(c.q)}</span><i class="ri-arrow-down-s-line"></i></div>
+        <button class="flashcard-q" aria-label="رجوع"><span>${i+1}. ${CBS.escapeHTML(c.q)}</span><i class="ri-arrow-down-s-line"></i></div>
             <div class="flashcard-a">${CBS.escapeHTML(c.a)}</div>
           </div>`
         ).join('') + '</div>' +
         `<div style="margin-top:12px;text-align:center;">
           <button class="save-note-btn" onclick="saveKedyFlashcardsNote()">
-            <i class="ri-bookmark-3-line"></i> حفظ كل البطاقات في ملاحظاتي 📝
+            <i class="ri-bookmark-3-line"></i> حفظ كل البطاقات في ملاحظاتي 
           </button>
         </div>`;
     } else {
@@ -1390,12 +1429,12 @@ ${lecturesList}
               <i class="${icon}"></i> ${CBS.escapeHTML(n.title)}
             </div>
             <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:8px;">
-              ${CBS.escapeHTML(n.subject)} • ${d}
+              ${CBS.escapeHTML(n.subject)} â€¢ ${d}
             </div>
             <div style="font-size:0.85rem;color:var(--text-main);white-space:pre-wrap;max-height:150px;overflow-y:auto;background:var(--bg-card);padding:10px;border-radius:8px;">
               ${n.content}
             </div>
-            <button onclick="deleteKedyNote('${n._id}')" style="position:absolute;top:10px;left:10px;background:none;border:none;color:var(--danger);cursor:pointer;" title="حذف"><i class="ri-delete-bin-line"></i></button>
+            <button onclick="deleteKedyNote('${n._id}')" style="position:absolute;top:10px;left:10px;background:none;border:none;color:var(--danger);cursor:pointer;" title="حذف" aria-label="حذف"><i class="ri-delete-bin-line"></i></button>
           </div>`;
       });
       html += '</div>';
@@ -1414,7 +1453,7 @@ ${lecturesList}
         if(window.CBS && CBS.toast) CBS.toast('تم الحذف بنجاح', '', 'success');
         renderNotesTab();
       }
-    } catch(e) {}
+    } catch(e) { console.error('[subject/deleteKedyNote]', e); }
   }
 
 function saveKedyFlashcardsNote() {

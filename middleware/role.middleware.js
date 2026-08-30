@@ -1,4 +1,10 @@
 module.exports = (...allowedRoles) => {
+  // الاستدعاء الصحيح متغيّر الوسائط: role('admin','dean').
+  // لكن تمرير مصفوفة role(['admin','dean']) كان ينتج [['admin','dean']]
+  // فيفشل التطابق ويُحجب المسار عن الجميع بلا أي أثر في السجل —
+  // لذلك نبسّط المصفوفات المتداخلة بدل الاعتماد على شكل الاستدعاء.
+  allowedRoles = allowedRoles.flat(Infinity).filter(Boolean);
+
   return (req, res, next) => {
     // التحقق من وجود معلومات المستخدم
     if (!req.user || !req.user.roles) {

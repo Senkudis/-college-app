@@ -35,11 +35,15 @@
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.MODIFY_AUDIO_SETTINGS" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
+    <!-- التخزين: مقيّد بأندرويد 12 وما دون. من أندرويد 13 فصاعداً يكفي
+         منتقي الملفات المدمج (SAF) الذي يستدعيه <input type="file"> داخل
+         الـWebView، وهو يمنح صلاحية قراءة الملف المختار وحده. -->
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" android:maxSdkVersion="32" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28" />
-    <uses-permission android:name="android.permission.READ_MEDIA_VIDEO" />
-    <uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
-    <uses-permission android:name="android.permission.READ_MEDIA_AUDIO" />
+
+    <!-- أُزيلت READ_MEDIA_IMAGES/VIDEO/AUDIO: لم يكن أي كود يستخدمها، ورفعُها
+         يخالف سياسة صور وفيديو Google Play التي توجب استخدام أداة الاختيار
+         المدمجة بدل الوصول الواسع لمكتبة الوسائط (رُفض الإصداران 21 و22). -->
     <uses-permission android:name="android.permission.USE_BIOMETRIC" />
     <uses-permission android:name="android.permission.USE_FINGERPRINT" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />

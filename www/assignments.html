@@ -3,20 +3,20 @@
 <head>
   <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#0d3b66">
   <link rel="manifest" href="/manifest.json">
-  <title>الواجبات | كلية تقنية المعلومات</title>
+  <title>الواجبات | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=2026073128">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026073128">
+  <link rel="stylesheet" href="/css/style.css?v=2026081907">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026081907">
   <style>
     .filter-tab { padding:5px 14px; border-radius:20px; border:1.5px solid var(--border); background:transparent; color:var(--text-muted); cursor:pointer; font-size:0.8rem; font-family:inherit; transition:all 0.2s; }
     .filter-tab.active, .filter-tab:hover { background:var(--primary); color:#fff; border-color:var(--primary); }
 
-    /* ── Assignment Items (timeline style) ── */
+    /* â”€â”€ Assignment Items (timeline style) â”€â”€ */
     .asgn-item {
       background: var(--bg-card);
       border-radius: 12px;
@@ -69,15 +69,15 @@
 
 <header class="main-header">
   <div class="header-brand">
-    <img src="/assets/logo.png" class="header-logo" alt="Logo">
+    <img src="/assets/logo.png" class="header-logo" alt="شعار كلية النصر التقنية - جامعة النصر التقنية">
     <div class="header-title-group">
-      <strong>كلية تقنية المعلومات</strong>
+      <strong>كلية النصر التقنية</strong>
       <small>الواجبات والتكاليف</small>
     </div>
   </div>
   <div class="header-actions">
-    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
-    <button class="btn-icon" onclick="CBS.logout()" title="خروج"><i class="ri-logout-box-r-line"></i></button>
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي" aria-label="تبديل الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="CBS.logout()" title="خروج" aria-label="تسجيل الخروج"><i class="ri-logout-box-r-line"></i></button>
   </div>
 </header>
 
@@ -156,22 +156,22 @@
   <div class="modal-box">
     <div class="modal-header">
       <h3 class="modal-title">إضافة واجب جديد</h3>
-      <button class="modal-close" onclick="CBS.closeModal('assignmentModal')"><i class="ri-close-line"></i></button>
+      <button class="modal-close" onclick="CBS.closeModal('assignmentModal')" aria-label="إغلاق"><i class="ri-close-line"></i></button>
     </div>
     <div class="modal-body">
       <form id="assignmentForm">
         <div class="form-group">
-          <label>اسم الواجب</label>
+          <label for="assignName">اسم الواجب</label>
           <input type="text" id="assignName" required placeholder="أدخل اسم الواجب">
         </div>
         <div class="form-group">
-          <label>المقرر</label>
+          <label for="assignSubject">المقرر</label>
           <select id="assignSubject" required>
             <option value="">اختر المقرر</option>
           </select>
         </div>
         <div class="form-group">
-          <label>نوع التكليف</label>
+          <label for="assignType">نوع التكليف</label>
           <select id="assignType" required>
             <option value="exercise">تمرين</option>
             <option value="research">بحث</option>
@@ -179,19 +179,19 @@
           </select>
         </div>
         <div class="form-group">
-          <label>تاريخ الانتهاء</label>
+          <label for="assignDeadline">تاريخ الانتهاء</label>
           <input type="date" id="assignDeadline" required>
         </div>
         <div class="form-group">
-          <label>وقت التسليم</label>
+          <label for="assignDueTime">وقت التسليم</label>
           <input type="time" id="assignDueTime" value="23:59">
         </div>
         <div class="form-group">
-          <label>ملف التكليف</label>
+          <label for="assignFile">ملف التكليف</label>
           <input type="file" id="assignFile" required>
         </div>
         <div class="form-group">
-          <label>الوصف</label>
+          <label for="assignDesc">الوصف</label>
           <textarea id="assignDesc" placeholder="أدخل وصف الواجب"></textarea>
         </div>
       </form>
@@ -207,9 +207,9 @@
   حقوق النشر &copy; <span id="year"></span> جامعة النصر التقنية &nbsp;|&nbsp; تطوير: ضياء الدين إبراهيم
 </footer>
 
-<script src="/js/shared.js?v=2026073128"></script>
-<script src="/js/app.js?v=2026073128"></script>
-<script src="/js/socket-client.js?v=2026073128" defer></script>
+<script src="/js/shared.js?v=2026081907"></script>
+<script src="/js/app.js?v=2026081907"></script>
+<script src="/js/socket-client.js?v=2026081907" defer></script>
 <script>
   CBS.init();
 

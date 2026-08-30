@@ -40,22 +40,16 @@
 
     socket = window.io(SOCKET_URL, {
       auth: { token },
-      /* polling أولاً ثم ترقية تلقائية إلى websocket.
-         كان الترتيب معكوساً ('websocket' أولاً)، وSocket.IO لا يتراجع إلى
-         polling ضمن نفس المحاولة — بل يفشل ويعيد المحاولة، فتمتلئ الطرفية
-         برسائل "websocket error" ويتأخر الاتصال. الترتيب الافتراضي يتصل
-         فوراً عبر polling ثم يرقّي بصمت إن سمح الوسيط. */
-      transports: ['polling', 'websocket'],
+      transports: ['websocket', 'polling'],
       upgrade: true,
       reconnectionAttempts: 10,
-      reconnectionDelay: 3000,
+      reconnectionDelay: 5000,
       reconnectionDelayMax: 20000,
       timeout: 10000
     });
 
     socket.on('connect', () => {
       _connected = true;
-      console.log('[Socket] Connected:', socket.id);
       // انضم لغرفة المستخدم ولغرفة الدفعة
       const user = JSON.parse(localStorage.getItem('user') || '{}');
       const batchId = new URLSearchParams(location.search).get('batch') || localStorage.getItem('cbs_active_batch_id');
@@ -65,7 +59,6 @@
 
     socket.on('disconnect', (reason) => {
       _connected = false;
-      console.warn('[Socket] Disconnected:', reason);
     });
 
     /* الاتصال اللحظي ميزة إضافية لا شرط لعمل التطبيق (هناك استطلاع دوري
@@ -96,6 +89,10 @@
 
     /* ─── تشغيل ملف الصوت الخاص بالتنبيهات ─── */
     function playNotifSound(isEmergency = false) {
+      if (typeof CBS !== 'undefined' && typeof CBS.playNotificationSound === 'function') {
+        CBS.playNotificationSound(isEmergency);
+        return;
+      }
       const soundUrl = isEmergency ? '/sounds/cbs_emergency.wav' : '/sounds/cbs_notif.wav';
       try {
         const audio = new Audio(soundUrl);
@@ -145,8 +142,10 @@
 
     // إشعار جديد → Toast + تحديث Badge
     socket.on('notification:new', (data) => {
-      // تجاهل الإشعارات الموجهة لدور لا يملكه المستخدم (target بصيغة الجمع)
-      if (data && data.target && data.target !== 'all') {
+      /* تجاهل الإشعارات الموجهة لدور لا يملكه المستخدم (target بصيغة الجمع).
+         استثناء "custom": الخادم أرسله إلى غرفة user:<id> الخاصة بالمستلم
+         وحده، فالتصفية هنا كانت تُسقط إشعاراً موجّهاً له شخصياً. */
+      if (data && data.target && data.target !== 'all' && data.target !== 'custom') {
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         const roles = user.roles || [];
         const isDeanOrAdmin = roles.includes('dean') || roles.includes('admin');
@@ -200,6 +199,13 @@
     if (localStorage.getItem('pwa_dismissed')) return;
     if (window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches) return; // Already installed
 
+    /* داخل التطبيق الأصلي (Capacitor) لا تُعرض لافتة التثبيت إطلاقاً:
+       الـUA على آيفون يحوي "iphone" حتى داخل التطبيق، فكانت اللافتة
+       ستطلب من مستخدم حمّل التطبيق من App Store أن "يثبّت التطبيق" —
+       ارتباك للمستخدم، ومخالفة لبند 2.5.2 على أندرويد حيث توجّهه إلى
+       تنزيل APK خارج المتجر. */
+    if (window.Capacitor?.isNativePlatform?.()) return;
+
     const ua = navigator.userAgent.toLowerCase();
     const isAndroid = /android/.test(ua);
     const isIOS = /iphone|ipad|ipod/.test(ua);
@@ -214,11 +220,22 @@
     }, 2000);
   }
 
+  /* رابط التحميل يأتي من إعدادات النسخة التي يضبطها العميد.
+     كان مثبّتاً على '/assets/kedwebcbs.apk' — ملف غير موجود في المشروع،
+     فكل ضغطة على "تحميل" كانت تنتهي بصفحة 404. */
+  async function resolveApkUrl() {
+    try {
+      const res = await fetch('/api/app-version/check?platform=android');
+      const data = await res.json();
+      return (data?.data?.directApkUrl) || data?.directApkUrl || null;
+    } catch { return null; }
+  }
+
   function showSmartBanner(os) {
     if (document.getElementById('pwa-install-banner')) return;
     const banner = document.createElement('div');
     banner.id = 'pwa-install-banner';
-    
+
     if (os === 'android') {
       banner.innerHTML = `
         <div class="pwa-icon"><i class="ri-download-2-line"></i></div>
@@ -227,9 +244,26 @@
           <small>حمل التطبيق الحقيقي لتجربة أسرع وأفضل</small>
         </div>
         <div class="pwa-actions">
-          <button class="btn-install" onclick="window._dismissPWA(); location.href='/assets/kedwebcbs.apk'">تحميل</button>
-          <button class="btn-dismiss" onclick="window._dismissPWA()">لاحقاً</button>
+          <button class="btn-install" type="button">تحميل</button>
+          <button class="btn-dismiss" type="button">لاحقاً</button>
         </div>`;
+
+      banner.querySelector('.btn-install').addEventListener('click', async (e) => {
+        const btn = e.currentTarget;
+        btn.disabled = true;
+        btn.textContent = 'جارٍ الفتح…';
+        const url = await resolveApkUrl();
+        if (!url) {
+          btn.disabled = false;
+          btn.textContent = 'تحميل';
+          if (typeof CBS !== 'undefined') {
+            CBS.toast('رابط التحميل غير متاح حالياً', 'يرجى المحاولة لاحقاً', 'error');
+          }
+          return;
+        }
+        window._dismissPWA();
+        location.href = url;
+      });
     } else {
       // iOS
       banner.innerHTML = `
@@ -239,10 +273,14 @@
           <small>اضغط على أيقونة المشاركة <i class="ri-share-box-line" style="font-size:1.1rem;vertical-align:middle"></i> ثم (Add to Home Screen)</small>
         </div>
         <div class="pwa-actions">
-          <button class="btn-dismiss" onclick="window._dismissPWA()">حسناً</button>
+          <button class="btn-dismiss" type="button">حسناً</button>
         </div>`;
     }
+
+    banner.querySelector('.btn-dismiss')?.addEventListener('click', () => window._dismissPWA());
     document.body.appendChild(banner);
+    // الإطار التالي كي تسري الحركة الانتقالية بدل الظهور المفاجئ
+    requestAnimationFrame(() => banner.classList.add('is-visible'));
   }
 
   window._dismissPWA = () => {

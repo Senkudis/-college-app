@@ -3,11 +3,11 @@
 <head>
   <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>طلبات التسجيل المعلقة | كلية تقنية المعلومات</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>طلبات التسجيل المعلقة | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=2026073128">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026073128">
+  <link rel="stylesheet" href="/css/style.css?v=2026081907">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026081907">
 
   <style>
     .pending-card {
@@ -43,60 +43,21 @@
       margin-top: 14px;
       flex-wrap: wrap;
     }
-    .btn-wa {
-      background: #22c55e;
-      color: #fff;
-      border: none;
-      padding: 8px 14px;
-      border-radius: 10px;
-      font-weight: 700;
-      font-size: 0.85rem;
-      text-decoration: none;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .btn-approve {
-      background: #10b981;
-      color: #fff;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 10px;
-      font-weight: 700;
-      font-size: 0.85rem;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
-    .btn-reject {
-      background: #ef4444;
-      color: #fff;
-      border: none;
-      padding: 8px 16px;
-      border-radius: 10px;
-      font-weight: 700;
-      font-size: 0.85rem;
-      cursor: pointer;
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-    }
   </style>
 </head>
 <body>
 
 <header class="main-header">
   <div class="header-brand">
-    <img src="/assets/logo.png" class="header-logo" alt="Logo">
+    <img src="/assets/logo.png" class="header-logo" alt="شعار كلية النصر التقنية - جامعة النصر التقنية">
     <div class="header-title-group">
-      <strong>كلية تقنية المعلومات</strong>
+      <strong>كلية النصر التقنية</strong>
       <small>طلبات التسجيل المعلقة</small>
     </div>
   </div>
   <div class="header-actions">
-    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
-    <button class="btn-icon" onclick="CBS.logout()" title="خروج"><i class="ri-logout-box-r-line"></i></button>
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي" aria-label="تبديل الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="CBS.logout()" title="خروج" aria-label="تسجيل الخروج"><i class="ri-logout-box-r-line"></i></button>
   </div>
 </header>
 
@@ -121,8 +82,8 @@
     </div>
     <div style="display: flex; gap: 8px; flex-wrap: wrap;">
       <button class="btn-approve" onclick="bulkApprove()"><i class="ri-checkbox-circle-line"></i> قبول المحددين</button>
-      <button class="btn-reject" onclick="bulkReject()"><i class="ri-close-circle-line"></i> رفض المحددين</button>
-      <button class="btn-approve" onclick="copyAllEmails()" style="background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4);"><i class="ri-file-copy-line"></i> نسخ الإيميلات</button>
+      <button class="btn-reject" onclick="bulkReject()" aria-label="إغلاق"><i class="ri-close-circle-line"></i> رفض المحددين</button>
+      <button class="btn btn-success" onclick="copyAllEmails()"><i class="ri-file-copy-line"></i> نسخ الإيميلات</button>
     </div>
   </div>
 
@@ -140,11 +101,11 @@
 </div>
 
 <footer class="main-footer">
-  حقوق النشر &copy; <span id="year"></span> كلية تقنية المعلومات
+  حقوق النشر &copy; <span id="year"></span> كلية النصر التقنية
 </footer>
 
-<script src="/js/shared.js?v=2026073128"></script>
-<script src="/js/app.js?v=2026073128"></script>
+<script charset="UTF-8" src="/js/shared.js?v=2026081907"></script>
+<script charset="UTF-8" src="/js/app.js?v=2026081907"></script>
 <script>
   CBS.init({ requireRoles: ['dean', 'admin', 'leader'] });
   document.getElementById('year').textContent = new Date().getFullYear();
@@ -175,16 +136,16 @@
             cleanPhone = '249' + cleanPhone.slice(1);
           }
 
-          const waMsg = `مرحباً بك الطالب/ة: *${u.name}* 🎓\n` +
-            `تهانينا! تم قبول طلب تسجيلك وانضمامك بنجاح إلى منصة كلية تقنية المعلومات.\n\n` +
-            `📋 *بيانات تسجيل الدخول الخاصة بك:*\n` +
-            `🔹 *البريد الإلكتروني:* ${u.email}\n` +
-            `🔹 *كلمة المرور الأولية:* 123456\n` +
-            `🔹 *الدفعة الدراسية:* ${batchName}\n\n` +
-            `🔒 *ملاحظة هامة:* عند أول تسجيل دخول لك، سيطلب منك النظام تلقائياً تعيين كلمة مرور جديدة خاصة بك لحماية حسابك.\n\n` +
-            `🔗 *الدخول عبر تطبيق الأندرويد (رابط التحميل):*\nhttps://play.google.com/apps/testing/com.elnasrcsit.cbs\n\n` +
-            `🔗 *الدخول عبر متصفح الويب (للآيفون والكمبيوتر):*\n${CBS.publicBaseUrl()}/login.html\n\n` +
-            `نتمنى لك رحلة دراسية مكللة بالنجاح والتوفيق! ✨`;
+          const waMsg = `مرحباً بك الطالب/ة: *${u.name}* \n` +
+            `تهانينا! تم قبول طلب تسجيلك وانضمامك بنجاح إلى منصة كلية النصر التقنية.\n\n` +
+            ` *بيانات تسجيل الدخول الخاصة بك:*\n` +
+            `• *البريد الإلكتروني:* ${u.email}\n` +
+            `• *كلمة المرور الأولية:* 123456\n` +
+            `• *الدفعة الدراسية:* ${batchName}\n\n` +
+            ` *ملاحظة هامة:* عند أول تسجيل دخول لك، سيطلب منك النظام تلقائياً تعيين كلمة مرور جديدة خاصة بك لحماية حسابك.\n\n` +
+            ` *الدخول عبر تطبيق الأندرويد (رابط التحميل):*\nhttps://play.google.com/apps/testing/com.elnasrcsit.cbs\n\n` +
+            ` *الدخول عبر متصفح الويب (للآيفون والكمبيوتر):*\n${CBS.publicBaseUrl()}/login.html\n\n` +
+            `نتمنى لك رحلة دراسية مكللة بالنجاح والتوفيق! `;
 
           const waUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(waMsg)}` : '#';
 
@@ -206,14 +167,14 @@
 
               <div class="pending-actions">
                 ${cleanPhone ? `
-                  <a href="${waUrl}" target="_blank" class="btn-wa">
+                  <a href="${waUrl}" target="_blank" rel="noopener noreferrer" class="btn-wa">
                     <i class="ri-whatsapp-line"></i> إرسال عبر الواتساب
                   </a>
                 ` : ''}
                 <button class="btn-approve" onclick="approveOne('${u._id}')">
                   <i class="ri-check-line"></i> قبول الطالب
                 </button>
-                <button class="btn-reject" onclick="rejectOne('${u._id}')">
+                <button class="btn-reject" onclick="rejectOne('${u._id}')" aria-label="إغلاق">
                   <i class="ri-close-line"></i> رفض وحذف
                 </button>
               </div>

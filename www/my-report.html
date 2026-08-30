@@ -3,14 +3,15 @@
 <head>
   <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>تقريري الأكاديمي | كلية تقنية المعلومات</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>تقريري الأكاديمي | كلية النصر التقنية</title>
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Al-Nasr CBS">
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
-  <link rel="stylesheet" href="/css/style.css?v=2026073128">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026073128">
+  <link rel="stylesheet" href="/css/style.css?v=2026081907">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026081907">
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
   <style>
     .report-banner {
@@ -78,14 +79,14 @@
 
 <header class="main-header">
   <div class="header-brand">
-    <button class="btn-icon" onclick="CBS.goHome()" title="رجوع"><i class="ri-arrow-right-line"></i></button>
+    <button class="btn-icon" onclick="CBS.goHome()" title="رجوع" aria-label="رجوع"><i class="ri-arrow-right-line"></i></button>
     <div class="header-title-group">
-      <strong>كلية تقنية المعلومات</strong>
+      <strong>كلية النصر التقنية</strong>
       <small>تقرير الأداء والتحصيل الأكاديمي</small>
     </div>
   </div>
   <div class="header-actions">
-    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي" aria-label="تبديل الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
     <button class="btn-icon" id="exportPdfBtn" onclick="exportReportPDF()" title="تحميل التقرير PDF" disabled><i class="ri-file-pdf-2-line"></i></button>
   </div>
 </header>
@@ -142,8 +143,8 @@
   حقوق النشر &copy; <span id="year"></span> جامعة النصر التقنية
 </footer>
 
-<script src="/js/shared.js?v=2026073128"></script>
-<script src="/js/app.js?v=2026073128"></script>
+<script src="/js/shared.js?v=2026081907"></script>
+<script src="/js/app.js?v=2026081907"></script>
 <script>
   CBS.init();
   const user = CBS.getUser();
@@ -286,11 +287,11 @@
         <div style="display:flex;justify-content:space-between;align-items:center;border-bottom:3px double #0d3b66;padding-bottom:16px;margin-bottom:20px;">
           <div>
             <h2 style="color:#0d3b66;margin:0 0 4px;font-size:1.5rem;font-weight:900;">جامعة النصر التقنية</h2>
-            <h3 style="color:#2563eb;margin:0 0 4px;font-size:1.1rem;font-weight:700;">كلية تقنية المعلومات — الشؤون الأكاديمية</h3>
+            <h3 style="color:#2563eb;margin:0 0 4px;font-size:1.1rem;font-weight:700;">كلية النصر التقنية — الشؤون الأكاديمية</h3>
             <div style="color:#64748b;font-size:0.82rem;">وثيقة كشف الدرجات الأكاديمي وسجل التحصيل الرسمي</div>
           </div>
           <div style="text-align:left;">
-            <img src="/assets/logo.png" style="width:70px;height:70px;object-fit:contain;" alt="Logo">
+            <img src="/assets/logo.png" style="width:70px;height:70px;object-fit:contain;" alt="شعار كلية النصر التقنية - جامعة النصر التقنية">
           </div>
         </div>
 

@@ -3,11 +3,11 @@
 <head>
   <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>تسليم التكليفات | كلية تقنية المعلومات</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>تسليم التكليفات | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=2026073128">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026073128">
+  <link rel="stylesheet" href="/css/style.css?v=2026081907">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026081907">
   <style>
     .tabs-bar {
       display: flex; gap: 6px;
@@ -65,20 +65,21 @@
   </style>
 
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
 </head>
 <body>
 
 <header class="main-header">
   <div class="header-brand">
-    <img src="/assets/logo.png" class="header-logo" alt="Logo">
+    <img src="/assets/logo.png" class="header-logo" alt="شعار كلية النصر التقنية - جامعة النصر التقنية">
     <div class="header-title-group">
-      <strong>كلية تقنية المعلومات</strong>
+      <strong>كلية النصر التقنية</strong>
       <small>تسليم التكليفات</small>
     </div>
   </div>
   <div class="header-actions">
-    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي" aria-label="تبديل الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
     <button class="btn-icon" onclick="CBS.goHome()" title="الرئيسية"><i class="ri-home-4-line"></i></button>
   </div>
 </header>
@@ -119,14 +120,14 @@
   <div class="modal-box">
     <div class="modal-header">
       <span class="modal-title" id="modalTitle">تسليم التكليف</span>
-      <button class="modal-close" onclick="CBS.closeModal('submitModal')"><i class="ri-close-line"></i></button>
+      <button class="modal-close" onclick="CBS.closeModal('submitModal')" aria-label="إغلاق"><i class="ri-close-line"></i></button>
     </div>
     <div class="modal-body">
       <div id="modalDetails" style="background:var(--bg-hover);padding:14px;border-radius:var(--radius-md);margin-bottom:16px;font-size:0.88rem;"></div>
       <div id="modalAlert" class="alert"></div>
       <div id="submitForm">
         <div class="form-group">
-          <label class="form-label">نوع التسليم</label>
+          <label class="form-label" for="subType">نوع التسليم</label>
           <div class="input-wrapper"><i class="input-icon ri-bookmark-line"></i>
             <select class="form-control" id="subType">
               <option value="exercise">تمرين</option>
@@ -136,12 +137,12 @@
           </div>
         </div>
         <div class="form-group">
-          <label class="form-label">ملف الحل (PDF أو صورة) *</label>
-          <input class="form-control" type="file" id="subFile" accept=".pdf,image/*">
+          <label class="form-label" for="subFile">ملف الحل (PDF أو صورة) *</label>
+          <input class="form-control" type="file" id="subFile" accept=".pdf,.doc,.docx,.ppt,.pptx,.zip,.rar,image/*">
           <div style="font-size:0.78rem;color:var(--text-muted);margin-top:4px;">أنواع الملفات المدعومة: PDF أو صور</div>
         </div>
         <div class="form-group">
-          <label class="form-label">ملاحظات (اختياري)</label>
+          <label class="form-label" for="subNotes">ملاحظات (اختياري)</label>
           <textarea class="form-control" id="subNotes" rows="2" placeholder="اكتب ملاحظات للمشرف..."></textarea>
         </div>
       </div>
@@ -169,9 +170,9 @@
   جميع الحقوق محفوظة © <span id="year"></span> النظام الجامعي المتكامل
 </footer>
 
-<script src="/js/shared.js?v=2026073128"></script>
-<script src="/js/app.js?v=2026073128"></script>
-<script src="/js/socket-client.js?v=2026073128" defer></script>
+<script src="/js/shared.js?v=2026081907"></script>
+<script src="/js/app.js?v=2026081907"></script>
+<script src="/js/socket-client.js?v=2026081907" defer></script>
 <script>
   CBS.init();
   const user = CBS.getUser();
@@ -233,7 +234,7 @@
             ${a.description?`<div style="font-size:0.84rem;color:var(--text-muted);margin-bottom:10px;">${CBS.escapeHTML(a.description)}</div>`:''}
             ${timeHtml}
             <div class="assign-actions">
-              <a href="${API_BASE}/uploads/${a.file}" target="_blank" class="btn btn-secondary" style="font-size:0.83rem;padding:7px 14px;text-decoration:none;">
+              <a href="${API_BASE}/uploads/assignments/${encodeURIComponent(a.file)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="font-size:0.83rem;padding:7px 14px;text-decoration:none;">
                 <i class="ri-download-cloud-line"></i> تحميل المرفق
               </a>
               ${!isSubmitted && !isLate ? `<button class="btn btn-primary" style="font-size:0.83rem;padding:7px 14px;" onclick="openSubmit('${a._id}','${CBS.escapeHTML(a.title)}','${a.type}')"><i class="ri-upload-cloud-line"></i> تسليم الحل</button>` : ''}
@@ -255,7 +256,7 @@
         const statusTxt = { pending:'قيد المراجعة', reviewed:'تمت المراجعة', graded:'مقيّم' };
         let undoBtn = '';
         if(s.status === 'pending') {
-           undoBtn = `<button class="btn btn-secondary" style="font-size:0.8rem;padding:6px 12px;color:var(--danger);border-color:var(--danger);background:transparent;margin-right:8px;" onclick="undoSubmission('${s._id}')"><i class="ri-delete-back-2-line"></i> تراجع</button>`;
+           undoBtn = `<button class="btn btn-secondary" style="font-size:0.8rem;padding:6px 12px;color:var(--danger);border-color:var(--danger);background:transparent;margin-right:8px;" onclick="undoSubmission('${s._id}')" aria-label="حذف"><i class="ri-delete-back-2-line"></i> تراجع</button>`;
         }
         return `
           <div class="sub-card ${s.status}">
@@ -265,7 +266,7 @@
                 <div style="font-size:0.8rem;color:var(--text-muted);margin-top:4px;">${CBS.formatDateTime(s.submissionDate)} | ${s.isLate?'<span style="color:var(--danger);">تسليم متأخر</span>':'في الموعد'}</div>
               </div>
               <div style="display:flex;align-items:center;flex-shrink:0;">
-                <a href="${API_BASE}/uploads/${s.file}" target="_blank" class="btn btn-secondary" style="font-size:0.8rem;padding:6px 12px;text-decoration:none;"><i class="ri-download-line"></i></a>
+                <a href="${API_BASE}${CBS.privateFileUrl('submissions', s.file)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="font-size:0.8rem;padding:6px 12px;text-decoration:none;"><i class="ri-download-line"></i></a>
                 ${undoBtn}
               </div>
             </div>

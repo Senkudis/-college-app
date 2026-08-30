@@ -27,18 +27,18 @@
   <style>
     @font-face {
       font-family: 'CustomHeadingFont';
-      src: url('fonts/heading-font.ttf') format('truetype');
+      src: url('/fonts/heading-font.ttf') format('truetype');
       font-weight: normal;
       font-style: normal;
     }
     @font-face {
       font-family: 'CustomBodyFont';
-      src: url('fonts/body-font.otf') format('opentype');
+      src: url('/fonts/body-font.otf') format('opentype');
       font-weight: normal;
       font-style: normal;
     }
 
-    /* ── Reset & Base ─────────────────────────────────────── */
+    /* â”€â”€ Reset & Base â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     :root {
       --primary: #00123A;     /* Navy Blue - Elnasr Brand */
@@ -70,7 +70,7 @@
     a { text-decoration: none; color: inherit; }
     img { max-width: 100%; display: block; }
     
-    /* ── Utilities & Layout ───────────────────────────────── */
+    /* â”€â”€ Utilities & Layout â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .container {
       max-width: 1100px;
       margin: 0 auto;
@@ -101,7 +101,7 @@
       border-radius: 4px;
     }
 
-    /* ── Ticker & Navbar (Safe Areas Included) ────────────── */
+    /* â”€â”€ Ticker & Navbar (Safe Areas Included) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .top-bar {
       background: var(--primary);
       color: var(--white);
@@ -165,7 +165,7 @@
     }
     .btn-login:hover { transform: translateY(-2px); }
     
-    /* ── Hero Section ─────────────────────────────────────── */
+    /* â”€â”€ Hero Section â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .hero {
       position: relative;
       background: linear-gradient(135deg, var(--primary), var(--secondary));
@@ -237,7 +237,7 @@
       margin-top: 5px;
     }
 
-    /* ── Features (Why Us?) ───────────────────────────────── */
+    /* â”€â”€ Features (Why Us?) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .features-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
@@ -279,7 +279,7 @@
       color: var(--text-muted);
     }
 
-    /* ── Colleges Grid ────────────────────────────────────── */
+    /* â”€â”€ Colleges Grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .colleges-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
@@ -323,7 +323,7 @@
       color: var(--text-muted);
     }
 
-    /* ── News / Announcements ─────────────────────────────── */
+    /* â”€â”€ News / Announcements â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .news-grid {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
@@ -375,7 +375,7 @@
       line-height: 1.4;
     }
 
-    /* ── Footer ───────────────────────────────────────────── */
+    /* â”€â”€ Footer â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .footer {
       background: var(--primary);
       color: var(--white);
@@ -417,7 +417,7 @@
 
     .mobile-login-btn { display: none; }
 
-    /* ── Mobile Responsive ────────────────────────────────── */
+    /* â”€â”€ Mobile Responsive â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     @media (max-width: 768px) {
       .top-contact { display: none; }
       .top-bar { justify-content: center; }
@@ -442,7 +442,7 @@
       .lightbox-nav-btn.next { left: 8px; }
     }
     
-    /* ── Gallery Section & Lightbox ───────────────────────── */
+    /* â”€â”€ Gallery Section & Lightbox â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .gallery-filters {
       display: flex;
       gap: 8px;
@@ -519,6 +519,31 @@
       background: #ef4444;
       color: #ffffff;
       border-color: #ef4444;
+    }
+    .gallery-card-share {
+      position: absolute;
+      top: 12px;
+      left: 12px;
+      background: rgba(0, 0, 0, 0.5);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      color: #ffffff;
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      border-radius: 20px;
+      padding: 5px 12px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      cursor: pointer;
+      z-index: 5;
+      transition: all 0.2s ease;
+    }
+    .gallery-card-share:hover, .gallery-card-share:active {
+      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      border-color: transparent;
+      transform: scale(1.05);
     }
     .gallery-grid {
       display: grid;
@@ -846,7 +871,7 @@
       </div>
 
       <div id="news-load-more-wrap" style="display:none; text-align:center; margin-top:24px;">
-        <button id="news-load-more-btn" class="load-more-btn" onclick="showMoreNews()">
+        <button id="news-load-more-btn" class="load-more-btn" onclick="showMoreNews()" aria-label="رجوع">
           <i class="ri-arrow-down-line"></i> عرض المزيد من الأخبار
         </button>
       </div>
@@ -881,7 +906,7 @@
       </div>
 
       <div id="gallery-load-more-wrap" style="display:none; text-align:center; margin-top:24px;">
-        <button id="gallery-load-more-btn" class="load-more-btn" onclick="showMoreGallery()">
+        <button id="gallery-load-more-btn" class="load-more-btn" onclick="showMoreGallery()" aria-label="رجوع">
           <i class="ri-arrow-down-line"></i> عرض المزيد من الصور
         </button>
       </div>
@@ -1003,9 +1028,9 @@
 
   <!-- Lightbox Modal -->
   <div id="lightbox-modal" class="lightbox-overlay" onclick="closeLightbox()">
-    <button class="lightbox-close" onclick="closeLightbox()"><i class="ri-close-line"></i></button>
-    <button class="lightbox-nav-btn prev" onclick="event.stopPropagation(); changeLightboxImage(-1);" title="الصورة السابقة"><i class="ri-arrow-right-s-line"></i></button>
-    <button class="lightbox-nav-btn next" onclick="event.stopPropagation(); changeLightboxImage(1);" title="الصورة التالية"><i class="ri-arrow-left-s-line"></i></button>
+    <button class="lightbox-close" onclick="closeLightbox()" aria-label="إغلاق"><i class="ri-close-line"></i></button>
+    <button class="lightbox-nav-btn prev" onclick="event.stopPropagation(); changeLightboxImage(-1);" title="الصورة السابقة" aria-label="رجوع"><i class="ri-arrow-right-s-line"></i></button>
+    <button class="lightbox-nav-btn next" onclick="event.stopPropagation(); changeLightboxImage(1);" title="الصورة التالية" aria-label="رجوع"><i class="ri-arrow-left-s-line"></i></button>
 
     <div class="lightbox-content" onclick="event.stopPropagation()">
       <img id="lightbox-img" src="" alt="صورة المعرض">
@@ -1023,7 +1048,7 @@
           <button id="lightbox-like-btn" class="lightbox-act-btn" onclick="toggleCurrentGalleryLike()">
             <i class="ri-heart-line" id="lightbox-heart-icon"></i> <span id="lightbox-like-count">0</span>
           </button>
-          <a id="lightbox-download-btn" href="#" download target="_blank" class="lightbox-act-btn" style="text-decoration:none;">
+          <a id="lightbox-download-btn" href="#" download target="_blank" rel="noopener noreferrer" class="lightbox-act-btn" style="text-decoration:none;">
             <i class="ri-download-2-line"></i> تحميل
           </a>
           <button class="lightbox-act-btn" onclick="shareCurrentGalleryImage()">
@@ -1037,7 +1062,7 @@
   <!-- News Detail Modal -->
   <div id="news-detail-modal" class="lightbox-overlay" onclick="closeNewsDetailModal()">
     <div class="news-modal-box" onclick="event.stopPropagation()">
-      <button class="lightbox-close" onclick="closeNewsDetailModal()"><i class="ri-close-line"></i></button>
+      <button class="lightbox-close" onclick="closeNewsDetailModal()" aria-label="إغلاق"><i class="ri-close-line"></i></button>
       <img id="news-modal-img" src="" alt="صورة الخبر" class="news-modal-img" style="display:none;">
       <div class="news-modal-body">
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:12px; flex-wrap:wrap; gap:8px;">
@@ -1086,7 +1111,7 @@
     </div>
   </footer>
 
-  <script src="/js/shared.js?v=2026073128"></script>
+  <script src="/js/shared.js?v=2026081907"></script>
   <script>
     // Scroll reveal animation
     const reveals = document.querySelectorAll('.reveal');
@@ -1380,7 +1405,7 @@
       document.body.style.overflow = '';
     }
 
-    // ── Interactive Gallery Logic ─────────────────────────
+    // â”€â”€ Interactive Gallery Logic â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     window._allGalleryImages = [];
     window._filteredGalleryImages = [];
     window._currentLightboxIndex = 0;
@@ -1529,6 +1554,9 @@
               <i class="${isLiked ? 'ri-heart-fill' : 'ri-heart-line'}"></i>
               <span class="g-like-count">${count}</span>
             </div>
+            <div class="gallery-card-share" onclick="shareGalleryCardDirect(event, '${imgId}')" title="مشاركة الصورة">
+              <i class="ri-share-line"></i> مشاركة
+            </div>
             <div class="gallery-overlay">
               <span class="gallery-category">${escHtml(category)}</span>
               <p class="gallery-caption">${escHtml(caption)}</p>
@@ -1627,6 +1655,25 @@
       }
     }
 
+    function shareGalleryCardDirect(e, imgId) {
+      if (e) e.stopPropagation();
+      const img = window._allGalleryImages.find(x => x._id === imgId);
+      if (!img) return;
+
+      const shareUrl = getPublicBaseUrl() + '/gallery/' + encodeURIComponent(img._id);
+      const title = img.caption || 'صورة من معرض جامعة النصر التقنية';
+      const text = title + '\n\n' + shareUrl;
+
+      if (navigator.share) {
+        navigator.share({ title: title, text: title, url: shareUrl }).catch(() => {
+          window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(text), '_blank');
+        });
+      } else {
+        const waUrl = 'https://api.whatsapp.com/send?text=' + encodeURIComponent(text);
+        window.open(waUrl, '_blank');
+      }
+    }
+
     function shareCurrentGalleryImage() {
       const img = window._filteredGalleryImages[window._currentLightboxIndex];
       if (!img || !img._id) return;
@@ -1697,5 +1744,8 @@
       loadGallery();
     });
   </script>
+
+  </script>
+
 </body>
 </html>

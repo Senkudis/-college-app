@@ -250,7 +250,7 @@ router.post("/finalize/:uploadId", auth, role("dean", "doctor", "leader", "admin
     // ===== Background transcoding (fire and forget) =====
     (async () => {
       try {
-        // console.log(`🎬 Starting background transcoding for: ${video.title}`);
+        // console.log(` Starting background transcoding for: ${video.title}`);
         const results = await processVideo(originalPath, videoDir);
 
         video.duration = results.duration;
@@ -274,7 +274,7 @@ router.post("/finalize/:uploadId", auth, role("dean", "doctor", "leader", "admin
 
         video.status = "ready";
         await video.save();
-        // console.log(`✅ Video ready: ${video.title}`);
+        // console.log(` Video ready: ${video.title}`);
 
 // Send notification to students (target specific batches or all if empty)
         try {
@@ -573,7 +573,7 @@ router.get("/:id/thumbnail", async (req, res) => {
       res.set("Content-Type", "image/svg+xml");
       return res.send(`<svg xmlns="http://www.w3.org/2000/svg" width="640" height="360" viewBox="0 0 640 360">
         <rect fill="#1e293b" width="640" height="360"/>
-        <text fill="#64748b" font-family="sans-serif" font-size="48" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle">🎬</text>
+        <text fill="#64748b" font-family="sans-serif" font-size="48" x="50%" y="50%" dominant-baseline="middle" text-anchor="middle"></text>
       </svg>`);
     }
     res.sendFile(video.thumbnailPath);

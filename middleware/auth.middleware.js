@@ -9,12 +9,16 @@ module.exports = async (req, res, next) => {
   if (authHeader && authHeader.startsWith("Bearer ")) {
     token = authHeader.split(" ")[1];
   }
-  // 2. التحقق من الكوكيز (إذا لم يوجد في header)
-  else if (req.cookies && req.cookies.token) {
-    token = req.cookies.token;
-  }
-  // 3. التحقق من query parameter (للتطبيقات الخاصة)
-  else if (req.baseUrl === '/api/videos' && req.query && req.query.token) {
+  /* 2. لا نقرأ توكن الوصول من الكوكيز: الكوكي الوحيدة التي يضعها الخادم
+     هي refreshToken الموقّعة بـ REFRESH_SECRET، وقراءتها هنا والتحقق منها
+     بـ JWT_SECRET كانت تفشل دائماً بـ "التوقيع غير صحيح" فتطرد المستخدم.
+     التجديد مسؤولية /api/auth/refresh وحده. */
+  /* 3. التحقق من query parameter — للموارد التي يفتحها المتصفح بنفسه
+     (<img src> و<a href> والفيديو) فلا يستطيع إرسال ترويسة Authorization.
+     مقصور على هذه المسارات: التوكن في الرابط يتسرّب إلى السجلات وسجل
+     التصفح، فلا يُقبل في مسارات الـ API العادية. */
+  else if (req.query && req.query.token &&
+           (req.baseUrl === '/api/videos' || req.baseUrl.startsWith('/uploads/'))) {
     token = req.query.token;
   }
   // 4. التحقق من body (نادر الاستخدام)
@@ -62,7 +66,11 @@ module.exports = async (req, res, next) => {
 
     // تحميل بيانات المستخدم الحالية من قاعدة البيانات (للتحقق من الجلسة والنشاط)
     // .lean() لإرجاع كائن JavaScript عادي وتحسين الأداء
-    const user = await User.findById(userId).select("currentSessionId isActive roles name email firstLogin batch").lean();
+    /* "batches" كان مفقوداً من select بينما يُسند أدناه إلى req.user.batches —
+       فالنتيجة [] أبداً، وهو فخّ صامت لأول مسار يعتمد عليه ظانّاً أنه معبّأ. */
+    const user = await User.findById(userId)
+      .select("currentSessionId isActive roles name email firstLogin batch batches")
+      .lean();
     if (!user) {
       return res.status(401).json({
         success: false,
@@ -95,8 +103,33 @@ module.exports = async (req, res, next) => {
       roles: user.roles || [],
       name: user.name,
       firstLogin: user.firstLogin || false,
-      batch: user.batch
+      batch: user.batch,
+      batches: user.batches || []
     };
+
+    /* إجبار تغيير كلمة المرور كان في المتصفح وحده: صفحة تُعيد التوجيه
+       يتخطّاها أي عميل يخاطب الـAPI مباشرة. وكل حساب يبدأ بكلمة معروفة
+       ("123456" في التسجيل العام، وكذلك بعد إعادة التعيين) — فمن يعرف بريد
+       طالب لم يغيّر كلمته كان يحصل على توكن كامل الصلاحيات سبعة أيام.
+       نمنع هنا كل شيء عدا ما يلزم لإتمام التغيير أو الخروج. */
+    if (req.user.firstLogin) {
+      const path = `${req.baseUrl || ''}${req.path || ''}`;
+      const allowedWhilePending = [
+        '/api/auth/force-change-password',
+        '/api/auth/change-password',
+        '/api/auth/logout',
+        '/api/auth/refresh',
+        '/api/verify-token' // تعتمد عليه الواجهة للتحقق من الجلسة قبل التوجيه
+      ];
+      if (!allowedWhilePending.some(p => path.startsWith(p))) {
+        return res.status(403).json({
+          success: false,
+          message: "يجب تغيير كلمة المرور قبل استخدام النظام",
+          action: "يرجى تعيين كلمة مرور جديدة",
+          code: "PASSWORD_CHANGE_REQUIRED"
+        });
+      }
+    }
 
     next();
   } catch (err) {

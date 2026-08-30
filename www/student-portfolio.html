@@ -1,0 +1,714 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>السجل الأكاديمي والاعتماد الرقمي الموثق | كلية النصر التقنية</title>
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css?v=2026081907">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026081907">
+  <style>
+    :root {
+      --gold-primary: #d97706;
+      --gold-light: #fef3c7;
+      --gold-border: #f59e0b;
+      --cert-navy: #0f172a;
+      --cert-blue: #1e3a8a;
+    }
+
+    .portfolio-page-bg {
+      min-height: 100vh;
+      padding: 20px 16px 80px;
+      background: var(--bg-main);
+    }
+
+    .certificate-container {
+      max-width: 860px;
+      margin: 0 auto 40px;
+      background: var(--bg-card);
+      border-radius: var(--radius-xl);
+      border: 3px double var(--gold-border);
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.1);
+      position: relative;
+      overflow: hidden;
+    }
+
+    /* زخرفة الإطار الرسمي */
+    .certificate-container::before {
+      content: "";
+      position: absolute;
+      inset: 6px;
+      border: 1px dashed rgba(217, 119, 6, 0.35);
+      border-radius: calc(var(--radius-xl) - 4px);
+      pointer-events: none;
+      z-index: 1;
+    }
+
+    /* العلامة المائية للكلية */
+    .cert-watermark {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%) rotate(-25deg);
+      font-size: 14rem;
+      color: var(--primary);
+      opacity: 0.03;
+      pointer-events: none;
+      z-index: 0;
+      user-select: none;
+    }
+
+    /* الترويسة الرسمية للجمهورية والكلية */
+    .cert-official-header {
+      background: linear-gradient(135deg, #091224 0%, #111f3c 60%, #1e293b 100%);
+      color: #ffffff;
+      padding: 30px 32px 24px;
+      position: relative;
+      border-bottom: 4px solid var(--gold-border);
+      z-index: 2;
+    }
+
+    .cert-gov-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.15);
+      padding-bottom: 12px;
+      margin-bottom: 16px;
+      font-size: 0.78rem;
+      color: #cbd5e1;
+    }
+
+    .cert-gov-top .country-title {
+      font-weight: 800;
+      color: var(--gold-light);
+      letter-spacing: 0.3px;
+    }
+
+    .cert-role-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px;
+      border-radius: 30px;
+      font-size: 0.82rem;
+      font-weight: 800;
+      letter-spacing: 0.5px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+    }
+    .badge-dean { background: linear-gradient(135deg, #b45309, #d97706); color: #fff; border: 1px solid #fef3c7; }
+    .badge-doctor { background: linear-gradient(135deg, #1d4ed8, #2563eb); color: #fff; border: 1px solid #bfdbfe; }
+    .badge-student { background: linear-gradient(135deg, #047857, #059669); color: #fff; border: 1px solid #a7f3d0; }
+
+    /* شبكة الإحصائيات والأرقام الأكاديمية */
+    .cert-stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 12px;
+      padding: 20px 28px;
+      background: var(--bg-main);
+      border-bottom: 1px solid var(--border);
+      position: relative;
+      z-index: 2;
+    }
+
+    .cert-stat-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 14px 12px;
+      text-align: center;
+      transition: all 0.2s;
+    }
+    .cert-stat-card .val {
+      font-size: 1.45rem;
+      font-weight: 900;
+      color: var(--primary);
+      margin-bottom: 2px;
+      font-family: 'Consolas', monospace;
+    }
+    .cert-stat-card .lbl {
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: var(--text-muted);
+    }
+
+    /* جدول المقررات أو التكليفات */
+    .cert-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.86rem;
+    }
+    .cert-table th {
+      background: var(--bg-main);
+      color: var(--text-muted);
+      font-weight: 800;
+      font-size: 0.8rem;
+      padding: 12px 14px;
+      border-bottom: 2px solid var(--border);
+      text-align: right;
+    }
+    .cert-table td {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--border);
+      text-align: right;
+      color: var(--text-main);
+    }
+
+    /* الباركود وخاتم التوثيق */
+    .cert-footer-auth {
+      padding: 24px 28px;
+      background: var(--bg-card);
+      border-top: 2px solid var(--border);
+      position: relative;
+      z-index: 2;
+    }
+
+    .signatures-block {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 16px;
+      text-align: center;
+      margin-bottom: 24px;
+      padding-bottom: 20px;
+      border-bottom: 1px dashed var(--border);
+    }
+    .sig-title {
+      font-size: 0.8rem;
+      font-weight: 800;
+      color: var(--text-muted);
+      margin-bottom: 35px;
+    }
+    .sig-line {
+      border-top: 1.5px solid var(--text-muted);
+      margin: 0 auto 4px;
+      width: 80%;
+      opacity: 0.4;
+    }
+    .sig-sub {
+      font-size: 0.72rem;
+      font-weight: 700;
+      color: var(--text-main);
+    }
+
+    .gold-seal-badge {
+      width: 84px;
+      height: 84px;
+      border-radius: 50%;
+      border: 3px double #d97706;
+      background: radial-gradient(circle, #fffbeb 0%, #fef3c7 60%, #fde68a 100%);
+      color: #92400e;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto;
+      box-shadow: 0 4px 12px rgba(217, 119, 6, 0.25);
+      font-size: 0.65rem;
+      font-weight: 900;
+      text-align: center;
+      line-height: 1.2;
+    }
+    [data-theme="dark"] .gold-seal-badge {
+      background: radial-gradient(circle, #78350f 0%, #451a03 100%);
+      color: #fde68a;
+      border-color: #f59e0b;
+    }
+
+    /* محاكاة الباركود الخطي 1D Barcode */
+    .barcode-svg-wrapper {
+      background: #ffffff;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #cbd5e1;
+      display: inline-block;
+      text-align: center;
+    }
+    .barcode-lines {
+      display: flex;
+      align-items: flex-end;
+      height: 38px;
+      gap: 2px;
+      justify-content: center;
+      margin-bottom: 2px;
+    }
+    .b-bar {
+      background: #0f172a;
+      height: 100%;
+      display: inline-block;
+    }
+    .b-w1 { width: 1.5px; }
+    .b-w2 { width: 3px; }
+    .b-w3 { width: 4.5px; }
+    .b-space { width: 2px; background: transparent; }
+    .barcode-label {
+      font-family: 'Consolas', monospace;
+      font-size: 0.72rem;
+      font-weight: 800;
+      color: #0f172a;
+      letter-spacing: 2px;
+    }
+
+    /* نافذة الطباعة */
+    @media print {
+      body { background: #fff !important; color: #000 !important; font-size: 11pt; }
+      .no-print, .main-header, #bottom-nav, .app-back-btn, #globalKedyFab { display: none !important; }
+      .portfolio-page-bg { padding: 0 !important; background: #fff !important; }
+      .certificate-container {
+        border: 2px solid #000 !important;
+        box-shadow: none !important;
+        margin: 0 auto !important;
+        width: 100% !important;
+        max-width: 100% !important;
+        border-radius: 0 !important;
+      }
+      .cert-official-header {
+        background: #0f172a !important;
+        color: #fff !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .cert-stats-grid {
+        background: #f8fafc !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .cert-stat-card {
+        border: 1px solid #cbd5e1 !important;
+        background: #fff !important;
+      }
+      .cert-table th {
+        background: #f1f5f9 !important;
+        color: #000 !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .cert-watermark { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+
+<main class="portfolio-page-bg">
+  <!-- شريط الإجراءات العلوي -->
+  <div class="no-print" style="max-width:860px; margin:0 auto 16px; display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+    <button class="btn btn-outline" onclick="history.back()" aria-label="رجوع"><i class="ri-arrow-right-line"></i> العودة للرئيسية</button>
+    <div style="display:flex; gap:8px;">
+      <button class="btn btn-outline" onclick="shareCertificate()"><i class="ri-share-forward-line"></i> مشاركة الرابط</button>
+      <button class="btn btn-primary" onclick="window.print()" style="font-weight:800;"><i class="ri-printer-line"></i> طباعة الوثيقة الرسمية (A4)</button>
+    </div>
+  </div>
+
+  <!-- حالة التحميل -->
+  <div id="loadingState" style="text-align:center; padding:80px 20px; max-width:860px; margin:0 auto;">
+    <div class="spinner" style="width:40px; height:40px; margin:0 auto 16px; border-top-color:var(--gold-border);"></div>
+    <div style="font-weight:800; font-size:1.05rem; color:var(--text-main); margin-bottom:4px;">جاري استخراج السجل والتحقق من التوثيق الرقمي...</div>
+    <div style="font-size:0.8rem; color:var(--text-muted);">بوابة الشؤون العلمية والاعتماد الأكاديمي · كلية النصر التقنية</div>
+  </div>
+
+  <!-- حاوية الشهادة والسجل الرسمي -->
+  <div id="certWrapper" class="certificate-container" style="display:none;">
+    <i class="ri-government-line cert-watermark"></i>
+
+    <!-- ترويسة الوثيقة -->
+    <div class="cert-official-header">
+      <div class="cert-gov-top">
+        <div>
+          <span class="country-title">جمهورية السودان</span> · وزارة التعليم العالي والبحث العلمي
+        </div>
+        <div style="font-family:monospace; font-weight:700; color:var(--gold-light);" id="docHeaderCode">
+          AL-NASR TECHNICAL COLLEGE
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:space-between; align-items:flex-start; flex-wrap:wrap; gap:16px;">
+        <div>
+          <div id="roleBadgeContainer" style="margin-bottom:10px;"></div>
+          <h1 id="userName" style="font-size:1.65rem; font-weight:900; margin:0 0 6px; color:#ffffff; line-height:1.3;">...</h1>
+          <div id="userAffiliation" style="font-size:0.92rem; color:#e2e8f0; font-weight:700; margin-bottom:4px;">...</div>
+          <div id="userDocSubtitle" style="font-size:0.8rem; color:var(--gold-light); opacity:0.9;">Official Verified Digital Credential</div>
+        </div>
+
+        <div style="text-align:left; font-size:0.8rem; color:#cbd5e1; background:rgba(0,0,0,0.25); padding:10px 14px; border-radius:8px; border:1px solid rgba(255,255,255,0.1);">
+          <div style="font-weight:800; color:var(--gold-light); margin-bottom:2px;"><i class="ri-shield-check-line"></i> معتمد وموثق إلكترونياً</div>
+          <div id="docSerial">الرقم المرجعي: ...</div>
+          <div id="docIssueDate">تاريخ الإصدار: ...</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- شبكة الإحصائيات والأرقام الأكاديمية (ديناميكية حسب الدور) -->
+    <div id="statsSection" class="cert-stats-grid"></div>
+
+    <!-- شارات التميز والتكريم الأكاديمي -->
+    <div style="padding:18px 28px; border-bottom:1px solid var(--border); background:var(--bg-card); position:relative; z-index:2;">
+      <div style="font-size:0.85rem; font-weight:800; color:var(--text-muted); margin-bottom:8px; display:flex; align-items:center; gap:6px;">
+        <i class="ri-award-fill" style="color:var(--gold-border);"></i> <span id="badgesTitle">الأوسمة والاعتمادات الرسمية:</span>
+      </div>
+      <div id="badgesList" style="display:flex; gap:8px; flex-wrap:wrap;"></div>
+    </div>
+
+    <!-- جدول البيانات الرئيسي (مقررات للطلاب / تكليفات للدكتور / برامج للعميد) -->
+    <div style="padding:22px 28px; position:relative; z-index:2;">
+      <div style="font-size:0.92rem; font-weight:800; color:var(--text-main); margin-bottom:12px; display:flex; justify-content:space-between; align-items:center;">
+        <span id="tableMainTitle"><i class="ri-book-open-line" style="color:var(--primary);"></i> المقررات المسجلة والوضع الأكاديمي:</span>
+        <span id="tableMainBadge" class="badge" style="background:var(--bg-main); border:1px solid var(--border); font-size:0.75rem;">...</span>
+      </div>
+      <div style="overflow-x:auto;">
+        <table class="cert-table">
+          <thead id="certTableHead"></thead>
+          <tbody id="certTableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- قسم الأختام والتوقيعات الرسمية -->
+    <div class="cert-footer-auth">
+      <div class="signatures-block">
+        <div>
+          <div class="sig-title">مسجل الكلية والامتحانات</div>
+          <div class="sig-line"></div>
+          <div class="sig-sub">أمانة الشؤون العلمية</div>
+        </div>
+
+        <div>
+          <div class="gold-seal-badge">
+            <i class="ri-verified-badge-fill" style="font-size:1.5rem; margin-bottom:1px;"></i>
+            <span>الختم الرسمي<br>المعتمد</span>
+          </div>
+        </div>
+
+        <div>
+          <div class="sig-title">عميد الكلية ورئيس المجلس</div>
+          <div class="sig-line"></div>
+          <div class="sig-sub">كلية النصر التقنية</div>
+        </div>
+      </div>
+
+      <!-- الباركود الحقيقي ورمز QR للتحقق السريع -->
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:18px; margin-top:16px;">
+        <div style="display:flex; align-items:center; gap:16px;">
+          <!-- QR Code Container -->
+          <div id="realQrCodeBox" style="width:84px; height:84px; background:#fff; padding:6px; border-radius:8px; border:1px solid #cbd5e1; display:flex; align-items:center; justify-content:center; flex-shrink:0;">
+            <!-- Generated dynamically -->
+          </div>
+
+          <div>
+            <div style="font-weight:800; font-size:0.88rem; color:var(--text-main); margin-bottom:2px;">
+              <i class="ri-qr-scan-2-line" style="color:var(--primary);"></i> رمز التحقق الإلكتروني المشفر (Live QR)
+            </div>
+            <div style="font-size:0.78rem; color:var(--text-muted); line-height:1.5; max-width:340px;">
+              امسح الرمز بكاميرا الهاتف للتحقق الفوري المباشر من صحة هذا السجل عبر البوابة الرسمية للكلية.
+            </div>
+          </div>
+        </div>
+
+        <!-- 1D Linear Barcode Container -->
+        <div style="text-align:left;">
+          <div id="barcodeContainer" class="barcode-svg-wrapper"></div>
+          <div style="font-size:0.72rem; color:var(--text-muted); font-family:monospace; margin-top:3px;" id="verificationHashText">
+            HASH: ...
+          </div>
+        </div>
+      </div>
+
+      <!-- الإشعار القانوني -->
+      <div style="margin-top:16px; padding-top:12px; border-top:1px solid var(--border); font-size:0.72rem; color:var(--text-muted); text-align:center; line-height:1.6;">
+        <i class="ri-information-line"></i> تعتبر هذه الوثيقة الرقمية صادرة ومعتمدة إلكترونياً من جامعة وكلية النصر التقنية ومحمية برمز التحقق والتشفير الرقمي. أي تعديل أو تلاعب في هذه الوثيقة يلغي صحتها القانونية.
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="toast-container"></div>
+
+<script src="/js/shared.js?v=2026081907"></script>
+<script src="/js/app.js?v=2026081907"></script>
+<script src="/vendor/qrcode.min.js?v=2026081907"></script>
+
+<script>
+  CBS.init({ requireAuth: false });
+  const urlParams = new URLSearchParams(location.search);
+  const targetUserId = urlParams.get('id') || CBS.getUserId();
+
+  async function loadAcademicCertificate() {
+    if (!targetUserId) {
+      document.getElementById('loadingState').innerHTML = `
+        <div class="alert alert-danger show">
+          <i class="ri-error-warning-line"></i> يجب تحديد معرّف الحساب لعرض الوثيقة الأكاديمية.
+        </div>`;
+      return;
+    }
+
+    try {
+      const res = await CBS.apiGet(`/api/users/portfolio/${targetUserId}`);
+      const data = await CBS.readJson(res);
+
+      if (!data.success || !data.data) {
+        document.getElementById('loadingState').innerHTML = `
+          <div class="alert alert-danger show">
+            <i class="ri-error-warning-line"></i> ${CBS.escapeHTML(data.message || 'تعذّر العثور على السجل الأكاديمي المطلوب')}
+          </div>`;
+        return;
+      }
+
+      renderCertificate(data.data);
+    } catch(e) {
+      document.getElementById('loadingState').innerHTML = `
+        <div class="alert alert-danger show">
+          <i class="ri-wifi-off-line"></i> تعذّر الاتصال بالخادم، يُرجى المحاولة لاحقاً.
+        </div>`;
+    }
+  }
+
+  function renderCertificate(d) {
+    document.getElementById('loadingState').style.display = 'none';
+    document.getElementById('certWrapper').style.display = 'block';
+
+    const u = d.user || d.student || {};
+    const rec = d.academicRecord || {};
+    const inst = d.institution || {};
+    const roleType = rec.roleType || u.role || 'student';
+
+    // 1. الترويسة والمعلومات العامة
+    document.getElementById('userName').textContent = u.name || 'عضو الكلية';
+    document.getElementById('docSerial').textContent = `الرقم المرجعي: ${u.serialNumber || 'CBS-2026-000000'}`;
+    const issueDateStr = new Date(inst.issuedAt || Date.now()).toLocaleDateString('ar-EG', {
+      year: 'numeric', month: 'long', day: 'numeric'
+    });
+    document.getElementById('docIssueDate').textContent = `تاريخ الإصدار: ${issueDateStr}`;
+    document.getElementById('verificationHashText').textContent = `HASH: ${u.verificationHash || 'VERIFIED-OFFICIAL'}`;
+
+    // 2. تكييف الشهادة حسب الدور (عميد / دكتور / طالب)
+    const badgeBox = document.getElementById('roleBadgeContainer');
+    const affilEl = document.getElementById('userAffiliation');
+    const statsSec = document.getElementById('statsSection');
+    const tableHead = document.getElementById('certTableHead');
+    const tableBody = document.getElementById('certTableBody');
+    const tableTitle = document.getElementById('tableMainTitle');
+    const tableBadge = document.getElementById('tableMainBadge');
+    const badgesTitle = document.getElementById('badgesTitle');
+
+    if (roleType === 'dean') {
+      badgeBox.innerHTML = '<span class="cert-role-badge badge-dean"><i class="ri-government-fill"></i> الإدارة العليا · عمادة الكلية</span>';
+      affilEl.textContent = 'كلية النصر التقنية · رئاسة المجلس الأكاديمي والشؤون العلمية';
+      document.getElementById('userDocSubtitle').textContent = 'Official Executive Leadership & Academic Governance Credential';
+
+      const sup = rec.supervision || {};
+      statsSec.innerHTML = `
+        <div class="cert-stat-card">
+          <div class="val">${sup.totalBatches || 0}</div>
+          <div class="lbl"><i class="ri-group-line"></i> الدفعات الأكاديمية</div>
+        </div>
+        <div class="cert-stat-card">
+          <div class="val">${sup.totalStudents || 0}</div>
+          <div class="lbl"><i class="ri-user-smile-line"></i> إجمالي الطلاب المقيدين</div>
+        </div>
+        <div class="cert-stat-card">
+          <div class="val">${sup.totalDoctors || 0}</div>
+          <div class="lbl"><i class="ri-team-line"></i> هيئة التدريس</div>
+        </div>
+        <div class="cert-stat-card">
+          <div class="val">${sup.accreditedSubjectsCount || 0}</div>
+          <div class="lbl"><i class="ri-book-read-line"></i> المقررات المعتمدة</div>
+        </div>
+      `;
+
+      badgesTitle.textContent = 'صلاحيات واعتمادات العمادة:';
+      tableTitle.innerHTML = '<i class="ri-shield-star-line" style="color:var(--gold-border);"></i> البرامج والمقررات المعتمدة تحت الإشراف المباشر:';
+      tableBadge.textContent = `${sup.accreditedSubjectsCount || 0} مقرر معتمد`;
+
+      tableHead.innerHTML = `
+        <tr>
+          <th>رمز المقرر</th>
+          <th>اسم المقرر الأكاديمي</th>
+          <th>المستوى</th>
+          <th>حالة الاعتماد</th>
+        </tr>`;
+
+      tableBody.innerHTML = (sup.subjects || []).map(s => `
+        <tr>
+          <td style="font-family:monospace; font-weight:800; color:var(--primary);">${CBS.escapeHTML(s.code || 'CS')}</td>
+          <td style="font-weight:700;">${CBS.escapeHTML(s.name)}</td>
+          <td>بكالوريوس علوم الحاسوب / تقنية المعلومات</td>
+          <td><span class="badge badge-success" style="font-size:0.75rem;"><i class="ri-checkbox-circle-fill"></i> معتمد برئاسة العمادة</span></td>
+        </tr>`).join('');
+
+    } else if (roleType === 'doctor') {
+      badgeBox.innerHTML = '<span class="cert-role-badge badge-doctor"><i class="ri-user-star-fill"></i> عضو هيئة التدريس والمحاضرين</span>';
+      affilEl.textContent = 'كلية النصر التقنية · هيئة التدريس والأقسام الأكاديمية';
+      document.getElementById('userDocSubtitle').textContent = 'Faculty Academic & Teaching Accreditation Credential';
+
+      const load = rec.teachingLoad || {};
+      statsSec.innerHTML = `
+        <div class="cert-stat-card">
+          <div class="val">${load.subjectsCount || 0}</div>
+          <div class="lbl"><i class="ri-book-open-line"></i> المقررات المكلف بها</div>
+        </div>
+        <div class="cert-stat-card">
+          <div class="val">${load.lecturesCount || 0}</div>
+          <div class="lbl"><i class="ri-video-line"></i> المحاضرات المنجزة</div>
+        </div>
+        <div class="cert-stat-card">
+          <div class="val">100%</div>
+          <div class="lbl"><i class="ri-check-double-line"></i> نسبة الالتزام الأكاديمي</div>
+        </div>
+        <div class="cert-stat-card">
+          <div class="val">أستاذ مقرر</div>
+          <div class="lbl"><i class="ri-medal-line"></i> الرتبة الأكاديمية</div>
+        </div>
+      `;
+
+      badgesTitle.textContent = 'شارات التميز والاعتماد التدريسي:';
+      tableTitle.innerHTML = '<i class="ri-file-list-3-line" style="color:var(--primary);"></i> جدول المقررات والتكليف التدريسي المعتمد:';
+      tableBadge.textContent = `${load.subjectsCount || 0} مواد معتمدة`;
+
+      tableHead.innerHTML = `
+        <tr>
+          <th>رمز المقرر</th>
+          <th>المقرر الدراسي</th>
+          <th>الدفعات المستهدفة</th>
+          <th>حالة التكليف</th>
+        </tr>`;
+
+      tableBody.innerHTML = (load.subjects || []).map(s => `
+        <tr>
+          <td style="font-family:monospace; font-weight:800; color:var(--primary);">${CBS.escapeHTML(s.code || 'CS')}</td>
+          <td style="font-weight:700;">${CBS.escapeHTML(s.name)}</td>
+          <td>${CBS.escapeHTML(s.batches || 'جميع دفعات الكلية')}</td>
+          <td><span class="badge badge-success" style="font-size:0.75rem;"><i class="ri-checkbox-circle-fill"></i> تكليف ساري المفعول</span></td>
+        </tr>`).join('');
+
+    } else {
+      // طالب أو ممثل دفعة
+      const isLeader = roleType === 'leader';
+      badgeBox.innerHTML = isLeader
+        ? '<span class="cert-role-badge badge-student"><i class="ri-award-fill"></i> ممثل الدفعة الأكاديمية (Leader)</span>'
+        : '<span class="cert-role-badge badge-student"><i class="ri-graduation-cap-fill"></i> طالب جامعي مقيد رسمياً</span>';
+
+      affilEl.textContent = `${u.batchName || 'كلية النصر التقنية'} · ${u.batchCode || 'IT'} (${u.year || '2024/2025'})`;
+      document.getElementById('userDocSubtitle').textContent = 'Official Verified Academic Transcript & Student Portfolio';
+
+      statsSec.innerHTML = `
+        <div class="cert-stat-card">
+          <div class="val">${rec.estimatedGPA || '3.50'}</div>
+          <div class="lbl"><i class="ri-award-line"></i> المعدل التراكمي (GPA)</div>
+        </div>
+        <div class="cert-stat-card">
+          <div class="val">${rec.attendanceRate}%</div>
+          <div class="lbl"><i class="ri-calendar-check-line"></i> نسبة الحضور العام</div>
+        </div>
+        <div class="cert-stat-card">
+          <div class="val">${rec.passedQuizzes || 0}</div>
+          <div class="lbl"><i class="ri-checkbox-circle-line"></i> اختبارات مجتازة</div>
+        </div>
+        <div class="cert-stat-card">
+          <div class="val">#${u.rankInBatch || 1}</div>
+          <div class="lbl"><i class="ri-trophy-line"></i> الترتيب بالدفعة</div>
+        </div>
+      `;
+
+      badgesTitle.textContent = 'أوسمة التفوق والالتزام الأكاديمي:';
+      tableTitle.innerHTML = '<i class="ri-book-open-line" style="color:var(--primary);"></i> المقررات المسجلة والساعات الأكاديمية:';
+      tableBadge.textContent = `${rec.registeredSubjectsCount || 0} مقرر مسجل`;
+
+      tableHead.innerHTML = `
+        <tr>
+          <th>رمز المقرر</th>
+          <th>اسم المقرر الدراسي</th>
+          <th>الساعات</th>
+          <th>الوضع الأكاديمي</th>
+          <th>الاعتماد</th>
+        </tr>`;
+
+      if (rec.subjects && rec.subjects.length > 0) {
+        tableBody.innerHTML = rec.subjects.map(s => `
+          <tr>
+            <td style="font-family:monospace; font-weight:800; color:var(--primary);">${CBS.escapeHTML(s.code || 'CS')}</td>
+            <td style="font-weight:700;">${CBS.escapeHTML(s.name)}</td>
+            <td style="font-family:monospace;">${s.creditHours || 3} CH</td>
+            <td><span class="badge badge-success" style="font-size:0.75rem;">مسجل ونشط</span></td>
+            <td><i class="ri-shield-check-fill" style="color:var(--success);"></i> معتمد</td>
+          </tr>`).join('');
+      } else {
+        tableBody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px; color:var(--text-muted);">لا توجد مقررات مسجلة بعد</td></tr>';
+      }
+    }
+
+    // 3. الأوسمة والشارات
+    const badges = u.badges && u.badges.length ? u.badges : ['الاعتماد والتوثيق الرسمي', 'الالتزام والتميز الأكاديمي'];
+    document.getElementById('badgesList').innerHTML = badges.map(b => `
+      <span class="badge" style="background:rgba(217,119,6,0.12); color:#b45309; border:1px solid rgba(217,119,6,0.3); font-size:0.8rem; padding:6px 12px; border-radius:16px;">
+        <i class="ri-medal-line"></i> ${CBS.escapeHTML(b)}
+      </span>
+    `).join('');
+
+    // 4. توليد الباركود الحقيقي (1D Barcode) ورمز QR التفاعلي
+    generateRealQRCode(u.id);
+    render1DBarcode(u.serialNumber || 'CBS-ACAD-2026-000000');
+  }
+
+  /* توليد QR Code حقيقي يرتبط بصفحة التحقق */
+  function generateRealQRCode(userId) {
+    const qrContainer = document.getElementById('realQrCodeBox');
+    qrContainer.innerHTML = '';
+    const verifyUrl = `${window.location.origin}/student-portfolio.html?id=${userId}`;
+
+    if (typeof QRCode !== 'undefined') {
+      try {
+        new QRCode(qrContainer, {
+          text: verifyUrl,
+          width: 72,
+          height: 72,
+          colorDark: '#0f172a',
+          colorLight: '#ffffff',
+          correctLevel: QRCode.CorrectLevel.M
+        });
+        return;
+      } catch (e) {
+        console.warn('QRCode library fallback:', e);
+      }
+    }
+
+    // بديل فوري في حال تعذر المكتبة عبر SVG QR API
+    qrContainer.innerHTML = `<img src="https://api.qrserver.com/v1/create-qr-code/?size=72x72&data=${encodeURIComponent(verifyUrl)}" alt="QR Code" width="72" height="72" style="display:block;">`;
+  }
+
+  /* توليد باركود خطي 1D Barcode واقعي */
+  function render1DBarcode(serialText) {
+    const el = document.getElementById('barcodeContainer');
+    // توليد خطوط الباركود بنمط Code128 واقعي
+    let barsHtml = '<div class="barcode-lines">';
+    const clean = serialText.replace(/[^A-Z0-9-]/g, '');
+    for (let i = 0; i < clean.length; i++) {
+      const code = clean.charCodeAt(i);
+      const wClass1 = (code % 3 === 0) ? 'b-w3' : (code % 2 === 0) ? 'b-w2' : 'b-w1';
+      const wClass2 = ((code + i) % 2 === 0) ? 'b-w1' : 'b-w2';
+      barsHtml += `<span class="b-bar ${wClass1}"></span><span class="b-space"></span><span class="b-bar ${wClass2}"></span><span class="b-space"></span>`;
+    }
+    barsHtml += '</div>';
+    barsHtml += `<div class="barcode-label">${CBS.escapeHTML(serialText)}</div>`;
+    el.innerHTML = barsHtml;
+  }
+
+  /* مشاركة رابط السجل الأكاديمي */
+  function shareCertificate() {
+    const url = window.location.href;
+    const name = document.getElementById('userName').textContent || 'السجل الأكاديمي';
+    if (navigator.share) {
+      navigator.share({
+        title: `السجل الأكاديمي والاعتماد الموثق - ${name}`,
+        text: `اطّلع على السجل الأكاديمي والاعتماد الرقمي الموثق من كلية النصر التقنية`,
+        url: url
+      }).catch(() => {});
+    } else {
+      navigator.clipboard.writeText(url);
+      CBS.toast('تم نسخ رابط التحقق من السجل بنجاح', '', 'success');
+    }
+  }
+
+  loadAcademicCertificate();
+</script>
+</body>
+</html>

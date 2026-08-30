@@ -9,6 +9,7 @@ const router       = require("express").Router();
 const mongoose     = require("mongoose");
 const VideoComment = require("../models/VideoComment");
 const Video        = require("../models/Video");
+const User         = require("../models/User");
 const auth         = require("../middleware/auth.middleware");
 const batchMiddleware = require("../middleware/batch.middleware");
 const { success, fail, notFound, serverError } = require("../utils/response");
@@ -58,12 +59,21 @@ router.post("/:videoId/comments", async (req, res) => {
     await Video.updateOne({_id: videoId}, { $inc: { commentsCount: 1 } });
 
     if (video.uploadedBy.toString() !== req.user.id) {
-       await Notification.create({
-         title: "تعليق جديد",
-         message: `قام ${req.user.name || 'أحد الطلاب'} بالتعليق على الفيديو: ${video.title}`,
-         type: "info",
-         recipients: [video.uploadedBy]
-       });
+      /* type:"info" غير موجود في enum الإشعارات (normal|emergency) وكان
+         يرمي ValidationError يبتلعه catch المسار — فلا يصل صاحب الفيديو
+         أي إشعار بالتعليقات. نفس علّة target:'custom' في المسارات الأخرى. */
+      try {
+        await Notification.create({
+          title: "تعليق جديد",
+          message: `قام ${req.user.name || 'أحد الطلاب'} بالتعليق على الفيديو: ${video.title}`,
+          type: "normal",
+          target: "custom",
+          recipients: [video.uploadedBy],
+          createdBy: req.user.id
+        });
+      } catch (notifErr) {
+        console.error("[Comments] فشل إشعار صاحب الفيديو:", notifErr.message);
+      }
     }
 
     success(res, {
@@ -98,7 +108,15 @@ router.get("/:videoId/comments", async (req, res) => {
 
     const sortBy = req.query.sort === "time" ? { timestamp: 1 } : { createdAt: -1 };
 
-    const comments = await VideoComment.find({ video: videoId })
+    /* إخفاء تعليقات من حظرهم المستخدم — الحظر بلا هذا الفلتر يبقى زراً
+       بلا أثر، وهو ما يتحقق منه مراجع App Store عملياً (بند 1.2). */
+    const me = await User.findById(req.user.id).select("blockedUsers").lean();
+    const blocked = (me?.blockedUsers || []).map(String);
+
+    const filter = { video: videoId };
+    if (blocked.length) filter.author = { $nin: blocked };
+
+    const comments = await VideoComment.find(filter)
       .populate("author", "name")
       .sort(sortBy);
 

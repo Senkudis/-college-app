@@ -9,6 +9,11 @@ function getSubdir(req) {
   if (basePath.includes("assignment")) return "assignments";
   if (basePath.includes("submission")) return "submissions";
   if (basePath.includes("reference")) return "references";
+  if (basePath.includes("past-exam")) return "past-exams";
+  /* إيصالات السداد كانت تسقط إلى "misc" لأن /api/financials لا يطابق أي
+     كلمة أعلاه — و misc يُخدَم ثابتاً بلا مصادقة، أي أن صور التحويلات
+     البنكية بأرقام حساباتها كانت تُنزَّل بمعرفة الاسم وحده. */
+  if (basePath.includes("financial")) return "receipts";
   return "misc";
 }
 
@@ -65,6 +70,12 @@ const storage = multer.diskStorage({
 
 const fileFilter = (req, file, cb) => {
   const ext = path.extname(file.originalname || "").toLowerCase();
+  
+  // 0. Reject dangerous executable files strictly
+  const DANGEROUS_EXTENSIONS = ['.exe', '.bat', '.cmd', '.vbs', '.ps1', '.sh', '.com', '.scr', '.pif'];
+  if (DANGEROUS_EXTENSIONS.includes(ext)) {
+    return cb(new Error("الملفات التنفيذية غير مسموح بها لأسباب أمنية"), false);
+  }
   
   // 1. Allow if valid extension
   if (ALLOWED_EXTENSIONS.includes(ext)) {

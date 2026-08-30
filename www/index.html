@@ -1,10 +1,10 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>Ø§Ù„Ù†Ø¸Ø§Ù… Ø§Ù„Ø¬Ø§Ù…Ø¹ÙŠ Ø§Ù„Ù…ØªÙƒØ§Ù…Ù„</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>النظام الجامعي المتكامل</title>
   <link href="/vendor/fonts/cairo.css" rel="stylesheet">
 
   <style>
@@ -365,6 +365,7 @@
   </style>
 
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
 </head>
 <body>
@@ -372,21 +373,21 @@
 <div id="splash">
   <canvas id="particles-canvas"></canvas>
 
-  <!-- Ø§Ù„ØªØ£Ø«ÙŠØ±Ø§Øª Ø§Ù„Ù…Ø¶ÙŠØ¦Ø© -->
+  <!-- التأثيرات المضيئة -->
   <div class="glow-ring"></div>
   <div class="glow-ring"></div>
   <div class="glow-ring"></div>
 
-  <!-- Ø²ÙˆØ§ÙŠØ§ Ø§Ù„Ø´Ø§Ø´Ø© -->
+  <!-- زوايا الشاشة -->
   <div class="corner corner-tl"></div>
   <div class="corner corner-tr"></div>
   <div class="corner corner-bl"></div>
   <div class="corner corner-br"></div>
 
-  <!-- Ø§Ù„Ù…Ø­ØªÙˆÙ‰ -->
+  <!-- المحتوى -->
   <div class="splash-content">
 
-    <!-- Ø§Ù„Ù„ÙˆØ¬Ùˆ Ù…Ø¹ Ø§Ù„Ù…Ø¯Ø§Ø±Ø§Øª -->
+    <!-- اللوجو مع المدارات -->
     <div class="logo-container">
       <div class="orbit-ring orbit-ring-3"></div>
       <div class="orbit-ring orbit-ring-2"></div>
@@ -394,14 +395,14 @@
         <div class="orbit-dot"></div>
       </div>
       <div class="logo-inner">
-        <img src="/assets/logo.png" class="logo-img" alt="Logo"
+        <img src="/assets/logo.png" class="logo-img" alt="شعار كلية النصر التقنية - جامعة النصر التقنية"
              onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2290%22%3EðŸŽ“%3C/text%3E%3C/svg%3E'">
       </div>
     </div>
 
-    <!-- Ø§Ù„Ø¹Ù†Ø§ÙˆÙŠÙ† -->
-    <div class="splash-title">ÙƒÙ„ÙŠØ© ØªÙ‚Ù†ÙŠØ© Ø§Ù„Ù…Ø¹Ù„ÙˆÙ…Ø§Øª</div>
-    <div class="splash-subtitle">Ø§Ù„Ù†Ø¸Ø§Ù… Ø§Ù„Ø¬Ø§Ù…Ø¹ÙŠ Ø§Ù„Ù…ØªÙƒØ§Ù…Ù„</div>
+    <!-- العناوين -->
+    <div class="splash-title">كلية النصر التقنية</div>
+    <div class="splash-subtitle">النظام الجامعي المتكامل</div>
     <div class="divider-line"></div>
 
     <!-- Loader -->
@@ -410,20 +411,20 @@
         <div class="half"></div>
         <div class="half"></div>
       </div>
-      <div class="loader-text">Ø¬Ø§Ø±ÙŠ Ø§Ù„ØªØ­Ù…ÙŠÙ„...</div>
+      <div class="loader-text">جاري التحميل...</div>
     </div>
   </div>
 
-  <!-- Ø´Ø±ÙŠØ· Ø§Ù„ØªÙ‚Ø¯Ù… -->
+  <!-- شريط التقدم -->
   <div class="progress-bar-wrap">
     <div class="progress-bar"></div>
   </div>
 
-  <div class="version-badge">v1.4.1 - ÙƒÙ„ÙŠØ© Ø§Ù„ØªÙ‚Ù†ÙŠØ©</div>
+  <div class="version-badge">v2.1.0 - كلية النصر التقنية</div>
 </div>
 
 <script>
-// ===== Ø¥Ø¹Ø¯Ø§Ø¯Ø§Øª Ø§Ù„Ø¬Ø²ÙŠØ¦Ø§Øª =====
+// ===== إعدادات الجزيئات =====
 (function() {
   const canvas = document.getElementById('particles-canvas');
   const ctx    = canvas.getContext('2d');
@@ -496,15 +497,15 @@
   window.addEventListener('resize', () => { resize(); createParticles(); });
 })();
 
-// ===== Ø§Ù„Ø§Ù†ØªÙ‚Ø§Ù„ Ø¨Ø¹Ø¯ Ø§Ù„Ø§Ø³Ø¨Ù„Ø§Ø´ =====
-const SPLASH_DURATION = 1200; // Ø«Ø§Ù†ÙŠØ© ÙˆØ´ÙˆÙŠØ© ØªÙƒÙÙŠ â€” Ø§Ù„Ø§Ù†ØªØ¸Ø§Ø± Ø§Ù„Ø·ÙˆÙŠÙ„ ÙŠØ¬Ø¹Ù„ Ø§Ù„ØªØ·Ø¨ÙŠÙ‚ ÙŠØ¨Ø¯Ùˆ Ø¨Ø·ÙŠØ¦Ø§Ù‹
+// ===== الانتقال بعد الاسبلاش =====
+const SPLASH_DURATION = 1200; // ثانية وشوية تكفي — الانتظار الطويل يجعل التطبيق يبدو بطيئاً
 
 setTimeout(() => {
-  // Ø¬Ù„Ø¨ Ø¨ÙŠØ§Ù†Ø§Øª Ø§Ù„Ø¬Ù„Ø³Ø©
+  // جلب بيانات الجلسة
   const token = localStorage.getItem('token');
   const user  = JSON.parse(localStorage.getItem('user') || '{}');
 
-  // ØªØ­Ø±ÙŠÙƒ Ø®Ø±ÙˆØ¬ Ø§Ù„Ø´Ø§Ø´Ø©
+  // تحريك خروج الشاشة
   const splash = document.getElementById('splash');
   if (splash) splash.classList.add('exit');
 
@@ -514,13 +515,13 @@ setTimeout(() => {
       return;
     }
 
-    // Ù…Ù† Ù„Ù… ÙŠØºÙŠÙ‘Ø± ÙƒÙ„Ù…Ø© Ø§Ù„Ù…Ø±ÙˆØ± Ø§Ù„Ø¥Ø¬Ø¨Ø§Ø±ÙŠØ© Ù„Ø§ ÙŠØ¯Ø®Ù„ Ø§Ù„Ù†Ø¸Ø§Ù… Ø£Ø¨Ø¯Ø§Ù‹
+    // من لم يغيّر كلمة المرور الإجبارية لا يدخل النظام أبداً
     if (user.firstLogin) {
       window.location.replace('force-change-password.html');
       return;
     }
 
-    // Ø§Ù„ØªÙˆØ¬ÙŠÙ‡ Ø­Ø³Ø¨ Ø§Ù„ØµÙ„Ø§Ø­ÙŠØ©
+    // التوجيه حسب الصلاحية
     const roles = user.roles || [];
     const batchId = localStorage.getItem('cbs_active_batch_id');
     const bp = batchId ? `?batch=${batchId}` : '';

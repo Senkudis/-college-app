@@ -83,6 +83,12 @@ const StudentSubmissionSchema = new mongoose.Schema(
     // تاريخ التقييم
     reviewDate: {
       type: Date
+    },
+
+    // هل تم منح نقاط الإنجاز للطالب لهذا الواجب؟
+    pointsAwarded: {
+      type: Boolean,
+      default: false
     }
   },
   { timestamps: true }

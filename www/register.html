@@ -4,20 +4,17 @@
 <head>
   <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>تسجيل طالب جديد | كلية تقنية المعلومات</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>تسجيل طالب جديد | كلية النصر التقنية</title>
   <meta name="description" content="صفحة تقديم طلب تسجيل طالب جديد - النظام الجامعي المتكامل">
   <link href="/vendor/fonts/cairo.css" rel="stylesheet">
   <link rel="stylesheet" href="/vendor/remixicon/remixicon.css">
-  <script src="/js/shared.js?v=2026073128"></script>
-<script src="/js/app.js?v=2026073128"></script>
+  <script charset="UTF-8" src="/js/shared.js?v=2026081907"></script>
+<script charset="UTF-8" src="/js/app.js?v=2026081907"></script>
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
-      min-height: 100vh;
-      font-family: system-ui, -apple-system, sans-serif;
-      background: #051527;
       color: white;
       overflow-x: hidden;
       display: flex;
@@ -55,14 +52,20 @@
       margin-top: 2px;
     }
 
-    .reg-card {
-      background: rgba(15, 23, 42, 0.8);
+    \.reg-card { position: relative; z-index: 1; 
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 24px;
       padding: 28px 24px;
       backdrop-filter: blur(16px);
       box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
-    }
+    
+      background: rgba(255, 255, 255, 0.06);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.12);
+      border-radius: 20px;
+      box-shadow: 0 24px 64px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.05) inset, 0 1px 0 rgba(255, 255, 255, 0.1) inset;
+}
 
     .card-title {
       font-size: 1.25rem;
@@ -173,14 +176,27 @@
       transition: color 0.2s;
     }
     .back-link:hover { color: #fff; }
-  </style>
+  
+    body { background: #051527; }
+    .bg-orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.25; animation: orbFloat 8s ease-in-out infinite; z-index: 0; pointer-events: none; }
+    .bg-orb-1 { width: 400px; height: 400px; background: #2563eb; top: -100px; right: -80px; animation-delay: 0s; }
+    .bg-orb-2 { width: 300px; height: 300px; background: #06b6d4; bottom: -80px; left: -60px; animation-delay: -4s; }
+    .bg-orb-3 { width: 200px; height: 200px; background: #7c3aed; top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -2s; }
+    @keyframes orbFloat { 0%, 100% { transform: scale(1) translate(0, 0); } 33% { transform: scale(1.1) translate(20px, -20px); } 66% { transform: scale(0.95) translate(-15px, 15px); } }
+</style>
+  <link rel="stylesheet" href="/css/login.css">
 </head>
 
 <body>
+  <!-- Background Orbs -->
+  <div class="bg-orb bg-orb-1"></div>
+  <div class="bg-orb bg-orb-2"></div>
+  <div class="bg-orb bg-orb-3"></div>
+
   <div class="reg-container">
     <div class="logo-section">
-      <img src="/assets/logo.png" class="logo-img" alt="Logo" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2280%22%3E🎓%3C/text%3E%3C/svg%3E'">
-      <div class="logo-title">كلية تقنية المعلومات</div>
+      <img src="/assets/logo.png" class="logo-img" alt="شعار كلية النصر التقنية - جامعة النصر التقنية" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2280%22%3EðŸŽ“%3C/text%3E%3C/svg%3E'">
+      <div class="logo-title">كلية النصر التقنية</div>
       <div class="logo-sub">طلب تسجيل طالب جديد</div>
     </div>
 
@@ -188,12 +204,12 @@
       <div class="card-title"><i class="ri-user-add-line"></i> إنشــاء حســاب</div>
       <div class="card-desc">أدخل بياناتك وكود الدعوة للانضمام إلى النظام الجامعي</div>
 
-      <div class="alert alert-error" id="alertError"></div>
-      <div class="alert alert-success" id="alertSuccess"></div>
+      <div class="alert alert-error" id="alertError" role="alert"></div>
+      <div class="alert alert-success" id="alertSuccess" role="alert"></div>
 
       <form id="regForm" onsubmit="event.preventDefault(); submitRegistration();">
         <div class="form-group">
-          <label class="form-label">الاسم الرباعي كاملًا</label>
+          <label class="form-label" for="name">الاسم الرباعي كاملًا</label>
           <div class="input-wrap">
             <i class="ri-user-line"></i>
             <input type="text" id="name" class="form-input" placeholder="مثال: أحمد محمد علي حسن" required>
@@ -201,7 +217,7 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">البريد الإلكتروني</label>
+          <label class="form-label" for="email">البريد الإلكتروني</label>
           <div class="input-wrap">
             <i class="ri-mail-line"></i>
             <input type="email" id="email" class="form-input" placeholder="name@example.com" required dir="ltr">
@@ -209,7 +225,7 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">رقم الواتساب (للتواصل واستلام التأكيد)</label>
+          <label class="form-label" for="phone">رقم الواتساب (للتواصل واستلام التأكيد)</label>
           <div class="input-wrap">
             <i class="ri-whatsapp-line"></i>
             <input type="tel" id="phone" class="form-input" placeholder="مثال: 249912345678" required dir="ltr">
@@ -217,7 +233,7 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">كود الدعوة السري الخاص بدفعتك (Invite Code)</label>
+          <label class="form-label" for="inviteCode">كود الدعوة السري الخاص بدفعتك (Invite Code)</label>
           <div class="input-wrap">
             <i class="ri-key-2-line"></i>
             <input type="text" id="inviteCode" class="form-input" placeholder="أدخل كود الدعوة المخصص لدفعتك" required dir="ltr">
@@ -263,7 +279,7 @@
       }
 
       btn.disabled = true;
-      btn.innerHTML = '<i class="ri-loader-4-line" style="animation:spin 1s linear infinite;"></i> جاري إرسال الطلب...';
+      btn.innerHTML = '<span class="btn-loading"></span> جاري إرسال الطلب...';
 
       try {
         const res = await fetch(apiBaseUrl + '/api/auth/register-public', {

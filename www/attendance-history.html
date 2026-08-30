@@ -3,11 +3,11 @@
 <head>
   <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>سجل الحضور | كلية تقنية المعلومات</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>سجل الحضور | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=2026073128">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026073128">
+  <link rel="stylesheet" href="/css/style.css?v=2026081907">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026081907">
   <!-- يُنتج ملف xlsx حقيقياً؛ بدونه يتراجع التصدير إلى CSV -->
   <script src="/vendor/xlsx.full.min.js"></script>
   <style>
@@ -53,20 +53,21 @@
   </style>
 
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
 </head>
 <body>
 
 <header class="main-header">
   <div class="header-brand">
-    <img src="/assets/logo.png" class="header-logo" alt="الشعار">
+    <img src="/assets/logo.png" class="header-logo" alt="شعار كلية النصر التقنية - جامعة النصر التقنية">
     <div class="header-title-group">
-      <strong>كلية تقنية المعلومات</strong>
+      <strong>كلية النصر التقنية</strong>
       <small>سجل الحضور</small>
     </div>
   </div>
   <div class="header-actions">
-    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي" aria-label="تبديل الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
     <button class="btn-icon" onclick="CBS.goHome()" title="الرئيسية"><i class="ri-home-4-line"></i></button>
   </div>
 </header>
@@ -109,7 +110,7 @@
   <div class="modal-box" style="max-width:580px;">
     <div class="modal-header">
       <span class="modal-title" id="detailTitle">تفاصيل الحضور</span>
-      <button class="modal-close" onclick="CBS.closeModal('detailModal')"><i class="ri-close-line"></i></button>
+      <button class="modal-close" onclick="CBS.closeModal('detailModal')" aria-label="إغلاق"><i class="ri-close-line"></i></button>
     </div>
     <div class="modal-body">
       <div class="modal-summary" id="modalSummary"></div>
@@ -130,9 +131,9 @@
   جميع الحقوق محفوظة &copy; <span id="year"></span> النظام الجامعي المتكامل
 </footer>
 
-<script src="/js/shared.js?v=2026073128"></script>
-<script src="/js/app.js?v=2026073128"></script>
-<script src="/js/socket-client.js?v=2026073128" defer></script>
+<script src="/js/shared.js?v=2026081907"></script>
+<script src="/js/app.js?v=2026081907"></script>
+<script src="/js/socket-client.js?v=2026081907" defer></script>
 <script>
   CBS.init();
   const user = CBS.getUser();
@@ -218,7 +219,7 @@
       <div style="text-align:center;border-bottom:3px solid #0d3b66;padding-bottom:14px;margin-bottom:16px;">
         <h2 style="color:#0d3b66;margin:0 0 4px;font-size:1.4rem;">سجل الحضور — ${CBS.escapeHTML(currentRecord.subject?.name) || 'غير محدد'}</h2>
         <div style="color:#334155;font-size:1.05rem;font-weight:700;">${CBS.escapeHTML(currentRecord.date)}</div>
-        <p style="color:#94a3b8;margin:4px 0 0;font-size:0.85rem;">كلية تقنية المعلومات - النظام الجامعي المتكامل</p>
+        <p style="color:#94a3b8;margin:4px 0 0;font-size:0.85rem;">كلية النصر التقنية - النظام الجامعي المتكامل</p>
       </div>
       <div style="display:flex;gap:10px;margin-bottom:16px;">
         ${statBox(present, 'حضور', '#16a34a')}
@@ -288,7 +289,7 @@
     overlay.style.cssText = 'position:fixed;inset:0;background:#fff;color:#1e293b;z-index:99999;overflow-y:auto;direction:rtl;font-family:"Tajawal",Arial,sans-serif;padding:20px;';
     overlay.innerHTML = `
       <div style="max-width:800px;margin:0 auto;">
-        <button onclick="document.getElementById('reportOverlay').remove()" style="position:sticky;top:0;float:left;background:#dc2626;color:#fff;border:none;border-radius:50%;width:40px;height:40px;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 6px rgba(0,0,0,0.15);z-index:1;"><i class="ri-close-line"></i></button>
+        <button onclick="document.getElementById('reportOverlay').remove()" style="position:sticky;top:0;float:left;background:#dc2626;color:#fff;border:none;border-radius:50%;width:40px;height:40px;font-size:22px;cursor:pointer;display:flex;align-items:center;justify-content:center;box-shadow:0 4px 6px rgba(0,0,0,0.15);z-index:1;" aria-label="إغلاق"><i class="ri-close-line"></i></button>
         ${buildReportHTML()}
       </div>`;
     document.body.appendChild(overlay);

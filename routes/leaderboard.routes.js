@@ -26,7 +26,7 @@ router.get("/", auth, async (req, res) => {
       points: s.points || 0,
       batch: s.batch,
       isCurrentUser: String(s._id) === String(req.user.id),
-      medal: index === 0 ? "🥇" : index === 1 ? "🥈" : index === 2 ? "🥉" : null
+      medal: index === 0 ? "" : index === 1 ? "" : index === 2 ? "" : null
     }));
 
     success(res, { leaderboard, total: leaderboard.length });

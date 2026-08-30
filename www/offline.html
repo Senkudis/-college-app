@@ -3,18 +3,19 @@
 <head>
   <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>لا يوجد اتصال | كلية تقنية المعلومات</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>لا يوجد اتصال | كلية النصر التقنية</title>
   <meta name="theme-color" content="#0d3b66">
   <link rel="manifest" href="/manifest.json">
+  <link rel="stylesheet" href="/css/style.css?v=2026081907">
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: 'Segoe UI', Tahoma, sans-serif;
+      font-family: var(--font-main, 'Cairo', system-ui, -apple-system, sans-serif);
       display: flex; align-items: center; justify-content: center;
       min-height: 100vh; flex-direction: column; gap: 20px;
       padding: 2rem; text-align: center;
-      background: linear-gradient(160deg, #0d3b66 0%, #1a5276 50%, #0d3b66 100%);
+      background: linear-gradient(160deg, var(--primary, #0d3b66) 0%, var(--accent, #1a5276) 50%, var(--primary, #0d3b66) 100%);
       color: #fff;
       overflow: hidden;
     }
@@ -41,13 +42,14 @@
     .retry-btn {
       display: inline-flex; align-items: center; gap: 8px;
       padding: 14px 32px; border-radius: 14px;
-      background: linear-gradient(135deg, #2563eb, #3b82f6);
+      background: linear-gradient(135deg, var(--primary, #2563eb), var(--primary-light, #3b82f6));
       color: #fff; font: inherit; font-weight: 700; font-size: 1rem;
       border: none; cursor: pointer;
-      box-shadow: 0 8px 30px rgba(37, 99, 235, 0.4);
+      box-shadow: 0 8px 30px rgba(13, 59, 102, 0.4);
       transition: all 0.3s ease;
+      text-decoration: none;
     }
-    .retry-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(37, 99, 235, 0.5); }
+    .retry-btn:hover { transform: translateY(-2px); box-shadow: 0 12px 40px rgba(13, 59, 102, 0.5); }
     .retry-btn:active { transform: translateY(0); }
 
     .retry-btn svg { width: 20px; height: 20px; fill: #fff; }
@@ -71,6 +73,7 @@
   </style>
 
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
 </head>
 <body>
@@ -88,10 +91,15 @@
   <h1>لا يوجد اتصال بالإنترنت</h1>
   <p>تحقق من شبكة Wi-Fi أو بيانات الهاتف وأعد المحاولة. سيعود التطبيق للعمل فوراً عند استعادة الاتصال.</p>
 
-  <button class="retry-btn" onclick="location.reload()">
-    <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 8 8h-2a6 6 0 1 1-1.76-4.24L14 10h7V3l-3.35 3.35z"/></svg>
-    إعادة المحاولة
-  </button>
+  <div style="display: flex; gap: 12px; flex-wrap: wrap; justify-content: center; margin-top: 10px;">
+    <button class="retry-btn" onclick="location.reload()">
+      <svg viewBox="0 0 24 24"><path d="M17.65 6.35A7.96 7.96 0 0 0 12 4a8 8 0 1 0 8 8h-2a6 6 0 1 1-1.76-4.24L14 10h7V3l-3.35 3.35z"/></svg>
+      إعادة المحاولة
+    </button>
+    <a href="/welcome.html" class="retry-btn" style="background: rgba(255,255,255,0.15);">
+      الرئيسية
+    </a>
+  </div>
 
   <p class="tip-text">يمكنك تصفح الصفحات التي سبق لك زيارتها بدون اتصال</p>
 

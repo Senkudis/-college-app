@@ -1,7 +1,13 @@
 {
     "appId":  "com.elnasrcsit.cbs",
-    "appName":  "كلية التقنية",
+    "appName":  "كلية النصر التقنية",
     "webDir":  "www",
+    "ios":  {
+                "contentInset":  "always",
+                "limitsNavigationsToAppBoundDomains":  true,
+                "_comment_scheme":  "capacitor:// هو المخطط الافتراضي على iOS ويطابق ما هو مسموح في APP_ORIGINS بالخادم",
+                "backgroundColor":  "#0d3b66"
+            },
     "android":  {
                     "allowMixedContent":  true,
                     "_comment_captureInput":  "يجب أن يبقى false: هذا الخيار لالتقاط لوحات المفاتيح العتادية، وتفعيله يمنع الـIME من رؤية النص فتختفي اقتراحات لوحة المفاتيح والتصحيح التلقائي ويصعب تحرير الحقول",

@@ -6,33 +6,40 @@ const User = require("../models/User");
 const auth = require("../middleware/auth.middleware");
 const role = require("../middleware/role.middleware");
 const upload = require("../config/multer");
+const { success, fail, notFound, serverError } = require("../utils/response");
 
-// إضافة مرجع (عميد أو ليدر)
-// رفع محاضرة (يجب أن يكون العميد أو الدكتور أو الليدر)
-router.post("/", auth, role("dean", "doctor", "leader"), upload.single("file"), async (req, res) => {
-  // العملية لإضافة المحاضرة هنا
+// إضافة مرجع (عميد أو دكتور أو ليدر)
+router.post("/", auth, role("dean", "doctor", "leader", "admin"), upload.single("file"), async (req, res) => {
   try {
+    const { title, subject, link } = req.body;
+    if (!title || !title.trim() || !subject) {
+      return fail(res, "عنوان المرجع والمادة مطلوبان", 400);
+    }
+    if (!mongoose.Types.ObjectId.isValid(subject)) {
+      return fail(res, "معرف المادة غير صالح", 400);
+    }
+
     const reference = await Reference.create({
-      title: req.body.title,
-      subject: req.body.subject,
-      link: req.body.link,
+      title: title.trim(),
+      subject,
+      link: link ? link.trim() : null,
       file: req.file ? req.file.filename : null,
       addedBy: req.user.id
     });
 
-    res.json(reference);
+    return success(res, { reference }, "تم إضافة المرجع بنجاح", 201);
   } catch (err) {
-    res.status(400).json({ message: "فشل إضافة المرجع" });
+    return serverError(res, err, "إضافة مرجع");
   }
 });
+
 // جلب مراجع مادة معينة
 router.get("/by-subject/:subjectId", auth, async (req, res) => {
   try {
     const { subjectId } = req.params;
 
-    // التحقق: إذا كان المعرف "null" أو غير صالح، نرجع رسالة خطأ بدلاً من استرجاع بيانات خاطئة
     if (!subjectId || subjectId === "null" || subjectId === "undefined" || !mongoose.Types.ObjectId.isValid(subjectId)) {
-      return res.status(400).json({ message: "معرف المادة غير صالح" }); // إرجاع رسالة خطأ واضحة
+      return fail(res, "معرف المادة غير صالح", 400);
     }
 
     const filter = { subject: subjectId };
@@ -42,25 +49,22 @@ router.get("/by-subject/:subjectId", auth, async (req, res) => {
       if (user?.batch) {
         const subject = await Subject.findById(subjectId).lean();
         if (!subject?.batches?.some(b => b.toString() === user.batch.toString())) {
-          return res.status(403).json({ message: "غير مصرح لك باستعراض مراجع هذه المادة" });
+          return fail(res, "غير مصرح لك باستعراض مراجع هذه المادة", 403);
         }
       } else filter._id = null;
     } else if (req.user.roles.includes("doctor") && !req.user.roles.includes("dean") && !req.user.roles.includes("admin")) {
       const subject = await Subject.findById(subjectId).lean();
       if (subject?.doctor?.toString() !== req.user.id) {
-         return res.status(403).json({ message: "غير مصرح لك باستعراض مراجع مادة لا تدرسها" });
+        return fail(res, "غير مصرح لك باستعراض مراجع مادة لا تدرسها", 403);
       }
     }
 
     const refs = await Reference.find(filter).sort({ createdAt: -1 });
-
-    res.json(refs);
+    return success(res, { references: refs });
   } catch (error) {
-    console.error("Error fetching references:", error);
-    res.status(500).json({ message: "خطأ في السيرفر" }); // إرجاع رسالة خطأ في السيرفر
+    return serverError(res, error, "جلب مراجع المادة");
   }
 });
-
 
 // جلب كل المراجع (أي مستخدم مسجّل)
 router.get("/", auth, async (req, res) => {
@@ -79,34 +83,36 @@ router.get("/", auth, async (req, res) => {
 
     const refs = await Reference.find(filter)
       .populate("subject", "name")
-      .populate("addedBy", "name");
+      .populate("addedBy", "name")
+      .sort({ createdAt: -1 });
 
-    res.json(refs);
+    return success(res, { references: refs });
   } catch (err) {
-    res.status(500).json({ message: "فشل جلب المراجع" });
+    return serverError(res, err, "جلب المراجع");
   }
 });
 
 // حذف مرجع
 router.delete("/:id", auth, role("dean", "doctor", "admin", "leader"), async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return fail(res, "معرف المرجع غير صالح", 400);
+    }
     const ref = await Reference.findById(req.params.id);
-    if (!ref) return res.status(404).json({ message: "المرجع غير موجود" });
+    if (!ref) return notFound(res, "المرجع غير موجود");
 
     // Permissions
     if (!req.user.roles.includes("dean") && !req.user.roles.includes("admin")) {
       if (ref.addedBy.toString() !== req.user.id) {
-        return res.status(403).json({ message: "غير مصرح لك بحذف هذا المرجع" });
+        return fail(res, "غير مصرح لك بحذف هذا المرجع", 403);
       }
     }
 
     await Reference.findByIdAndDelete(req.params.id);
-    res.json({ success: true, message: "تم حذف المرجع بنجاح" });
+    return success(res, null, "تم حذف المرجع بنجاح");
   } catch (err) {
-    res.status(500).json({ message: "فشل الحذف" });
+    return serverError(res, err, "حذف المرجع");
   }
 });
-
-
 
 module.exports = router;

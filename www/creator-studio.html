@@ -3,11 +3,11 @@
 <head>
   <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>استوديو المحاضرات | كلية تقنية المعلومات</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>استوديو المحاضرات | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=2026073128">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026073128">
+  <link rel="stylesheet" href="/css/style.css?v=2026081907">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026081907">
   <style>
     .studio-hero {
       background: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7);
@@ -106,20 +106,21 @@
   </style>
 
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
 </head>
 <body>
 
 <header class="main-header">
   <div class="header-brand">
-    <img src="/assets/logo.png" class="header-logo" alt="Logo">
+    <img src="/assets/logo.png" class="header-logo" alt="شعار كلية النصر التقنية - جامعة النصر التقنية">
     <div class="header-title-group">
-      <strong>كلية تقنية المعلومات</strong>
+      <strong>كلية النصر التقنية</strong>
       <small>استوديو المحاضرات</small>
     </div>
   </div>
   <div class="header-actions">
-    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي" aria-label="تبديل الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
     <button class="btn-icon" onclick="CBS.goHome()" title="الرئيسية"><i class="ri-home-4-line"></i></button>
   </div>
 </header>
@@ -135,14 +136,14 @@
   <!-- Metadata Form -->
   <div style="display:grid; gap:16px; margin-bottom:24px;">
     <div class="form-group">
-      <label class="form-label">عنوان المحاضرة *</label>
+      <label class="form-label" for="videoTitle">عنوان المحاضرة *</label>
       <div class="input-wrapper"><i class="input-icon ri-text"></i>
         <input class="form-control" type="text" id="videoTitle" placeholder="مثال: مقدمة في قواعد البيانات">
       </div>
     </div>
     <div style="display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items: flex-end;">
       <div class="form-group">
-        <label class="form-label">المادة *</label>
+        <label class="form-label" for="videoSubject">المادة *</label>
         <div class="input-wrapper"><i class="input-icon ri-book-open-line"></i>
           <select class="form-control" id="videoSubject" onchange="onStudioSubjectChanged(this.value)" style="appearance: none; -moz-appearance: none; -webkit-appearance: none; padding-left: 32px;"><option value="">اختر المادة</option></select>
           <i class="ri-arrow-down-s-line" style="position: absolute; left: 16px; color: var(--text-muted); pointer-events: none;"></i>
@@ -150,13 +151,13 @@
       </div>
       <div class="form-group" id="batchesGroup">
         <div style="display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; flex-wrap: wrap; gap: 8px;">
-          <label class="form-label" style="margin:0;">الدفعات المستهدفة (اختر أكثر من دفعة إن أردت) *</label>
+          <label class="form-label" style="margin:0;" for="videoDesc">الدفعات المستهدفة (اختر أكثر من دفعة إن أردت) *</label>
           <span class="batch-live-counter" id="studioBatchesCounter" style="display: none;"><i class="ri-checkbox-circle-fill"></i> <span id="studioBatchesNum">0</span> دفعة مختارة</span>
         </div>
         <div class="batch-actions-bar" id="studioBatchesActionBar" style="display: none;">
           <div class="batch-actions-btns">
             <button type="button" class="batch-actions-btn" onclick="toggleSelectAllStudioBatches(true)"><i class="ri-check-double-line"></i> تحديد الكل</button>
-            <button type="button" class="batch-actions-btn" onclick="toggleSelectAllStudioBatches(false)"><i class="ri-close-line"></i> إلغاء التحديد</button>
+            <button type="button" class="batch-actions-btn" onclick="toggleSelectAllStudioBatches(false)" aria-label="إغلاق"><i class="ri-close-line"></i> إلغاء التحديد</button>
           </div>
           <small style="color: var(--text-muted); font-size: 0.78rem;"><i class="ri-information-line"></i> انقر على أي دفعة لتحديدها</small>
         </div>
@@ -179,12 +180,12 @@
   <div class="upload-tabs">
     <button class="upload-tab active" data-tab="file" onclick="switchUploadTab('file')"><i class="ri-upload-cloud-2-line"></i> رفع ملف</button>
     <button class="upload-tab" data-tab="record" onclick="switchUploadTab('record')"><i class="ri-record-circle-line"></i> تسجيل من المتصفح</button>
-    <button class="upload-tab" data-tab="manage" onclick="switchUploadTab('manage')"><i class="ri-settings-4-line"></i> إدارة المحاضرات</button>
+    <button class="upload-tab" data-tab="manage" onclick="switchUploadTab('manage')" aria-label="الإعدادات"><i class="ri-settings-4-line"></i> إدارة المحاضرات</button>
   </div>
 
   <!-- File Upload Panel -->
   <div class="tab-panel active" id="panel-file">
-    <div class="upload-zone" id="dropZone" onclick="document.getElementById('fileInput').click()">
+    <div class="upload-zone" id="dropZone" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();document.getElementById('fileInput').click();}" onclick="document.getElementById('fileInput').click()">
       <i class="ri-video-upload-line"></i>
       <div style="font-weight:700; font-size:1.05rem; margin-bottom:6px;">اسحب الفيديو هنا أو اضغط للاختيار</div>
       <div style="color:var(--text-muted); font-size:0.85rem;">MP4, WebM, MOV — حتى 2GB</div>
@@ -196,7 +197,7 @@
         <div id="fileName" style="font-weight:700;"></div>
         <div id="fileSize" style="font-size:0.8rem; color:var(--text-muted);"></div>
       </div>
-      <button class="btn btn-danger" style="padding:6px 12px; font-size:0.8rem;" onclick="clearFile()">
+      <button class="btn btn-danger" style="padding:6px 12px; font-size:0.8rem;" onclick="clearFile()" aria-label="إغلاق">
         <i class="ri-close-line"></i> إزالة
       </button>
     </div>
@@ -215,7 +216,7 @@
       </div>
       <div style="display:flex; flex-direction:column; gap:14px; align-items:center; width:100%; max-width:640px;">
         <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap; justify-content:center;">
-          <label style="font-weight:700; font-size:0.92rem; color:var(--text-main);"><i class="ri-video-add-line"></i> نمط التصوير:</label>
+          <label style="font-weight:700; font-size:0.92rem; color:var(--text-main);" for="recordMode"><i class="ri-video-add-line"></i> نمط التصوير:</label>
           <select id="recordMode" class="form-control" style="width:auto; padding:8px 16px; border-radius:var(--radius-md); font-weight:600;" onchange="onRecordModeChanged(this.value)">
             <option value="camera">الكاميرا فقط (مع الصوت + HD)</option>
             <option value="screen">شاشة الكمبيوتر / العرض فقط (مع الصوت)</option>
@@ -297,11 +298,11 @@
     <input type="hidden" id="editVideoId">
     
     <div class="form-group">
-      <label class="form-label">عنوان المحاضرة</label>
+      <label class="form-label" for="editTitle">عنوان المحاضرة</label>
       <input class="form-control" type="text" id="editTitle">
     </div>
     <div class="form-group">
-      <label class="form-label">الوصف</label>
+      <label class="form-label" for="editDesc">الوصف</label>
       <textarea class="form-control" id="editDesc" rows="2"></textarea>
     </div>
 
@@ -325,9 +326,9 @@
 <div id="toast-container"></div>
 <footer class="main-footer">حقوق النشر &copy; <span id="year"></span> جامعة النصر التقنية</footer>
 
-<script src="/js/shared.js?v=2026073128"></script>
-<script src="/js/app.js?v=2026073128"></script>
-<script src="/js/socket-client.js?v=2026073128" defer></script>
+<script src="/js/shared.js?v=2026081907"></script>
+<script src="/js/app.js?v=2026081907"></script>
+<script src="/js/socket-client.js?v=2026081907" defer></script>
 <script>
   CBS.init({ requireRoles: ['dean', 'doctor', 'leader'] });
 
@@ -428,7 +429,7 @@
               const _allData = await allRes.json();
               bList = _allData.batches || _allData.data?.batches || _allData.data || [];
             }
-          } catch(err) {}
+          } catch(err) { console.error('[creator-studio]', err); }
         }
 
         const bContainer = document.getElementById('videoBatchesContainer');
@@ -965,7 +966,7 @@
         const statusRes = await CBS.apiGet(`/api/videos/upload-status/${currentUploadId}`);
         const statusData = await statusRes.json();
         if (statusData.success) uploadedChunks = statusData.uploadedChunks || [];
-      } catch(e) {}
+      } catch(e) { console.error('[creator-studio/startUpload]', e); }
 
       // Step 3: Upload chunks
       let successCount = uploadedChunks.length;
@@ -1116,8 +1117,8 @@
             </div>
           </div>
           <div style="display:flex; gap:8px;">
-            <button class="btn btn-primary" style="padding:6px 10px; font-size:0.8rem;" onclick="openEditModal('${v._id}')"><i class="ri-edit-line"></i> تعديل</button>
-            <button class="btn btn-danger" style="padding:6px 10px; font-size:0.8rem;" onclick="deleteVideo('${v._id}')"><i class="ri-delete-bin-line"></i></button>
+            <button class="btn btn-primary" style="padding:6px 10px; font-size:0.8rem;" onclick="openEditModal('${v._id}')" aria-label="تعديل"><i class="ri-edit-line"></i> تعديل</button>
+            <button class="btn btn-danger" style="padding:6px 10px; font-size:0.8rem;" onclick="deleteVideo('${v._id}')" aria-label="حذف"><i class="ri-delete-bin-line"></i></button>
           </div>
         </div>
       `).join('');
@@ -1131,7 +1132,7 @@
     try {
       const res = await CBS.apiDelete(`/api/videos/${id}`);
       if(res.ok) { CBS.toast('تم الحذف', '', 'success'); loadMyVideos(); }
-    } catch(e) {}
+    } catch(e) { console.error('[creator-studio/deleteVideo]', e); }
   }
 
   async function openEditModal(id) {
@@ -1152,7 +1153,7 @@
       else chapters.forEach(ch => addChapterRow(ch.title, ch.time));
 
       document.getElementById('editModal').style.display = 'flex';
-    } catch(e) {}
+    } catch(e) { console.error('[creator-studio/openEditModal]', e); }
   }
 
   function closeEditModal() {
@@ -1165,7 +1166,7 @@
     div.innerHTML = `
       <input type="text" class="form-control ch-title" placeholder="عنوان الفصل (مثال: المقدمة)" value="${title}" style="flex:2;">
       <input type="number" class="form-control ch-time" placeholder="الثانية (مثال: 120)" value="${time}" style="flex:1;" min="0">
-      <button class="btn btn-danger" onclick="this.parentElement.remove()" style="padding:8px;"><i class="ri-close-line"></i></button>
+      <button class="btn btn-danger" onclick="this.parentElement.remove()" style="padding:8px;" aria-label="إغلاق"><i class="ri-close-line"></i></button>
     `;
     document.getElementById('chaptersEditor').appendChild(div);
   }

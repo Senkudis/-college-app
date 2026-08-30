@@ -32,11 +32,17 @@ router.post("/", auth, role("dean", "doctor", "admin"), async (req, res) => {
     const doctorBatches = subjectDoctorUser?.batches || [];
     
     // استخدام الدفعات المرسلة من الواجهة، وإلا استخدام دفعات الدكتور
-    const targetBatches = (req.body.batches && Array.isArray(req.body.batches)) 
-      ? req.body.batches 
+        const targetBatches = (req.body.batches && Array.isArray(req.body.batches))
+      ? req.body.batches
       : doctorBatches;
 
+    const isDeanOrAdmin = req.user.roles.includes("dean") || req.user.roles.includes("admin");
+    if (!isDeanOrAdmin && targetBatches.some(batchId => !doctorBatches.map(String).includes(String(batchId)))) {
+      return fail(res, "لا يمكنك ربط المادة بدفعة غير مخصصة لك", 403);
+    }
+
     const subject = await Subject.create({
+
       name: name.trim(),
       level: level.trim(),
       doctor: subjectDoctor,
@@ -116,10 +122,19 @@ router.get("/:id", auth, async (req, res) => {
       .populate("doctor", "name email")
       .populate("batches", "name code themeColor");
 
-    if (!subject) return notFound(res, "المادة غير موجودة");
+        if (!subject) return notFound(res, "المادة غير موجودة");
+
+    const isDeanOrAdmin = req.user.roles.includes("dean") || req.user.roles.includes("admin");
+    if (!isDeanOrAdmin && req.user.roles.includes("doctor")) {
+      const doctorId = subject.doctor?._id || subject.doctor;
+      if (!doctorId || String(doctorId) !== String(req.user.id)) {
+        return fail(res, "غير مصرح لك بعرض هذه المادة", 403);
+      }
+    }
 
     // تحقق من انتماء الطالب للمادة
     if (req.user.roles.includes("student") || req.user.roles.includes("leader")) {
+
       const student = await User.findById(req.user.id).select("batch");
       if (!student || !student.batch || !subject.batches.some(b => b._id.toString() === student.batch.toString())) {
         return fail(res, "غير مصرح لك بعرض هذه المادة", 403);
@@ -184,16 +199,104 @@ router.get("/by-batch/:batchId", auth, async (req, res) => {
       return fail(res, "معرف الدفعة غير صالح");
     }
 
-    const subjects = await Subject.find({ batches: batchId })
+        const isDeanOrAdmin = req.user.roles.includes("dean") || req.user.roles.includes("admin");
+    const filter = { batches: batchId };
+
+    if (!isDeanOrAdmin) {
+      const account = await User.findById(req.user.id).select("batch batches").lean();
+      const ownedBatches = new Set([
+        ...(account?.batches || []).map(String),
+        account?.batch && String(account.batch)
+      ].filter(Boolean));
+
+      if (req.user.roles.includes("doctor")) {
+        filter.doctor = req.user.id;
+      } else if (req.user.roles.includes("student") || req.user.roles.includes("leader")) {
+        if (!ownedBatches.has(String(batchId))) {
+          return fail(res, "غير مصرح لك بعرض مواد هذه الدفعة", 403);
+        }
+      } else {
+        return fail(res, "غير مصرح لك بعرض مواد هذه الدفعة", 403);
+      }
+    }
+
+    const subjects = await Subject.find(filter)
       .populate("doctor", "name email")
       .populate("batches", "name code")
       .sort({ createdAt: -1 });
 
     success(res, { subjects });
+
   } catch (err) {
     serverError(res, err, "جلب مواد الدفعة");
   }
 });
+
+// استنساخ أو نقل مواد من دفعة لدفعة أخرى مع خيار استبدال المقررات القديمة
+const handleCopyBatchSubjects = async (req, res) => {
+  try {
+    const { fromBatchId, toBatchId, replaceExisting = true } = req.body;
+
+    if (!fromBatchId || !toBatchId) {
+      return fail(res, "يجب تحديد الدفعة المصدر والدفعة الهدف");
+    }
+
+    if (fromBatchId.toString() === toBatchId.toString()) {
+      return fail(res, "لا يمكن استيراد المقررات من نفس الدفعة");
+    }
+
+    // جلب جميع المواد الخاصة بالدفعة المصدر (دعم الحقلين batches و batch)
+    const sourceSubjects = await Subject.find({
+      $or: [{ batches: fromBatchId }, { batch: fromBatchId }]
+    });
+    if (sourceSubjects.length === 0) {
+      return fail(res, "لا توجد مواد في الدفعة المصدر");
+    }
+
+    // إذا طُلب استبدال المقررات القديمة (إزالة مواد السمستر السابق من الدفعة)
+    let removedCount = 0;
+    if (replaceExisting) {
+      const currentSubjects = await Subject.find({
+        $or: [{ batches: toBatchId }, { batch: toBatchId }]
+      });
+      for (const curSub of currentSubjects) {
+        if (Array.isArray(curSub.batches)) {
+          curSub.batches = curSub.batches.filter(b => b.toString() !== toBatchId.toString());
+        }
+        if (curSub.batch && curSub.batch.toString() === toBatchId.toString()) {
+          curSub.batch = null;
+        }
+        await curSub.save();
+        removedCount++;
+      }
+    }
+
+    // إضافة الدفعة الهدف إلى قائمة دفعات مواد الدفعة المصدر
+    let updatedCount = 0;
+    for (const sub of sourceSubjects) {
+      if (!Array.isArray(sub.batches)) {
+        sub.batches = sub.batch ? [sub.batch] : [];
+      }
+      if (!sub.batches.some(b => b.toString() === toBatchId.toString())) {
+        sub.batches.push(toBatchId);
+        await sub.save();
+        updatedCount++;
+      }
+    }
+
+    clearCache('/api/subjects');
+    const msg = replaceExisting 
+      ? `تمت إزالة المقررات القديمة واعتماد ${updatedCount} مقرر جديد للدفعة بنجاح`
+      : `تم ربط ${updatedCount} مقرر بنجاح للدفعة الجديدة`;
+    success(res, { updatedCount, removedCount }, msg);
+  } catch (err) {
+    serverError(res, err, "نقل مواد الدفعة");
+  }
+};
+
+/* حُذف المسار المكرر "copy-bwtch-subjects" — خطأ مطبعي كان مثبّتاً في الـAPI
+   للتوافق الخلفي، ولا تستدعيه أي صفحة في الواجهة. */
+router.post("/copy-batch-subjects", auth, role("dean", "admin"), handleCopyBatchSubjects);
 
 module.exports = router;
 

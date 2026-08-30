@@ -3,11 +3,11 @@
 <head>
   <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>إدارة المقررات | كلية تقنية المعلومات</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>إدارة المقررات | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=2026073128">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026073128">
+  <link rel="stylesheet" href="/css/style.css?v=2026081907">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026081907">
   <style>
     .subjects-grid {
       display: grid;
@@ -30,20 +30,21 @@
   </style>
 
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
 </head>
 <body>
 
 <header class="main-header">
   <div class="header-brand">
-    <img src="/assets/logo.png" class="header-logo" alt="الشعار">
+    <img src="/assets/logo.png" class="header-logo" alt="شعار كلية النصر التقنية - جامعة النصر التقنية">
     <div class="header-title-group">
-      <strong>كلية تقنية المعلومات</strong>
+      <strong>كلية النصر التقنية</strong>
       <small>إدارة المقررات</small>
     </div>
   </div>
   <div class="header-actions">
-    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي" aria-label="تبديل الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
     <button class="btn-icon" onclick="CBS.goHome()" title="الرئيسية"><i class="ri-home-4-line"></i></button>
   </div>
 </header>
@@ -68,9 +69,14 @@
         <div class="page-subtitle" id="subCount">جاري التحميل...</div>
       </div>
     </div>
-    <button class="btn btn-primary" id="addBtn">
-      <i class="ri-add-line"></i> إضافة مقرر
-    </button>
+    <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+      <button class="btn btn-secondary" id="importSubjectsBtn" onclick="openCopySubjectsModal()" style="border: 1px solid var(--border);">
+        <i class="ri-file-copy-2-line"></i> استيراد من دفعة سابقة
+      </button>
+      <button class="btn btn-primary" id="addBtn">
+        <i class="ri-add-line"></i> إضافة مقرر
+      </button>
+    </div>
   </div>
 
   <div class="controls-bar">
@@ -80,7 +86,7 @@
     </div>
   </div>
 
-  <div id="alertMsg" class="alert"></div>
+  <div id="alertMsg" class="alert" role="alert"></div>
   <div class="subjects-grid" id="subjectsGrid"></div>
 </div>
 
@@ -89,26 +95,26 @@
   <div class="modal-box">
     <div class="modal-header">
       <span class="modal-title" id="modalTitle">إضافة مقرر جديد</span>
-      <button class="modal-close" onclick="CBS.closeModal('subjectModal')"><i class="ri-close-line"></i></button>
+      <button class="modal-close" onclick="CBS.closeModal('subjectModal')" aria-label="إغلاق"><i class="ri-close-line"></i></button>
     </div>
     <div class="modal-body">
-      <div id="modalAlert" class="alert"></div>
+      <div id="modalAlert" class="alert" role="alert"></div>
       <div class="form-group">
-        <label class="form-label">اسم المقرر</label>
+        <label class="form-label" for="subjectName">اسم المقرر</label>
         <div class="input-wrapper">
           <i class="input-icon ri-book-line"></i>
           <input class="form-control" type="text" id="subjectName" placeholder="أدخل اسم المقرر">
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">المستوى الأكاديمي</label>
+        <label class="form-label" for="subjectLevel">المستوى الأكاديمي</label>
         <div class="input-wrapper">
           <i class="input-icon ri-graduation-cap-line"></i>
           <input class="form-control" type="text" id="subjectLevel" placeholder="مثال: المستوى الأول">
         </div>
       </div>
       <div class="form-group" id="doctorFormGroup" style="display: none;">
-        <label class="form-label">أستاذ المادة (الدكتور)</label>
+        <label class="form-label" for="subjectDoctor">أستاذ المادة (الدكتور)</label>
         <div class="input-wrapper">
           <i class="input-icon ri-user-voice-line"></i>
           <select class="form-control" id="subjectDoctor">
@@ -117,7 +123,7 @@
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">الدفعات المستهدفة</label>
+        <label class="form-label" for="fromBatchSelect">الدفعات المستهدفة</label>
         <div id="subjectBatchesList" style="display: flex; flex-direction: column; gap: 8px; max-height: 150px; overflow-y: auto; padding: 8px; border: 1px solid var(--border); border-radius: 8px; background: var(--bg-card);">
           <!-- Checkboxes will be loaded here -->
         </div>
@@ -132,15 +138,64 @@
   </div>
 </div>
 
+<!-- Copy Subjects Modal -->
+<div class="modal-overlay" id="copySubjectsModal">
+  <div class="modal-box" style="max-width:520px;">
+    <div class="modal-header">
+      <span class="modal-title">استيراد ونقل المقررات بين الدفعات</span>
+      <button class="modal-close" onclick="CBS.closeModal('copySubjectsModal')" aria-label="إغلاق"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body">
+      <div class="alert" id="copySubjectsAlert" style="display:none;margin-bottom:15px;"></div>
+      <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:15px; line-height:1.6;">
+        تتيح لك هذه الميزة نسخ وربط مقررات دفعة سابقة بدفعة جديدة مباشرة لتجنب إعادة إدخال نفس المقررات والمناهج يدوياً.
+      </p>
+      <div class="form-group">
+        <label class="form-label">من الدفعة (الدفعة المصدر التي تحتوي على المقررات):</label>
+        <div class="input-wrapper">
+          <i class="input-icon ri-folder-shared-line"></i>
+          <select class="form-control" id="fromBatchSelect">
+            <option value="">-- اختر الدفعة المصدر --</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="toBatchSelect">إلى الدفعة (الدفعة الهدف التي ستستلم المقررات):</label>
+        <div class="input-wrapper">
+          <i class="input-icon ri-folder-received-line"></i>
+          <select class="form-control" id="toBatchSelect">
+            <option value="">-- اختر الدفعة الهدف --</option>
+          </select>
+        </div>
+      </div>
+      <div class="form-group" style="margin-top: 14px;">
+        <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.88rem; color:var(--text-main); font-weight:500;">
+          <input type="checkbox" id="replaceExistingCheck" checked style="width:17px; height:17px; accent-color:var(--primary);">
+          <span>إزالة المقررات القديمة من الدفعة الهدف (بدء فصل دراسي جديد)</span>
+        </label>
+        <small style="color:var(--text-muted); display:block; margin-top:4px; font-size:0.8rem; margin-right:25px;">
+          عند التفعيل، سيتم إخفاء مقررات الفصل السابق عن طلاب هذه الدفعة واعتماد المقررات المستوردة فقط.
+        </small>
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn btn-ghost" onclick="CBS.closeModal('copySubjectsModal')">إلغاء</button>
+      <button class="btn btn-primary" id="btnCopySubjects" onclick="submitCopySubjects()">
+        <i class="ri-file-copy-2-line"></i> تنفيذ استيراد المقررات
+      </button>
+    </div>
+  </div>
+</div>
+
 <div id="toast-container"></div>
 
 <footer class="main-footer">
   جميع الحقوق محفوظة &copy; <span id="year"></span> النظام الجامعي المتكامل
 </footer>
 
-<script src="/js/shared.js?v=2026073128"></script>
-<script src="/js/app.js?v=2026073128"></script>
-<script src="/js/socket-client.js?v=2026073128" defer></script>
+<script src="/js/shared.js?v=2026081907"></script>
+<script src="/js/app.js?v=2026081907"></script>
+<script src="/js/socket-client.js?v=2026081907" defer></script>
 <script>
   CBS.init({ requireRoles: ['dean', 'doctor', 'admin'] });
 
@@ -221,8 +276,8 @@
           ${batchBadge}
         </div>
         <div class="subject-item-acts">
-          <button class="btn btn-secondary" onclick="openEdit('${s._id}')"><i class="ri-pencil-line"></i> تعديل</button>
-          <button class="btn btn-danger"    onclick="deleteSubject('${s._id}')"><i class="ri-delete-bin-line"></i> حذف</button>
+          <button class="btn btn-secondary" onclick="openEdit('${s._id}')" aria-label="تعديل"><i class="ri-pencil-line"></i> تعديل</button>
+          <button class="btn btn-danger"    onclick="deleteSubject('${s._id}')" aria-label="حذف"><i class="ri-delete-bin-line"></i> حذف</button>
         </div>
       </div>`;
     }).join('');
@@ -304,6 +359,78 @@
     const res = await CBS.apiDelete(`/api/subjects/${id}`);
     if (res.ok) { CBS.toast('تم حذف المقرر', '', 'success'); loadSubjects(); }
     else CBS.toast('فشل الحذف', '', 'error');
+  }
+
+  // Copy subjects between batches
+  let cachedBatchesList = [];
+  async function openCopySubjectsModal() {
+    CBS.hideAlert('copySubjectsAlert');
+    CBS.openModal('copySubjectsModal');
+    const fromSelect = document.getElementById('fromBatchSelect');
+    const toSelect = document.getElementById('toBatchSelect');
+    fromSelect.innerHTML = '<option value="">جاري تحميل الدفعات...</option>';
+    toSelect.innerHTML = '<option value="">جاري تحميل الدفعات...</option>';
+    try {
+      if (!cachedBatchesList.length) {
+        const res = await CBS.apiGet('/api/batches');
+        const data = await res.json();
+        if (res.ok && data.batches) {
+          cachedBatchesList = data.batches;
+        }
+      }
+      if (cachedBatchesList.length > 0) {
+        const optionsHtml = '<option value="">-- اختر الدفعة --</option>' + 
+          cachedBatchesList.map(b => `<option value="${b._id}">${CBS.escapeHTML(b.name)}</option>`).join('');
+        fromSelect.innerHTML = optionsHtml;
+        toSelect.innerHTML = optionsHtml;
+      } else {
+        fromSelect.innerHTML = '<option value="">لا توجد دفعات متاحة</option>';
+        toSelect.innerHTML = '<option value="">لا توجد دفعات متاحة</option>';
+      }
+    } catch(e) {
+      fromSelect.innerHTML = '<option value="">فشل تحميل الدفعات</option>';
+      toSelect.innerHTML = '<option value="">فشل تحميل الدفعات</option>';
+    }
+  }
+
+  async function submitCopySubjects() {
+    const fromBatchId = document.getElementById('fromBatchSelect').value;
+    const toBatchId = document.getElementById('toBatchSelect').value;
+    const btn = document.getElementById('btnCopySubjects');
+
+    if (!fromBatchId) {
+      CBS.showAlert('copySubjectsAlert', 'يرجى اختيار الدفعة المصدر', 'danger');
+      return;
+    }
+    if (!toBatchId) {
+      CBS.showAlert('copySubjectsAlert', 'يرجى اختيار الدفعة الهدف', 'danger');
+      return;
+    }
+    if (fromBatchId === toBatchId) {
+      CBS.showAlert('copySubjectsAlert', 'لا يمكن استيراد المقررات من وإلى نفس الدفعة', 'danger');
+      return;
+    }
+
+    const replaceExisting = document.getElementById('replaceExistingCheck')?.checked ?? true;
+
+    try {
+      btn.disabled = true;
+      btn.innerHTML = '<div class="spinner-sm"></div> جاري الاستيراد...';
+      const res = await CBS.apiPost('/api/subjects/copy-batch-subjects', { fromBatchId, toBatchId, replaceExisting });
+      const data = await res.json();
+      if (!res.ok) {
+        CBS.showAlert('copySubjectsAlert', data.message || 'فشل استيراد المقررات', 'danger');
+        return;
+      }
+      CBS.toast(data.message || 'تم استيراد المقررات بنجاح', '', 'success');
+      CBS.closeModal('copySubjectsModal');
+      loadSubjects();
+    } catch(err) {
+      CBS.showAlert('copySubjectsAlert', 'حدث خطأ في الاتصال بالسيرفر', 'danger');
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ri-file-copy-2-line"></i> تنفيذ استيراد المقررات';
+    }
   }
 
   document.getElementById('searchBox').addEventListener('input', e => {

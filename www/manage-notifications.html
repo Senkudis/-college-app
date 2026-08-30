@@ -3,11 +3,11 @@
 <head>
   <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>إدارة التنبيهات | كلية تقنية المعلومات</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>إدارة التنبيهات | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=2026073128">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026073128">
+  <link rel="stylesheet" href="/css/style.css?v=2026081907">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026081907">
   <style>
     .notif-grid {
       display: grid;
@@ -35,20 +35,21 @@
   </style>
 
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
 </head>
 <body>
 
 <header class="main-header">
   <div class="header-brand">
-    <img src="/assets/logo.png" class="header-logo" alt="الشعار">
+    <img src="/assets/logo.png" class="header-logo" alt="شعار كلية النصر التقنية - جامعة النصر التقنية">
     <div class="header-title-group">
-      <strong>كلية تقنية المعلومات</strong>
+      <strong>كلية النصر التقنية</strong>
       <small>إدارة التنبيهات</small>
     </div>
   </div>
   <div class="header-actions">
-    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي" aria-label="تبديل الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
     <button class="btn-icon" onclick="CBS.goHome()" title="الرئيسية"><i class="ri-home-4-line"></i></button>
   </div>
 </header>
@@ -87,14 +88,14 @@
   <div class="modal-box">
     <div class="modal-header">
       <span class="modal-title">إرسال تنبيه جديد</span>
-      <button class="modal-close" onclick="CBS.closeModal('notifModal')"><i class="ri-close-line"></i></button>
+      <button class="modal-close" onclick="CBS.closeModal('notifModal')" aria-label="إغلاق"><i class="ri-close-line"></i></button>
     </div>
     <div class="modal-body">
       <div id="modalAlert" class="alert"></div>
 
       <!-- اختيار الدفعة — يظهر فقط للعميد والدكتور -->
       <div class="form-group" id="batchSelectGroup">
-        <label class="form-label">إرسال إلى دفعة <span style="color:var(--danger)">*</span></label>
+        <label class="form-label" for="nBatch">إرسال إلى دفعة <span style="color:var(--danger)">*</span></label>
         <div class="input-wrapper">
           <i class="input-icon ri-team-line"></i>
           <select class="form-control" id="nBatch">
@@ -107,18 +108,18 @@
       </div>
 
       <div class="form-group">
-        <label class="form-label">عنوان التنبيه</label>
+        <label class="form-label" for="nTitle">عنوان التنبيه</label>
         <div class="input-wrapper">
           <i class="input-icon ri-text"></i>
           <input class="form-control" type="text" id="nTitle" placeholder="أدخل العنوان" maxlength="100">
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">نص التنبيه</label>
+        <label class="form-label" for="nMessage">نص التنبيه</label>
         <textarea class="form-control" id="nMessage" placeholder="أدخل رسالة التنبيه" maxlength="500" rows="4"></textarea>
       </div>
       <div class="form-group">
-        <label class="form-label">نوع التنبيه</label>
+        <label class="form-label" for="nType">نوع التنبيه</label>
         <div class="input-wrapper">
           <i class="input-icon ri-alert-line"></i>
           <select class="form-control" id="nType">
@@ -143,9 +144,9 @@
   جميع الحقوق محفوظة © <span id="year"></span> النظام الجامعي المتكامل
 </footer>
 
-<script src="/js/shared.js?v=2026073128"></script>
-<script src="/js/app.js?v=2026073128"></script>
-<script src="/js/socket-client.js?v=2026073128" defer></script>
+<script src="/js/shared.js?v=2026081907"></script>
+<script src="/js/app.js?v=2026081907"></script>
+<script src="/js/socket-client.js?v=2026081907" defer></script>
 <script>
   CBS.init({ requireRoles: ['dean', 'doctor', 'leader', 'admin'] });
 
@@ -230,7 +231,7 @@
           </div>
           <div class="notif-item-footer">
             <span class="notif-sender"><i class="ri-user-line"></i>${sender}</span>
-            <button class="btn btn-danger" style="padding:6px 14px;font-size:0.8rem;" onclick="deleteNotif('${n._id}')">
+            <button class="btn btn-danger" style="padding:6px 14px;font-size:0.8rem;" onclick="deleteNotif('${n._id}')" aria-label="حذف">
               <i class="ri-delete-bin-line"></i> حذف
             </button>
           </div>

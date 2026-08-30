@@ -3,11 +3,11 @@
 <head>
   <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>إدارة المحاضرات | كلية تقنية المعلومات</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>إدارة المحاضرات | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=2026073128">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026073128">
+  <link rel="stylesheet" href="/css/style.css?v=2026081907">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026081907">
   <style>
     .lectures-grid {
       display: grid;
@@ -44,7 +44,7 @@
     .llink.file:hover  { background:var(--success); color:white; }
     .lecture-footer { border-top: 1px dashed var(--border); padding-top: 10px; display:flex; justify-content:flex-end; }
 
-    /* ── Batch Upload ───────────────────── */
+    /* â”€â”€ Batch Upload â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .batch-file-list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; max-height: 320px; overflow-y: auto; }
     .batch-file-item {
       background: var(--bg-secondary); border: 1px solid var(--border);
@@ -78,20 +78,21 @@
   </style>
 
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
 </head>
 <body>
 
 <header class="main-header">
   <div class="header-brand">
-    <img src="/assets/logo.png" class="header-logo" alt="الشعار">
+    <img src="/assets/logo.png" class="header-logo" alt="شعار كلية النصر التقنية - جامعة النصر التقنية">
     <div class="header-title-group">
-      <strong>كلية تقنية المعلومات</strong>
+      <strong>كلية النصر التقنية</strong>
       <small>إدارة المحاضرات</small>
     </div>
   </div>
   <div class="header-actions">
-    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي" aria-label="تبديل الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
     <button class="btn-icon" onclick="CBS.goHome()" title="الرئيسية"><i class="ri-home-4-line"></i></button>
   </div>
 </header>
@@ -131,16 +132,9 @@
       <i class="ri-search-line"></i>
       <input type="text" class="search-input" id="searchBox" placeholder="ابحث بعنوان المحاضرة...">
     </div>
-    <!-- الترتيب رقم داخل المادة الواحدة، فاختيار مادة شرط لتفعيل أزرار الترتيب -->
     <select class="form-control" id="filterSubject" onchange="loadLectures()" style="max-width:260px;">
-      <option value="">كل المواد (للعرض فقط)</option>
+      <option value="">جميع المواد</option>
     </select>
-  </div>
-
-  <div id="orderHint" style="display:none; background:var(--primary-light); color:var(--primary);
-       border-radius:var(--radius-md); padding:10px 14px; margin-bottom:14px; font-size:0.85rem; font-weight:600;">
-    <i class="ri-information-line"></i>
-    اختر مادة محددة من القائمة أعلاه لتتمكن من ترتيب محاضراتها.
   </div>
 
   <div id="alertMsg" class="alert"></div>
@@ -152,18 +146,18 @@
   <div class="modal-box">
     <div class="modal-header">
       <span class="modal-title">إضافة محاضرة جديدة</span>
-      <button class="modal-close" onclick="CBS.closeModal('lectureModal')"><i class="ri-close-line"></i></button>
+      <button class="modal-close" onclick="CBS.closeModal('lectureModal')" aria-label="إغلاق"><i class="ri-close-line"></i></button>
     </div>
     <div class="modal-body">
       <div id="modalAlert" class="alert"></div>
       <div class="form-group">
-        <label class="form-label">عنوان المحاضرة *</label>
+        <label for="lTitle" class="form-label">عنوان المحاضرة *</label>
         <div class="input-wrapper"><i class="input-icon ri-text"></i>
           <input class="form-control" type="text" id="lTitle" placeholder="أدخل عنوان المحاضرة">
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">المقرر</label>
+        <label for="lSubject" class="form-label">المقرر</label>
         <div class="input-wrapper"><i class="input-icon ri-book-open-line"></i>
           <select class="form-control" id="lSubject">
             <option value="">اختر المقرر</option>
@@ -171,14 +165,15 @@
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">رابط الفيديو (اختياري)</label>
+        <label for="lVideoUrl" class="form-label">رابط الفيديو (اختياري)</label>
         <div class="input-wrapper"><i class="input-icon ri-youtube-line"></i>
           <input class="form-control" type="url" id="lVideoUrl" placeholder="https://...">
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">رفع ملف (اختياري)</label>
-        <input class="form-control" type="file" id="lFile">
+        <label for="lFile" class="form-label">رفع ملف (اختياري)</label>
+        <input class="form-control" type="file" id="lFile" accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,image/*,video/*,.zip,.rar">
+        <small style="display:block; margin-top:6px; font-size:0.76rem; color:var(--text-muted); line-height:1.6;"><i class="ri-information-line"></i> ملفات PDF والصور تُعرض داخل التطبيق مباشرة. أما PowerPoint وWord فتحتاج تطبيقاً خارجياً على جهاز الطالب — يُفضّل تصديرها PDF قبل الرفع.</small>
         <div id="lectureUploadProgress" style="display:none; margin-top:8px;">
           <div style="height:6px; background:var(--border); border-radius:999px; overflow:hidden;">
             <div id="lectureProgressBar" style="height:100%; width:0%; background:linear-gradient(90deg,var(--primary),var(--accent)); border-radius:999px; transition:width 0.2s;"></div>
@@ -204,12 +199,12 @@
   <div class="modal-box">
     <div class="modal-header">
       <span class="modal-title"><i class="ri-upload-cloud-2-line" style="margin-left:6px"></i>رفع عدة محاضرات</span>
-      <button class="modal-close" onclick="CBS.closeModal('batchModal')"><i class="ri-close-line"></i></button>
+      <button class="modal-close" onclick="CBS.closeModal('batchModal')" aria-label="إغلاق"><i class="ri-close-line"></i></button>
     </div>
     <div class="modal-body">
       <div id="batchAlert" class="alert"></div>
       <div class="form-group">
-        <label class="form-label">المقرر *</label>
+        <label for="batchSubject" class="form-label">المقرر *</label>
         <div class="input-wrapper"><i class="input-icon ri-book-open-line"></i>
           <select class="form-control" id="batchSubject">
             <option value="">اختر المقرر</option>
@@ -217,8 +212,9 @@
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">اختر الملفات <span style="font-size:.72rem;color:var(--text-muted)">(يمكنك اختيار عدة ملفات مرة واحدة)</span></label>
-        <input class="form-control" type="file" id="batchFiles" multiple>
+        <label for="batchFiles" class="form-label">اختر الملفات <span style="font-size:.72rem;color:var(--text-muted)">(يمكنك اختيار عدة ملفات مرة واحدة)</span></label>
+        <input class="form-control" type="file" id="batchFiles" multiple accept=".pdf,.doc,.docx,.ppt,.pptx,.xls,.xlsx,image/*,video/*,.zip,.rar">
+        <small style="display:block; margin-top:6px; font-size:0.76rem; color:var(--text-muted); line-height:1.6;"><i class="ri-information-line"></i> ملفات PDF والصور تُعرض داخل التطبيق مباشرة. أما PowerPoint وWord فتحتاج تطبيقاً خارجياً على جهاز الطالب — يُفضّل تصديرها PDF قبل الرفع.</small>
       </div>
       <div class="batch-file-list" id="batchFileList"></div>
       <div class="batch-overall" id="batchOverall" style="display:none">
@@ -240,19 +236,19 @@
   <div class="modal-box">
     <div class="modal-header">
       <span class="modal-title"><i class="ri-edit-line" style="margin-left:6px"></i>تعديل المحاضرة / إعادة التسمية</span>
-      <button class="modal-close" onclick="CBS.closeModal('editLectureModal')"><i class="ri-close-line"></i></button>
+      <button class="modal-close" onclick="CBS.closeModal('editLectureModal')" aria-label="إغلاق"><i class="ri-close-line"></i></button>
     </div>
     <div class="modal-body">
       <div id="editModalAlert" class="alert"></div>
       <input type="hidden" id="editLectureId">
       <div class="form-group">
-        <label class="form-label">عنوان المحاضرة *</label>
+        <label for="editLTitle" class="form-label">عنوان المحاضرة *</label>
         <div class="input-wrapper"><i class="input-icon ri-edit-2-line"></i>
           <input class="form-control" type="text" id="editLTitle" placeholder="أدخل العنوان الجديد للمحاضرة">
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">رابط يوتيوب / الفيديو (اختياري)</label>
+        <label for="editLVideoUrl" class="form-label">رابط يوتيوب / الفيديو (اختياري)</label>
         <div class="input-wrapper"><i class="input-icon ri-video-line"></i>
           <input class="form-control" type="url" id="editLVideoUrl" placeholder="https://youtube.com/watch?v=...">
         </div>
@@ -273,9 +269,9 @@
   جميع الحقوق محفوظة © <span id="year"></span> النظام الجامعي المتكامل
 </footer>
 
-<script src="/js/shared.js?v=2026073128"></script>
-<script src="/js/app.js?v=2026073128"></script>
-<script src="/js/socket-client.js?v=2026073128" defer></script>
+<script src="/js/shared.js?v=2026081907"></script>
+<script src="/js/app.js?v=2026081907"></script>
+<script src="/js/socket-client.js?v=2026081907" defer></script>
 <script>
   CBS.init({ requireRoles: ['dean', 'doctor', 'leader', 'admin'] });
   let allLectures = [];
@@ -297,8 +293,8 @@
         '<option value="">اختر المقرر</option>' + options;
       // نفس القائمة تُغذّي فلتر العرض أعلى الصفحة
       document.getElementById('filterSubject').innerHTML =
-        '<option value="">كل المواد (للعرض فقط)</option>' + options;
-    } catch(e) {}
+        '<option value="">جميع المواد</option>' + options;
+    } catch(e) { console.error('[manage-lectures/loadSubjects]', e); }
   }
 
   async function loadLectures() {
@@ -313,8 +309,6 @@
       // ثم قائمة فارغة، بدل رسالة الخطأ الحقيقية
       allLectures = Array.isArray(data) ? data : (data.lectures || data.data || []);
       document.getElementById('lectureCount').textContent = `${allLectures.length} محاضرة`;
-      // التلميح يظهر فقط عند عرض كل المواد (حيث الترتيب معطّل)
-      document.getElementById('orderHint').style.display = subjectId ? 'none' : 'block';
       render(allLectures);
     } catch(e) { CBS.showAlert('alertMsg', e.message || 'فشل تحميل المحاضرات', 'danger'); }
   }
@@ -355,7 +349,7 @@
         <div class="lecture-subject"><i class="ri-book-open-line"></i>${CBS.escapeHTML(typeof l.subject === 'object' ? l.subject?.name : (l.subject || 'غير محددة'))}</div>
         <div class="lecture-links">
           ${l.videoUrl ? `<a href="${CBS.escapeHTML(l.videoUrl)}" target="_blank" rel="noopener noreferrer" class="llink video"><i class="ri-play-circle-line"></i> مشاهدة الفيديو</a>` : ''}
-          ${l.file ? `<a href="${API_BASE}/uploads/lectures/${l.file}" target="_blank" class="llink file"><i class="ri-download-cloud-line"></i> تحميل الملف</a>` : ''}
+          ${l.file ? `<a href="${API_BASE}/uploads/lectures/${l.file}" target="_blank" rel="noopener noreferrer" class="llink file"><i class="ri-download-cloud-line"></i> تحميل الملف</a>` : ''}
           ${!l.videoUrl && !l.file ? '<span style="font-size:0.8rem;color:var(--text-muted)">لا توجد مرفقات</span>' : ''}
         </div>
         ${canManage ? `
@@ -363,18 +357,18 @@
           <div class="reorder-btns" style="display:flex; gap:4px; align-items:center;">
             <button class="btn btn-ghost" style="padding:4px 8px; font-size:0.85rem;"
               onclick="moveLecture('${l._id}', -1)"
-              ${(!singleSubject || index === 0) ? 'disabled' : ''}
-              title="${singleSubject ? 'تقديم لأعلى' : 'اختر مادة محددة أولاً'}"><i class="ri-arrow-up-s-line"></i></button>
+              ${index === 0 ? 'disabled' : ''}
+              title="تقديم لأعلى" aria-label="تقديم لأعلى"><i class="ri-arrow-up-s-line"></i></button>
             <button class="btn btn-ghost" style="padding:4px 8px; font-size:0.85rem;"
               onclick="moveLecture('${l._id}', 1)"
-              ${(!singleSubject || index === items.length - 1) ? 'disabled' : ''}
-              title="${singleSubject ? 'تأخير لأسفل' : 'اختر مادة محددة أولاً'}"><i class="ri-arrow-down-s-line"></i></button>
+              ${index === items.length - 1 ? 'disabled' : ''}
+              title="تأخير لأسفل" aria-label="تأخير لأسفل"><i class="ri-arrow-down-s-line"></i></button>
           </div>
           <div style="display:flex; gap:6px;">
-            <button class="btn btn-secondary" style="padding:6px 12px; font-size:0.78rem;" onclick="openEditModal('${l._id}')">
+            <button class="btn btn-secondary" style="padding:6px 12px; font-size:0.78rem;" onclick="openEditModal('${l._id}')" aria-label="تعديل">
               <i class="ri-edit-line"></i> تعديل
             </button>
-            <button class="btn btn-danger" style="padding:6px 12px; font-size:0.78rem;" onclick="deleteLecture('${l._id}')">
+            <button class="btn btn-danger" style="padding:6px 12px; font-size:0.78rem;" onclick="deleteLecture('${l._id}')" aria-label="حذف">
               <i class="ri-delete-bin-line"></i> حذف
             </button>
           </div>
@@ -566,9 +560,9 @@
   loadSubjects();
   loadLectures();
 
-  // ═══════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   //  BATCH UPLOAD
-  // ═══════════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
   let batchSelectedFiles = [];
 
@@ -637,9 +631,9 @@
           <span class="batch-file-name" style="font-weight:700;"><i class="ri-file-line" style="margin-left:4px"></i>${CBS.escapeHTML(item.file.name)}</span>
           <span class="batch-file-size">${fmtSize(item.file.size)}</span>
           <div style="display:flex; gap:4px; margin-right:auto; align-items:center;">
-             <button class="batch-remove-btn" style="color:var(--text-main);" onclick="moveBatchFile(${i}, -1)" ${i===0?'disabled':''} title="لأعلى"><i class="ri-arrow-up-s-line"></i></button>
-             <button class="batch-remove-btn" style="color:var(--text-main);" onclick="moveBatchFile(${i}, 1)" ${i===batchSelectedFiles.length-1?'disabled':''} title="لأسفل"><i class="ri-arrow-down-s-line"></i></button>
-             <button class="batch-remove-btn" onclick="removeBatchFile(${i})" title="إزالة"><i class="ri-close-circle-line"></i></button>
+             <button class="batch-remove-btn" style="color:var(--text-main);" onclick="moveBatchFile(${i}, -1)" ${i===0?'disabled':''} title="لأعلى" aria-label="رجوع"><i class="ri-arrow-up-s-line"></i></button>
+             <button class="batch-remove-btn" style="color:var(--text-main);" onclick="moveBatchFile(${i}, 1)" ${i===batchSelectedFiles.length-1?'disabled':''} title="لأسفل" aria-label="رجوع"><i class="ri-arrow-down-s-line"></i></button>
+             <button class="batch-remove-btn" onclick="removeBatchFile(${i})" title="إزالة" aria-label="إغلاق"><i class="ri-close-circle-line"></i></button>
           </div>
           <span class="batch-file-status pending" id="bf-status-${i}">في الانتظار</span>
         </div>

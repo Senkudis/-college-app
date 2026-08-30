@@ -16,7 +16,7 @@ const JWT_SECRET = process.env.JWT_SECRET;
 const REFRESH_SECRET = process.env.REFRESH_SECRET;
 
 if (!JWT_SECRET || !REFRESH_SECRET) {
-  console.error("❌ JWT_SECRET و REFRESH_SECRET مطلوبان في متغيرات البيئة");
+  console.error(" JWT_SECRET و REFRESH_SECRET مطلوبان في متغيرات البيئة");
   process.exit(1);
 }
 
@@ -28,14 +28,16 @@ router.post("/register",
   minLength("password", 6, "كلمة المرور"),
   async (req, res) => {
   try {
-    const { name, email, password, roles } = req.body;
+    const { name, email, password, roles, batches } = req.body;
 
     // sanitize batch — reject string 'null'
     const batch = (req.body.batch && req.body.batch !== 'null' && req.body.batch !== '') 
       ? req.body.batch : null;
 
-    // التحقق من أن الأدوار صحيحة
-    const validRoles = ["student", "leader", "doctor", "dean"];
+    /* "admin" كان مفقوداً هنا بينما يقبله PUT /api/users/:id — مساران
+       لنفس العملية بقائمتين مختلفتين، فيتعذّر إنشاء مسؤول عبر هذا المسار
+       ثم يُمنح الدور نفسه عبر التعديل. */
+    const validRoles = ["student", "leader", "doctor", "dean", "admin"];
     const invalidRoles = (Array.isArray(roles) ? roles : [roles]).filter(r => !validRoles.includes(r));
     if (invalidRoles.length) {
       return fail(res, `أدوار غير صحيحة: ${invalidRoles.join('، ')}`);
@@ -130,11 +132,16 @@ router.post("/register-public",
       const cleanCode = String(inviteCode).trim();
       let targetBatchId = null;
 
-      // 1. البحث عن دفعة طابقت كود الدعوة الخاص بها أو رمز الدفعة (code)
+      /* 1. البحث عن دفعة طابقت كود الدعوة الخاص بها أو رمز الدفعة (code).
+         الكود مطابقة نصية دقيقة لا نمطية: حقنه في RegExp كان يسمح بإرسال
+         ".*" فيطابق كل دفعة ويلتقط أولها — أي تجاوز حاجز التسجيل بالكامل،
+         ويفتح الباب لتعطيل الخدمة بنمط انفجاري مثل (a+)+$. */
+      const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const exactCode = new RegExp(`^${escapeRegex(cleanCode)}$`, 'i');
       const matchedBatch = await Batch.findOne({
         $or: [
-          { inviteCode: { $regex: new RegExp(`^${cleanCode}$`, 'i') } },
-          { code: { $regex: new RegExp(`^${cleanCode}$`, 'i') } }
+          { inviteCode: exactCode },
+          { code: exactCode }
         ],
         status: { $ne: "archived" }
       });
@@ -166,7 +173,11 @@ router.post("/register-public",
         name: name.trim(),
         email: normalizeEmail(email),
         phone: phone ? phone.trim() : "",
-        password: (password && String(password).trim()) ? String(password).trim() : "123456",
+        /* كلمة مرور أولية عشوائية بدل "123456" الثابتة: تلك جعلت كل حساب
+           جديد قابلاً للاختراق بمعرفة البريد وحده حتى يغيّرها صاحبه. */
+        password: (password && String(password).trim())
+          ? String(password).trim()
+          : crypto.randomBytes(9).toString("base64url"),
         roles: ["student"],
         batch: targetBatchId,
         isPendingRegistration: true,
@@ -230,10 +241,18 @@ router.post("/login",
     const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "7d" });
     const refreshToken = jwt.sign(payload, REFRESH_SECRET, { expiresIn: "30d" });
 
-    // تسجيل نشاط تسجيل الدخول
+    // تسجيل نشاط تسجيل الدخول وتحديث ستريك كيدي
     logActivity(user._id, "USER_LOGIN", { ip: req.ip, userAgent: req.headers["user-agent"] }, user.batch);
+    try {
+      const { recordActivity } = require("../services/kedySmartNotification.service");
+      recordActivity(user._id);
+    } catch(e) {}
 
-    res.cookie("token", refreshToken, {
+    /* الكوكي تحمل توكن التجديد لا توكن الوصول — وكانت تُسمّى "token" فيقرأها
+       auth.middleware ويتحقق منها بـ JWT_SECRET بينما هي موقّعة بـ
+       REFRESH_SECRET، فتفشل دائماً بـ "التوقيع غير صحيح". الاسم الصريح
+       يمنع الالتباس، ويقرأها /auth/refresh وحده. */
+    res.cookie("refreshToken", refreshToken, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "strict",
@@ -261,7 +280,7 @@ router.post("/login",
 // ========== تجديد التوكن (Refresh Token) ==========
 router.post("/refresh", async (req, res) => {
   // نبحث عن التوكن في الكوكيز أو الهيدر أو البودي
-  let refreshToken = req.cookies?.token || req.headers["x-refresh-token"] || req.body?.refreshToken;
+  let refreshToken = req.cookies?.refreshToken || req.headers["x-refresh-token"] || req.body?.refreshToken;
   if (!refreshToken && req.headers.authorization?.startsWith("Bearer ")) {
     refreshToken = req.headers.authorization.split(" ")[1];
   }
@@ -273,7 +292,7 @@ router.post("/refresh", async (req, res) => {
   try {
     const decoded = jwt.verify(refreshToken, REFRESH_SECRET);
 
-    // ✅ التحقق من أن الجلسة لا تزال صالحة في قاعدة البيانات
+    //  التحقق من أن الجلسة لا تزال صالحة في قاعدة البيانات
     const user = await User.findById(decoded.id).select("currentSessionId isActive").lean();
     if (!user) {
       return res.status(401).json({ success: false, message: "الحساب غير موجود" });
@@ -682,13 +701,14 @@ router.get("/stats", auth, async (req, res) => {
     let upcomingAssignments = 0;
     let unreadNotifs = 0;
 
-    if (user.roles.includes("student")) {
+    // الليدر طالب أيضاً — كان استثناؤه هنا يُظهر له إحصاءات صفرية دائماً
+    if (user.roles.includes("student") || user.roles.includes("leader")) {
       const Subject = require("../models/Subject");
       const Assignment = require("../models/Assignment");
       const Notification = require("../models/Notification");
 
       // المواد التي للطالب (حسب دفعته)
-      const student = await User.findById(req.user.id).select("batch");
+      const student = await User.findById(req.user.id).select("batch batches");
       if (student.batch) {
         subjects = await Subject.countDocuments({ batches: student.batch });
       }
@@ -699,7 +719,11 @@ router.get("/stats", auth, async (req, res) => {
       }
 
       // الإشعارات غير المقروءة — نفس منطق الرؤية الموحّد في نموذج الإشعارات
-      unreadNotifs = await Notification.countUnreadForUser(req.user.id, user.roles, student.batch, []);
+      /* تمرير [] بدل دفعات المستخدم كان يُسقط الإشعارات المقيّدة بدفعة من
+         العدّ، فتُظهر شارة اللوحة رقماً أقل مما تعرضه صفحة الإشعارات. */
+      unreadNotifs = await Notification.countUnreadForUser(
+        req.user.id, user.roles, student.batch, student.batches || []
+      );
     }
 
     success(res, {
@@ -736,7 +760,7 @@ const {
   verifyAuthenticationResponse,
 } = require('@simplewebauthn/server');
 
-const rpName = 'نظام كلية تقنية المعلومات';
+const rpName = 'نظام كلية النصر التقنية';
 
 // 1. Generate Registration Options
 router.get("/webauthn/register/generate", auth, async (req, res) => {
@@ -901,7 +925,7 @@ router.post("/webauthn/login/verify", async (req, res) => {
       user.currentSessionId = sessionId;
       await user.save();
 
-      // ✅ payload موحد مع تسجيل الدخول العادي
+      //  payload موحد مع تسجيل الدخول العادي
       const payload = {
         id: user.id,
         email: user.email,
@@ -911,11 +935,11 @@ router.post("/webauthn/login/verify", async (req, res) => {
         sessionId
       };
 
-      // ✅ access token قصير (15m) + refresh token طويل في cookie (30d) — متوافق مع /login العادي
+      //  access token قصير (15m) + refresh token طويل في cookie (30d) — متوافق مع /login العادي
       const token = jwt.sign(payload, JWT_SECRET, { expiresIn: "15m" });
       const refreshToken = jwt.sign(payload, REFRESH_SECRET, { expiresIn: "30d" });
 
-      res.cookie('token', refreshToken, {
+      res.cookie('refreshToken', refreshToken, {
         httpOnly: true,
         secure: process.env.NODE_ENV === "production",
         sameSite: 'strict',

@@ -1,4 +1,5 @@
 const router = require("express").Router();
+const mongoose = require("mongoose");
 const auth = require("../middleware/auth.middleware");
 const role = require("../middleware/role.middleware");
 const User = require("../models/User");
@@ -8,7 +9,70 @@ const StudentSubmission = require("../models/StudentSubmission");
 const Attendance = require("../models/Attendance");
 const Notification = require("../models/Notification");
 const QuizAttempt = require("../models/QuizAttempt");
+const Quiz = require("../models/Quiz");
 const { success, serverError } = require("../utils/response");
+
+function buildStudentStudyPlan(assignments = [], quizzes = [], now = new Date()) {
+  const current = new Date(now).getTime();
+  const tasks = [
+    ...assignments.filter(item => item?.dueDate).map(item => ({
+      type: "assignment",
+      id: item._id,
+      title: item.title || "واجب دراسي",
+      subject: item.subject?.name || "مادة دراسية",
+      dueAt: new Date(item.dueDate),
+      action: "راجع المطلوب وأرسل التسليم قبل الموعد"
+    })),
+    ...quizzes.filter(item => item?.startsAt || item?.endsAt).map(item => ({
+      type: "quiz",
+      id: item._id,
+      title: item.title || "اختبار قادم",
+      subject: item.subject?.name || "مادة دراسية",
+      dueAt: new Date(item.startsAt || item.endsAt),
+      action: "راجع المحاضرات وحل اختباراً تجريبياً"
+    }))
+  ]
+    .filter(item => !Number.isNaN(item.dueAt.getTime()) && item.dueAt.getTime() >= current)
+    .sort((a, b) => a.dueAt - b.dueAt)
+    .slice(0, 8);
+
+  return tasks.map(item => ({
+    ...item,
+    dueAt: item.dueAt.toISOString(),
+    urgency: item.dueAt.getTime() - current <= 3 * 86400000 ? "high" : "normal"
+  }));
+}
+
+function buildStudentSmartAlerts({ assignments = [], quizzes = [], attendanceRate, now = new Date() }) {
+  const current = new Date(now).getTime();
+  const alerts = [];
+  for (const item of assignments) {
+    const due = new Date(item.dueDate).getTime();
+    if (!Number.isNaN(due) && due >= current && due - current <= 48 * 3600000) {
+      alerts.push({ type: "assignment_due", severity: "high", title: "موعد تسليم قريب", message: `تبقى أقل من 48 ساعة على تسليم ${item.title || "واجبك"}.`, actionUrl: "/assignments.html" });
+    }
+  }
+  for (const item of quizzes) {
+    const start = new Date(item.startsAt || item.endsAt).getTime();
+    if (!Number.isNaN(start) && start >= current && start - current <= 72 * 3600000) {
+      alerts.push({ type: "quiz_due", severity: "medium", title: "اختبار قريب", message: `استعد لاختبار ${item.title || "قادم"} وراجع محاضرات المادة.`, actionUrl: "/quizzes.html" });
+    }
+  }
+  if (attendanceRate !== null && attendanceRate !== undefined && attendanceRate < 75) {
+    alerts.push({ type: "attendance_risk", severity: "high", title: "تنبيه الحضور", message: `نسبة حضورك الحالية ${attendanceRate}% وتحتاج إلى متابعة.`, actionUrl: "/attendance-history.html" });
+  }
+  return alerts.slice(0, 6);
+}
+
+function calculateStudentRisk({ attendanceRate, pendingAssignments = 0, totalAssignments = 0, avgGrade, avgQuizScore }) {
+  const reasons = [];
+  if (attendanceRate !== null && attendanceRate !== undefined && attendanceRate < 75) reasons.push("الحضور أقل من 75%");
+  if (totalAssignments > 0 && pendingAssignments >= Math.max(2, Math.ceil(totalAssignments * 0.4))) reasons.push("تراكم واجبات غير مسلّمة");
+  if (avgGrade !== null && avgGrade !== undefined && avgGrade < 60) reasons.push("متوسط درجات الواجبات منخفض");
+  if (avgQuizScore !== null && avgQuizScore !== undefined && avgQuizScore < 60) reasons.push("نتائج الاختبارات تحتاج مراجعة");
+  const level = reasons.length >= 2 ? "high" : reasons.length === 1 ? "medium" : "low";
+  return { level, reasons };
+}
 
 // ========== لوحة تحكم الطالب (كل البيانات في طلب واحد) ==========
 router.get("/dashboard", auth, async (req, res) => {
@@ -27,6 +91,7 @@ router.get("/dashboard", auth, async (req, res) => {
       mySubmissions,
       attendanceStats,
       recentNotifs,
+      upcomingQuizzes,
       quizAttempts
     ] = await Promise.all([
       // عدد المواد في الدفعة
@@ -37,7 +102,8 @@ router.get("/dashboard", auth, async (req, res) => {
       // الواجبات المفتوحة (غير منتهية الموعد)
       batchId
         ? Assignment.find({ batches: batchId })
-            .select("_id dueDate dueTime")
+            .select("_id title dueDate dueTime subject")
+            .populate("subject", "name")
             .lean()
         : [],
 
@@ -47,38 +113,44 @@ router.get("/dashboard", auth, async (req, res) => {
         .lean(),
 
       // إحصائيات الحضور عبر aggregate
-      batchId
-        ? Attendance.aggregate([
-            { $match: { batch: batchId } },
-            { $unwind: "$students" },
-            { $match: { "students.student": student._id } },
-            {
-              $group: {
-                _id: null,
-                total: { $sum: 1 },
-                present: {
-                  $sum: {
-                    $cond: [{ $eq: ["$students.status", "present"] }, 1, 0]
-                  }
-                }
+      Attendance.aggregate([
+        { $match: { "students.student": new mongoose.Types.ObjectId(req.user.id) } },
+        { $unwind: "$students" },
+        { $match: { "students.student": new mongoose.Types.ObjectId(req.user.id) } },
+        {
+          $group: {
+            _id: null,
+            total: { $sum: 1 },
+            present: {
+              $sum: {
+                $cond: [{ $eq: ["$students.status", "present"] }, 1, 0]
               }
             }
-          ])
-        : [],
+          }
+        }
+      ]),
 
       // آخر 3 إشعارات
-      Notification.find({
-        $or: [
-          { target: "all" },
-          { target: { $in: req.user.roles } },
-          { recipients: req.user.id },
-          ...(batchId ? [{ batches: batchId }] : [])
-        ]
-      })
+      /* كان { target: { $in: req.user.roles } } — "student" لا يطابق
+         "students" أبداً، فلوحة الطالب لا تعرض إلا إشعارات "all" بينما
+         صفحة الإشعارات تعرض الكل: رقمان متضاربان أمام المستخدم نفسه. */
+      Notification.find(
+        Notification.buildVisibilityQuery(req.user.id, req.user.roles, batchId, [])
+      )
         .sort({ createdAt: -1 })
         .limit(3)
         .select("title message type createdAt")
         .lean(),
+
+      // الاختبارات القادمة للدفعة
+      batchId
+        ? Quiz.find({ batch: batchId, published: true, endsAt: { $gte: new Date() } })
+            .select("_id title startsAt endsAt subject")
+            .populate("subject", "name")
+            .sort({ startsAt: 1 })
+            .limit(8)
+            .lean()
+        : [],
 
       // محاولات الاختبارات
       QuizAttempt.find({ student: req.user.id })
@@ -87,7 +159,11 @@ router.get("/dashboard", auth, async (req, res) => {
     ]);
 
     // حساب الواجبات المعلّقة (لم يُسلَّم)
-    const submittedAssignmentIds = new Set(mySubmissions.map(s => s.assignment.toString()));
+    const submittedAssignmentIds = new Set(
+      mySubmissions
+        .map(s => (s.assignment ? s.assignment.toString() : null))
+        .filter(Boolean)
+    );
     const now = new Date();
     const pendingAssignments = allAssignments.filter(a => {
       const due = new Date(a.dueDate);
@@ -117,6 +193,34 @@ router.get("/dashboard", auth, async (req, res) => {
         )
       : null;
 
+    const submittedCount = allAssignments.filter(a => submittedAssignmentIds.has(a._id.toString())).length;
+    const assignmentCompletion = allAssignments.length
+      ? Math.round((submittedCount / allAssignments.length) * 100)
+      : null;
+    const progressSignals = [assignmentCompletion, attendanceRate, avgGrade, avgQuizScore]
+      .filter(value => value !== null && value !== undefined);
+    const overallProgress = progressSignals.length
+      ? Math.round(progressSignals.reduce((sum, value) => sum + value, 0) / progressSignals.length)
+      : null;
+    const studyPlan = buildStudentStudyPlan(
+      allAssignments.filter(a => !submittedAssignmentIds.has(a._id.toString())),
+      upcomingQuizzes,
+      now
+    );
+    const risk = calculateStudentRisk({
+      attendanceRate,
+      pendingAssignments: pendingAssignments.length,
+      totalAssignments: allAssignments.length,
+      avgGrade,
+      avgQuizScore
+    });
+    const smartAlerts = buildStudentSmartAlerts({
+      assignments: pendingAssignments,
+      quizzes: upcomingQuizzes,
+      attendanceRate,
+      now
+    });
+
     success(res, {
       stats: {
         subjects: subjectsCount,
@@ -127,7 +231,23 @@ router.get("/dashboard", auth, async (req, res) => {
         avgGrade,
         points: student?.points || 0,
         quizAttempts: quizAttempts.length,
-        avgQuizScore
+        avgQuizScore,
+        assignmentCompletion,
+        overallProgress
+      },
+      progress: {
+        overall: overallProgress,
+        assignments: assignmentCompletion,
+        attendance: attendanceRate,
+        grade: avgGrade,
+        quizzes: avgQuizScore
+      },
+      risk,
+      smartAlerts,
+      studyPlan: {
+        generatedAt: now.toISOString(),
+        items: studyPlan,
+        hasUrgentItems: studyPlan.some(item => item.urgency === "high")
       },
       recentNotifications: recentNotifs
     });
@@ -261,3 +381,4 @@ router.get("/report", auth, async (req, res) => {
 });
 
 module.exports = router;
+module.exports._internals = { buildStudentStudyPlan, calculateStudentRisk, buildStudentSmartAlerts };

@@ -9,6 +9,39 @@ const { uploadLimiter } = require("../middleware/rateLimiter");
 const mongoose = require("mongoose");
 const { success, fail, notFound, serverError } = require("../utils/response");
 
+async function canAccessAssignment(user, assignment) {
+  if (user.roles.includes("dean") || user.roles.includes("admin")) return true;
+
+  const subjectId = assignment?.subject?._id || assignment?.subject;
+  const subject = assignment?.subject?.doctor
+    ? assignment.subject
+    : await Subject.findById(subjectId).select("doctor batches").lean();
+  if (!subject) return false;
+
+  const subjectDoctor = subject.doctor?._id || subject.doctor;
+  if (user.roles.includes("doctor")) {
+    if (!subjectDoctor || String(subjectDoctor) !== String(user.id)) return false;
+    const doctor = await User.findById(user.id).select("batches").lean();
+    const assigned = new Set((doctor?.batches || []).map(String));
+    const assignmentBatches = Array.isArray(assignment.batches) ? assignment.batches.map(String) : [];
+    const subjectBatches = Array.isArray(subject.batches) ? subject.batches.map(String) : [];
+    const scope = assignmentBatches.length ? assignmentBatches : subjectBatches;
+    return scope.some(batchId => assigned.has(batchId));
+  }
+
+  if (user.roles.includes("student") || user.roles.includes("leader")) {
+    const account = await User.findById(user.id).select("batch").lean();
+    const batchId = account?.batch && String(account.batch);
+    if (!batchId) return false;
+    const scope = Array.isArray(assignment.batches) && assignment.batches.length
+      ? assignment.batches
+      : (subject.batches || []);
+    return scope.some(candidate => String(candidate?._id || candidate) === batchId);
+  }
+
+  return false;
+}
+
 // إضافة تكليف جديد (عميد، دكتور، ليدر)
 router.post("/", auth, role("dean", "doctor", "leader", "admin"), uploadLimiter, upload.single("file"), async (req, res) => {
   try {
@@ -26,11 +59,25 @@ router.post("/", auth, role("dean", "doctor", "leader", "admin"), uploadLimiter,
     const subjectDoc = await Subject.findById(subject);
     if (!subjectDoc) return notFound(res, "المادة غير موجودة");
 
+    if (req.user.roles.includes("doctor")) {
+      const subjectDoctor = subjectDoc.doctor?._id || subjectDoc.doctor;
+      if (!subjectDoctor || String(subjectDoctor) !== String(req.user.id)) {
+        return fail(res, "لا يمكنك إنشاء تكليف لهذه المادة", 403);
+      }
+    }
+
     // Auto-assign batches: للدكتور تربط دفعاته تلقائياً، للعميد/ليدر يستخدم المحدد أو دفعات المادة
     let assignmentBatches = [];
     if (req.user.roles.includes("doctor")) {
       const doctorUser = await User.findById(req.user.id).select("batches");
-      assignmentBatches = doctorUser?.batches || [];
+      const doctorBatches = doctorUser?.batches || [];
+      const subjectBatches = subjectDoc.batches || [];
+      assignmentBatches = doctorBatches.filter(batchId =>
+        !subjectBatches.length || subjectBatches.some(subjectBatch => String(subjectBatch) === String(batchId))
+      );
+      if (!assignmentBatches.length) {
+        return fail(res, "لا توجد دفعة مشتركة مخصصة لك مع هذه المادة", 403);
+      }
     } else if (batches) {
       assignmentBatches = Array.isArray(batches) ? batches : batches.split(',').map(s => s.trim());
     } else {
@@ -163,6 +210,9 @@ router.get("/:id", auth, async (req, res) => {
       .populate("batches", "name code");
 
     if (!assignment) return notFound(res, "التكليف غير موجود");
+    if (!(await canAccessAssignment(req.user, assignment))) {
+      return fail(res, "غير مصرح لك بعرض هذا التكليف", 403);
+    }
 
     success(res, { assignment });
   } catch (err) {
@@ -176,9 +226,11 @@ router.put("/:id", auth, role("dean", "doctor", "leader", "admin"), upload.singl
     const assignment = await Assignment.findById(req.params.id);
     if (!assignment) return notFound(res, "التكليف غير موجود");
 
-    // التحقق من الصلاحية: العميد/المسؤول دائماً، وغيرهما فقط لتكليفه هو
-    const canManage = req.user.roles.includes("dean") || req.user.roles.includes("admin")
-      || assignment.addedBy.toString() === req.user.id;
+    // التحقق من الصلاحية: العميد/المسؤول دائماً، وغيرهما فقط لتكليفه هو وضمن نطاقه
+    const canManage = (await canAccessAssignment(req.user, assignment)) && (
+      req.user.roles.includes("dean") || req.user.roles.includes("admin")
+      || assignment.addedBy.toString() === req.user.id
+    );
     if (!canManage) {
       return fail(res, "ليس لديك صلاحية لتحديث هذا التكليف", 403);
     }
@@ -214,8 +266,10 @@ router.delete("/:id", auth, role("dean", "doctor", "leader", "admin"), async (re
     const assignment = await Assignment.findById(req.params.id);
     if (!assignment) return notFound(res, "التكليف غير موجود");
 
-    const canManage = req.user.roles.includes("dean") || req.user.roles.includes("admin")
-      || assignment.addedBy.toString() === req.user.id;
+    const canManage = (await canAccessAssignment(req.user, assignment)) && (
+      req.user.roles.includes("dean") || req.user.roles.includes("admin")
+      || assignment.addedBy.toString() === req.user.id
+    );
     if (!canManage) {
       return fail(res, "ليس لديك صلاحية لحذف هذا التكليف", 403);
     }
@@ -232,8 +286,8 @@ router.get("/", auth, async (req, res) => {
   try {
     const filter = {};
     
-    // إذا كان طالب، فلترة حسب دفعته
-    if (req.user.roles.includes("student")) {
+    // إذا كان طالب أو ليدر، فلترة حسب دفعته
+    if (req.user.roles.includes("student") || req.user.roles.includes("leader")) {
       const student = await User.findById(req.user.id).select("batch");
       if (student?.batch) {
         filter.batches = student.batch;

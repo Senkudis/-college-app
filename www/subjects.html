@@ -3,10 +3,10 @@
 <head>
   <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>المقررات الدراسية | كلية تقنية المعلومات</title>
-  <link rel="stylesheet" href="/css/style.css?v=2026073128">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026073128">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>المقررات الدراسية | كلية النصر التقنية</title>
+  <link rel="stylesheet" href="/css/style.css?v=2026081907">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026081907">
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
   <style>
     .subjects-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px; }
@@ -31,17 +31,18 @@
     .sc-5 .subject-stripe{background:linear-gradient(90deg,#06b6d4,#22d3ee)} .sc-5 .subject-icon-wrap{background:rgba(6,182,212,.1);color:#06b6d4} .sc-5 .subject-level{background:rgba(6,182,212,.1);color:#06b6d4} .sc-5 .subject-go-btn{background:rgba(6,182,212,.1);color:#06b6d4}
   </style>
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
 </head>
 <body>
 <header class="main-header">
   <div class="header-brand">
-    <img src="/assets/logo.png" class="header-logo" alt="الشعار">
-    <div class="header-title-group"><strong>كلية تقنية المعلومات</strong><small>النظام الجامعي المتكامل</small></div>
+    <img src="/assets/logo.png" class="header-logo" alt="شعار كلية النصر التقنية - جامعة النصر التقنية">
+    <div class="header-title-group"><strong>كلية النصر التقنية</strong><small>النظام الجامعي المتكامل</small></div>
   </div>
   <div class="header-actions">
-    <button class="btn-icon" onclick="CBS.toggleDark()"><i class="ri-moon-line" id="themeIcon"></i></button>
-    <button class="btn-icon" onclick="CBS.goHome()"><i class="ri-home-4-line"></i></button>
+    <button class="btn-icon" onclick="CBS.toggleDark()" aria-label="تبديل الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="CBS.goHome()" title="الرئيسية" aria-label="الرئيسية"><i class="ri-home-4-line"></i></button>
   </div>
 </header>
 <div class="page-content">
@@ -49,14 +50,14 @@
     <div class="welcome-banner-icon-wrap"><i class="ri-book-2-line welcome-banner-icon"></i></div>
     <div class="welcome-banner-body"><h2>المقررات الدراسية</h2><p>عرض جميع مقرراتك الدراسية المتاحة</p></div>
   </div>
-  <div id="alertError" class="alert alert-danger"></div>
+  <div id="alertError" class="alert alert-danger" role="alert"></div>
   <div class="subjects-grid" id="subjectsGrid"></div>
 </div>
 <div id="toast-container"></div>
 <footer class="main-footer">جميع الحقوق محفوظة &copy; <span id="year"></span> النظام الجامعي المتكامل</footer>
-<script src="/js/shared.js?v=2026073128"></script>
-<script src="/js/app.js?v=2026073128"></script>
-<script src="/js/socket-client.js?v=2026073128" defer></script>
+<script src="/js/shared.js?v=2026081907"></script>
+<script src="/js/app.js?v=2026081907"></script>
+<script src="/js/socket-client.js?v=2026081907" defer></script>
 <script>
   CBS.init();
   const subjectIcons=['ri-code-s-slash-line','ri-database-2-line','ri-cpu-line','ri-bar-chart-box-line','ri-shield-keyhole-line','ri-wifi-line','ri-git-branch-line','ri-terminal-box-line','ri-calculator-line','ri-globe-line','ri-server-line','ri-pencil-ruler-2-line'];
@@ -69,7 +70,7 @@
       const data=_d.data?.subjects||_d.subjects||_d.data||_d;
       if(!Array.isArray(data)||!data.length){CBS.showEmpty('subjectsGrid','لا توجد مقررات مسجلة حالياً','ri-book-open-line');return;}
       document.getElementById('subjectsGrid').innerHTML=data.map((s,i)=>`
-        <div class="subject-card sc-${i%6}" onclick="location.href='/subject.html?id=${s._id}'">
+        <a href="/subject.html?id=${s._id}" class="subject-card sc-${i%6}" style="text-decoration:none;color:inherit;display:block;">
           <div class="subject-stripe"></div>
           <div class="subject-card-inner">
             <div class="subject-icon-wrap"><i class="${subjectIcons[i%subjectIcons.length]}"></i></div>
@@ -80,7 +81,7 @@
               <div class="subject-go-btn"><i class="ri-arrow-left-s-line"></i></div>
             </div>
           </div>
-        </div>`).join('');
+        </a>`).join('');
     } catch { CBS.showAlert('alertError','حدث خطأ أثناء الاتصال بالخادم، يرجى المحاولة لاحقاً'); }
   }
   window.addEventListener('beforeunload',()=>sessionStorage.setItem('subjects_scroll',window.scrollY));

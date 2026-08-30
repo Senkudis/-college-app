@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">كلية التقنية</string>
-    <string name="title_activity_main">كلية التقنية</string>
+    <string name="app_name">كلية النصر التقنية</string>
+    <string name="title_activity_main">كلية النصر التقنية</string>
     <string name="package_name">com.elnasrcsit.cbs</string>
     <string name="custom_url_scheme">com.elnasrcsit.cbs</string>
 </resources>

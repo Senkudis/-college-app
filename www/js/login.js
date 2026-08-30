@@ -65,12 +65,12 @@ async function handleLogin(e) {
 
   // Validation
   if (!email || !password) {
-    showError('يرجى ملء جميع الحقول المطلوبة');
+    showToast('يرجى ملء جميع الحقول المطلوبة', 'error');
     return;
   }
 
   if (!isValidEmail(email)) {
-    showError('يرجى إدخال بريد إلكتروني صحيح');
+    showToast('يرجى إدخال بريد إلكتروني صحيح', 'error');
     return;
   }
 
@@ -106,7 +106,7 @@ async function handleLogin(e) {
     }
 
     // Show success message
-    showSuccess('تم تسجيل الدخول بنجاح! جاري التحويل...');
+    showToast('تم تسجيل الدخول بنجاح! جاري التحويل...', 'success');
 
     // Redirect based on user role
     setTimeout(() => {
@@ -122,55 +122,59 @@ async function handleLogin(e) {
 
   } catch (error) {
     console.error('Login error:', error);
-    showError(error.message || 'حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مجدداً');
+    showToast(error.message || 'حدث خطأ أثناء تسجيل الدخول. يرجى المحاولة مجدداً', 'error');
   } finally {
     loginBtn.disabled = false;
     loadingState.classList.add('hidden');
   }
 }
 
-function showError(message) {
-  const errorMessage = document.getElementById('errorMessage');
-  const errorText = document.getElementById('errorText');
-  errorText.textContent = message;
-  errorMessage.classList.remove('hidden');
+function showToast(title, type = 'info', duration = 5000) {
+  let container = document.getElementById('toast-container');
+  if (!container) {
+    container = document.createElement('div');
+    container.id = 'toast-container';
+    document.body.appendChild(container);
+  }
+
+  const icons = {
+    info:      'ri-information-line',
+    success:   'ri-checkbox-circle-fill',
+    error:     'ri-error-warning-fill',
+    warning:   'ri-alert-line',
+    emergency: 'ri-alarm-warning-fill'
+  };
+
+  const t = document.createElement('div');
+  t.className = `toast toast-${type}`;
+  t.style.cursor = 'pointer';
   
-  // Auto-hide after 5 seconds
-  setTimeout(() => {
-    errorMessage.classList.add('hidden');
-  }, 5000);
-
-  // Shake animation
-  errorMessage.style.animation = 'none';
-  setTimeout(() => {
-    errorMessage.style.animation = 'shake 0.5s ease';
-  }, 10);
-}
-
-function showSuccess(message) {
-  // Create toast notification
-  const toast = document.createElement('div');
-  toast.className = 'toast success';
-  toast.innerHTML = `
-    <i class="ri-check-circle-line toast-icon"></i>
-    <span class="toast-message">${message}</span>
-  `;
+  const safeTitle = (title||'').replace(/</g, "&lt;").replace(/>/g, "&gt;");
   
-  const container = document.querySelector('.toast-container') || createToastContainer();
-  container.appendChild(toast);
+  t.innerHTML = `
+    <i class="toast-icon ${icons[type] || icons.info}"></i>
+    <div style="flex:1;min-width:0">
+      <div class="toast-title">${safeTitle}</div>
+    </div>
+    <button onclick="event.stopPropagation();this.closest('.toast').remove()" style="background:none;border:none;cursor:pointer;color:inherit;opacity:0.5;font-size:1rem;padding:2px 4px;line-height:1;flex-shrink:0" title="إغلاق"></button>`;
 
-  // Auto-remove
-  setTimeout(() => {
-    toast.style.animation = 'slideOutRight 0.3s ease';
-    setTimeout(() => toast.remove(), 300);
-  }, 3000);
-}
+  t.onclick = () => {
+    t.style.opacity = '0';
+    t.style.transform = 'translateX(-30px)';
+    setTimeout(() => t.remove(), 300);
+  };
 
-function createToastContainer() {
-  const container = document.createElement('div');
-  container.className = 'toast-container';
-  document.body.appendChild(container);
-  return container;
+  container.appendChild(t);
+
+  requestAnimationFrame(() => requestAnimationFrame(() => t.classList.add('show')));
+
+  if (duration > 0) {
+    setTimeout(() => {
+      if (!t.isConnected) return;
+      t.classList.remove('show');
+      setTimeout(() => t.remove(), 400);
+    }, duration);
+  }
 }
 
 function isValidEmail(email) {

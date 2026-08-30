@@ -1,0 +1,658 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>غرف المذاكرة الجماعية وبومودورو | كلية النصر التقنية</title>
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css?v=2026081907">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026081907">
+  <style>
+    .pod-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      gap: 16px;
+      margin-top: 14px;
+    }
+    .pod-card-pro {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-xl);
+      padding: 20px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.03);
+    }
+    .pod-card-pro:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 10px 28px rgba(0,0,0,0.08);
+      border-color: var(--primary);
+    }
+    .timer-ring-wrapper {
+      position: relative;
+      width: 220px;
+      height: 220px;
+      margin: 16px auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .timer-ring-svg {
+      position: absolute;
+      inset: 0;
+      transform: rotate(-90deg);
+    }
+    .timer-ring-bg {
+      fill: none;
+      stroke: var(--border);
+      stroke-width: 8;
+    }
+    .timer-ring-progress {
+      fill: none;
+      stroke: var(--primary);
+      stroke-width: 8;
+      stroke-linecap: round;
+      stroke-dasharray: 628;
+      stroke-dashoffset: 0;
+      transition: stroke-dashoffset 1s linear, stroke 0.3s;
+    }
+    .timer-center-content {
+      position: relative;
+      text-align: center;
+    }
+    .timer-digits {
+      font-size: 2.8rem;
+      font-weight: 900;
+      font-family: 'Consolas', monospace;
+      color: var(--text-main);
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .task-card-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 12px 16px;
+      background: var(--bg-main);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      margin-bottom: 8px;
+      transition: all 0.2s;
+    }
+    .task-card-item:hover {
+      border-color: var(--primary);
+    }
+    /* زر الإبلاغ كان مستخدماً في الترميز بلا أي تعريف، فيظهر كزر نظام
+       عارٍ بلا حدود ولا لون — والمراجع يبحث عنه تحديداً (بند 1.2). */
+    .task-report-btn {
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      cursor: pointer;
+      font-size: 0.95rem;
+      padding: 6px;
+      border-radius: var(--radius-sm);
+      min-width: 36px;
+      min-height: 36px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      transition: var(--transition-fast);
+    }
+    .task-report-btn:hover { color: var(--danger); background: var(--danger-bg); }
+    .task-report-btn:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 1px; }
+    .task-card-item.done {
+      opacity: 0.6;
+      background: var(--bg-card);
+    }
+    .live-pulse-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--success);
+      display: inline-block;
+      box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7);
+      animation: pulseGreen 1.6s infinite;
+    }
+    @keyframes pulseGreen {
+      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+      70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+  </style>
+</head>
+<body>
+
+
+<main class="page-container" style="max-width:1040px; margin:0 auto; padding:16px 16px 80px;">
+  <!-- Header Bar -->
+  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
+    <div style="display:flex; align-items:center; gap:8px;">
+      <a href="/dashboard.html" class="btn btn-icon btn-outline" style="width:36px; height:36px;"><i class="ri-arrow-right-line"></i></a>
+      <div>
+        <h1 style="font-size:1.25rem; font-weight:800; margin:0; color:var(--text-main);">
+          <i class="ri-team-fill" style="color:var(--primary);"></i> غرف المذاكرة الجماعية وبومودورو
+        </h1>
+        <span style="font-size:0.78rem; color:var(--text-muted);">جلسات تركيز مشتركة ومؤقت بومودورو متزامن لطلاب الدفعة</span>
+      </div>
+    </div>
+    <div>
+      <button class="btn btn-primary" onclick="openCreatePodModal()"><i class="ri-add-line"></i> إنشاء جلسة مذاكرة</button>
+    </div>
+  </div>
+
+  <!-- Pods List View -->
+  <div id="podsListView">
+    <div id="podsContainer" class="pod-grid">
+      <div style="text-align:center; grid-column:1/-1; padding:40px;"><i class="ri-loader-4-line ri-spin" style="font-size:2rem; color:var(--primary);"></i></div>
+    </div>
+  </div>
+
+  <!-- Active Pod Room View -->
+  <div id="activePodRoomView" style="display:none;">
+    <div class="card" style="padding:24px; margin-bottom:16px; border-radius:var(--radius-xl);">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; border-bottom:1px solid var(--border); padding-bottom:16px;">
+        <div>
+          <button class="btn btn-outline" style="padding:4px 10px; font-size:0.8rem; margin-bottom:8px;" onclick="leaveCurrentPod()" aria-label="رجوع"><i class="ri-arrow-right-line"></i> مغادرة الجلسة</button>
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span class="live-pulse-dot"></span>
+            <h2 id="currentPodTitle" style="font-size:1.25rem; font-weight:800; margin:0; color:var(--text-main);">...</h2>
+          </div>
+          <span id="currentPodSubject" style="font-size:0.82rem; color:var(--text-muted); display:inline-block; margin-top:2px;">...</span>
+        </div>
+        <div id="activeUsersPills" style="display:flex; gap:6px; flex-wrap:wrap;"></div>
+      </div>
+
+      <!-- Circular Pomodoro Timer Section -->
+      <div style="text-align:center; padding:16px 0;">
+        <div class="timer-ring-wrapper">
+          <svg class="timer-ring-svg" width="220" height="220" viewBox="0 0 220 220">
+            <circle class="timer-ring-bg" cx="110" cy="110" r="100"></circle>
+            <circle id="timerProgressRing" class="timer-ring-progress" cx="110" cy="110" r="100"></circle>
+          </svg>
+          <div class="timer-center-content">
+            <div id="podTimerText" class="timer-digits">25:00</div>
+            <span id="podTimerStatus" class="badge badge-primary" style="font-size:0.75rem; padding:4px 10px;">جلسة تركيز 25د</span>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:center; gap:10px; flex-wrap:wrap; margin-top:8px;">
+          <button class="btn btn-primary" onclick="togglePodTimer('running')" style="font-weight:800; padding:8px 20px;">
+            <i class="ri-play-fill"></i> بدء التركيز
+          </button>
+          <button class="btn btn-outline" onclick="togglePodTimer('stopped')" style="font-weight:700;">
+            <i class="ri-pause-line"></i> إيقاف مؤقت
+          </button>
+          <button class="btn btn-outline" onclick="togglePodTimer('break')" style="font-weight:700;">
+            <i class="ri-cup-line"></i> استراحة (5د)
+          </button>
+        </div>
+      </div>
+
+      <!-- Shared Tasks Section -->
+      <div style="margin-top:24px; border-top:1px solid var(--border); padding-top:18px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+          <h3 style="font-size:1rem; font-weight:800; margin:0; color:var(--text-main);">
+            <i class="ri-task-line" style="color:var(--primary);"></i> أهداف ومحاور المذاكرة المشتركة:
+          </h3>
+          <span id="tasksProgressBadge" class="badge" style="background:var(--bg-main); border:1px solid var(--border); font-size:0.78rem;">0% مكتمل</span>
+        </div>
+
+        <div style="display:flex; gap:8px; margin-bottom:14px;">
+          <input type="text" id="newTaskInput" placeholder="أضف شيت أو مسألة لحلها مع الزملاء..." class="form-control" style="flex:1;" onkeydown="if(event.key==='Enter')addTaskToPod()">
+          <button class="btn btn-primary" onclick="addTaskToPod()" style="font-weight:800;"><i class="ri-add-line"></i> إضافة هدف</button>
+        </div>
+
+        <div id="podTasksList"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Create Pod Modal -->
+<div id="createPodModal" class="modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center; padding:16px;">
+  <div class="card" style="max-width:440px; width:100%; padding:22px; border-radius:var(--radius-xl);">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+      <h3 style="font-size:1.05rem; font-weight:800; margin:0;">إنشاء جلسة مذاكرة للدفعة</h3>
+      <button class="btn btn-outline" style="padding:4px 8px;" onclick="closeCreatePodModal()" aria-label="إغلاق"><i class="ri-close-line"></i></button>
+    </div>
+    <div style="margin-bottom:12px;">
+      <label style="font-size:0.8rem; font-weight:700; color:var(--text-muted); display:block; margin-bottom:4px;" for="podTitleInput">عنوان الجلسة:</label>
+      <input type="text" id="podTitleInput" class="form-control" placeholder="مثال: مراجعة خوارزميات الفاينل">
+    </div>
+    <div style="margin-bottom:16px;">
+      <label style="font-size:0.8rem; font-weight:700; color:var(--text-muted); display:block; margin-bottom:4px;" for="podSubjectSelect">المقرر الدراسي:</label>
+      <select id="podSubjectSelect" class="form-control"></select>
+    </div>
+    <div style="display:flex; justify-content:flex-end; gap:8px;">
+      <button class="btn btn-outline" onclick="closeCreatePodModal()">إلغاء</button>
+      <button class="btn btn-primary" onclick="createStudyPod()">إنشاء الجلسة وبدء المؤقت</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+
+<script src="/js/shared.js?v=2026081907"></script>
+<script src="/js/app.js?v=2026081907"></script>
+<script src="/js/socket-client.js?v=2026081907"></script>
+<script>
+  CBS.init({ requireAuth: true });
+  const user = CBS.getUser();
+  let currentPod = null;
+  let localTimerInterval = null;
+  let podTotalDuration = 1500;
+  let podSecondsRemaining = 1500;
+
+  async function init() {
+    initSocketEvents();
+    await loadSubjects();
+    await loadPods();
+  }
+
+  function initSocketEvents() {
+    if (!window.CBSSocket) return;
+
+    CBSSocket.on('studypod:user-joined', (data) => {
+      if (!currentPod) return;
+      const exists = currentPod.activeUsers?.some(u => String(u.user) === String(data.userId));
+      if (!exists) {
+        currentPod.activeUsers = currentPod.activeUsers || [];
+        currentPod.activeUsers.push({ user: data.userId, name: data.name, joinedAt: new Date() });
+        renderActiveUsers(currentPod.activeUsers);
+        CBS.toast(`انضم ${data.name || 'طالب'} للجلسة`, '', 'info');
+      }
+    });
+
+    CBSSocket.on('studypod:user-left', (data) => {
+      if (!currentPod || !currentPod.activeUsers) return;
+      currentPod.activeUsers = currentPod.activeUsers.filter(u => String(u.user) !== String(data.userId));
+      renderActiveUsers(currentPod.activeUsers);
+    });
+
+    CBSSocket.on('studypod:task-added', (data) => {
+      if (!currentPod || !data.task) return;
+      currentPod.tasks = currentPod.tasks || [];
+      const exists = currentPod.tasks.some(t => t.id === data.task.id);
+      if (!exists) {
+        currentPod.tasks.push(data.task);
+        renderTasks(currentPod.tasks);
+      }
+    });
+
+    CBSSocket.on('studypod:task-toggled', (data) => {
+      if (!currentPod || !currentPod.tasks) return;
+      const t = currentPod.tasks.find(x => x.id === data.taskId);
+      if (t) {
+        t.completed = data.completed;
+        t.completedBy = data.by;
+        renderTasks(currentPod.tasks);
+      }
+    });
+
+    CBSSocket.on('studypod:timer-sync', (timerState) => {
+      if (!currentPod || !timerState) return;
+      currentPod.timerState = timerState;
+      startLocalTimer(timerState.remainingSeconds || 1500, timerState.status || 'stopped');
+      const badge = document.getElementById('podTimerStatus');
+      if (badge) {
+        badge.textContent = timerState.status === 'break' ? 'استراحة قصيرة 5د' : timerState.status === 'running' ? 'جلسة تركيز جارية' : 'مؤقت متوقف';
+      }
+    });
+
+    CBSSocket.on('studypod:deleted', (data) => {
+      if (currentPod && String(currentPod._id) === String(data.podId)) {
+        CBS.toast('تم إغلاق أو حذف جلسة المذاكرة الحالية', '', 'warning');
+        leaveCurrentPod();
+      } else if (!currentPod) {
+        loadPods();
+      }
+    });
+
+    CBSSocket.on('studypod:created', () => {
+      if (!currentPod) {
+        loadPods();
+      }
+    });
+  }
+
+  async function loadSubjects() {
+    const sel = document.getElementById('podSubjectSelect');
+    try {
+      const res = await CBS.apiGet('/api/subjects');
+      const data = await CBS.readJson(res);
+      // الخادم يغلّف الحمولة داخل data (utils/response.js)
+      const subjects = data.data?.subjects || data.subjects || [];
+      if (!data.success || !subjects.length) {
+        sel.innerHTML = '<option value="">لا توجد مقررات متاحة</option>';
+        return;
+      }
+      sel.innerHTML = subjects.map(s => `<option value="${s._id}">${CBS.escapeHTML(s.name)}</option>`).join('');
+    } catch (e) {
+      sel.innerHTML = '<option value="">تعذّر جلب المقررات</option>';
+      console.error('loadSubjects:', e);
+    }
+  }
+
+  async function loadPods() {
+    const container = document.getElementById('podsContainer');
+    try {
+      const res = await CBS.apiGet('/api/study-pods');
+      const data = await CBS.readJson(res);
+
+      if (!data.success || !data.data?.pods?.length) {
+        container.innerHTML = `
+          <div class="card" style="text-align:center; grid-column:1/-1; padding:60px 20px; border-radius:var(--radius-xl);">
+            <i class="ri-team-line" style="font-size:3.2rem; color:var(--text-muted); display:block; margin-bottom:10px;"></i>
+            <h3 style="font-size:1.15rem; font-weight:800; margin-bottom:4px;">لا توجد جلسات مذاكرة نشطة حالياً</h3>
+            <p style="font-size:0.85rem; color:var(--text-muted); margin-bottom:16px;">أنشئ غرفة جديدة للدفعة وركزوا معاً بمؤقت بومودورو.</p>
+            <button class="btn btn-primary" onclick="openCreatePodModal()"><i class="ri-add-line"></i> إنشاء أول جلسة</button>
+          </div>`;
+        return;
+      }
+
+      const me = CBS.getUser() || {};
+      const myId = String(me.id || me._id || '');
+      const amAdmin = CBS.hasRole(['dean', 'admin']);
+
+      container.innerHTML = data.data.pods.map(p => {
+        const userCount = p.activeUsers?.length || 1;
+        const subName = p.subject?.name || 'مقرر عام';
+        const batchName = p.batch?.name || '';
+        const taskCount = p.tasks?.length || 0;
+        const doneTasks = p.tasks?.filter(t => t.completed).length || 0;
+        const isCreator = String(p.createdBy?._id || p.createdBy || '') === myId;
+        const canDelete = amAdmin || isCreator;
+
+        return `
+        <div class="pod-card-pro">
+          <div>
+            <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:8px;">
+              <span class="badge" style="background:rgba(16,185,129,0.15); color:var(--success); font-weight:800; font-size:0.75rem;">
+                <span class="live-pulse-dot" style="margin-left:4px;"></span> جارية الآن
+              </span>
+              <span style="font-size:0.75rem; color:var(--text-muted);"><i class="ri-user-smile-line"></i> ${userCount} طالب</span>
+            </div>
+            <h3 style="font-weight:800; font-size:1.05rem; margin:0 0 4px; color:var(--text-main);">${CBS.escapeHTML(p.title)}</h3>
+            <div style="font-size:0.82rem; color:var(--text-muted); margin-bottom:${batchName ? '4px' : '14px'};">
+              <i class="ri-book-open-line"></i> ${CBS.escapeHTML(subName)}
+            </div>
+            ${batchName ? `<div style="font-size:0.75rem; color:var(--text-muted); margin-bottom:14px;"><i class="ri-group-line"></i> ${CBS.escapeHTML(batchName)}</div>` : ''}
+          </div>
+
+          <div style="border-top:1px solid var(--border); padding-top:12px; display:flex; justify-content:space-between; align-items:center; gap:8px;">
+            <span style="font-size:0.75rem; color:var(--text-muted); font-weight:700;">
+              <i class="ri-task-line"></i> ${doneTasks}/${taskCount} مهام مكتملة
+            </span>
+            <div style="display:flex; gap:6px;">
+              ${canDelete ? `<button class="btn btn-outline" style="padding:6px 8px; font-size:0.8rem; color:#ef4444; border-color:rgba(239,68,68,0.5);" title="حذف الغرفة" onclick="deletePod('${p._id}', '${CBS.escapeHTML(p.title)}')" aria-label="حذف"><i class="ri-delete-bin-line"></i></button>` : ''}
+              <button class="btn btn-primary" style="padding:6px 14px; font-size:0.82rem; font-weight:800;" onclick="joinPod('${p._id}')">
+                انضمام <i class="ri-arrow-left-line"></i>
+              </button>
+            </div>
+          </div>
+        </div>`;
+      }).join('');
+    } catch(e) {
+      container.innerHTML = '<div class="alert alert-danger show">تعذر جلب غرف المذاكرة</div>';
+    }
+  }
+
+  function openCreatePodModal() {
+    document.getElementById('createPodModal').style.display = 'flex';
+  }
+
+  function closeCreatePodModal() {
+    document.getElementById('createPodModal').style.display = 'none';
+  }
+
+  async function createStudyPod() {
+    const title = document.getElementById('podTitleInput').value.trim();
+    const subject = document.getElementById('podSubjectSelect').value;
+
+    if (!title || !subject) {
+      CBS.toast('املأ العنوان واختر المادة', '', 'error');
+      return;
+    }
+
+    try {
+      const res = await CBS.apiPost('/api/study-pods', { title, subject });
+      const data = await CBS.readJson(res);
+      if (data.success && data.data?.pod) {
+        closeCreatePodModal();
+        CBS.toast('تم إنشاء غرفة المذاكرة', '', 'success');
+        joinPod(data.data.pod._id);
+      } else {
+        CBS.toast(data.message || 'فشل إنشاء الغرفة', '', 'error');
+      }
+    } catch(e) {
+      CBS.toast('فشل إنشاء الغرفة', '', 'error');
+    }
+  }
+
+  async function joinPod(podId) {
+    try {
+      const res = await CBS.apiPost(`/api/study-pods/${podId}/join`, {});
+      const data = await CBS.readJson(res);
+      if (data.success && data.data?.pod) {
+        currentPod = data.data.pod;
+        enterPodRoom(currentPod);
+      }
+    } catch(e) {
+      CBS.toast('تعذر الانضمام للغرفة', '', 'error');
+    }
+  }
+
+  function enterPodRoom(pod) {
+    if (window.CBSSocket) {
+      CBSSocket.emit('join:pod', pod._id);
+    }
+    document.getElementById('podsListView').style.display = 'none';
+    document.getElementById('activePodRoomView').style.display = 'block';
+    document.getElementById('currentPodTitle').textContent = pod.title;
+    document.getElementById('currentPodSubject').textContent = `${pod.subject?.name || 'مقرر دراسي'} · أنشئت بواسطة ${pod.createdBy?.name || 'طالب'}`;
+
+    renderActiveUsers(pod.activeUsers || []);
+    currentPod.tasks = currentPod.tasks || [];
+    renderTasks(pod.tasks || []);
+    startLocalTimer(pod.timerState?.remainingSeconds || 1500, pod.timerState?.status || 'stopped');
+    const timerStatus = pod.timerState?.status || 'stopped';
+    const badge = document.getElementById('podTimerStatus');
+    badge.textContent = timerStatus === 'break' ? 'استراحة قصيرة 5د' : timerStatus === 'running' ? 'جلسة تركيز جارية' : 'مؤقت متوقف';
+  }
+
+  function renderActiveUsers(users) {
+    const el = document.getElementById('activeUsersPills');
+    el.innerHTML = users.map(u => `
+      <span class="badge" style="background:var(--bg-main); border:1px solid var(--border); color:var(--text-main); font-size:0.75rem; padding:5px 10px;">
+        <i class="ri-user-3-line"></i> ${CBS.escapeHTML(u.name || 'طالب')}
+      </span>
+    `).join('');
+  }
+
+  function renderTasks(tasks) {
+    const el = document.getElementById('podTasksList');
+    const badge = document.getElementById('tasksProgressBadge');
+    if (!tasks.length) {
+      CBS.showEmpty('podTasksList', 'لا توجد مهام مضافة بعد. أضف أول هدف مذاكرة!', 'ri-task-line');
+      badge.textContent = '0% مكتمل';
+      return;
+    }
+
+    const doneCount = tasks.filter(t => t.completed).length;
+    const pct = Math.round((doneCount / tasks.length) * 100);
+    badge.textContent = `${pct}% مكتمل (${doneCount}/${tasks.length})`;
+
+    el.innerHTML = tasks.map(t => `
+      <div class="task-card-item ${t.completed ? 'done' : ''}">
+        <div>
+          <span style="font-weight:700; font-size:0.9rem; color:var(--text-main);">${CBS.escapeHTML(t.title)}</span>
+          ${t.completedBy ? `<span style="display:block; font-size:0.75rem; color:var(--success);"><i class="ri-check-line"></i> أنجزه: ${CBS.escapeHTML(t.completedBy)}</span>` : ''}
+        </div>
+        <div style="display:flex; align-items:center; gap:6px;">
+          <button class="btn ${t.completed ? 'btn-outline' : 'btn-success'}" style="padding:5px 12px; font-size:0.78rem; font-weight:700;" onclick="togglePodTask('${t.id}')">
+            <i class="ri-${t.completed ? 'checkbox-line' : 'check-line'}"></i> ${t.completed ? 'مكتمل' : 'إنجاز'}
+          </button>
+          <button class="task-report-btn" onclick="reportPodTask('${t.id}')" title="إبلاغ عن محتوى مسيء" aria-label="إبلاغ عن هذه المهمة">
+            <i class="ri-flag-line"></i>
+          </button>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  /* ===== الإبلاغ عن مهمة مسيئة =====
+     مهام الغرف محتوى يكتبه الطلاب ويراه زملاء الدفعة، فيلزمه مسار إبلاغ
+     مثل التعليقات تماماً (App Store 1.2). */
+  async function reportPodTask(taskId) {
+    const reasons = {
+      harassment: 'تنمّر أو إساءة شخصية',
+      hate:       'خطاب كراهية',
+      sexual:     'محتوى جنسي',
+      violence:   'عنف أو تهديد',
+      spam:       'إزعاج أو إعلانات',
+      cheating:   'غش أو تسريب امتحانات',
+      other:      'سبب آخر'
+    };
+    const keys = Object.keys(reasons);
+    const pick = prompt('سبب الإبلاغ عن هذه المهمة:\n\n' + keys.map((k, i) => `${i + 1}. ${reasons[k]}`).join('\n') + '\n\nاكتب الرقم:');
+    if (!pick) return;
+
+    const reason = keys[parseInt(pick, 10) - 1];
+    if (!reason) { CBS.toast('اختيار غير صالح', '', 'error'); return; }
+
+    try {
+      const res  = await CBS.apiPost('/api/moderation/report', { targetType: 'pod-task', targetId: taskId, reason });
+      const data = await CBS.readJson(res, 'تعذّر إرسال البلاغ');
+      CBS.toast('تم استلام البلاغ', data.message || 'ستراجعه الإدارة خلال 24 ساعة', 'success');
+    } catch (err) {
+      CBS.toast('تعذّر الإبلاغ', err.message || 'حاول مرة أخرى', 'error');
+    }
+  }
+
+  async function addTaskToPod() {
+    const input = document.getElementById('newTaskInput');
+    const title = input.value.trim();
+    if (!title || !currentPod) return;
+
+    try {
+      const res = await CBS.apiPost(`/api/study-pods/${currentPod._id}/tasks`, { title });
+      const data = await CBS.readJson(res);
+      if (data.success && data.data?.task) {
+        currentPod.tasks.push(data.data.task);
+        renderTasks(currentPod.tasks);
+        input.value = '';
+        CBS.haptic('light');
+      }
+    } catch(e) { CBS.toast('فشل تحديث المهمة', '', 'error'); }
+  }
+
+  async function togglePodTask(taskId) {
+    if (!currentPod) return;
+    try {
+      const res = await CBS.apiPut(`/api/study-pods/${currentPod._id}/tasks/${taskId}`, {});
+      const data = await CBS.readJson(res);
+      if (data.success && data.data?.task) {
+        const t = currentPod.tasks.find(x => x.id === taskId);
+        if (t) {
+          t.completed = data.data.task.completed;
+          t.completedBy = data.data.task.completedBy;
+        }
+        renderTasks(currentPod.tasks);
+        CBS.haptic('success');
+      }
+    } catch(e) { CBS.toast('فشل تحديث المهمة', '', 'error'); }
+  }
+
+  function startLocalTimer(seconds, status) {
+    podSecondsRemaining = seconds;
+    if (status !== 'stopped') podTotalDuration = status === 'break' ? 300 : 1500;
+    clearInterval(localTimerInterval);
+
+    updateTimerDisplay();
+    if (status === 'running' || status === 'break') {
+      localTimerInterval = setInterval(() => {
+        if (podSecondsRemaining > 0) {
+          podSecondsRemaining--;
+          updateTimerDisplay();
+        } else {
+          clearInterval(localTimerInterval);
+          CBS.playNotificationSound();
+          CBS.haptic('success');
+          CBS.toast('انتهت جلسة التركيز! حان وقت الاستراحة', '', 'success');
+        }
+      }, 1000);
+    }
+  }
+
+  function updateTimerDisplay() {
+    const m = Math.floor(podSecondsRemaining / 60);
+    const s = podSecondsRemaining % 60;
+    document.getElementById('podTimerText').textContent = `${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
+
+    // Update SVG progress ring
+    const ring = document.getElementById('timerProgressRing');
+    if (ring && podTotalDuration > 0) {
+      const circumference = 628; // 2 * PI * 100
+      const offset = circumference - (podSecondsRemaining / podTotalDuration) * circumference;
+      ring.style.strokeDashoffset = offset;
+    }
+  }
+
+  async function togglePodTimer(status) {
+    if (!currentPod) return;
+    let secs = podSecondsRemaining; // Resume from current position
+    if (status === 'break') secs = 300;
+    if (status === 'running' && podSecondsRemaining <= 0) secs = 1500; // Only reset if timer expired
+
+    try {
+      await CBS.apiPost(`/api/study-pods/${currentPod._id}/timer`, { status, remainingSeconds: secs });
+      startLocalTimer(secs, status);
+      const badge = document.getElementById('podTimerStatus');
+      badge.textContent = status === 'break' ? 'استراحة قصيرة 5د' : status === 'running' ? 'جلسة تركيز جارية' : 'مؤقت متوقف';
+      CBS.haptic('light');
+    } catch(e) { console.error('[study-pods/togglePodTimer]', e); }
+  }
+
+  async function leaveCurrentPod() {
+    clearInterval(localTimerInterval);
+    if (currentPod?._id) {
+      if (window.CBSSocket) {
+        CBSSocket.emit('leave:pod', currentPod._id);
+      }
+      try {
+        await CBS.apiPost(`/api/study-pods/${currentPod._id}/leave`, {});
+      } catch (e) {
+        console.warn('[study-pods/leave]', e);
+      }
+    }
+    currentPod = null;
+    document.getElementById('activePodRoomView').style.display = 'none';
+    document.getElementById('podsListView').style.display = 'block';
+    loadPods();
+  }
+
+  async function deletePod(podId, podTitle) {
+    if (!confirm(`حذف غرفة المذاكرة «${podTitle}» نهائياً؟ لا يمكن التراجع.`)) return;
+    try {
+      const res = await CBS.apiDelete(`/api/study-pods/${podId}`);
+      const data = await CBS.readJson(res);
+      if (data.success) {
+        CBS.toast('تم حذف غرفة المذاكرة', '', 'success');
+        loadPods();
+      } else {
+        CBS.toast(data.message || 'فشل حذف الغرفة', '', 'error');
+      }
+    } catch (e) {
+      CBS.toast('تعذّر الاتصال بالخادم', '', 'error');
+      console.error('[study-pods/deletePod]', e);
+    }
+  }
+
+  init();
+</script>
+</body>
+</html>

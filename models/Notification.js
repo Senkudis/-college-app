@@ -23,16 +23,21 @@ const NotificationSchema = new mongoose.Schema(
       index: true // فهرسة لتحسين أداء الاستعلامات حسب النوع
     },
 
+    /* "custom" = إشعار موجَّه لمستلمين محددين في recipients، لا لفئة أدوار.
+       تستخدمه الإشعارات المولّدة آلياً (المالية، تحذير الغياب، كيدي). كان
+       غيابه من القائمة يجعل Notification.create يرمي ValidationError تبتلعه
+       كتل catch في تلك المسارات، فلا يصل الطالب أي إشعار مالي أو غيابي. */
     target: {
       type: String,
-      enum: ["all", "students", "doctors", "leaders"],
+      enum: ["all", "students", "doctors", "leaders", "custom"],
       default: "all"
     },
 
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
-      required: true,
+      default: null,
+      required: false,
       index: true
     },
 
@@ -58,7 +63,11 @@ const NotificationSchema = new mongoose.Schema(
       ref: "User"
     }],
     
-    // حقل للتحقق من الإشعارات المعروضة في dashboard لمنع التكرار
+    /* shownInDashboard كان يخزّن مستنداً فرعياً لكل مستخدم داخل الإشعار
+       نفسه — أي أن إشعاراً عاماً لألفَي مستخدم يحمل ألفَي عنصر، ومعه
+       readBy و seenBy، فيتضخّم المستند الواحد ويبطؤ كل عدّ للإشعارات غير
+       المقروءة. لم يعد أي مسار يكتب فيه، ونُبقيه للتوافق مع البيانات
+       القائمة فقط؛ التنظيف الدوري أدناه يحدّ من نموّ الباقي. */
     shownInDashboard: [{
       userId: {
         type: mongoose.Schema.Types.ObjectId,

@@ -1,0 +1,34 @@
+# جامعة النصر التقنية - كلية تقنية المعلومات
+# صفحات النظام الداخلية تتطلب تسجيل دخول، فلا فائدة من أرشفتها
+
+User-agent: *
+Allow: /$
+Allow: /welcome.html
+Allow: /privacy.html
+Allow: /news/
+Allow: /gallery/
+
+# واجهات البرمجة والملفات المرفوعة
+Disallow: /api/
+Disallow: /uploads/
+
+# صفحات تتطلب حساباً
+Disallow: /dashboard.html
+Disallow: /subjects.html
+Disallow: /subject.html
+Disallow: /assignments.html
+Disallow: /financials.html
+Disallow: /profile.html
+Disallow: /notifications.html
+Disallow: /manage-
+Disallow: /admin
+Disallow: /code-lab.html
+Disallow: /study-pods.html
+Disallow: /past-exams.html
+Disallow: /flashcards.html
+Disallow: /course-surveys.html
+Disallow: /student-portfolio.html
+Disallow: /demo-users.html
+Disallow: /play-store-resizer.html
+
+Sitemap: https://elnasrcsit.website/sitemap.xml

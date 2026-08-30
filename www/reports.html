@@ -3,17 +3,21 @@
 <head>
   <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="theme-color" content="#0d3b66">
   <link rel="manifest" href="/manifest.json">
   <title>التقارير والإحصائيات</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=2026073128">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026073128">
+  <link rel="stylesheet" href="/css/style.css?v=2026081907">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026081907">
   <style>
-    html, body {
+    /* overflow-x على html و body معاً يجعل body حاوية تمرير مستقلة (فـ
+       overflow-y يُحسب auto ضمناً) بينما نافذة العرض تمرّر html، فينتهي
+       الأمر على WebView أندرويد بمحتوى مقصوص لا يمرّره أيٌّ منهما.
+       نُبقي الحجب الأفقي على body وحده — يمنع الانزياح الجانبي دون أن
+       يعبث بحاوية التمرير الرأسي. */
+    body {
       overflow-x: hidden;
-      width: 100%;
     }
     .reports-wrap {
       max-width: 1100px;
@@ -27,7 +31,9 @@
       padding: 24px;
       border-radius: 22px;
       color: #fff;
-      background: linear-gradient(125deg, #10b981, #059669, #047857);
+      /* #10b981 مع نص أبيض يعطي تباين 2.54 — يرسب في المعايير.
+         نبدأ من درجة أعمق مع بقاء الهوية الخضراء. */
+      background: linear-gradient(125deg, #047857, #036049, #024c3a);
       box-shadow: 0 14px 35px rgba(16, 185, 129, 0.22);
       margin-bottom: 22px;
       display: flex;
@@ -126,6 +132,13 @@
       position: relative;
       height: 250px;
       width: 100%;
+      /* الرسوم تحتل معظم الشاشة على الهاتف، وcanvas يبتلع إيماءة السحب على
+         WebView أندرويد فتتجمّد الصفحة. pan-y يُسلّم السحب الرأسي للصفحة
+         ويُبقي لمسة الرسم (tooltip) تعمل. */
+      touch-action: pan-y;
+    }
+    .chart-wrapper canvas {
+      touch-action: pan-y;
     }
     .chart-container h3 {
       margin-top: 0;
@@ -213,6 +226,7 @@
   <script src="/vendor/xlsx.full.min.js"></script>
 
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
 </head>
 <body>
@@ -226,8 +240,8 @@
       </div>
     </div>
     <div class="header-actions">
-      <button class="btn-icon" onclick="CBS.toggleDark()"><i class="ri-moon-line" id="themeIcon"></i></button>
-      <button class="btn-icon" onclick="history.back()"><i class="ri-arrow-go-back-line"></i></button>
+      <button class="btn-icon" onclick="CBS.toggleDark()" aria-label="تبديل الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+      <button class="btn-icon" onclick="history.back()" aria-label="رجوع"><i class="ri-arrow-go-back-line"></i></button>
     </div>
   </header>
 
@@ -237,7 +251,7 @@
     <div class="pdf-only" style="text-align:center;border-bottom:3px solid #0d3b66;padding-bottom:14px;margin-bottom:18px;">
       <h2 style="color:#0d3b66;margin:0 0 4px;font-size:1.4rem;">تقرير الأداء الشامل</h2>
       <div style="color:#94a3b8;font-size:0.85rem;">
-        كلية تقنية المعلومات — جامعة النصر التقنية · <span id="pdfDate"></span>
+        كلية النصر التقنية — جامعة النصر التقنية · <span id="pdfDate"></span>
       </div>
     </div>
 
@@ -293,6 +307,41 @@
       </div>
     </section>
 
+    <!-- نظام الإنذار الأكاديمي المبكر الذكي -->
+    <section class="data-table-container" style="margin-bottom: 22px; border-right: 4px solid var(--danger);">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
+        <div>
+          <h3 style="margin:0; color:var(--danger); display:flex; align-items:center; gap:8px;">
+            <i class="ri-alarm-warning-line"></i> مؤشر الإنذار الأكاديمي المبكر
+          </h3>
+          <small style="color:var(--text-muted);">رصد الطلاب الأكثر عرضة للتعثر (تراجع الحضور وتراكم الواجبات)</small>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <span id="highRiskBadge" class="badge badge-danger" style="font-size:0.82rem; padding:6px 12px;">0 خطر مرتفع</span>
+          <span id="medRiskBadge" class="badge badge-warning" style="font-size:0.82rem; padding:6px 12px;">0 بحاجة لمتابعة</span>
+        </div>
+      </div>
+
+      <div style="overflow-x:auto;">
+        <table class="data-table" id="earlyWarningTable">
+          <thead>
+            <tr>
+              <th>الطالب</th>
+              <th>الدفعة</th>
+              <th>الحضور</th>
+              <th>الواجبات المتأخرة</th>
+              <th>مستوى الخطر</th>
+              <th>عوامل التنبيه</th>
+              <th>الإجراء المقترح</th>
+            </tr>
+          </thead>
+          <tbody id="earlyWarningBody">
+            <tr><td colspan="7" style="text-align:center;">جاري تحليل مؤشرات الخطر...</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+
     <!-- جدول البيانات المفصلة -->
     <section class="data-table-container">
       <h3>أداء الطلاب</h3>
@@ -314,9 +363,9 @@
   </main>
 
   <div id="toast-container"></div>
-  <script src="/js/shared.js?v=2026073128"></script>
-<script src="/js/app.js?v=2026073128"></script>
-<script src="/js/socket-client.js?v=2026073128" defer></script>
+  <script src="/js/shared.js?v=2026081907"></script>
+<script src="/js/app.js?v=2026081907"></script>
+<script src="/js/socket-client.js?v=2026081907" defer></script>
   <script>
     if (CBS.init({ requireRoles: ['dean', 'admin'] })) {
       document.getElementById('pdfDate').textContent = new Date().toLocaleDateString('ar-EG');
@@ -340,7 +389,7 @@
 
         // رسم المخطط الخطي (الحضور)
         if (window.attChart) {
-          try { window.attChart.destroy(); } catch(e){}
+          try { window.attChart.destroy(); } catch(e){ console.error('[reports]', e); }
           window.attChart = null;
         }
         const chartDataArr = Array.isArray(r.attendanceChartData) ? r.attendanceChartData : [];
@@ -421,8 +470,78 @@
         // إظهار أزرار التصدير بعد اكتمال التحميل
         document.getElementById('exportBtns').style.display = 'flex';
 
+        // تحميل كشف الإنذار المبكر
+        await loadEarlyWarning();
+
       } catch (err) {
         CBS.toast('تعذر تحميل التقارير', err.message, 'error');
+      }
+    }
+
+    async function loadEarlyWarning() {
+      try {
+        const res = await CBS.apiGet('/api/reports/early-warning');
+        const data = await res.json();
+        if (!res.ok) return;
+
+        const summary = data.data?.summary || { highRisk: 0, mediumRisk: 0 };
+        const students = Array.isArray(data.data?.students) ? data.data.students : [];
+
+        document.getElementById('highRiskBadge').innerText = `${summary.highRisk || 0} خطر مرتفع`;
+        document.getElementById('medRiskBadge').innerText = `${summary.mediumRisk || 0} بحاجة لمتابعة`;
+
+        const tbody = document.getElementById('earlyWarningBody');
+        const atRiskOnly = students.filter(s => s.riskLevel === 'high' || s.riskLevel === 'medium');
+
+        if (!atRiskOnly.length) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;color:var(--success);font-weight:700;"><i class="ri-checkbox-circle-line"></i> الوضع الأكاديمي ممتاز: لا يوجد طلاب معرضون للتعثر حالياً</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = atRiskOnly.slice(0, 50).map(s => {
+          const isHigh = s.riskLevel === 'high';
+          const badgeClass = isHigh ? 'badge-danger' : 'badge-warning';
+          const badgeText = isHigh ? 'خطر مرتفع' : 'متابعة مطلوبة';
+          const attColor = s.attendanceRate < 60 ? '#dc2626' : '#d97706';
+          const factors = Array.isArray(s.riskFactors) && s.riskFactors.length ? s.riskFactors.join(' · ') : 'تراجع الحضور';
+
+          return `
+            <tr>
+              <td data-label="الطالب">
+                <strong>${CBS.escapeHTML(s.name || '')}</strong>
+                <div style="font-size:0.75rem;color:var(--text-muted);">${CBS.escapeHTML(s.email || '')}</div>
+              </td>
+              <td data-label="الدفعة"><span class="badge badge-accent">${CBS.escapeHTML(s.batchName || 'عامة')}</span></td>
+              <td data-label="الحضور" style="font-weight:800;color:${attColor};">${s.attendanceRate}%</td>
+              <td data-label="الواجبات المتأخرة"><span style="font-weight:700;color:${s.overdueAssignments > 0 ? '#dc2626' : 'var(--text-muted)'}">${s.overdueAssignments} واجب</span></td>
+              <td data-label="مستوى الخطر"><span class="badge ${badgeClass}">${badgeText}</span></td>
+              <td data-label="عوامل التنبيه" style="font-size:0.8rem;color:var(--text-muted);max-width:220px;">${CBS.escapeHTML(factors)}</td>
+              <td data-label="الإجراء">
+                <button class="btn btn-outline-primary btn-xs" onclick="alertStudent('${s.id}', '${encodeURIComponent(s.name)}')" aria-label="الإشعارات">
+                  <i class="ri-notification-3-line"></i> توجيه إنذار
+                </button>
+              </td>
+            </tr>
+          `;
+        }).join('');
+      } catch (err) {
+        console.warn('Early warning fetch error:', err.message);
+      }
+    }
+
+    async function alertStudent(studentId, encodedName) {
+      const name = decodeURIComponent(encodedName);
+      if (!confirm(`هل تود إرسال إشعار تذكير ومتابعة أكاديمية للطالب ${name}؟`)) return;
+      try {
+        await CBS.apiPost('/api/notifications', {
+          title: 'تنبيه متابعة أكاديمية',
+          message: `عزيزي الطالب ${name}، يرجى مراجعة المرشد الأكاديمي والحرص على حضور المحاضرات وتسليم التكليفات في مواعيدها.`,
+          type: 'emergency',
+          recipients: [studentId]
+        });
+        CBS.toast('نجاح', `تم إرسال التنبيه للطالب ${name}`, 'success');
+      } catch (e) {
+        CBS.toast('خطأ', 'تعذر إرسال التنبيه', 'error');
       }
     }
 

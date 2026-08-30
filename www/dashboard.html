@@ -3,15 +3,15 @@
 <head>
   <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#0d3b66">
   <link rel="manifest" href="/manifest.json">
-  <title>الرئيسية | كلية تقنية المعلومات</title>
+  <title>الرئيسية | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=2026073128">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026073128">
+  <link rel="stylesheet" href="/css/style.css?v=2026081907">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026081907">
 
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -20,27 +20,27 @@
 
 <header class="main-header">
   <div class="header-brand">
-    <img src="/assets/logo.png" class="header-logo" alt="Logo">
+    <img src="/assets/logo.png" class="header-logo" alt="شعار كلية النصر التقنية - جامعة النصر التقنية">
     <div class="header-title-group">
-      <strong>كلية تقنية المعلومات</strong>
+      <strong>كلية النصر التقنية</strong>
       <small id="headerSubtitle">لوحة التحكم</small>
     </div>
   </div>
   <div class="header-actions">
-    <button class="btn-icon" onclick="CBS.openSearch?.()" title="بحث سريع" id="headerSearchBtn"><i class="ri-search-line"></i></button>
-    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
-    <button class="btn-icon" style="position:relative" onclick="location.href='/notifications.html'" title="الإشعارات">
+    <button class="btn-icon" onclick="CBS.openSearch?.()" title="بحث سريع" id="headerSearchBtn" aria-label="بحث"><i class="ri-search-line"></i></button>
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي" aria-label="تبديل الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" style="position:relative" onclick="location.href='/notifications.html'" title="الإشعارات" aria-label="الإشعارات">
       <i class="ri-notification-3-line"></i>
       <span class="bnav-badge" id="notifBadge" style="display:none;top:-2px;right:-2px;position:absolute"></span>
     </button>
-    <button class="btn-icon" onclick="CBS.logout()" title="خروج"><i class="ri-logout-box-r-line"></i></button>
+    <button class="btn-icon" onclick="CBS.logout()" title="خروج" aria-label="تسجيل الخروج"><i class="ri-logout-box-r-line"></i></button>
   </div>
 </header>
 
 <div class="page-content">
 
   <!-- Welcome Banner -->
-  <div class="welcome-banner" style="background: linear-gradient(135deg,#7c3aed,#4f46e5,#2563eb);">
+  <div class="welcome-banner">
     <div class="welcome-banner-icon-wrap">
       <i class="ri-home-5-line welcome-banner-icon"></i>
     </div>
@@ -91,7 +91,7 @@
         <span id="assignPct" class="perf-bar-pct perf-success">0%</span>
       </div>
       <div class="perf-bar-track">
-        <div id="assignBar" class="perf-bar-fill perf-fill-success" style="width:0%"></div>
+        <div id="assignBar" class="perf-bar-fill perf-fill-success" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width:0%"></div>
       </div>
     </div>
     <div class="perf-bar-group">
@@ -100,12 +100,35 @@
         <span id="attendPct" class="perf-bar-pct perf-primary">0%</span>
       </div>
       <div class="perf-bar-track">
-        <div id="attendBar" class="perf-bar-fill perf-fill-primary" style="width:0%"></div>
+        <div id="attendBar" class="perf-bar-fill perf-fill-primary" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width:0%"></div>
       </div>
     </div>
   </div>
 
+  <div class="card cbs-study-plan-card" id="studyPlanCard" style="display:none;">
+    <div class="cbs-study-plan-header">
+      <div>
+        <div class="cbs-study-plan-title"><i class="ri-route-line"></i> خطتك الدراسية القادمة</div>
+        <div id="studyPlanSummary" class="cbs-study-plan-summary">جاري حساب الأولويات...</div>
+      </div>
+      <span id="studyRiskBadge" class="cbs-risk-badge" hidden></span>
+    </div>
+    <div id="studyPlanList" class="cbs-study-plan-list" aria-live="polite"></div>
+  </div>
+
+  <div class="card cbs-study-plan-card" id="roleHealthCard" style="display:none;">
+    <div class="cbs-study-plan-header">
+      <div>
+        <div class="cbs-study-plan-title"><i class="ri-shield-check-line"></i> صحة الدفعة الأكاديمية</div>
+        <div id="roleHealthSummary" class="cbs-study-plan-summary">جاري تحميل المؤشرات...</div>
+      </div>
+      <a href="/reports.html" class="btn btn-xs btn-secondary">التقرير الكامل</a>
+    </div>
+    <div id="roleHealthRisk" class="cbs-study-plan-list"></div>
+  </div>
+
   <!-- Quick Actions -->
+
   <div class="section-divider">
     <i class="ri-apps-2-line"></i>
     <span>الوصول السريع</span>
@@ -133,7 +156,7 @@
       </div>
       <span>أخبار وفعاليات الجامعة</span>
     </div>
-    <button class="btn btn-secondary btn-xs" onclick="openStudentGalleryModal()" style="background:rgba(236,72,153,0.12); color:#ec4899; border:1px solid rgba(236,72,153,0.3); font-weight:800; padding:6px 14px; border-radius:20px; display:inline-flex; align-items:center; gap:6px;">
+    <button class="btn btn-outline-primary btn-xs" onclick="openStudentGalleryModal()" style="font-weight:700; padding:6px 14px; border-radius:20px;">
       <i class="ri-gallery-line"></i> معرض صور الكلية
     </button>
   </div>
@@ -249,7 +272,7 @@
 <div id="dash-lightbox-modal" class="modal-overlay" style="z-index:99999; background:rgba(0,0,0,0.92);" onclick="closeDashLightbox()">
   <div style="position:relative; max-width:90vw; max-height:85vh; display:flex; flex-direction:column; align-items:center;" onclick="event.stopPropagation()">
     <button onclick="closeDashLightbox()" style="position:absolute; top:-40px; left:0; color:#fff; font-size:1.8rem; background:none; border:none; cursor:pointer;">&times;</button>
-    <img id="dashLightboxImg" src="" style="max-width:100%; max-height:68vh; border-radius:12px; object-fit:contain;">
+    <img id="dashLightboxImg" src="" style="max-width:100%; max-height:68vh; border-radius:12px; object-fit:contain;" alt="">
     <div style="width:100%; margin-top:10px; color:#fff; text-align:right;">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
         <p id="dashLightboxCaption" style="margin:0; font-weight:700; font-size:1rem;"></p>
@@ -259,7 +282,10 @@
         <button id="dashLightboxLikeBtn" class="btn btn-xs btn-ghost" style="color:#fff; border:1px solid rgba(255,255,255,0.3);" onclick="toggleDashCurrentLike()">
           <i class="ri-heart-line" id="dashLightboxHeartIcon"></i> <span id="dashLightboxLikeCount">0</span>
         </button>
-        <a id="dashLightboxDownload" href="#" download target="_blank" class="btn btn-xs btn-ghost" style="color:#fff; border:1px solid rgba(255,255,255,0.3); text-decoration:none;">
+        <button class="btn btn-xs btn-ghost" style="color:#fff; border:1px solid rgba(255,255,255,0.3);" onclick="shareDashCurrentGalleryImage()">
+          <i class="ri-share-line"></i> مشاركة
+        </button>
+        <a id="dashLightboxDownload" href="#" download target="_blank" rel="noopener noreferrer" class="btn btn-xs btn-ghost" style="color:#fff; border:1px solid rgba(255,255,255,0.3); text-decoration:none;">
           <i class="ri-download-line"></i> تحميل
         </a>
       </div>
@@ -271,9 +297,9 @@
   حقوق النشر &copy; <span id="year"></span> جامعة النصر التقنية &nbsp;|&nbsp; تطوير: ضياء الدين إبراهيم
 </footer>
 
-<script src="/js/shared.js?v=2026073128"></script>
-<script src="/js/app.js?v=2026073128"></script>
-<script src="/js/socket-client.js?v=2026073128" defer></script>
+<script src="/js/shared.js?v=2026081907"></script>
+<script src="/js/app.js?v=2026081907"></script>
+<script src="/js/socket-client.js?v=2026081907" defer></script>
 <script>
   CBS.init();
 
@@ -285,7 +311,7 @@
   const sub = document.getElementById('headerSubtitle');
   if (sub && user.roles) {
     const roleMap = { dean: 'العميد', admin: 'المسؤول', doctor: 'أستاذ', leader: 'قائد الدفعة', student: 'طالب' };
-    const r = user.roles.find(r => roleMap[r]);
+    const r = CBS.getPrimaryRole(user);
     if (r) sub.textContent = roleMap[r];
   }
 
@@ -298,62 +324,62 @@
   let cardsHTML = '';
 
   let studentCards = `
-    <div class="dash-card" onclick="location.href='/subjects.html'">
+    <a href="/subjects.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
       <div class="dash-card-icon primary"><i class="ri-book-2-line"></i></div>
       <div class="dash-card-text">
         <span class="title">المواد الدراسية</span>
         <span class="subtitle">عرض وتصفح المقررات</span>
       </div>
-    </div>
-    <div class="dash-card" onclick="location.href='/assignments.html'">
+    </a>
+    <a href="/assignments.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
       <div class="dash-card-icon warning"><i class="ri-task-line"></i></div>
       <div class="dash-card-text">
         <span class="title">الواجبات والتكاليف</span>
         <span class="subtitle">تسليم ومتابعة الواجبات</span>
       </div>
-    </div>
-    <div class="dash-card" onclick="location.href='/video-library.html'">
+    </a>
+    <a href="/video-library.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
       <div class="dash-card-icon danger"><i class="ri-play-circle-line"></i></div>
       <div class="dash-card-text">
         <span class="title">المكتبة المرئية</span>
         <span class="subtitle">مشاهدة المحاضرات المسجلة</span>
       </div>
-    </div>
-    <div class="dash-card" onclick="location.href='/notifications.html'">
+    </a>
+    <a href="/notifications.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
       <div class="dash-card-icon info"><i class="ri-notification-3-line"></i></div>
       <div class="dash-card-text">
         <span class="title">الإشعارات</span>
         <span class="subtitle">آخر التنبيهات والأخبار</span>
       </div>
-    </div>
-    <div class="dash-card" onclick="location.href='/financials.html'">
+    </a>
+    <a href="/financials.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
       <div class="dash-card-icon primary"><i class="ri-money-dollar-circle-line"></i></div>
       <div class="dash-card-text">
         <span class="title">الرسوم المالية</span>
         <span class="subtitle">متابعة المدفوعات والأقساط</span>
       </div>
-    </div>
-    <div class="dash-card" onclick="location.href='/quizzes.html'">
+    </a>
+    <a href="/quizzes.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
       <div class="dash-card-icon danger"><i class="ri-question-answer-line"></i></div>
       <div class="dash-card-text">
         <span class="title">الاختبارات القصيرة</span>
         <span class="subtitle">حل الاختبارات ومتابعة الدرجات</span>
       </div>
-    </div>
-    <div class="dash-card" onclick="location.href='/calendar.html'">
+    </a>
+    <a href="/calendar.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
       <div class="dash-card-icon success"><i class="ri-calendar-event-line"></i></div>
       <div class="dash-card-text">
         <span class="title">التقويم الأكاديمي</span>
         <span class="subtitle">مواعيد الواجبات والأحداث</span>
       </div>
-    </div>
-    <div class="dash-card" onclick="location.href='/leaderboard.html'">
+    </a>
+    <a href="/leaderboard.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
       <div class="dash-card-icon warning"><i class="ri-trophy-line"></i></div>
       <div class="dash-card-text">
         <span class="title">لوحة المتصدرين</span>
         <span class="subtitle">ترتيب الطلاب ونقاط التميز</span>
       </div>
-    </div>
+    </a>
     <div class="dash-card" onclick="openStudentGalleryModal()">
       <div class="dash-card-icon" style="background:rgba(236,72,153,0.15);color:#ec4899;"><i class="ri-gallery-line"></i></div>
       <div class="dash-card-text">
@@ -363,141 +389,200 @@
     </div>
   `;
 
+  studentCards += `
+    <a href="/code-lab.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
+      <div class="dash-card-icon" style="background:rgba(59,130,246,0.15);color:#3b82f6;"><i class="ri-terminal-box-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title">مختبر البرمجة</span>
+        <span class="subtitle">محرر وتصحيح فوري بكيدي AI</span>
+      </div>
+    </a>
+    <a href="/past-exams.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
+      <div class="dash-card-icon" style="background:rgba(16,185,129,0.15);color:#10b981;"><i class="ri-archive-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title">بنك الامتحانات</span>
+        <span class="subtitle">نماذج الفاينل والمحاكاة الذكية</span>
+      </div>
+    </a>
+    <a href="/study-pods.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
+      <div class="dash-card-icon" style="background:rgba(236,72,153,0.15);color:#ec4899;"><i class="ri-team-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title">غرف المذاكرة</span>
+        <span class="subtitle">مؤقت بومودورو ومهام الدفعة</span>
+      </div>
+    </a>
+    <a href="/course-surveys.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
+      <div class="dash-card-icon" style="background:rgba(245,158,11,0.15);color:#f59e0b;"><i class="ri-survey-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title">تقييم المقررات</span>
+        <span class="subtitle">استبيانات الجودة الأكاديمية</span>
+      </div>
+    </a>
+    <a href="/flashcards.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
+      <div class="dash-card-icon" style="background:rgba(124,58,237,0.15);color:#7c3aed;"><i class="ri-stack-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title">بطاقات الاستذكار</span>
+        <span class="subtitle">مراجعة تكرارية ذكية للمفاهيم</span>
+      </div>
+    </a>
+    <a href="/student-portfolio.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
+      <div class="dash-card-icon" style="background:rgba(14,165,233,0.15);color:#0ea5e9;"><i class="ri-verified-badge-line"></i></div>
+      <div class="dash-card-text">
+        <span class="title">السجل الأكاديمي الرقمي</span>
+        <span class="subtitle">ملف الإنجاز والشهادة الموثقة</span>
+      </div>
+    </a>
+  `;
+
   if (primaryRole === 'student' || primaryRole === 'leader') {
     studentCards += `
-      <div class="dash-card" onclick="location.href='/attendance-history.html'">
+      <a href="/attendance-history.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
         <div class="dash-card-icon success"><i class="ri-calendar-check-line"></i></div>
         <div class="dash-card-text">
           <span class="title">سجل الحضور</span>
           <span class="subtitle">تتبع حضورك وغيابك</span>
         </div>
-      </div>
-      <div class="dash-card" onclick="location.href='/my-report.html'">
+      </a>
+      <a href="/my-report.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
         <div class="dash-card-icon info"><i class="ri-bar-chart-2-line"></i></div>
         <div class="dash-card-text">
           <span class="title">تقريري الأكاديمي</span>
           <span class="subtitle">إحصائيات الأداء والتحصيل</span>
         </div>
-      </div>
+      </a>
     `;
   }
 
   if (isDean) {
     cardsHTML = `
-      <div class="dash-card" style="background: linear-gradient(135deg, var(--primary), #1e3a8a); color: white; border: none; box-shadow: 0 10px 20px -5px rgba(0,0,0,0.2);" onclick="location.href='/admin_dashboard.html'">
-        <div class="dash-card-icon" style="background: rgba(255,255,255,0.2); color: white;"><i class="ri-shield-star-line"></i></div>
+      <div class="dash-card dash-card-featured" onclick="location.href='/admin_dashboard.html'">
+        <div class="dash-card-icon"><i class="ri-shield-star-line"></i></div>
         <div class="dash-card-text">
-          <span class="title" style="color: white; font-size: 1.1rem; font-weight: bold;">لوحة الإدارة الشاملة</span>
-          <span class="subtitle" style="color: rgba(255,255,255,0.8);">إدارة النظام، المستخدمين، والدفعات</span>
+          <span class="title">لوحة الإدارة الشاملة</span>
+          <span class="subtitle">إدارة النظام، المستخدمين، والدفعات</span>
         </div>
       </div>
     ` + studentCards;
   } else if (isDoctor) {
     cardsHTML = `
-      <div class="dash-card" onclick="location.href='/manage-lectures.html'">
+      <a href="/manage-lectures.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
         <div class="dash-card-icon danger"><i class="ri-video-line"></i></div>
         <div class="dash-card-text">
           <span class="title">إدارة المحاضرات</span>
           <span class="subtitle">رفع وإدارة المحاضرات المرئية</span>
         </div>
-      </div>
-      <div class="dash-card" onclick="location.href='/manage-attendance.html'">
+      </a>
+      <a href="/manage-attendance.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
         <div class="dash-card-icon success"><i class="ri-calendar-check-line"></i></div>
         <div class="dash-card-text">
           <span class="title">إدارة الحضور</span>
           <span class="subtitle">تسجيل ومتابعة غياب الطلاب</span>
         </div>
-      </div>
-      <div class="dash-card" onclick="location.href='/creator-studio.html'">
+      </a>
+      <a href="/creator-studio.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
         <div class="dash-card-icon primary"><i class="ri-magic-line"></i></div>
         <div class="dash-card-text">
           <span class="title">استوديو المنشئ</span>
           <span class="subtitle">أدوات صناعة المحتوى</span>
         </div>
-      </div>
-      <div class="dash-card" onclick="location.href='/manage-submissions.html'">
+      </a>
+      <a href="/manage-submissions.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
         <div class="dash-card-icon warning"><i class="ri-stack-line"></i></div>
         <div class="dash-card-text">
           <span class="title">إدارة التسليمات</span>
           <span class="subtitle">مراجعة الواجبات وتقييمها</span>
         </div>
-      </div>
-      <div class="dash-card" onclick="location.href='/quizzes.html'">
+      </a>
+      <a href="/quizzes.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
         <div class="dash-card-icon danger"><i class="ri-question-answer-line"></i></div>
         <div class="dash-card-text">
           <span class="title">الاختبارات القصيرة</span>
           <span class="subtitle">أنشئ الاختبارات وتابع النتائج</span>
         </div>
-      </div>
-      <div class="dash-card" onclick="location.href='/calendar.html'">
+      </a>
+      <a href="/calendar.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
         <div class="dash-card-icon success"><i class="ri-calendar-event-line"></i></div>
         <div class="dash-card-text">
           <span class="title">التقويم الأكاديمي</span>
           <span class="subtitle">إدارة الجدول والفعاليات</span>
         </div>
-      </div>
-      <div class="dash-card" onclick="location.href='/subjects.html'">
+      </a>
+      <a href="/subjects.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
         <div class="dash-card-icon primary"><i class="ri-book-2-line"></i></div>
         <div class="dash-card-text">
           <span class="title">المواد الدراسية</span>
           <span class="subtitle">عرض وتصفح المقررات</span>
         </div>
-      </div>
-      <div class="dash-card" onclick="location.href='/manage-notifications.html'">
+      </a>
+      <a href="/manage-notifications.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
         <div class="dash-card-icon info"><i class="ri-megaphone-line"></i></div>
         <div class="dash-card-text">
           <span class="title">إدارة الإشعارات</span>
           <span class="subtitle">إرسال التنبيهات للطلاب</span>
         </div>
-      </div>
-      <div class="dash-card" onclick="location.href='/campus.html'">
+      </a>
+      <a href="/past-exams.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
+        <div class="dash-card-icon" style="background:rgba(16,185,129,0.15);color:#10b981;"><i class="ri-archive-line"></i></div>
+        <div class="dash-card-text">
+          <span class="title">بنك الامتحانات</span>
+          <span class="subtitle">رفع نماذج الفاينل ومراجعتها</span>
+        </div>
+      </a>
+      <a href="/course-surveys.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
+        <div class="dash-card-icon" style="background:rgba(245,158,11,0.15);color:#f59e0b;"><i class="ri-survey-line"></i></div>
+        <div class="dash-card-text">
+          <span class="title">تقييم المقررات</span>
+          <span class="subtitle">نتائج استبيانات الجودة لمقرراتك</span>
+        </div>
+      </a>
+      <a href="/campus.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
         <div class="dash-card-icon warning"><i class="ri-building-4-line"></i></div>
         <div class="dash-card-text">
           <span class="title">المستخدمين والدفعات</span>
           <span class="subtitle">الطلاب وإدارة الكلية</span>
         </div>
-      </div>
+      </a>
     `;
   } else if (isLeader) {
     cardsHTML = studentCards + `
       <div style="width: 100%; grid-column: 1 / -1; margin-top: 15px; border-top: 1px dashed var(--border); padding-top: 15px;">
         <h4 style="color: var(--text-muted); font-size: 0.9rem; margin: 0; text-align: center;">أدوات قائد الدفعة</h4>
       </div>
-      <div class="dash-card" onclick="location.href='/manage-lectures.html'">
+      <a href="/manage-lectures.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
         <div class="dash-card-icon danger"><i class="ri-video-line"></i></div>
         <div class="dash-card-text">
           <span class="title">إدارة المحاضرات</span>
           <span class="subtitle">رفع محاضرات دفعتك ومتابعتها</span>
         </div>
-      </div>
-      <div class="dash-card" onclick="location.href='/manage-attendance.html'">
+      </a>
+      <a href="/manage-attendance.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
         <div class="dash-card-icon success"><i class="ri-calendar-check-line"></i></div>
         <div class="dash-card-text">
           <span class="title">إدارة الحضور</span>
           <span class="subtitle">تسجيل حضور الدفعة</span>
         </div>
-      </div>
-      <div class="dash-card" onclick="location.href='/manage-submissions.html'">
+      </a>
+      <a href="/manage-submissions.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
         <div class="dash-card-icon warning"><i class="ri-stack-line"></i></div>
         <div class="dash-card-text">
           <span class="title">إدارة التسليمات</span>
           <span class="subtitle">متابعة وتقييم الواجبات</span>
         </div>
-      </div>
-      <div class="dash-card" onclick="location.href='/manage-notifications.html'">
+      </a>
+      <a href="/manage-notifications.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
         <div class="dash-card-icon info"><i class="ri-megaphone-line"></i></div>
         <div class="dash-card-text">
           <span class="title">إدارة الإشعارات</span>
           <span class="subtitle">إرسال التنبيهات للطلاب</span>
         </div>
-      </div>
-      <div class="dash-card" onclick="location.href='/creator-studio.html'">
+      </a>
+      <a href="/creator-studio.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
         <div class="dash-card-icon primary"><i class="ri-magic-line"></i></div>
         <div class="dash-card-text">
           <span class="title">استوديو المنشئ</span>
           <span class="subtitle">أدوات صناعة المحتوى</span>
         </div>
-      </div>
+      </a>
     `;
   } else {
     // Default Student
@@ -519,7 +604,97 @@
   }
 
 
+  
+
+  function renderRoleHealthWidget(report) {
+    const card = document.getElementById('roleHealthCard');
+    const summary = document.getElementById('roleHealthSummary');
+    const list = document.getElementById('roleHealthRisk');
+    if (!card || !summary || !list || !report || report.scopeMissing) return;
+    card.style.display = 'block';
+    summary.textContent = `${report.totalStudents ?? 0} طالب · متوسط الحضور ${report.avgAttendance ?? 0}% · ${report.atRiskCount ?? 0} يحتاج متابعة`;
+    const rows = Array.isArray(report.atRiskStudents) ? report.atRiskStudents.slice(0, 5) : [];
+    list.innerHTML = rows.length ? rows.map(row => `
+      <div class="cbs-study-plan-item is-urgent" role="article">
+        <div class="cbs-study-plan-item-icon"><i class="ri-user-warning-line"></i></div>
+        <div class="cbs-study-plan-item-body">
+          <div class="cbs-study-plan-item-title">${CBS.escapeHTML(row.name || 'طالب')}</div>
+          <div class="cbs-study-plan-item-meta">
+            <span class="cbs-study-plan-subject-tag">${CBS.escapeHTML(row.batchName || 'الدفعة')}</span>
+            <span class="cbs-study-plan-date-tag"><i class="ri-pie-chart-line"></i> نسبة الحضور: ${row.attendanceRate}%</span>
+          </div>
+        </div>
+        <div class="cbs-study-plan-item-action">
+          <span class="btn btn-xs ${row.risk === 'high' ? 'btn-danger' : 'btn-secondary'}">${row.risk === 'high' ? 'عالي الخطورة' : 'يحتاج متابعة'}</span>
+        </div>
+      </div>
+    `).join('') : `
+      <div class="cbs-study-plan-empty">
+        <i class="ri-checkbox-circle-line"></i>
+        <div>صحة الدفعة ممتازة، لا توجد حالات تحتاج متابعة حالياً.</div>
+      </div>
+    `;
+  }
+
+  function renderStudyPlanWidget(studyPlan, risk, progress, alerts) {
+    const card = document.getElementById('studyPlanCard');
+    const list = document.getElementById('studyPlanList');
+    const summary = document.getElementById('studyPlanSummary');
+    const badge = document.getElementById('studyRiskBadge');
+    if (!card || !list) return;
+    const items = Array.isArray(studyPlan?.items) ? studyPlan.items : [];
+    const riskLabels = { low: 'مستقر وممتاز', medium: 'يحتاج متابعة', high: 'عالي الأهمية' };
+    const riskLevel = risk?.level || 'low';
+    const overall = progress?.overall;
+    const alertCount = Array.isArray(alerts) ? alerts.length : 0;
+    card.style.display = 'block';
+    if (summary) summary.textContent = overall !== null && overall !== undefined
+      ? `التقدم العام ${overall}% · ${items.length ? `لديك ${items.length} أولويات مقترحة لإنجازها` : 'لا توجد مهام عاجلة'}${alertCount ? ` · ${alertCount} تنبيه` : ''}`
+      : (items.length ? `لديك ${items.length} أولويات مقترحة لإنجازها` : 'لا توجد مهام قادمة');
+    if (badge) {
+      badge.hidden = false;
+      badge.dataset.level = riskLevel;
+      badge.innerHTML = `<i class="${riskLevel === 'high' ? 'ri-error-warning-line' : (riskLevel === 'medium' ? 'ri-alarm-warning-line' : 'ri-shield-check-line')}"></i> ${riskLabels[riskLevel] || riskLabels.low}`;
+    }
+    if (!items.length) {
+      list.innerHTML = `
+        <div class="cbs-study-plan-empty">
+          <i class="ri-sparkling-2-line"></i>
+          <div style="font-weight:700;color:var(--text-main);">أنت على المسار الصحيح تماماً!</div>
+          <div>استغل وقت فراغك في مراجعة آخر المحاضرات أو حل اختبارات تدريبية سريعة.</div>
+        </div>
+      `;
+      return;
+    }
+    list.innerHTML = items.slice(0, 5).map(item => {
+      const urgent = item.urgency === 'high';
+      const date = item.dueAt ? new Date(item.dueAt).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' }) : '';
+      const isQuiz = item.type === 'quiz';
+      const icon = isQuiz ? 'ri-questionnaire-line' : 'ri-task-line';
+      const typeLabel = isQuiz ? 'اختبار قصير' : 'واجب دراسي';
+      const href = isQuiz ? '/quizzes.html' : '/assignments.html';
+      const actionText = item.action || (isQuiz ? 'بدء الاختبار' : 'تسليم الواجب');
+      return `
+        <div class="cbs-study-plan-item${urgent ? ' is-urgent' : ''}" role="link" tabindex="0" onclick="location.href='${href}'" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
+          <div class="cbs-study-plan-item-icon"><i class="${icon}"></i></div>
+          <div class="cbs-study-plan-item-body">
+            <div class="cbs-study-plan-item-title">${CBS.escapeHTML(item.title)}</div>
+            <div class="cbs-study-plan-item-meta">
+              ${item.subject ? `<span class="cbs-study-plan-subject-tag">${CBS.escapeHTML(item.subject)}</span>` : ''}
+              <span style="display:inline-flex;align-items:center;gap:3px;"><i class="ri-bookmark-line"></i> ${typeLabel}</span>
+              ${date ? `<span class="cbs-study-plan-date-tag"><i class="ri-calendar-event-line"></i> ${date}</span>` : ''}
+            </div>
+          </div>
+          <div class="cbs-study-plan-item-action">
+            <span class="btn btn-xs ${urgent ? 'btn-primary' : 'btn-secondary'}">${CBS.escapeHTML(actionText)} <i class="ri-arrow-left-s-line"></i></span>
+          </div>
+        </div>
+      `;
+    }).join('');
+  }
+
   // جلب إحصائيات حية مخصصة حسب الدور
+
   (async () => {
     const primaryRole = CBS.getPrimaryRole(user);
     const isStudentOrLeader = primaryRole === 'student' || primaryRole === 'leader' || !primaryRole || primaryRole === 'doctor';
@@ -530,9 +705,12 @@
         const res = await CBS.apiGet('/api/student/dashboard');
         if (res.ok) {
           const resJson = await res.json();
-          const stats = resJson.data?.stats || resJson.stats;
-          const recentNotifications = resJson.data?.recentNotifications || resJson.recentNotifications;
+                    const responseData = resJson.data || resJson;
+          const stats = responseData.stats;
+          const recentNotifications = responseData.recentNotifications;
+          renderStudyPlanWidget(responseData.studyPlan, responseData.risk, responseData.progress, responseData.smartAlerts);
           if (stats) {
+
             document.getElementById('statSubjects').textContent = stats.subjects ?? '-';
             document.getElementById('statAssignments').textContent = stats.pendingAssignments ?? '-';
             document.getElementById('statAttendance').textContent = stats.attendanceRate !== null ? stats.attendanceRate + '%' : '-';
@@ -550,12 +728,20 @@
             // تحديث شريط تقدم الواجبات
             const assignPctVal = stats.totalAssignments ? Math.round((stats.submittedAssignments / stats.totalAssignments) * 100) : 0;
             document.getElementById('assignPct').textContent = assignPctVal + '%';
-            setTimeout(() => { document.getElementById('assignBar').style.width = assignPctVal + '%'; }, 200);
+            setTimeout(() => {
+              const bar = document.getElementById('assignBar');
+              bar.style.width = assignPctVal + '%';
+              bar.setAttribute('aria-valuenow', assignPctVal);
+            }, 200);
 
             // تحديث شريط تقدم الحضور
             const attendPctVal = stats.attendanceRate || 0;
             document.getElementById('attendPct').textContent = attendPctVal + '%';
-            setTimeout(() => { document.getElementById('attendBar').style.width = attendPctVal + '%'; }, 400);
+            setTimeout(() => {
+              const bar = document.getElementById('attendBar');
+              bar.style.width = attendPctVal + '%';
+              bar.setAttribute('aria-valuenow', attendPctVal);
+            }, 400);
 
             loadedCustom = true;
           }
@@ -593,11 +779,15 @@
       try {
         const res = await CBS.apiGet('/api/reports/summary');
         if (res.ok) {
-          const d = await res.json();
-          document.getElementById('statSubjects').textContent = d.totalStudents ?? d.subjects?.length ?? '-';
-          document.getElementById('statAssignments').textContent = d.totalSubmissions ?? '-';
-          document.getElementById('statAttendance').textContent = d.avgAttendance ? d.avgAttendance + '%' : '-';
-          document.getElementById('statVideos').textContent = d.videoViews ?? '-';
+                    const d = await res.json();
+          const reportData = d.data || d;
+          renderRoleHealthWidget(reportData);
+          document.getElementById('statSubjects').textContent = reportData.totalStudents ?? reportData.subjects?.length ?? '-';
+
+                    document.getElementById('statAssignments').textContent = reportData.totalSubmissions ?? reportData.atRiskCount ?? '-';
+          document.getElementById('statAttendance').textContent = reportData.avgAttendance ? reportData.avgAttendance + '%' : '-';
+          document.getElementById('statVideos').textContent = reportData.videoViews ?? '-';
+
         }
       } catch {}
 
@@ -639,7 +829,11 @@
           const done = list.filter(a => a.status === 'completed' || a.status === 'graded').length;
           const pct = list.length ? Math.round((done / list.length) * 100) : 0;
           document.getElementById('assignPct').textContent = pct + '%';
-          setTimeout(() => { document.getElementById('assignBar').style.width = pct + '%'; }, 200);
+          setTimeout(() => {
+            const bar = document.getElementById('assignBar');
+            bar.style.width = pct + '%';
+            bar.setAttribute('aria-valuenow', pct);
+          }, 200);
         }
       } catch {}
       try {
@@ -650,7 +844,11 @@
           const present = arr.filter(r => r.status === 'present').length;
           const pct = arr.length ? Math.round((present / arr.length) * 100) : 0;
           document.getElementById('attendPct').textContent = pct + '%';
-          setTimeout(() => { document.getElementById('attendBar').style.width = pct + '%'; }, 400);
+          setTimeout(() => {
+            const bar = document.getElementById('attendBar');
+            bar.style.width = pct + '%';
+            bar.setAttribute('aria-valuenow', pct);
+          }, 400);
         }
       } catch {}
     }
@@ -925,8 +1123,7 @@
     const modal = document.getElementById('dashboard-news-modal');
     if (modal) modal.classList.remove('show');
   }
-
-  // ── Dashboard Gallery Logic ─────────────────────────
+  // ===== Dashboard Gallery Logic =====
   window._allDashGallery = [];
   window._filteredDashGallery = [];
   window._dashLightboxIndex = 0;
@@ -1046,10 +1243,14 @@
 
       return `
         <div style="position:relative; border-radius:12px; overflow:hidden; aspect-ratio:4/3; background:var(--bg-hover); cursor:pointer; box-shadow:var(--shadow-sm);" onclick="openDashLightboxIndex(${idx})">
-          <img src="${fullUrl}" style="width:100%; height:100%; object-fit:cover;" loading="lazy">
-          <div style="position:absolute; top:8px; right:8px; background:rgba(0,0,0,0.6); color:#fff; padding:3px 8px; border-radius:12px; font-size:0.75rem; font-weight:700; display:flex; align-items:center; gap:4px; z-index:2;" onclick="toggleDashLike(event, '${imgId}')">
+          <img src="${fullUrl}" style="width:100%; height:100%; object-fit:cover;" loading="lazy" alt="">
+          <div style="position:absolute; top:8px; right:8px; background:rgba(0,0,0,0.6); color:#fff; padding:3px 8px; border-radius:12px; font-size:0.75rem; font-weight:700; display:flex; align-items:center; gap:4px; z-index:2;" onclick="toggleDashLike(event, '${imgId}')" title="إعجاب">
             <i class="${isLiked ? 'ri-heart-fill' : 'ri-heart-line'}" style="${isLiked ? 'color:#ef4444' : ''}"></i>
             <span>${count}</span>
+          </div>
+          <div style="position:absolute; top:8px; left:8px; background:rgba(0,0,0,0.6); color:#fff; padding:3px 8px; border-radius:12px; font-size:0.75rem; font-weight:700; display:flex; align-items:center; gap:4px; z-index:2; cursor:pointer;" onclick="shareDashGalleryCardDirect(event, '${imgId}')" title="مشاركة الصورة">
+            <i class="ri-share-line"></i>
+            <span>مشاركة</span>
           </div>
           <div style="position:absolute; inset:0; background:linear-gradient(to top, rgba(0,0,0,0.8), transparent 60%); display:flex; align-items:flex-end; padding:10px;">
             <div style="color:#fff;">
@@ -1103,6 +1304,35 @@
   function closeDashLightbox() {
     const modal = document.getElementById('dash-lightbox-modal');
     if (modal) modal.classList.remove('show');
+  }
+
+  function shareDashGalleryCardDirect(e, imgId) {
+    if (e) e.stopPropagation();
+    const img = window._allDashGallery.find(x => x._id === imgId);
+    if (!img) return;
+    const title = img.caption || 'صورة من معرض الكلية والجامعة';
+    const baseUrl = typeof CBS !== 'undefined' ? CBS.publicBaseUrl() : window.location.origin;
+    const shareUrl = baseUrl + '/gallery/' + encodeURIComponent(img._id);
+    if (navigator.share) {
+      navigator.share({ title: title, text: title, url: shareUrl }).catch(() => {});
+    } else {
+      const text = title + '\n\n' + shareUrl;
+      window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(text), '_blank');
+    }
+  }
+
+  function shareDashCurrentGalleryImage() {
+    const img = window._filteredDashGallery[window._dashLightboxIndex];
+    if (!img) return;
+    const title = img.caption || 'صورة من معرض الكلية والجامعة';
+    const baseUrl = typeof CBS !== 'undefined' ? CBS.publicBaseUrl() : window.location.origin;
+    const shareUrl = baseUrl + '/gallery/' + encodeURIComponent(img._id);
+    if (navigator.share) {
+      navigator.share({ title: title, text: title, url: shareUrl }).catch(() => {});
+    } else {
+      const text = title + '\n\n' + shareUrl;
+      window.open('https://api.whatsapp.com/send?text=' + encodeURIComponent(text), '_blank');
+    }
   }
 
   // Touch Swipe for Dashboard Lightbox

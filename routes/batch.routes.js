@@ -24,6 +24,7 @@ router.get("/", auth, role("student", "dean", "leader", "doctor", "admin"), asyn
   try {
     let query = {};
     let batchIds = new Set();
+    if ((req.user.roles.includes('student') || req.user.roles.includes('leader')) && !req.user.roles.includes('dean') && !req.user.roles.includes('admin') && !req.user.roles.includes('doctor')) query._id = req.user.batch || null;
 
     // If doctor, check their assigned batches (or batches linked to their subjects)
     if (req.user.roles.includes("doctor") && !req.user.roles.includes("dean") && !req.user.roles.includes("admin")) {
@@ -40,7 +41,10 @@ router.get("/", auth, role("student", "dean", "leader", "doctor", "admin"), asyn
 
       if (batchIds.size > 0) {
         query._id = { $in: Array.from(batchIds) };
+      } else {
+        query._id = { $in: [] };
       }
+
     }
     
     if (req.query.status) {
@@ -55,7 +59,7 @@ router.get("/", auth, role("student", "dean", "leader", "doctor", "admin"), asyn
 
     // Fallback: If no batches found with strict filtering (or if doctor has no explicit batches yet),
     // return all system batches (non-archived) so the doctor can still select destination batches!
-    if (!batches || batches.length === 0) {
+    if ((!batches || batches.length === 0) && (req.user.roles.includes('dean') || req.user.roles.includes('admin'))) {
       batches = await Batch.find({ status: { $ne: "archived" } }).sort({ createdAt: -1 });
     }
 
@@ -70,7 +74,22 @@ router.get("/", auth, role("student", "dean", "leader", "doctor", "admin"), asyn
 // ==========================================
 router.get("/:id", auth, async (req, res) => {
   try {
+    const roleList = req.user.roles || [];
+    const studentLike = (roleList.includes('student') || roleList.includes('leader')) && !roleList.includes('dean') && !roleList.includes('admin') && !roleList.includes('doctor');
+    if (studentLike && (!req.user.batch || String(req.user.batch) !== String(req.params.id))) {
+      return res.status(403).json({ success: false, message: 'Batch access denied' });
+    }
+    if (!roleList.includes('dean') && !roleList.includes('admin') && roleList.includes('doctor')) {
+      const doctor = await User.findById(req.user.id).select('batches').lean();
+      const assignedBatchIds = new Set((doctor?.batches || []).map(String));
+      if (!assignedBatchIds.has(String(req.params.id))) {
+        const Subject = require('../models/Subject');
+        const linkedSubject = await Subject.findOne({ doctor: req.user.id, batches: req.params.id }).select('_id').lean();
+        if (!linkedSubject) return res.status(403).json({ success: false, message: 'Batch access denied' });
+      }
+    }
     const batch = await Batch.findById(req.params.id).lean();
+
     if (!batch) return res.status(404).json({ success: false, message: "الدفعة غير موجودة" });
 
     const Subject = require("../models/Subject");

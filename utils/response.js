@@ -5,36 +5,48 @@
 
 function success(res, data = null, message = 'تم بنجاح', status = 200) {
   const body = { success: true, message };
-  if (data) body.data = data;
+  if (data !== null && data !== undefined) body.data = data;
+  const reqId = res.req?.id || res.locals?.requestId;
+  if (reqId) body.requestId = reqId;
   return res.status(status).json(body);
 }
 
 function fail(res, message = 'حدث خطأ', status = 400, extra = {}) {
-  return res.status(status).json({ success: false, message, ...extra });
+  const body = { success: false, message, ...extra };
+  const reqId = res.req?.id || res.locals?.requestId;
+  if (reqId && !body.requestId) body.requestId = reqId;
+  return res.status(status).json(body);
 }
 
 function notFound(res, msg = 'المورد غير موجود') {
-  return res.status(404).json({ success: false, message: msg });
+  const body = { success: false, message: msg };
+  const reqId = res.req?.id || res.locals?.requestId;
+  if (reqId) body.requestId = reqId;
+  return res.status(404).json(body);
 }
 
 function serverError(res, err, logLabel = '') {
   // نسجّل التفاصيل الكاملة على الخادم دائماً لتسهيل التشخيص
   if (logLabel) console.error(`${logLabel}:`, err?.stack || err?.message || err);
 
+  const reqId = res.req?.id || res.locals?.requestId;
+
   // أخطاء التحقق من Mongoose سببها إدخال المستخدم — نُرجِعها كـ 400 برسالة واضحة
-  // (رسائلها معرّفة في المخططات وآمنة للعرض، وليست 500 غامضة)
   if (err && err.name === 'ValidationError') {
     const msg = Object.values(err.errors || {}).map(e => e.message).join(' • ') || 'بيانات غير صالحة';
-    return res.status(400).json({ success: false, message: msg });
+    return res.status(400).json({ success: false, message: msg, ...(reqId ? { requestId: reqId } : {}) });
   }
   if (err && err.name === 'CastError') {
-    return res.status(400).json({ success: false, message: `قيمة غير صالحة للحقل «${err.path}»` });
+    return res.status(400).json({ success: false, message: `قيمة غير صالحة للحقل «${err.path}»`, ...(reqId ? { requestId: reqId } : {}) });
   }
   if (err && err.code === 11000) {
-    return res.status(409).json({ success: false, message: 'القيمة موجودة مسبقاً' });
+    return res.status(409).json({ success: false, message: 'القيمة موجودة مسبقاً', ...(reqId ? { requestId: reqId } : {}) });
+  }
+  if (err && err instanceof SyntaxError && err.status === 400 && 'body' in err) {
+    return res.status(400).json({ success: false, message: 'صيغة JSON غير صحيحة', ...(reqId ? { requestId: reqId } : {}) });
   }
 
-  return res.status(500).json({ success: false, message: 'حدث خطأ في الخادم' });
+  return res.status(500).json({ success: false, message: 'حدث خطأ في الخادم', ...(reqId ? { requestId: reqId } : {}) });
 }
 
 /**

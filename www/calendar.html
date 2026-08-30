@@ -3,14 +3,14 @@
 <head>
   <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>الجدول الدراسي والتقويم الأكاديمي | كلية تقنية المعلومات</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>الجدول الدراسي والتقويم الأكاديمي | كلية النصر التقنية</title>
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Al-Nasr CBS">
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
-  <link rel="stylesheet" href="/css/style.css?v=2026073128">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026073128">
+  <link rel="stylesheet" href="/css/style.css?v=2026081907">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026081907">
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
   <style>
     :root {
@@ -358,15 +358,15 @@
 
 <header class="main-header">
   <div class="header-brand">
-    <button class="btn-icon" onclick="CBS.goHome()" title="رجوع"><i class="ri-arrow-right-line"></i></button>
+    <button class="btn-icon" onclick="CBS.goHome()" title="رجوع" aria-label="رجوع"><i class="ri-arrow-right-line"></i></button>
     <div class="header-title-group">
-      <strong>كلية تقنية المعلومات</strong>
+      <strong>كلية النصر التقنية</strong>
       <small>الجدول الدراسي والتقويم الأكاديمي</small>
     </div>
   </div>
   <div class="header-actions">
-    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
-    <button class="btn-icon" onclick="CBS.logout()" title="خروج"><i class="ri-logout-box-r-line"></i></button>
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي" aria-label="تبديل الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="CBS.logout()" title="خروج" aria-label="تسجيل الخروج"><i class="ri-logout-box-r-line"></i></button>
   </div>
 </header>
 
@@ -396,9 +396,9 @@
 
   <div class="month-bar">
     <div style="display:flex; gap:8px; align-items:center;">
-      <button class="btn-month" onclick="changeMonth(-1)"><i class="ri-arrow-right-s-line"></i> السابق</button>
+      <button class="btn-month" onclick="changeMonth(-1)" aria-label="رجوع"><i class="ri-arrow-right-s-line"></i> السابق</button>
       <button class="btn-month btn-today" onclick="goToToday()">اليوم</button>
-      <button class="btn-month" onclick="changeMonth(1)">التالي <i class="ri-arrow-left-s-line"></i></button>
+      <button class="btn-month" onclick="changeMonth(1)" aria-label="رجوع">التالي <i class="ri-arrow-left-s-line"></i></button>
     </div>
     <div id="monthLabel" class="month-title">جاري التحميل...</div>
   </div>
@@ -439,7 +439,7 @@
         </h3>
         <div style="font-size:0.78rem;opacity:0.8;margin-top:3px;">سيظهر هذا الموعد فوراً لجميع طلاب الدفعة</div>
       </div>
-      <button onclick="CBS.closeModal('addEditEventModal')" style="background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:36px;height:36px;color:white;font-size:1.3rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+      <button onclick="CBS.closeModal('addEditEventModal')" style="background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:36px;height:36px;color:white;font-size:1.3rem;cursor:pointer;display:flex;align-items:center;justify-content:center;" aria-label="إغلاق">
         <i class="ri-close-line"></i>
       </button>
     </div>
@@ -448,13 +448,13 @@
         <input type="hidden" id="editEventId">
         
         <div class="form-group mb-3">
-          <label style="font-weight:700;font-size:0.88rem;color:var(--text-secondary);display:block;margin-bottom:6px;">عنوان الموعد / المحاضرة <span style="color:#ef4444;">*</span></label>
+          <label for="eventTitle" style="font-weight:700;font-size:0.88rem;color:var(--text-secondary);display:block;margin-bottom:6px;">عنوان الموعد / المحاضرة <span style="color:#ef4444;">*</span></label>
           <input type="text" id="eventTitle" class="form-control" placeholder="مثال: محاضرة خوارزميات إضافية، أو مراجعة ميدترم" required>
         </div>
 
         <div class="form-grid-2 mb-3">
           <div class="form-group">
-            <label style="font-weight:700;font-size:0.88rem;color:var(--text-secondary);display:block;margin-bottom:6px;">نوع الحدث <span style="color:#ef4444;">*</span></label>
+            <label for="eventType" style="font-weight:700;font-size:0.88rem;color:var(--text-secondary);display:block;margin-bottom:6px;">نوع الحدث <span style="color:#ef4444;">*</span></label>
             <select id="eventType" class="form-control" required>
               <option value="lecture">محاضرة دراسية</option>
               <option value="exam">امتحان / اختبار</option>
@@ -465,7 +465,7 @@
             </select>
           </div>
           <div class="form-group">
-            <label style="font-weight:700;font-size:0.88rem;color:var(--text-secondary);display:block;margin-bottom:6px;">المادة الدراسية (اختياري)</label>
+            <label for="eventSubject" style="font-weight:700;font-size:0.88rem;color:var(--text-secondary);display:block;margin-bottom:6px;">المادة الدراسية (اختياري)</label>
             <select id="eventSubject" class="form-control">
               <option value="">— عام لجميع المواد —</option>
             </select>
@@ -474,22 +474,22 @@
 
         <div class="form-grid-2 mb-3">
           <div class="form-group">
-            <label style="font-weight:700;font-size:0.88rem;color:var(--text-secondary);display:block;margin-bottom:6px;">التاريخ وموعد البداية <span style="color:#ef4444;">*</span></label>
+            <label for="eventStart" style="font-weight:700;font-size:0.88rem;color:var(--text-secondary);display:block;margin-bottom:6px;">التاريخ وموعد البداية <span style="color:#ef4444;">*</span></label>
             <input type="datetime-local" id="eventStart" class="form-control" required>
           </div>
           <div class="form-group">
-            <label style="font-weight:700;font-size:0.88rem;color:var(--text-secondary);display:block;margin-bottom:6px;">موعد النهاية (اختياري)</label>
+            <label for="eventEnd" style="font-weight:700;font-size:0.88rem;color:var(--text-secondary);display:block;margin-bottom:6px;">موعد النهاية (اختياري)</label>
             <input type="datetime-local" id="eventEnd" class="form-control">
           </div>
         </div>
 
         <div class="form-group mb-3">
-          <label style="font-weight:700;font-size:0.88rem;color:var(--text-secondary);display:block;margin-bottom:6px;">المكان / القاعة (اختياري)</label>
+          <label for="eventLocation" style="font-weight:700;font-size:0.88rem;color:var(--text-secondary);display:block;margin-bottom:6px;">المكان / القاعة (اختياري)</label>
           <input type="text" id="eventLocation" class="form-control" placeholder="مثال: قاعة 3B، أو رابط زووم، أو معمل البرمجة">
         </div>
 
         <div class="form-group mb-4">
-          <label style="font-weight:700;font-size:0.88rem;color:var(--text-secondary);display:block;margin-bottom:6px;">تفاصيل وملاحظات إضافية</label>
+          <label for="eventDescription" style="font-weight:700;font-size:0.88rem;color:var(--text-secondary);display:block;margin-bottom:6px;">تفاصيل وملاحظات إضافية</label>
           <textarea id="eventDescription" class="form-control" rows="3" placeholder="أدخل أي ملاحظات هامة للطلاب بخصوص هذا الموعد..."></textarea>
         </div>
 
@@ -505,8 +505,8 @@
   حقوق النشر &copy; <span id="year"></span> جامعة النصر التقنية
 </footer>
 
-<script src="/js/shared.js?v=2026073128"></script>
-<script src="/js/app.js?v=2026073128"></script>
+<script src="/js/shared.js?v=2026081907"></script>
+<script src="/js/app.js?v=2026081907"></script>
 <script>
   CBS.init();
   document.getElementById('year').textContent = new Date().getFullYear();
@@ -760,8 +760,8 @@
               const itemJsonStr = encodeURIComponent(JSON.stringify(item));
               actionsHtml = `
                 <div class="event-actions">
-                  <button type="button" class="btn-event-action" title="تعديل" onclick="openEditModal('${itemJsonStr}')"><i class="ri-edit-line"></i></button>
-                  <button type="button" class="btn-event-action delete" title="حذف" onclick="handleDeleteEvent('${item.rawId}')"><i class="ri-delete-bin-line"></i></button>
+                  <button type="button" class="btn-event-action" title="تعديل" onclick="openEditModal('${itemJsonStr}')" aria-label="تعديل"><i class="ri-edit-line"></i></button>
+                  <button type="button" class="btn-event-action delete" title="حذف" onclick="handleDeleteEvent('${item.rawId}')" aria-label="حذف"><i class="ri-delete-bin-line"></i></button>
                 </div>`;
             }
 

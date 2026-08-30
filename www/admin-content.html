@@ -3,17 +3,18 @@
 <head>
   <script>if(localStorage.getItem('darkMode')==='true'||(!localStorage.getItem('darkMode')&&window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme','dark');}</script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>إدارة المحتوى العام | CBS</title>
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Al-Nasr CBS">
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
-  <link rel="stylesheet" href="/css/style.css?v=2026073128">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026073128">
+  <link rel="stylesheet" href="/css/style.css?v=2026081907">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026081907">
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet">
   <style>
-    /* ── Tabs ─────────────────────────────── */
+    /* â”€â”€ Tabs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .tab-bar {
       display: flex; gap: 6px;
       background: var(--bg-secondary);
@@ -35,7 +36,7 @@
       box-shadow: var(--shadow-sm);
     }
 
-    /* ── Table ────────────────────────────── */
+    /* â”€â”€ Table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .data-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
     .data-table thead th {
       padding: 10px 12px; text-align: right;
@@ -52,11 +53,11 @@
     .data-table .td-title { font-weight: 700; max-width: 200px; }
     .data-table .td-title small { font-weight: 400; color: var(--text-muted); display: block; font-size: 0.72rem; }
 
-    /* ── Status badge ─────────────────────── */
+    /* â”€â”€ Status badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .badge-pub  { background: #dcfce7; color: #15803d; padding: 2px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; }
     .badge-draft{ background: #fef9c3; color: #854d0e; padding: 2px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; }
 
-    /* ── Gallery Grid ─────────────────────── */
+    /* â”€â”€ Gallery Grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .gallery-mgr-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
@@ -97,7 +98,7 @@
     }
     .gallery-mgr-item.hidden-img { opacity: .5; }
 
-    /* ── Modal (Using Global Classes from style.css) ── */
+    /* â”€â”€ Modal (Using Global Classes from style.css) â”€â”€ */
     /* Only form-specific styles left */
     .form-group { margin-bottom: 14px; }
     .form-group label { display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; }
@@ -120,11 +121,11 @@
 
 <header class="main-header">
   <div class="header-right">
-    <button class="btn-icon" onclick="history.back()" title="رجوع"><i class="ri-arrow-right-line"></i></button>
+    <button class="btn-icon" onclick="CBS.goBack()" title="رجوع" aria-label="رجوع"><i class="ri-arrow-right-line"></i></button>
     <div class="header-title"><i class="ri-layout-masonry-line"></i> إدارة المحتوى العام</div>
   </div>
   <div class="header-left">
-    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line"></i></button>
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي" aria-label="تبديل الوضع الليلي"><i class="ri-moon-line"></i></button>
   </div>
 </header>
 
@@ -149,7 +150,7 @@
     </button>
   </div>
 
-  <!-- ─── NEWS PANEL ─────────────────────────────────── -->
+  <!-- â”€â”€â”€ NEWS PANEL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
   <div id="panelNews">
     <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
       <button class="btn btn-primary btn-sm" onclick="openNewsModal()">
@@ -175,7 +176,7 @@
     </div>
   </div>
 
-  <!-- ─── GALLERY PANEL ──────────────────────────────── -->
+  <!-- ─── GALLERY PANEL ────────────────────────────── -->
   <div id="panelGallery" style="display:none;">
     <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
       <button class="btn btn-primary btn-sm" onclick="openGalleryModal()">
@@ -194,40 +195,40 @@
 <div id="toast-container"></div>
 <footer class="main-footer">جميع الحقوق محفوظة &copy; <span id="year"></span> النظام الجامعي المتكامل</footer>
 
-<!-- ─── News Modal ──────────────────────────────────── -->
+<!-- ─── News Modal ────────────────────────────────── -->
 <div class="modal-overlay" id="newsModalBack">
   <div class="modal-box" style="max-width: 500px;">
     <div class="modal-header">
       <h3 class="modal-title" id="newsModalTitle">إضافة خبر جديد</h3>
-      <button class="modal-close" onclick="closeNewsModal()"><i class="ri-close-line"></i></button>
+      <button class="modal-close" onclick="closeNewsModal()" aria-label="إغلاق"><i class="ri-close-line"></i></button>
     </div>
     <div class="modal-body">
       <input type="hidden" id="newsEditId">
     <div class="form-group">
-      <label>عنوان الخبر *</label>
+      <label for="newsTitle">عنوان الخبر *</label>
       <input id="newsTitle" type="text" class="form-control" placeholder="عنوان موجز وواضح" maxlength="200">
     </div>
     <div class="form-group">
-      <label>الملخص * <span style="font-size:.7rem;color:var(--text-muted)">(يظهر في قائمة الأخبار، حد أقصى 300 حرف)</span></label>
+      <label for="newsSummary">الملخص * <span style="font-size:.7rem;color:var(--text-muted)">(يظهر في قائمة الأخبار، حد أقصى 300 حرف)</span></label>
       <textarea id="newsSummary" class="form-control" rows="2" maxlength="300" placeholder="ملخص قصير للخبر..."></textarea>
     </div>
     <div class="form-group">
-      <label>المحتوى الكامل *</label>
+      <label for="newsBody">المحتوى الكامل *</label>
       <textarea id="newsBody" class="form-control" rows="5" placeholder="اكتب تفاصيل الخبر هنا..."></textarea>
     </div>
     <div class="form-group">
-      <label>الصورة الرئيسية <span style="font-size:.7rem;color:var(--text-muted)">(اختياري - اختر ملفاً أو ضع رابط)</span></label>
+      <label for="newsImageFile">الصورة الرئيسية <span style="font-size:.7rem;color:var(--text-muted)">(اختياري - اختر ملفاً أو ضع رابط)</span></label>
       <div style="display:flex;gap:8px;">
         <input id="newsImageFile" type="file" accept="image/*" class="form-control" style="flex:1">
         <input id="newsImageUrl" type="url" class="form-control" placeholder="أو رابط https://..." style="flex:1">
       </div>
     </div>
     <div class="form-group">
-      <label>التاغات <span style="font-size:.7rem;color:var(--text-muted)">(افصلها بفاصلة)</span></label>
+      <label for="newsTags">التاغات <span style="font-size:.7rem;color:var(--text-muted)">(افصلها بفاصلة)</span></label>
       <input id="newsTags" type="text" class="form-control" placeholder="أخبار, تخرج, نشاط">
     </div>
     <div class="form-group">
-      <label>تاريخ النشر <span style="font-size:.7rem;color:var(--text-muted)">(يمكنك تعديله للربط بتاريخ قديم أو محدد)</span></label>
+      <label for="newsDate">تاريخ النشر <span style="font-size:.7rem;color:var(--text-muted)">(يمكنك تعديله للربط بتاريخ قديم أو محدد)</span></label>
       <input id="newsDate" type="date" class="form-control">
     </div>
       <div class="form-check">
@@ -242,28 +243,28 @@
   </div>
 </div>
 
-<!-- ─── Gallery Modal ───────────────────────────────── -->
+<!-- ─── Gallery Modal ────────────────────────────── -->
 <div class="modal-overlay" id="galleryModalBack">
   <div class="modal-box" style="max-width: 500px;">
     <div class="modal-header">
       <h3 class="modal-title" id="galleryModalTitle">رفع صورة جديدة</h3>
-      <button class="modal-close" onclick="closeGalleryModal()"><i class="ri-close-line"></i></button>
+      <button class="modal-close" onclick="closeGalleryModal()" aria-label="إغلاق"><i class="ri-close-line"></i></button>
     </div>
     <div class="modal-body">
       <input type="hidden" id="galleryEditId">
     <div class="form-group">
-      <label>الصورة * <span style="font-size:.7rem;color:var(--text-muted)">(اختر ملفاً أو ضع رابط مباشر)</span></label>
+      <label for="galleryImageFile">الصورة * <span style="font-size:.7rem;color:var(--text-muted)">(اختر ملفاً أو ضع رابط مباشر)</span></label>
       <div style="display:flex;gap:8px;">
         <input id="galleryImageFile" type="file" accept="image/*" class="form-control" style="flex:1">
         <input id="galleryUrl" type="url" class="form-control" placeholder="أو رابط https://..." style="flex:1">
       </div>
     </div>
     <div class="form-group">
-      <label>وصف الصورة</label>
+      <label for="galleryCaption">وصف الصورة</label>
       <input id="galleryCaption" type="text" class="form-control" placeholder="وصف مختصر للصورة" maxlength="300">
     </div>
     <div class="form-group">
-      <label>التصنيف</label>
+      <label for="galleryCategory">التصنيف</label>
       <select id="galleryCategory" class="form-control">
         <option value="أخرى">أخرى</option>
         <option value="نشاط">نشاط</option>
@@ -272,7 +273,7 @@
       </select>
     </div>
       <div class="form-group">
-        <label>رقم الترتيب <span style="font-size:.7rem;color:var(--text-muted)">(الأصغر يظهر أولاً)</span></label>
+        <label for="galleryOrder">رقم الترتيب <span style="font-size:.7rem;color:var(--text-muted)">(الأصغر يظهر أولاً)</span></label>
         <input id="galleryOrder" type="number" class="form-control" value="0" min="0">
       </div>
     </div>
@@ -283,9 +284,9 @@
   </div>
 </div>
 
-<script src="/js/shared.js?v=2026073128"></script>
-<script src="/js/app.js?v=2026073128"></script>
-<script src="/js/socket-client.js?v=2026073128" defer></script>
+<script src="/js/shared.js?v=2026081907"></script>
+<script src="/js/app.js?v=2026081907"></script>
+<script src="/js/socket-client.js?v=2026081907" defer></script>
 <style>@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}</style>
 <script>
   CBS.init();
@@ -298,7 +299,7 @@
     setTimeout(() => window.location.replace('/index.html'), 1500);
   }
 
-  // ── Tabs ─────────────────────────────────────────────
+  // â”€â”€ Tabs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   let activeTab = 'news';
   function switchTab(tab) {
     activeTab = tab;
@@ -310,9 +311,9 @@
     else loadNews();
   }
 
-  // ════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   //  NEWS
-  // ════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   async function loadNews() {
     try {
       const res  = await CBS.apiGet('/api/admin/public/news');
@@ -338,11 +339,11 @@
           </td>
           <td>
             <div style="display:flex;gap:6px;flex-wrap:wrap">
-              <button class="btn btn-ghost btn-xs" onclick="editNews('${n._id}')"><i class="ri-edit-line"></i></button>
+              <button class="btn btn-ghost btn-xs" onclick="editNews('${n._id}')" aria-label="تعديل"><i class="ri-edit-line"></i></button>
               <button class="btn btn-ghost btn-xs" onclick="toggleNewsPublish('${n._id}',${n.isPublished})" title="${n.isPublished ? 'إخفاء' : 'نشر'}">
                 <i class="ri-${n.isPublished ? 'eye-off-line' : 'eye-line'}"></i>
               </button>
-              <button class="btn btn-danger btn-xs" onclick="deleteNews('${n._id}')"><i class="ri-delete-bin-line"></i></button>
+              <button class="btn btn-danger btn-xs" onclick="deleteNews('${n._id}')" aria-label="حذف"><i class="ri-delete-bin-line"></i></button>
             </div>
           </td>
         </tr>
@@ -376,7 +377,7 @@
       const data = await CBS.readJson(res);
       const item = data?.data?.news?.find(n => n._id === id);
       if (item) openNewsModal(item);
-    } catch(e) {}
+    } catch(e) { console.error('[admin-content/editNews]', e); }
   }
 
   async function uploadAdminFile(fileInput) {
@@ -467,7 +468,7 @@
     try {
       const res = await CBS.apiPut(`/api/admin/public/news/${id}`, { isPublished: !current });
       if (res.ok) { CBS.toast(!current ? 'تم النشر' : 'تم الإخفاء', '', 'success'); loadNews(); }
-    } catch(e) {}
+    } catch(e) { console.error('[admin-content/toggleNewsPublish]', e); }
   }
 
   async function deleteNews(id) {
@@ -478,9 +479,9 @@
     } catch(e) { CBS.toast('خطأ في الحذف', '', 'error'); }
   }
 
-  // ════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   //  GALLERY
-  // ════════════════════════════════════════════════════
+  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
   async function loadGallery() {
     try {
       const res  = await CBS.apiGet('/api/admin/public/gallery');
@@ -497,11 +498,11 @@
           <img src="${CBS.getMediaUrl(img.imageUrl)}" alt="${escH(img.caption||'')}" loading="lazy">
           <div class="visibility-tag">${img.category}</div>
           <div class="item-overlay">
-            <button onclick="editGallery('${img._id}')"><i class="ri-edit-line"></i> تعديل</button>
+            <button onclick="editGallery('${img._id}')" aria-label="تعديل"><i class="ri-edit-line"></i> تعديل</button>
             <button onclick="toggleGalleryVisibility('${img._id}',${img.isVisible})">
               <i class="ri-${img.isVisible ? 'eye-off-line':'eye-line'}"></i> ${img.isVisible ? 'إخفاء':'إظهار'}
             </button>
-            <button class="del" onclick="deleteGallery('${img._id}')"><i class="ri-delete-bin-line"></i> حذف</button>
+            <button class="del" onclick="deleteGallery('${img._id}')" aria-label="حذف"><i class="ri-delete-bin-line"></i> حذف</button>
           </div>
         </div>
       `).join('');
@@ -529,7 +530,7 @@
       const data = await CBS.readJson(res);
       const item = data?.data?.images?.find(i => i._id === id);
       if (item) openGalleryModal(item);
-    } catch(e) {}
+    } catch(e) { console.error('[admin-content/editGallery]', e); }
   }
 
   async function saveGallery() {
@@ -575,7 +576,7 @@
     try {
       const res = await CBS.apiPut(`/api/admin/public/gallery/${id}`, { isVisible: !current });
       if (res.ok) { CBS.toast(!current ? 'تم الإظهار' : 'تم الإخفاء', '', 'success'); loadGallery(); }
-    } catch(e) {}
+    } catch(e) { console.error('[admin-content/toggleGalleryVisibility]', e); }
   }
 
   async function deleteGallery(id) {
@@ -586,11 +587,11 @@
     } catch(e) { CBS.toast('خطأ في الحذف', '', 'error'); }
   }
 
-  // ── Helpers ─────────────────────────────────────────
+  // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   function escH(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-  function fmtDate(iso) { return iso ? new Date(iso).toLocaleDateString('ar-EG',{year:'numeric',month:'short',day:'numeric'}) : '—'; }
+  function fmtDate(iso) { return iso ? new Date(iso).toLocaleDateString('ar-EG',{year:'numeric',month:'short',day:'numeric'}) : 'â€”'; }
 
-  // ── Init ─────────────────────────────────────────────
+  // â”€â”€ Init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
   loadNews();
 </script>
 </body>

@@ -10,11 +10,19 @@ const API_BASE = _IS_CAPACITOR_NATIVE ? 'https://elnasrcsit.website' : '';
 
 const CBS = {
 
-  VERSION: '1.4.0',
-  ASSET_VERSION: '2026073128',
+  VERSION: '2.1.0',
+  BUILD_CODE: 28,
+  ASSET_VERSION: '2026082228',
 
   /* ===== Auth ===== */
   getToken() { return localStorage.getItem('token'); },
+  /* رابط ملف خاص (تسليم أو إيصال سداد). هذه المجلدات صارت خلف مصادقة،
+     و<img src> و<a href> لا يرسلان ترويسة Authorization — فيُمرَّر التوكن
+     في الرابط، وهو منفذ يقبله الخادم لمسارات /uploads وحدها. */
+  privateFileUrl(dir, filename) {
+    if (!filename) return '';
+    return `/uploads/${dir}/${encodeURIComponent(filename)}?token=${encodeURIComponent(this.getToken() || '')}`;
+  },
   getUser()  { return JSON.parse(localStorage.getItem('user') || '{}'); },
   get user() { return this.getUser(); },
   /* الخادم يعيد المستخدم بحقل id، بينما مستندات mongo تعيد _id — وحّد القراءة هنا */
@@ -45,7 +53,14 @@ const CBS = {
     if (Array.isArray(role)) return role.some(r => roles.includes(r));
     return roles.includes(role);
   },
+  _notificationSoundEnabled() {
+    return localStorage.getItem('notificationSound') !== 'off';
+  },
+  setNotificationSoundEnabled(enabled) {
+    localStorage.setItem('notificationSound', enabled ? 'on' : 'off');
+  },
   playNotificationSound(isEmergency = false) {
+    if (!this._notificationSoundEnabled()) return;
     const soundUrl = isEmergency ? '/sounds/cbs_emergency.wav' : '/sounds/cbs_notif.wav';
     try {
       const audio = new Audio(soundUrl);
@@ -152,12 +167,26 @@ const CBS = {
       const res = await fetch(API_BASE + '/api/verify-token', {
         headers: { Authorization: 'Bearer ' + this.getToken() }
       });
-      // 401 أو 403 = توكن منتهي أو مرفوض من السيرفر → خروج
-      if (res.status === 401 || res.status === 403) {
+      /* 403 مع PASSWORD_CHANGE_REQUIRED ليست جلسة منتهية: الخادم صار يمنع
+         كل شيء حتى تُغيَّر كلمة المرور الأولى. الخروج هنا كان سيحبس المستخدم
+         في حلقة تسجيل دخول لا مخرج منها — الصحيح توجيهه إلى صفحة التغيير. */
+      if (res.status === 403) {
+        const body = await res.json().catch(() => ({}));
+        if (body.code === 'PASSWORD_CHANGE_REQUIRED') {
+          if (window.location.pathname !== '/force-change-password.html') {
+            window.location.replace('/force-change-password.html');
+          }
+          return false;
+        }
         this.logout(false);
         return false;
       }
-      // أي حالة أخرى (200 ✓، 500، timeout...) = نبقي المستخدم داخل التطبيق
+      // 401 = توكن منتهي أو مرفوض من السيرفر → خروج
+      if (res.status === 401) {
+        this.logout(false);
+        return false;
+      }
+      // أي حالة أخرى (200 ، 500، timeout...) = نبقي المستخدم داخل التطبيق
       return res.ok;
     } catch {
       // فشل الشبكة (لا إنترنت) → نبقي الجلسة ولا نخرج المستخدم
@@ -750,11 +779,48 @@ const CBS = {
     return data ?? {};
   },
 
-  /* اختصار برسالة واحدة: CBS.showToast('تم الحفظ', 'success').
-     كان مستخدَماً في عدة صفحات دون أن يكون معرّفاً، فيتوقف تنفيذ الدالة المستدعية بخطأ. */
+  /* ===== Haptic Feedback & Physical Vibration ===== */
+  haptic(type = 'light') {
+    if (typeof navigator === 'undefined' || !navigator.vibrate) return;
+    if (localStorage.getItem('hapticFeedback') === 'off') return;
+    try {
+      switch (type) {
+        case 'light':     navigator.vibrate(12); break;
+        case 'medium':    navigator.vibrate(28); break;
+        case 'heavy':     navigator.vibrate(45); break;
+        case 'success':   navigator.vibrate([15, 60, 20]); break;
+        case 'warning':   navigator.vibrate([30, 80, 30]); break;
+        case 'error':     navigator.vibrate([50, 100, 50, 100, 50]); break;
+        case 'selection': navigator.vibrate(8); break;
+      }
+    } catch {}
+  },
+
+  initHaptics() {
+    if (this._hapticsInitialized) return;
+    this._hapticsInitialized = true;
+    document.addEventListener('click', (e) => {
+      const target = e.target.closest('.btn, button, .bottom-nav-item, .batch-card, .quiz-opt, .flashcard, .mode-toggle');
+      if (target) {
+        if (target.classList.contains('btn-danger') || target.dataset.action === 'delete') {
+          this.haptic('warning');
+        } else if (target.classList.contains('btn-success')) {
+          this.haptic('success');
+        } else {
+          this.haptic('light');
+        }
+      }
+    }, { passive: true });
+  },
+
+  /* اختصار برسالة واحدة: CBS.showToast('تم الحفظ', 'success'). */
   showToast(message, type = 'info', duration = 5000) {
     const alias = { danger: 'error', fail: 'error', ok: 'success' };
-    return this.toast(message, '', alias[type] || type, duration);
+    const normType = alias[type] || type;
+    if (normType === 'success') this.haptic('success');
+    else if (normType === 'error') this.haptic('error');
+    else this.haptic('light');
+    return this.toast(message, '', normType, duration);
   },
 
   /* ===== Alerts ===== */
@@ -771,9 +837,45 @@ const CBS = {
   },
 
   /* ===== Modal ===== */
+  modal: {
+    lastFocus: null,
+    trapListener: null,
+    escapeListener: null
+  },
   openModal(id)  {
     const el = document.getElementById(id);
-    if (el) el.classList.add('show');
+    if (!el) return;
+    el.setAttribute('role', 'dialog');
+    el.setAttribute('aria-modal', 'true');
+    this.modal.lastFocus = document.activeElement;
+    el.style.display = 'flex';
+    el.classList.add('show');
+    document.body.classList.add('modal-open');
+
+    this.modal.escapeListener = (e) => {
+      if (e.key === 'Escape') this.closeModal(id);
+    };
+    document.addEventListener('keydown', this.modal.escapeListener);
+
+    const focusableElements = el.querySelectorAll('a[href], button, textarea, input:not([type="hidden"]), select, [tabindex]:not([tabindex="-1"])');
+    if (focusableElements.length) {
+      const firstFocusable = focusableElements[0];
+      const lastFocusable = focusableElements[focusableElements.length - 1];
+
+      this.modal.trapListener = (e) => {
+        if (e.key === 'Tab') {
+          if (e.shiftKey && document.activeElement === firstFocusable) {
+            lastFocusable.focus();
+            e.preventDefault();
+          } else if (!e.shiftKey && document.activeElement === lastFocusable) {
+            firstFocusable.focus();
+            e.preventDefault();
+          }
+        }
+      };
+      document.addEventListener('keydown', this.modal.trapListener);
+      setTimeout(() => firstFocusable.focus(), 50);
+    }
   },
   formatTime(d) {
     if (!d) return '';
@@ -783,17 +885,42 @@ const CBS = {
   },
   closeModal(id) {
     const el = document.getElementById(id);
-    if (el) el.classList.remove('show');
+    if (!el) return;
+    el.classList.remove('show');
+    el.style.display = 'none';
+    document.body.classList.remove('modal-open');
+
+    if (this.modal.escapeListener) {
+      document.removeEventListener('keydown', this.modal.escapeListener);
+      this.modal.escapeListener = null;
+    }
+    if (this.modal.trapListener) {
+      document.removeEventListener('keydown', this.modal.trapListener);
+      this.modal.trapListener = null;
+    }
+
+    if (this.modal.lastFocus) {
+      this.modal.lastFocus.focus();
+      this.modal.lastFocus = null;
+    }
   },
   initModalClose() {
-    document.querySelectorAll('.modal-overlay').forEach(overlay => {
+    document.querySelectorAll('.modal-overlay, [data-modal]').forEach(overlay => {
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
+      const title = overlay.querySelector('.modal-title, h2, h3');
+      if (title) {
+        if (!title.id) title.id = 'modal-title-' + Math.random().toString(36).substring(2, 9);
+        overlay.setAttribute('aria-labelledby', title.id);
+      }
       overlay.addEventListener('click', e => {
-        if (e.target === overlay) overlay.classList.remove('show');
+        if (e.target === overlay) this.closeModal(overlay.id);
       });
     });
-    document.querySelectorAll('.modal-close').forEach(btn => {
+    document.querySelectorAll('.modal-close, [data-close-modal]').forEach(btn => {
       btn.addEventListener('click', () => {
-        btn.closest('.modal-overlay').classList.remove('show');
+        const overlay = btn.closest('.modal-overlay');
+        if (overlay) this.closeModal(overlay.id);
       });
     });
   },
@@ -956,15 +1083,19 @@ const CBS = {
         } catch { throw new Error('Unauthorized'); }
       }
       if (res.status === 401) { CBS.logout(false); throw new Error('Unauthorized'); }
-      if (res.status === 403) {
+      /* 400 مدرجة هنا كذلك: batch.middleware يردّ 400 لا 403 عند غياب
+         الدفعة ("يرجى تحديد الدفعة أولاً")، فكان المستخدم يُترك بصفحة
+         فارغة بلا رسالة ولا توجيه إلى صفحة الاختيار. */
+      if (res.status === 403 || res.status === 400) {
         const onSelector = window.location.pathname === '/batch-selector.html';
         const user = CBS.getUser();
         const isLeader  = user.roles?.includes('leader');
         const isStudent = user.roles?.includes('student');
-        if (!onSelector && !isLeader && !isStudent && !CBS.getBatchId()) {
+        const needsBatch = !isLeader && !isStudent && !CBS.getBatchId();
+        if (!onSelector && needsBatch) {
           CBS.toast('يرجى تحديد الدفعة أولاً للوصول إلى البيانات', '', 'error');
           setTimeout(() => { location.replace('/batch-selector.html'); }, 2000);
-        } else if (!onSelector) {
+        } else if (!onSelector && res.status === 403) {
           CBS.toast('غير مصرح لك بالوصول لهذا المحتوى أو إجراء هذه العملية في الدفعة الحالية', '', 'error');
         }
       }
@@ -1262,8 +1393,11 @@ const CBS = {
   async renderBatchSwitcher() {
     const user = this.getUser();
     // يظهر فقط للعميد والدكاترة  الليدر والطالب دفعتهم ثابتة
+    /* "admin" كان مفقوداً هنا، فلا يستطيع المسؤول اختيار دفعة إطلاقاً بينما
+       batch.middleware يردّ 400 "يرجى تحديد الدفعة" على كل مسار مرتبط
+       بدفعة — طريق مسدود بلا رسالة ولا حل. */
     const canSwitch = user && user.roles &&
-      (user.roles.includes('dean') || user.roles.includes('doctor'));
+      (user.roles.includes('dean') || user.roles.includes('admin') || user.roles.includes('doctor'));
     if (!canSwitch) return;
 
     // لا يظهر في صفحات الإعداد
@@ -1483,6 +1617,14 @@ const CBS = {
     // لغير العميد أو للعميد داخل دفعة، اذهب للوحة الدفعة (dashboard)
     window.location.href = '/dashboard.html' + (batchId ? '?batch=' + batchId : '');
   },
+  /* ===== Back Navigation ===== */
+  goBack() {
+    if (history.length > 1) {
+      history.back();
+    } else {
+      window.location.href = '/dashboard.html';
+    }
+  },
 
   /* ===== Scroll Entrance Animations ===== */
   initScrollAnimations() {
@@ -1629,17 +1771,24 @@ const CBS = {
         { href: `/profile.html${bp}`,                icon: 'ri-user-3-line',         label: 'حسابي' },
       ];
     } else if (primaryRole === 'leader') {
+      /* الليدر طالب قبل أن يكون مسؤولاً: كان شريطه يعرض أدوات الإدارة فقط
+         بلا المواد ولا الرسوم ولا التنبيهات، رغم أنه يدرس ويدفع ويُشعَر
+         مثل أي طالب — فتصير تلك الصفحات بلا طريق يصل إليها. */
       items = [
         { href: `/dashboard.html${bp}`,              icon: 'ri-home-5-line',         label: 'الرئيسية' },
+        { href: `/subjects.html${bp}`,               icon: 'ri-book-2-line',         label: 'المواد' },
         { href: `/manage-lectures.html${bp}`,        icon: 'ri-video-line',          label: 'المحاضرات' },
-        { href: `/quizzes.html${bp}`,                icon: 'ri-question-answer-line', label: 'الاختبارات' },
         { href: `/manage-attendance.html${bp}`,      icon: 'ri-calendar-check-line', label: 'الحضور' },
+        { href: `/notifications.html${bp}`,          icon: 'ri-notification-3-line', label: 'التنبيهات', badge: true },
         { href: `/profile.html${bp}`,                icon: 'ri-user-3-line',         label: 'حسابي' },
       ];
     } else if (primaryRole === 'doctor') {
       items = [
         { href: `/dashboard.html${bp}`,              icon: 'ri-home-5-line',        label: 'الرئيسية' },
         { href: `/manage-lectures.html${bp}`,        icon: 'ri-video-line',         label: 'المحاضرات' },
+        // الدكتور يرصد الحضور وينشئ الاختبارات — وكان الشريط يخلو منهما
+        { href: `/manage-attendance.html${bp}`,      icon: 'ri-calendar-check-line', label: 'الحضور' },
+        { href: `/quizzes.html${bp}`,                icon: 'ri-question-answer-line', label: 'الاختبارات' },
         { href: `/manage-notifications.html${bp}`,   icon: 'ri-megaphone-line',     label: 'الإشعارات' },
         { href: `/profile.html${bp}`,                icon: 'ri-user-3-line',        label: 'حسابي' },
       ];
@@ -1684,9 +1833,12 @@ const CBS = {
       nav.appendChild(a);
     });
     document.body.appendChild(nav);
-    // مع "العرض حتى حافة الشاشة" في أندرويد 15 يجب إضافة ارتفاع شريط الإيماءات،
-    // وإلا اختفى آخر سطر من المحتوى خلف الشريط السفلي.
-    document.body.style.paddingBottom = 'calc(70px + env(safe-area-inset-bottom, 0px))';
+    /* مع "العرض حتى حافة الشاشة" في أندرويد 15 يجب إضافة ارتفاع شريط
+       الإيماءات، وإلا اختفى آخر سطر من المحتوى خلف الشريط السفلي.
+       الرقم يأتي من --floating-chrome لا من ثابت مكتوب هنا: كان 70px
+       بينما الطبقات العائمة تشغل 150px فعلياً، فيختفي الفوتر خلفها. */
+    document.body.style.paddingBottom =
+      'calc(var(--floating-chrome, 150px) + env(safe-area-inset-bottom, 0px))';
     this._syncBnavBadge();
     this.renderGlobalKedyAI();
   },
@@ -1770,7 +1922,10 @@ const CBS = {
       st.id = 'kedyGlobalStyle';
       st.textContent = `
         .kedy-global-fab {
-          position: fixed; bottom: 85px; left: 20px; z-index: 8000;
+          /* الموضع مشتق من --fab-bottom في نظام التصميم، فيتحرّك تلقائياً
+             إن تغيّر ارتفاع الشريط السفلي بدل أن يتخلّف عنه. */
+          position: fixed; bottom: calc(var(--fab-bottom, 106px) + env(safe-area-inset-bottom, 0px));
+          left: max(20px, 4%); z-index: 8000;
           background: linear-gradient(135deg, #4f46e5, #7c3aed);
           color: #fff; border: none; border-radius: 30px;
           padding: 11px 18px; font-weight: 800; font-size: 0.88rem;
@@ -1784,6 +1939,11 @@ const CBS = {
           50% { box-shadow: 0 12px 32px rgba(124,58,237,0.7); }
         }
         .kedy-global-fab:hover { transform: translateY(-4px) scale(1.04); }
+        /* لوحة المفاتيح تُقلّص نافذة العرض، فتقفز العناصر الثابتة فوق
+           المحتوى وتغطي ما يكتبه المستخدم. نخفيها ما دامت مفتوحة. */
+        body.cbs-keyboard-open .kedy-global-fab,
+        body.cbs-keyboard-open #bottom-nav,
+        body.cbs-keyboard-open .bottom-nav { display: none !important; }
         #globalKedyModal {
           position: fixed; inset: 0; z-index: 99995;
           background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
@@ -1944,8 +2104,9 @@ const CBS = {
         }
 
         @media (max-width: 768px) {
-          .page-content { padding-bottom: 110px !important; }
-          .kedy-global-fab { bottom: calc(78px + env(safe-area-inset-bottom, 0px)); left: 14px; padding: 9px 14px; font-size: 0.8rem; z-index: 9990; }
+          /* body يحجز المساحة الآن عبر --floating-chrome، فلا حاجة لرقم
+             ثانٍ هنا كان يخالفه (110px مقابل 70px مقابل 106px). */
+          .kedy-global-fab { bottom: calc(var(--fab-bottom, 106px) + env(safe-area-inset-bottom, 0px)); left: 14px; padding: 9px 14px; font-size: 0.8rem; z-index: 9990; }
           #globalKedyModal { padding: 0; align-items: flex-end; }
           .kedy-modal-box {
             width: 100%;
@@ -2076,9 +2237,23 @@ const CBS = {
     return this._kedySubjectName || '';
   },
 
-  /* هل الرسالة طلب تلخيص/شرح لمادة كاملة؟ */
+  /* هل الرسالة طلب يحتاج قراءة محتوى المادة/المحاضرات؟
+
+     القائمة السابقة كانت عبارات كاملة محدّدة (ملخص شامل، لخص لي المادة…)
+     فلا يطابقها الطالب حين يكتب "لخص لي" أو "اشرح دي" أو "شنو في الملف" —
+     وهو ما يكتبه فعلاً. النتيجة: لا يُجلب أي محتوى ويجيب كيدي من فراغ
+     بأنه "لا يرى ملفات". نكتفي الآن بفعل الطلب: أي أمر تلخيص أو شرح أو
+     استخراج أسئلة يستدعي قراءة المحتوى. */
+  _isContentRequest(msg) {
+    const text = String(msg || '');
+    const verbs = /(لخ+ص|تلخيص|ملخ+ص|اشرح|شرح|وضّح|وضح|فسّر|فسر|بسّط|بسط|راجع|مراجعة|حلّل|حلل)/;
+    const asks  = /(أسئلة متوقعة|اسئلة متوقعة|أهم النقاط|اهم النقاط|النقاط المهمة|ما في الملف|شنو في الملف|شنو الموجود|محتوى الملف|محتوى المادة|المنهج)/;
+    return verbs.test(text) || asks.test(text);
+  },
+
+  /* توافق خلفي — بقي اسمها مستخدماً في مواضع أخرى */
   _isSubjectWideRequest(msg) {
-    return /ملخص شامل|لخص لي المادة|لخّص المادة|اشرح لي المادة|المنهج كامل|المادة كاملة|أسئلة متوقعة/.test(msg);
+    return this._isContentRequest(msg);
   },
 
   /* يجلب نص كل محاضرات المادة (يستخرجه الخادم من ملفات PDF عند اللزوم) */
@@ -2130,8 +2305,25 @@ const CBS = {
       if (subjectTitle) payload.subjectTitle = subjectTitle;
       if (subjectId)    payload.subjectId = subjectId;
 
-      // داخل صفحة مادة + طلب يخص المادة كاملة → اقرأ محتواها فوراً بلا سؤال
-      if (subjectId && this._isSubjectWideRequest(msg)) {
+      /* محاضرة مفتوحة أمام الطالب + طلب محتوى → اقرأ هذه المحاضرة بعينها.
+         كان هذا الفرع غائباً تماماً: من يفتح محاضرة ويكتب "لخص لي" لا
+         يُرسَل معه أي نص، فيعتذر كيدي رغم أن الملف مفتوح أمامه. */
+      const openLectureId = this._currentLectureId?.() || document.getElementById('pdfModalTitle')?.dataset?.lectureId || '';
+      if (openLectureId && this._isContentRequest(msg)) {
+        botMsg.innerHTML = '<i class="ri-loader-4-line" style="animation:spin 1s linear infinite;display:inline-block"></i> جاري قراءة المحاضرة...';
+        try {
+          const lr = await this.apiGet(`/api/ai/lecture-context/${openLectureId}`);
+          const ld = await lr.json();
+          if (ld?.success && ld.hasText) {
+            payload.text = ld.extractedText;
+            payload.lectureTitle = ld.lectureTitle || lectureTitle;
+            payload.subjectTitle = ld.subjectName || subjectTitle;
+          }
+        } catch { /* نكمل بالمسار العام أدناه */ }
+      }
+
+      // داخل صفحة مادة + طلب محتوى ولم نقرأ محاضرة بعينها → اقرأ المادة كلها
+      if (!payload.text && subjectId && this._isContentRequest(msg)) {
         botMsg.innerHTML = '<i class="ri-loader-4-line" style="animation:spin 1s linear infinite;display:inline-block"></i> جاري قراءة محاضرات المادة...';
         const ctx = await this._fetchSubjectContext(subjectId);
         if (ctx && ctx.hasText) {
@@ -2491,7 +2683,7 @@ const CBS = {
     splash.innerHTML = `
       <img src="/assets/logo.png" class="splash-logo" alt="Logo" onerror="this.style.display='none'">
       <div class="uib-loader"><div class="half"></div><div class="half"></div></div>
-      <div class="splash-title">كلية تقنية المعلومات<br><small style="font-weight:400;font-size:0.75em;opacity:0.7">جامعة النصر التقنية</small></div>
+      <div class="splash-title">كلية النصر التقنية<br><small style="font-weight:400;font-size:0.75em;opacity:0.7">جامعة النصر التقنية</small></div>
     `;
     document.body.appendChild(splash);
   },
@@ -2581,9 +2773,11 @@ const CBS = {
     this.initDarkMode();
     this.initModalClose();
     this.initKeyboardSuggestions();
+    this.initHaptics();
     this._injectMobileCSS();
     this.initPullToRefresh();
     this.initBackgroundSync();
+    this.checkAppVersion();
 
     /* شريط الحالة على أندرويد 15 (SDK 35+):
        - setBackgroundColor يعتمد على Window.setStatusBarColor المتوقّفة نهائياً
@@ -2632,6 +2826,7 @@ const CBS = {
       this.verifyToken();
       this.renderAccountShortcut();
       this.renderBatchSwitcher();
+      this.initKeyboardAwareness();
       if (window.innerWidth <= 900) this.renderBottomNav();
       else this._navItemsForRole();  // نحسب التبويبات ليعرف زر الرجوع أيها جذري
 
@@ -2741,7 +2936,9 @@ const CBS = {
     };
 
     document.addEventListener('touchstart', (e) => {
-      if (window.scrollY > 5) return;
+      // كان الخروج المبكر هنا يترك isPulling وstartY من لمسة سابقة، فتُحسب
+      // مسافة سحب خاطئة في اللمسة التالية. نصفّر الحالة دائماً أولاً.
+      if (window.scrollY > 5) { isPulling = false; return; }
       if (shouldPreventPTR(e.target)) {
         isPulling = false;
         return;
@@ -2783,6 +2980,16 @@ const CBS = {
         else document.body.classList.remove('ptr-pulling');
       }
     }, { passive: false });
+
+    /* أندرويد يُطلق touchcancel (لا touchend) عند مقاطعة اللمسة — مكالمة،
+       إشعار، أو خروج الإصبع من حافة الشاشة. بدون هذا المستمع تبقى حالة
+       السحب عالقة على true مع مؤشر رأسي قديم. */
+    document.addEventListener('touchcancel', () => {
+      isPulling = false;
+      dist = 0;
+      ptr.style.transform = 'translateY(-100%)';
+      document.body.classList.remove('ptr-pulling', 'ptr-refreshing');
+    }, { passive: true });
 
     document.addEventListener('touchend', () => {
       if (!isPulling) return;
@@ -2827,8 +3034,8 @@ const CBS = {
       // قناة الإشعارات العادية  نغمة message_sound المخصصة
       await plugin.createChannel({
         id:          'general',
-        name:        'إشعارات كلية تقنية المعلومات',
-        description: 'الإشعارات الاعتيادية من كلية تقنية المعلومات',
+        name:        'إشعارات كلية النصر التقنية',
+        description: 'الإشعارات الاعتيادية من كلية النصر التقنية',
         importance:  4,              // IMPORTANCE_HIGH  لضمان الصوت دائماً
         visibility:  1,              // VISIBILITY_PUBLIC
         sound:       'cbs_notif', // ملف res/raw/cbs_notif.wav
@@ -2873,9 +3080,9 @@ const CBS = {
         try {
           await this.apiPost('/api/device/register', { token: token.value });
           localStorage.setItem('fcm_token', token.value);
-          console.log('✅ FCM Token Registered for User');
+          console.log(' FCM Token Registered for User');
         } catch(err) {
-          console.warn('⚠  FCM Token Register Warn:', err.message);
+          console.warn('  FCM Token Register Warn:', err.message);
         }
       });
 
@@ -3232,7 +3439,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
         <div style="display:flex;align-items:center;gap:14px;margin-bottom:22px;">
           <img src="/assets/icon-192.png" style="width:56px;height:56px;border-radius:14px;box-shadow:0 4px 18px rgba(0,0,0,0.35);flex-shrink:0;" alt="">
           <div>
-            <div style="font-size:1.2rem;font-weight:900;line-height:1.2;margin-bottom:3px;">ثبّت التطبيق 📲</div>
+            <div style="font-size:1.2rem;font-weight:900;line-height:1.2;margin-bottom:3px;">تثبيت التطبيق</div>
             <div style="font-size:0.8rem;opacity:0.7;">جامعة النصر التقنية  CBS</div>
           </div>
           <button id="iosInstallClose" style="
@@ -3240,7 +3447,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
             background:rgba(255,255,255,0.12);border:none;color:#fff;
             width:32px;height:32px;border-radius:50%;font-size:1.1rem;
             cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;
-          ">✕</button>
+          "></button>
         </div>
 
         <!-- الخطوات -->
@@ -3280,9 +3487,9 @@ window.addEventListener('beforeinstallprompt', (e) => {
               width:38px;height:38px;border-radius:10px;flex-shrink:0;
               background:rgba(255,255,255,0.12);
               display:flex;align-items:center;justify-content:center;font-size:1.2rem;
-            ">✓</div>
+            "></div>
             <div>
-              <div style="font-weight:700;font-size:0.95rem;">اضغط <span style="color:#a78bfa;">إضافة</span>  خلاص! 🎉</div>
+              <div style="font-weight:700;font-size:0.95rem;">اضغط <span style="color:#a78bfa;">إضافة</span>  اكتمل التثبيت</div>
               <div style="font-size:0.75rem;opacity:0.6;margin-top:1px;">التطبيق يفتح بالكامل بدون Safari</div>
             </div>
           </div>
@@ -3297,7 +3504,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
           font-family:-apple-system,'Cairo',sans-serif;
           cursor:pointer;
           box-shadow:0 4px 20px rgba(124,58,237,0.4);
-        ">فاهم، راح أثبّت الآن 🚀</button>
+        ">فهمت، تثبيت الآن</button>
 
         <button id="iosInstallNever" style="
           width:100%;margin-top:8px;
@@ -3348,7 +3555,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
     arw.id = 'iosShareArrow';
     arw.innerHTML = `
       <div class="arrow-label">↓ اضغط مشاركة هنا</div>
-      <div class="arrow-icon">👇</div>
+      <div class="arrow-icon"><i class="ri-arrow-down-line"></i></div>
     `;
     document.body.appendChild(arw);
     // يختفي بعد 6 ثوان
@@ -3746,6 +3953,42 @@ CBS._initOfflineSync = function() {
 };
 
 /* ===== 4. Modal Touch Gestures (Swipe down to dismiss) ===== */
+/* ===== كشف لوحة المفاتيح =====
+   على أندرويد تُقلَّص نافذة العرض عند فتح لوحة المفاتيح، فتنتقل العناصر
+   الثابتة (الشريط السفلي، زر كيدي) إلى أعلى الشاشة وتغطي حقل الكتابة.
+   نعتمد visualViewport لأنه المصدر الوحيد الدقيق لارتفاع المنطقة المرئية،
+   ونُكمله بـfocus كي يعمل على المتصفحات التي لا تدعمه. */
+CBS.initKeyboardAwareness = function () {
+  if (this._keyboardAwarenessReady) return;
+  this._keyboardAwarenessReady = true;
+
+  const body = document.body;
+  const setOpen = on => body.classList.toggle('cbs-keyboard-open', !!on);
+  const isTextField = el => !!el && (
+    el.tagName === 'TEXTAREA' ||
+    (el.tagName === 'INPUT' && !/^(button|submit|checkbox|radio|file|reset|image)$/i.test(el.type)) ||
+    el.isContentEditable
+  );
+
+  const vv = window.visualViewport;
+  if (vv) {
+    const baseline = vv.height;
+    const onResize = () => {
+      // فرق يتجاوز 150px يعني لوحة مفاتيح لا مجرد شريط عناوين متحرك
+      const shrunk = (Math.max(baseline, window.innerHeight) - vv.height) > 150;
+      setOpen(shrunk && isTextField(document.activeElement));
+    };
+    vv.addEventListener('resize', onResize);
+    vv.addEventListener('scroll', onResize);
+  }
+
+  document.addEventListener('focusin', e => { if (isTextField(e.target)) setOpen(true); });
+  document.addEventListener('focusout', () => {
+    // مهلة قصيرة: الانتقال بين حقلين يُطلق focusout ثم focusin فوراً
+    setTimeout(() => { if (!isTextField(document.activeElement)) setOpen(false); }, 120);
+  });
+};
+
 CBS.initModalGestures = function() {
   document.addEventListener('touchstart', (e) => {
     const modalBox = e.target.closest('.modal-box');
@@ -3782,6 +4025,120 @@ CBS.initModalGestures = function() {
     delete modalBox._startY;
     delete modalBox._isDragging;
   });
+};
+
+/* ===== نظام فحص وتتبع الإصدارات ونافذة التحديث المنبثقة ===== */
+CBS.checkAppVersion = async function() {
+  try {
+    // فحص تحديث التطبيق مخصص فقط لتطبيق الهاتف الأصلي (Capacitor Native APK)
+    // متصفحات الويب تعمل دائماً على أحدث كود حي من السيرفر ولا تتطلب تثبيت أو تنزيل APK
+    if (!CBS._isCapacitor()) {
+      return;
+    }
+
+    const v = CBS.VERSION || '2.1.0';
+    const code = CBS.BUILD_CODE || 28;
+    const platform = 'android';
+
+    const res = await fetch(`${API_BASE}/api/app-version/check?v=${encodeURIComponent(v)}&code=${code}&platform=${platform}`);
+    if (!res.ok) return;
+    const json = await res.json();
+    if (!json.success || !json.data) return;
+
+    const { isOutdated, isMandatory } = json.data;
+    // إذا كان التطبيق محدثاً بالفعل (أو ليس قديماً)، لا داعي لإظهار أي نافذة
+    if (!isOutdated) return;
+
+    // إذا كان التحديث اختيارياً وتم تأجيله في جلسة التصفح الحالية
+    const dismissedKey = `cbs_dismissed_update_${json.data.latestVersion}`;
+    if (!isMandatory && sessionStorage.getItem(dismissedKey)) {
+      return;
+    }
+
+    CBS.showUpdateModal(json.data);
+  } catch (e) {
+    // خطأ صامت في الخلفية لضمان عدم تأثر وظائف النظام
+  }
+};
+
+CBS.showUpdateModal = function(info = {}) {
+  if (document.getElementById('cbsUpdateModalOverlay')) return;
+
+  const isMandatory = !!info.isMandatory;
+  const latestVersion = info.latestVersion || '2.1.0';
+  const title = info.title || (isMandatory ? 'تحديث إجباري للنظام ⚠️' : 'تحديث جديد متوفر للتطبيق 🚀');
+  const message = info.message || 'يتوفر إصدار جديد من تطبيق كلية النصر التقنية يتضمن تحسينات هامة للأداء واستقرار النظام.';
+  const notes = Array.isArray(info.releaseNotes) && info.releaseNotes.length ? info.releaseNotes : [
+    'تحديثات شاملة لواجهات النظام وهوية كلية النصر التقنية',
+    'تحسينات السرعة والاستجابة وتجربة الجوال'
+  ];
+
+  const targetUrl = info.directApkUrl || info.downloadUrl || info.playStoreUrl || 'https://elnasrcsit.website/download';
+
+  const overlay = document.createElement('div');
+  overlay.id = 'cbsUpdateModalOverlay';
+  overlay.className = 'cbs-update-overlay';
+  overlay.setAttribute('role', 'dialog');
+  overlay.setAttribute('aria-modal', 'true');
+  overlay.setAttribute('aria-labelledby', 'cbsUpdateTitle');
+
+  overlay.innerHTML = `
+    <div class="cbs-update-card ${isMandatory ? 'mandatory' : ''}">
+      <div class="cbs-update-header">
+        <div class="cbs-update-icon-glow">
+          <i class="${isMandatory ? 'ri-shield-flash-line' : 'ri-rocket-line'}"></i>
+        </div>
+        <div class="cbs-update-badge">الإصدار الجديد v${CBS.escapeHTML(latestVersion)}</div>
+        <h2 id="cbsUpdateTitle" class="cbs-update-title">${CBS.escapeHTML(title)}</h2>
+        <p class="cbs-update-msg">${CBS.escapeHTML(message)}</p>
+      </div>
+
+      <div class="cbs-update-body">
+        <div class="cbs-update-notes-title"><i class="ri-sparkling-line"></i> ما الجديد في هذا الإصدار:</div>
+        <ul class="cbs-update-notes-list">
+          ${notes.map(n => `<li><i class="ri-checkbox-circle-fill"></i> <span>${CBS.escapeHTML(n)}</span></li>`).join('')}
+        </ul>
+      </div>
+
+      <div class="cbs-update-footer">
+        <a href="${CBS.escapeHTML(targetUrl)}" class="cbs-update-btn-primary" target="_blank" rel="noopener noreferrer">
+          <i class="ri-download-cloud-2-line"></i>
+          <span>تحديث التطبيق الآن</span>
+        </a>
+        ${!isMandatory ? `
+          <button type="button" class="cbs-update-btn-secondary" id="cbsDismissUpdateBtn">
+            <span>التحديث لاحقاً</span>
+          </button>
+        ` : `
+          <div class="cbs-update-mandatory-hint">
+            <i class="ri-error-warning-line"></i> يتطلب الاستمرار في استخدام التطبيق التحديث إلى هذا الإصدار
+          </div>
+        `}
+      </div>
+    </div>
+  `;
+
+  document.body.appendChild(overlay);
+  document.body.classList.add('modal-open');
+
+  if (!isMandatory) {
+    const dismissBtn = document.getElementById('cbsDismissUpdateBtn');
+    if (dismissBtn) {
+      dismissBtn.addEventListener('click', () => {
+        sessionStorage.setItem(`cbs_dismissed_update_${latestVersion}`, '1');
+        overlay.remove();
+        document.body.classList.remove('modal-open');
+      });
+    }
+  } else {
+    // في التحديث الإجباري: منع إغلاق النافذة بزر الهروب
+    window.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape' && document.getElementById('cbsUpdateModalOverlay')) {
+        e.preventDefault();
+        e.stopPropagation();
+      }
+    }, true);
+  }
 };
 
 // Initialize Gestures & Offline Sync on DOM Ready
@@ -3828,7 +4185,7 @@ if (document.readyState === 'loading') {
       banner.style.transition = 'opacity 0.4s ease';
       banner.style.opacity = '0';
       setTimeout(() => banner.remove(), 400);
-      CBS.toast('عاد الاتصال بالإنترنت ✓', '', 'success', 3000);
+      CBS.toast('عاد الاتصال بالإنترنت', '', 'success', 3000);
     }
   }
 
@@ -3837,10 +4194,12 @@ if (document.readyState === 'loading') {
 
   // التحقق عند التحميل
   if (!navigator.onLine) {
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', showOfflineBanner);
-    } else {
+    document.addEventListener('DOMContentLoaded', () => {
+      CBS.initModalClose();
       showOfflineBanner();
-    }
+    });
+  } else {
+    CBS.initModalClose();
+    showOfflineBanner();
   }
 })();

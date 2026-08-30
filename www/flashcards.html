@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>بطاقات الاستذكار الذكية | كلية النصر التقنية</title>
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css?v=2026081907">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026081907">
+  <style>
+    .flashcard-scene {
+      perspective: 1200px;
+      margin: 20px auto;
+      max-width: 580px;
+      width: 100%;
+      min-height: 320px;
+    }
+    .flashcard-box {
+      width: 100%;
+      min-height: 320px;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+      cursor: pointer;
+      border-radius: var(--radius-xl);
+    }
+    .flashcard-box.flipped {
+      transform: rotateY(180deg);
+    }
+    .flashcard-face {
+      position: absolute;
+      inset: 0;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border-radius: var(--radius-xl);
+      padding: 32px 24px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      box-shadow: 0 12px 36px rgba(0,0,0,0.08);
+      border: 2px solid var(--border);
+      background: var(--bg-card);
+    }
+    .flashcard-front {
+      background: linear-gradient(145deg, var(--bg-card), var(--bg-main));
+    }
+    .flashcard-back {
+      transform: rotateY(180deg);
+      background: linear-gradient(145deg, var(--bg-card), var(--primary-light));
+      border-color: var(--primary);
+    }
+    .badge-card-type {
+      font-size: 0.75rem;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 20px;
+      background: var(--primary-light);
+      color: var(--primary);
+      align-self: flex-start;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .card-content-text {
+      font-size: 1.15rem;
+      font-weight: 700;
+      line-height: 1.8;
+      color: var(--text-main);
+      text-align: center;
+      margin: auto 0;
+      word-break: break-word;
+    }
+    .flip-hint {
+      text-align: center;
+      font-size: 0.82rem;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+    }
+    .mastery-bar {
+      display: flex;
+      gap: 10px;
+      justify-content: center;
+      margin-top: 18px;
+      flex-wrap: wrap;
+    }
+    .mastery-btn {
+      flex: 1;
+      min-width: 100px;
+      padding: 12px 14px;
+      border-radius: var(--radius-lg);
+      border: 2px solid;
+      font-weight: 800;
+      font-size: 0.88rem;
+      cursor: pointer;
+      transition: all 0.2s;
+      font-family: 'Cairo', sans-serif;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 4px;
+    }
+    .mastery-btn.hard {
+      background: rgba(239, 68, 68, 0.1);
+      border-color: #ef4444;
+      color: #ef4444;
+    }
+    .mastery-btn.hard:hover { background: #ef4444; color: #fff; }
+    .mastery-btn.good {
+      background: rgba(245, 158, 11, 0.1);
+      border-color: #f59e0b;
+      color: #f59e0b;
+    }
+    .mastery-btn.good:hover { background: #f59e0b; color: #fff; }
+    .mastery-btn.easy {
+      background: rgba(16, 185, 129, 0.1);
+      border-color: #10b981;
+      color: #10b981;
+    }
+    .mastery-btn.easy:hover { background: #10b981; color: #fff; }
+    .deck-stats-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 20px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      font-size: 0.85rem;
+      font-weight: 700;
+    }
+  </style>
+</head>
+<body>
+
+<header class="main-header">
+  <div class="header-brand">
+    <img src="/assets/logo.png" class="header-logo" alt="شعار">
+    <div class="header-title-group">
+      <strong>بطاقات الاستذكار</strong>
+      <small>مراجعة تكرارية ذكية</small>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الداكن" aria-label="تبديل الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+  </div>
+</header>
+
+<main class="page-container" style="max-width:860px; margin:0 auto; padding:20px 16px 80px;">
+  <!-- Header -->
+  <div class="welcome-banner" style="margin-bottom:20px;">
+    <div class="welcome-banner-body">
+      <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
+        <div>
+          <h1 style="font-size:1.35rem; font-weight:800; margin:0 0 6px; color:var(--text-main);">
+            <i class="ri-stack-line" style="color:var(--primary);"></i> بطاقات الاستذكار التكراري (Spaced Repetition)
+          </h1>
+          <p style="margin:0; font-size:0.88rem; color:var(--text-muted);">
+            تثبيت المفاهيم والمصطلحات في الذاكرة طويلة المدى وفق الخوارزمية العلمية.
+          </p>
+        </div>
+        <div style="display:flex; gap:8px;">
+          <div class="deck-stats-pill">
+            <i class="ri-fire-fill" style="color:#ef4444;"></i> <span id="streakCount">0 يوم متتالي</span>
+          </div>
+          <div class="deck-stats-pill">
+            <i class="ri-checkbox-circle-fill" style="color:#10b981;"></i> <span id="reviewedToday">0 مراجعة اليوم</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Deck Selector & AI Creator -->
+  <div class="card" style="margin-bottom:20px; padding:16px;">
+    <div style="display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
+      <div style="flex:1; min-width:220px;">
+        <label style="font-size:0.82rem; font-weight:700; color:var(--text-muted); display:block; margin-bottom:4px;" for="subjectSelect">اختر المقرر الدراسي:</label>
+        <select id="subjectSelect" class="form-control" onchange="onSubjectChange()" style="width:100%;">
+          <option value="">جاري تحميل المقررات...</option>
+        </select>
+      </div>
+      <div style="align-self:flex-end;">
+        <button id="generateAiCardsBtn" class="btn btn-primary" onclick="generateAiCards()" style="padding:10px 18px; font-weight:800; white-space:nowrap;">
+          <i class="ri-sparkling-fill"></i> توليد بطاقات بالذكاء الاصطناعي
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Progress Bar -->
+  <div id="deckProgressContainer" style="display:none; margin-bottom:14px;">
+    <div style="display:flex; justify-content:space-between; font-size:0.85rem; font-weight:800; color:var(--text-muted); margin-bottom:6px;">
+      <span>التقدم في المجموعة</span>
+      <span id="deckProgressLabel">0 / 0</span>
+    </div>
+    <div style="height:8px; background:var(--border); border-radius:4px; overflow:hidden;">
+      <div id="deckProgressBar" style="height:100%; width:0%; background:linear-gradient(90deg, var(--primary), #7c3aed); transition:width 0.3s ease;"></div>
+    </div>
+  </div>
+
+  <!-- Interactive Card Scene -->
+  <div id="cardSceneArea">
+    <div class="flashcard-scene" id="flashcardScene" style="display:none;">
+      <div class="flashcard-box" id="flashcardBox" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" onclick="flipCard()">
+        <!-- Front -->
+        <div class="flashcard-face flashcard-front">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span class="badge-card-type"><i class="ri-question-line"></i> السؤال / المفهوم</span>
+            <span style="font-size:0.8rem; color:var(--text-muted);" id="frontCardNumber">1</span>
+          </div>
+          <div class="card-content-text" id="cardQuestion">...</div>
+          <div class="flip-hint">
+            <i class="ri-repeat-line"></i> انقر على البطاقة لرؤية الإجابة
+          </div>
+        </div>
+
+        <!-- Back -->
+        <div class="flashcard-face flashcard-back">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <span class="badge-card-type" style="background:var(--success-bg); color:var(--success);"><i class="ri-check-line"></i> الإجابة النموذجية</span>
+            <span style="font-size:0.8rem; color:var(--text-muted);" id="backCardNumber">1</span>
+          </div>
+          <div class="card-content-text" id="cardAnswer">...</div>
+          <div class="flip-hint">
+            <i class="ri-check-double-line"></i> قيّم مدى استيعابك للمفهوم:
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Rating Actions (shown when card is flipped) -->
+    <div id="masteryControls" style="display:none; max-width:580px; margin:0 auto;">
+      <div class="mastery-bar">
+        <button class="mastery-btn hard" onclick="rateCard('hard')">
+          <span>صعب</span>
+          <small style="font-size:0.75rem; opacity:0.85;">إعادة غداً</small>
+        </button>
+        <button class="mastery-btn good" onclick="rateCard('good')">
+          <span>جيد</span>
+          <small style="font-size:0.75rem; opacity:0.85;">بعد 3 أيام</small>
+        </button>
+        <button class="mastery-btn easy" onclick="rateCard('easy')">
+          <span>سهل</span>
+          <small style="font-size:0.75rem; opacity:0.85;">بعد 7 أيام</small>
+        </button>
+      </div>
+    </div>
+
+    <!-- Empty State -->
+    <div id="deckEmptyState" style="text-align:center; padding:60px 20px; background:var(--bg-card); border-radius:var(--radius-xl); border:1px dashed var(--border);">
+      <i class="ri-file-list-3-line" style="font-size:3.5rem; color:var(--text-muted); display:block; margin-bottom:12px;"></i>
+      <h3 style="font-size:1.2rem; font-weight:800; margin-bottom:8px;">لا توجد بطاقات معروضة</h3>
+      <p style="color:var(--text-muted); font-size:0.9rem; max-width:440px; margin:0 auto 18px;">
+        اختر مقرراً دراسياً من القائمة أعلاه أو انقر على «توليد بطاقات بالذكاء الاصطناعي» لبدء جلسة الاستذكار.
+      </p>
+    </div>
+
+    <!-- Completion Celebration State -->
+    <div id="deckCompletedState" style="display:none; text-align:center; padding:50px 20px; background:var(--bg-card); border-radius:var(--radius-xl); border:2px solid var(--success);">
+      <div style="font-size:3.5rem; margin-bottom:12px; color:var(--success);"><i class="ri-checkbox-circle-line"></i></div>
+      <h2 style="font-size:1.4rem; font-weight:800; color:var(--text-main); margin-bottom:8px;">أحسنت! أكملت مراجعة هذه المجموعة</h2>
+      <p style="color:var(--text-muted); font-size:0.92rem; margin-bottom:20px;">
+        تم تسجيل تقدمك وتحديث مواعيد المراجعة التكرارية بنجاح (+15 نقطة نشاط أكاديمي).
+      </p>
+      <div style="display:flex; justify-content:center; gap:10px;">
+        <button class="btn btn-outline" onclick="restartDeck()"><i class="ri-refresh-line"></i> إعادة من البداية</button>
+        <button class="btn btn-primary" onclick="location.href='/dashboard.html'"><i class="ri-home-line"></i> العودة للرئيسية</button>
+      </div>
+    </div>
+  </div>
+</main>
+
+<div id="toast-container"></div>
+
+<script src="/js/shared.js?v=2026081907"></script>
+<script src="/js/app.js?v=2026081907"></script>
+<script>
+  CBS.init({ requireAuth: true });
+  const user = CBS.getUser();
+  let currentDeck = [];
+  let currentCardIndex = 0;
+  let isFlipped = false;
+
+  async function loadSubjects() {
+    try {
+      const res = await CBS.apiGet('/api/subjects');
+      const data = await CBS.readJson(res);
+      const sel = document.getElementById('subjectSelect');
+      // الخادم يغلّف الحمولة داخل data (utils/response.js)
+      const subjects = data.data?.subjects || data.subjects || [];
+      if (data.success && subjects.length > 0) {
+        sel.innerHTML = '<option value="">-- اختر مادة للدراسة --</option>' +
+          subjects.map(s => `<option value="${s._id}">${CBS.escapeHTML(s.name)}</option>`).join('');
+      } else {
+        sel.innerHTML = '<option value="">لا توجد مواد متاحة</option>';
+      }
+    } catch(e) {
+      document.getElementById('subjectSelect').innerHTML = '<option value="">تعذر جلب المواد</option>';
+    }
+  }
+
+  function updateStreakUI() {
+    const streak = parseInt(localStorage.getItem('cbs_flashcard_streak') || '1', 10);
+    const reviewed = parseInt(localStorage.getItem('cbs_flashcard_reviewed_today') || '0', 10);
+    document.getElementById('streakCount').textContent = `${streak} يوم متتالي`;
+    document.getElementById('reviewedToday').textContent = `${reviewed} مراجعة اليوم`;
+  }
+
+  async function onSubjectChange() {
+    const subjectId = document.getElementById('subjectSelect').value;
+    if (!subjectId) {
+      resetScene();
+      return;
+    }
+    // Load local stored deck for this subject or generate
+    const saved = localStorage.getItem(`deck_${subjectId}`);
+    if (saved) {
+      currentDeck = JSON.parse(saved);
+      startDeck(currentDeck);
+    } else {
+      generateAiCards();
+    }
+  }
+
+  async function generateAiCards() {
+    const subjectSelect = document.getElementById('subjectSelect');
+    const subjectId = subjectSelect.value;
+    const subjectName = subjectSelect.options[subjectSelect.selectedIndex]?.text || 'المادة الأكاديمية';
+
+    const btn = document.getElementById('generateAiCardsBtn');
+    btn.disabled = true;
+    btn.innerHTML = '<i class="ri-loader-4-line ri-spin"></i> جاري التوليد...';
+
+    try {
+      // جلب سياق المادة
+      let contextText = '';
+      if (subjectId) {
+        try {
+          const cRes = await CBS.apiGet(`/api/ai/subject-context/${subjectId}`);
+          const cData = await CBS.readJson(cRes);
+          if (cData.hasText) contextText = cData.text;
+        } catch {}
+      }
+
+      const res = await CBS.apiPost('/api/ai/flashcards', {
+        text: contextText,
+        subjectTitle: subjectName
+      });
+      const data = await CBS.readJson(res);
+
+      if (data.success && Array.isArray(data.cards) && data.cards.length > 0) {
+        currentDeck = data.cards;
+        if (subjectId) localStorage.setItem(`deck_${subjectId}`, JSON.stringify(currentDeck));
+        CBS.toast('تم توليد بطاقات المراجعة بنجاح', '', 'success');
+        startDeck(currentDeck);
+      } else {
+        // الخادم يشرح السبب (حصة مستنفدة، مادة بلا محتوى، رد غير صالح) —
+        // إخفاؤه خلف رسالة عامة كان يجعل العطل غير قابل للتشخيص
+        const reason = data.message || 'تعذر توليد البطاقات تلقائياً، يرجى المحاولة لاحقاً';
+        CBS.toast(reason, '', 'error');
+        console.error('[flashcards/generateAiCards] رد الخادم:', data);
+      }
+    } catch(e) {
+      CBS.toast('تعذّر الاتصال بخدمة كيدي — تحقّق من اتصالك بالإنترنت', '', 'error');
+      console.error('[flashcards/generateAiCards]', e);
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = '<i class="ri-sparkling-fill"></i> توليد بطاقات بالذكاء الاصطناعي';
+    }
+  }
+
+  function startDeck(deck) {
+    if (!deck || !deck.length) return;
+    currentCardIndex = 0;
+    document.getElementById('deckEmptyState').style.display = 'none';
+    document.getElementById('deckCompletedState').style.display = 'none';
+    document.getElementById('deckProgressContainer').style.display = 'block';
+    document.getElementById('flashcardScene').style.display = 'block';
+    showCard(0);
+  }
+
+  function showCard(idx) {
+    if (idx >= currentDeck.length) {
+      completeDeck();
+      return;
+    }
+    const card = currentDeck[idx];
+    isFlipped = false;
+    const box = document.getElementById('flashcardBox');
+    box.classList.remove('flipped');
+
+    document.getElementById('cardQuestion').textContent = card.q || card.question || '';
+    document.getElementById('cardAnswer').textContent = card.a || card.answer || '';
+    document.getElementById('frontCardNumber').textContent = `${idx + 1} / ${currentDeck.length}`;
+    document.getElementById('backCardNumber').textContent = `${idx + 1} / ${currentDeck.length}`;
+    document.getElementById('masteryControls').style.display = 'none';
+
+    // Progress bar
+    const pct = Math.round(((idx) / currentDeck.length) * 100);
+    document.getElementById('deckProgressBar').style.width = `${pct}%`;
+    document.getElementById('deckProgressLabel').textContent = `${idx + 1} / ${currentDeck.length}`;
+  }
+
+  function flipCard() {
+    isFlipped = !isFlipped;
+    const box = document.getElementById('flashcardBox');
+    box.classList.toggle('flipped', isFlipped);
+    CBS.haptic('selection');
+    if (isFlipped) {
+      document.getElementById('masteryControls').style.display = 'block';
+    }
+  }
+
+  function rateCard(rating) {
+    CBS.haptic('light');
+    let reviewed = parseInt(localStorage.getItem('cbs_flashcard_reviewed_today') || '0', 10);
+    localStorage.setItem('cbs_flashcard_reviewed_today', String(reviewed + 1));
+    updateStreakUI();
+
+    currentCardIndex++;
+    showCard(currentCardIndex);
+  }
+
+  function completeDeck() {
+    document.getElementById('flashcardScene').style.display = 'none';
+    document.getElementById('masteryControls').style.display = 'none';
+    document.getElementById('deckProgressContainer').style.display = 'none';
+    document.getElementById('deckCompletedState').style.display = 'block';
+    CBS.haptic('success');
+  }
+
+  function restartDeck() {
+    startDeck(currentDeck);
+  }
+
+  function resetScene() {
+    document.getElementById('flashcardScene').style.display = 'none';
+    document.getElementById('masteryControls').style.display = 'none';
+    document.getElementById('deckProgressContainer').style.display = 'none';
+    document.getElementById('deckCompletedState').style.display = 'none';
+    document.getElementById('deckEmptyState').style.display = 'block';
+  }
+
+  loadSubjects();
+  updateStreakUI();
+</script>
+</body>
+</html>

@@ -1,20 +1,23 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>لوحة المتصدرين | كلية تقنية المعلومات</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>لوحة المتصدرين | كلية النصر التقنية</title>
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Al-Nasr CBS">
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
-  <link rel="stylesheet" href="/css/style.css?v=2026073128">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026073128">
+  <link rel="stylesheet" href="/css/style.css?v=2026081907">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026081907">
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
   <style>
     .leaderboard-banner {
-      background: linear-gradient(135deg, #f59e0b, #d97706, #b45309);
+      /* التدرّج الفاتح (#f59e0b) كان يعطي نصاً أبيض بتباين 2.15 — يرسب في
+         المعايير ويصعب قراءته تحت الشمس. نُعمّقه مع بقاء الهوية الذهبية. */
+      background: linear-gradient(135deg, #b45309, #92400e, #78350f);
       border-radius: var(--radius-lg);
       padding: 28px;
       color: #fff;
@@ -116,15 +119,15 @@
 
 <header class="main-header">
   <div class="header-brand">
-    <button class="btn-icon" onclick="CBS.goHome()" title="رجوع"><i class="ri-arrow-right-line"></i></button>
+    <button class="btn-icon" onclick="CBS.goHome()" title="رجوع" aria-label="رجوع"><i class="ri-arrow-right-line"></i></button>
     <div class="header-title-group">
-      <strong>كلية تقنية المعلومات</strong>
+      <strong>كلية النصر التقنية</strong>
       <small>لوحة الشرف والمتصدرين</small>
     </div>
   </div>
   <div class="header-actions">
-    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
-    <button class="btn-icon" onclick="CBS.logout()" title="خروج"><i class="ri-logout-box-r-line"></i></button>
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي" aria-label="تبديل الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="CBS.logout()" title="خروج" aria-label="تسجيل الخروج"><i class="ri-logout-box-r-line"></i></button>
   </div>
 </header>
 
@@ -165,8 +168,8 @@
 </footer>
 
 <div id="toast-container"></div>
-<script src="/js/shared.js?v=2026073128"></script>
-<script src="/js/app.js?v=2026073128"></script>
+<script src="/js/shared.js?v=2026081907"></script>
+<script src="/js/app.js?v=2026081907"></script>
 <script>
   CBS.init();
   document.getElementById('year').textContent = new Date().getFullYear();
@@ -247,7 +250,7 @@
             data.batches.map(b => `<option value="${b._id}">${CBS.escapeHTML(b.name)}</option>`).join('');
         }
       }
-    } catch(e) {}
+    } catch(e) { console.error('[leaderboard/loadBatches]', e); }
   }
 
   loadBatches();

@@ -17,6 +17,7 @@ const Notification = require("./models/Notification");
 const User = require("./models/User");
 const { apiLimiter, authLimiter, passwordResetLimiter, uploadLimiter } = require("./middleware/rateLimiter");
 const requestId = require("./middleware/requestId");
+const { log, recordRequest, snapshot } = require("./utils/observability");
 
 const app = express();
 app.set('trust proxy', 1); // Required for express-rate-limit behind cPanel/Litespeed proxy
@@ -32,7 +33,8 @@ app.use(helmet({
       styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
       fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net"],
       imgSrc: ["'self'", "data:", "blob:"],
-      connectSrc: ["'self'", "ws:", "wss:", "https://unpkg.com", "https://cdn.jsdelivr.net"],
+      // ce.judge0.com يترجم وينفّذ C++ في مختبر البرمجة (لا يوجد مترجم C++ داخل المتصفح)
+      connectSrc: ["'self'", "ws:", "wss:", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://ce.judge0.com"],
       mediaSrc: ["'self'", "blob:"],
       workerSrc: ["'self'", "blob:"],
       frameAncestors: ["'self'"],
@@ -52,8 +54,28 @@ app.use(helmet({
 }));
 
 app.use(compression());
-// app.use(hpp()); // Prevent HTTP Parameter Pollution (Incompatible with Express 5 req.query getter)
+// HPP protection: manually sanitize duplicate query params (express-rate-limit/Express 5 safe alternative)
+app.use((req, res, next) => {
+  // Keep only the last value of any duplicated query param (prevents HPP attacks)
+  if (req.query && typeof req.query === 'object') {
+    for (const key of Object.keys(req.query)) {
+      if (Array.isArray(req.query[key])) {
+        req.query[key] = req.query[key][req.query[key].length - 1];
+      }
+    }
+  }
+  next();
+});
 app.use(requestId);
+app.use((req, res, next) => {
+  const started = process.hrtime.bigint();
+  res.on('finish', () => {
+    const durationMs = Number(process.hrtime.bigint() - started) / 1e6;
+    const meta = recordRequest(req, res, durationMs);
+    if (meta.status >= 400) log(meta.status >= 500 ? 'error' : 'warn', 'request_completed', { ...meta, requestId: req.id });
+  });
+  next();
+});
 
 /* ===== أصول مسموح بها =====
    الأصول الخاصة بالتطبيق نفسه يجب أن تُقبل دائماً دون الاعتماد على ضبط
@@ -101,8 +123,10 @@ const io = new SocketServer(httpServer, {
     methods: ['GET', 'POST'],
     credentials: true
   },
-  // polling أولاً ثم الترقية إلى websocket — يعمل خلف أي وسيط لا يدعم الترقية
-  transports: ['polling', 'websocket']
+  pingTimeout: 30000,
+  pingInterval: 10000,
+  connectTimeout: 20000,
+  transports: ['websocket', 'polling']
 });
 
 app.set('io', io);
@@ -121,7 +145,7 @@ io.use((socket, next) => {
 });
 
 io.on('connection', (socket) => {
-  console.log(`[Socket] Connected: ${socket.id} — user: ${socket.user?.email}`);
+  console.log(`[Socket] Connected: ${socket.id} â€” user: ${socket.user?.email}`);
 
   socket.on('join:user', (userId) => {
     // A client may only subscribe to its own private notification room.
@@ -133,7 +157,8 @@ io.on('connection', (socket) => {
   socket.on('join:batch', async (batchId) => {
     try {
       const roles = socket.user?.roles || [];
-      let allowed = roles.includes('dean');
+      // "admin" يُعامَل معاملة العميد في كل النظام — وكان مفقوداً هنا وحده
+      let allowed = roles.includes('dean') || roles.includes('admin');
       if (!allowed && (roles.includes('student') || roles.includes('leader'))) {
         const user = await User.findById(socket.user.id).select('batch').lean();
         allowed = Boolean(user?.batch && String(user.batch) === String(batchId));
@@ -146,6 +171,36 @@ io.on('connection', (socket) => {
     } catch (err) {
       console.warn('[Socket] Failed to authorize batch room:', err.message);
     }
+  });
+
+  /* كان الانضمام بلا أي تحقق: معرّف غرفة يكفي للتنصّت على كل أحداث مجموعة
+     مذاكرة لا ينتمي إليها المستخدم (المهام والمؤقّت والداخلون). نطبّق نفس
+     قيد الدفعة المطبَّق على مسارات REST. */
+  socket.on('join:pod', async (podId) => {
+    try {
+      if (!podId) return;
+      const roles = socket.user?.roles || [];
+      if (roles.includes('dean') || roles.includes('admin')) {
+        return socket.join(`pod:${podId}`);
+      }
+
+      const StudyPod = require('./models/StudyPod');
+      const pod = await StudyPod.findById(podId).select('batch').lean();
+      if (!pod || !pod.batch) return;
+
+      const user = await User.findById(socket.user.id).select('batch batches').lean();
+      const mine = roles.includes('doctor')
+        ? (user?.batches || []).map(String)
+        : (user?.batch ? [String(user.batch)] : []);
+
+      if (mine.includes(String(pod.batch))) socket.join(`pod:${podId}`);
+    } catch (err) {
+      console.warn('[Socket] Failed to authorize pod room:', err.message);
+    }
+  });
+
+  socket.on('leave:pod', (podId) => {
+    if (podId) socket.leave(`pod:${podId}`);
   });
 
   socket.on('disconnect', () => {
@@ -189,9 +244,36 @@ app.use((req, res, next) => {
   next();
 });
 
-// حماية ضد هجمات الـ XSS
-// const xss = require("xss-clean");
-// app.use(xss()); // Incompatible with Express 5 req.query getter
+/* XSS protection.
+   القائمة السابقة كانت قائمة حظر تُزيل <script> و javascript: ومعالجات
+   الأحداث *المقتبسة* فقط — والنمط كان يشترط علامات الاقتباس، فيمرّ
+   <img src=x onerror=alert(1)> سليماً. كما كانت تُطبَّق على req.body وحده
+   دون query أو params.
+   الحل الجذري هو ترميز المخرجات عند العرض (الواجهة تستخدم CBS.escapeHTML)،
+   وهذه الطبقة دفاع إضافي: نحيّد المحارف البانية للوسوم بدل مطاردة أنماط. */
+app.use((req, res, next) => {
+  const neutralize = (str) => str
+    .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+    .replace(/javascript\s*:/gi, '')
+    .replace(/\bon\w+\s*=/gi, 'data-blocked-handler=');
+
+  function sanitizeXSS(obj, depth = 0) {
+    if (depth > 5 || !obj || typeof obj !== 'object') return;
+    for (const key of Object.keys(obj)) {
+      const value = obj[key];
+      if (typeof value === 'string') {
+        obj[key] = neutralize(value);
+      } else if (value && typeof value === 'object') {
+        sanitizeXSS(value, depth + 1);
+      }
+    }
+  }
+  if (req.body) sanitizeXSS(req.body);
+  if (req.params) sanitizeXSS(req.params);
+  /* req.query في Express 5 قارئ فقط — نُعقّم محتواه دون إعادة تعيينه */
+  if (req.query) sanitizeXSS(req.query);
+  next();
+});
 
 // ===== Rate Limiting =====
 app.use('/api/', apiLimiter);
@@ -222,11 +304,29 @@ const uploadsStaticOptions = {
     }
   }
 };
+/* الملفات الخاصة (تسليمات الطلاب وإيصالات السداد) لا تُخدَم للعموم: اسم
+   الملف ليس سرّاً، وتخمينه كان يكفي لتنزيل عمل طالب أو صورة تحويل بنكي.
+   نطلب توكناً صالحاً قبل تسليمها — والمحتوى الأكاديمي العام يبقى كما هو. */
+const authMiddleware = require('./middleware/auth.middleware');
+const PRIVATE_UPLOAD_DIRS = ['submissions', 'receipts'];
+
 app.use('/uploads/lectures', express.static(path.join(__dirname, 'uploads/lectures'), uploadsStaticOptions));
 app.use('/uploads/assignments', express.static(path.join(__dirname, 'uploads/assignments'), uploadsStaticOptions));
-app.use('/uploads/submissions', express.static(path.join(__dirname, 'uploads/submissions'), uploadsStaticOptions));
 app.use('/uploads/references', express.static(path.join(__dirname, 'uploads/references'), uploadsStaticOptions));
+app.use('/uploads/past-exams', express.static(path.join(__dirname, 'uploads/past-exams'), uploadsStaticOptions));
 app.use('/uploads/misc', express.static(path.join(__dirname, 'uploads/misc'), uploadsStaticOptions));
+app.use('/uploads/submissions', authMiddleware, express.static(path.join(__dirname, 'uploads/submissions'), uploadsStaticOptions));
+app.use('/uploads/receipts', authMiddleware, express.static(path.join(__dirname, 'uploads/receipts'), uploadsStaticOptions));
+
+/* الحارس السابق كان مسار /uploads العام المُسجَّل بعد الخاص، فيلتقط
+   /uploads/submissions/<ملف> قبل أن يصل إليه أي تحقق. نمنع ذلك صراحة. */
+app.use("/uploads", (req, res, next) => {
+  const firstSegment = req.path.split('/').filter(Boolean)[0];
+  if (PRIVATE_UPLOAD_DIRS.includes(firstSegment)) {
+    return res.status(404).end();
+  }
+  next();
+});
 app.use("/uploads", express.static(path.join(__dirname, "uploads"), uploadsStaticOptions));
 
 // Fallback search inside subdirectories if file is requested directly under /uploads/
@@ -235,25 +335,209 @@ app.use("/uploads", (req, res, next) => {
   if (req.method !== 'GET' && req.method !== 'HEAD') return next();
   const filename = path.basename(req.path);
   if (!filename) return next();
-  const subdirs = ['lectures', 'assignments', 'submissions', 'references', 'misc'];
-  
+  /* المجلدات الخاصة مستبعدة هنا: البحث الاحتياطي بالاسم المجرّد كان طريقاً
+     جانبياً يتخطى حارس المصادقة أعلاه. */
+  const subdirs = ['lectures', 'assignments', 'references', 'past-exams', 'misc'];
+
   for (const sub of subdirs) {
     const fullPath = path.join(__dirname, 'uploads', sub, filename);
     if (fs.existsSync(fullPath)) {
-      return res.sendFile(fullPath, uploadsStaticOptions);
+      /* sendFile لا يعرف الخيار setHeaders — يقبل { headers } فقط. تمريره
+         كان يُسقط Content-Disposition: attachment و nosniff بصمت، فيُعرض
+         ملف .html أو .svg مرفوع داخل نطاق التطبيق: XSS مخزّن يسرق الجلسات. */
+      const inlineSafe = INLINE_SAFE_EXT.has(path.extname(fullPath).toLowerCase());
+      return res.sendFile(fullPath, {
+        headers: inlineSafe
+          ? { 'X-Content-Type-Options': 'nosniff' }
+          : {
+              'X-Content-Type-Options': 'nosniff',
+              'Content-Disposition': 'attachment',
+              'Content-Type': 'application/octet-stream'
+            }
+      });
     }
   }
   next();
 });
 // ملف الـ Service Worker يجب ألا يُخزَّن مؤقتاً، وإلا بقي المستخدمون على نسخة
 // قديمة منه (ومعها أخطاؤها) حتى بعد النشر. المتصفح يعيد التحقق منه في كل مرة.
+// ===== Dynamic Open Graph (Social Sharing / WhatsApp Link Previews) =====
+const PublicNews = require('./models/PublicNews');
+const PublicGallery = require('./models/PublicGallery');
+const mongoose = require('mongoose');
+
+function escapeHtmlStr(str) {
+  if (!str) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+async function serveHtmlWithOg(req, res, pageFile) {
+  try {
+    const filePath = path.join(__dirname, 'www', pageFile);
+    if (!fs.existsSync(filePath)) {
+      return res.sendFile(path.join(__dirname, 'www', 'index.html'));
+    }
+
+    let html = fs.readFileSync(filePath, 'utf8');
+
+    // Force HTTPS if request is secure or forwarded
+    const proto = (req.headers['x-forwarded-proto'] || req.protocol || 'https').split(',')[0].trim();
+    const host = req.headers['x-forwarded-host'] || req.get('host') || 'elnasrcsit.website';
+    const currentDomain = `${proto.startsWith('https') ? 'https' : 'http'}://${host}`;
+    const domain = (process.env.PUBLIC_DOMAIN || currentDomain).replace(/\/$/, '');
+
+    let title = 'جامعة النصر التقنية | Al-Nasr University';
+    let description = 'البوابة الإلكترونية لجامعة النصر التقنية - الأخبار، الإعلانات، المحاضرات، والمحتوى الأكاديمي.';
+    let imageUrl = `${domain}/assets/icon-512.png`;
+    let canonicalUrl = `${domain}${req.originalUrl}`;
+    let imageType = 'image/png';
+    let imageWidth = 600;
+    let imageHeight = 600;
+
+    // Extract newsId or imageId from query parameters or URL path
+    const pathNewsMatch = req.path ? req.path.match(/\/news\/([a-f0-9]{24})/i) : null;
+    const pathImgMatch = req.path ? req.path.match(/\/gallery\/([a-f0-9]{24})/i) : null;
+
+    const newsId = req.query.newsId || req.params.newsId || (pathNewsMatch ? pathNewsMatch[1] : null);
+    const imageId = req.query.imageId || req.params.imageId || (pathImgMatch ? pathImgMatch[1] : null);
+
+    if (newsId && mongoose.Types.ObjectId.isValid(newsId)) {
+      const news = await PublicNews.findById(newsId).lean();
+      if (news) {
+        title = `${news.title} | جامعة النصر التقنية`;
+        if (news.summary) {
+          description = news.summary.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().slice(0, 220);
+        } else if (news.body) {
+          description = news.body.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().slice(0, 220);
+        }
+        if (news.imageUrl) {
+          imageUrl = news.imageUrl.startsWith('http') ? news.imageUrl : `${domain}${news.imageUrl.startsWith('/') ? '' : '/'}${news.imageUrl}`;
+          imageWidth = 1200;
+          imageHeight = 630;
+          if (imageUrl.toLowerCase().endsWith('.png')) imageType = 'image/png';
+          else if (imageUrl.toLowerCase().endsWith('.jpg') || imageUrl.toLowerCase().endsWith('.jpeg')) imageType = 'image/jpeg';
+          else if (imageUrl.toLowerCase().endsWith('.webp')) imageType = 'image/webp';
+        }
+      }
+    } else if (imageId && mongoose.Types.ObjectId.isValid(imageId)) {
+      const item = await PublicGallery.findById(imageId).lean();
+      if (item) {
+        title = item.caption ? `${item.caption.slice(0, 60)} | معرض جامعة النصر` : 'معرض الصور | جامعة النصر التقنية';
+        if (item.caption) {
+          description = item.caption.replace(/<[^>]*>/g, '').replace(/\s+/g, ' ').trim().slice(0, 220);
+        } else {
+          description = 'صورة مميزة من معرض الأنشطة والمباني بجامعة النصر التقنية.';
+        }
+        if (item.imageUrl) {
+          imageUrl = item.imageUrl.startsWith('http') ? item.imageUrl : `${domain}${item.imageUrl.startsWith('/') ? '' : '/'}${item.imageUrl}`;
+          imageWidth = 1200;
+          imageHeight = 630;
+          if (imageUrl.toLowerCase().endsWith('.png')) imageType = 'image/png';
+          else if (imageUrl.toLowerCase().endsWith('.jpg') || imageUrl.toLowerCase().endsWith('.jpeg')) imageType = 'image/jpeg';
+          else if (imageUrl.toLowerCase().endsWith('.webp')) imageType = 'image/webp';
+        }
+      }
+    }
+
+    const ogMeta = `
+  <!-- Open Graph / WhatsApp Link Previews -->
+  <meta property="og:site_name" content="جامعة النصر التقنية">
+  <meta property="og:type" content="article">
+  <meta property="og:locale" content="ar_SD">
+  <meta property="og:url" content="${escapeHtmlStr(canonicalUrl)}">
+  <meta property="og:title" content="${escapeHtmlStr(title)}">
+  <meta property="og:description" content="${escapeHtmlStr(description)}">
+  <meta property="og:image" content="${escapeHtmlStr(imageUrl)}">
+  <meta property="og:image:secure_url" content="${escapeHtmlStr(imageUrl)}">
+  <meta property="og:image:type" content="${imageType}">
+  <meta property="og:image:width" content="${imageWidth}">
+  <meta property="og:image:height" content="${imageHeight}">
+  <meta property="og:image:alt" content="${escapeHtmlStr(title)}">
+
+  <!-- Twitter Meta Tags -->
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:url" content="${escapeHtmlStr(canonicalUrl)}">
+  <meta name="twitter:title" content="${escapeHtmlStr(title)}">
+  <meta name="twitter:description" content="${escapeHtmlStr(description)}">
+  <meta name="twitter:image" content="${escapeHtmlStr(imageUrl)}">
+`;
+
+    html = html.replace(/<title>.*?<\/title>/i, `<title>${escapeHtmlStr(title)}</title>${ogMeta}`);
+
+    res.setHeader('Content-Type', 'text/html; charset=UTF-8');
+    res.send(html);
+  } catch (err) {
+    console.error('[OG Middleware] Error:', err.message);
+    res.sendFile(path.join(__dirname, 'www', pageFile));
+  }
+}
+
+// Custom Routes for Rich Link Previews
+app.get(['/', '/index.html'], (req, res, next) => {
+  if (req.query.newsId || req.query.imageId) {
+    return serveHtmlWithOg(req, res, 'welcome.html');
+  }
+  serveHtmlWithOg(req, res, 'index.html');
+});
+
+app.get(['/welcome.html', '/welcome'], (req, res) => {
+  serveHtmlWithOg(req, res, 'welcome.html');
+});
+
+app.get('/news/:newsId', (req, res) => {
+  serveHtmlWithOg(req, res, 'welcome.html');
+});
+
+app.get('/gallery/:imageId', (req, res) => {
+  serveHtmlWithOg(req, res, 'welcome.html');
+});
+
+/* روابط تطبيق أندرويد (App Links): أندرويد يطلب هذا الملف للتحقق أن
+   النطاق يخصّ التطبيق، وبدونه تُفتح روابط الموقع في المتصفح لا في التطبيق.
+   نخدمه بمسار صريح لأن express.static يتجاهل الملفات والمجلدات المخفية. */
+app.get('/.well-known/assetlinks.json', (req, res) => {
+  res.setHeader('Content-Type', 'application/json');
+  // dotfiles:'allow' ضرورية — الافتراضي في sendFile يرفض أي مسار فيه مجلد مخفي
+  res.sendFile(path.join(__dirname, 'www', '.well-known', 'assetlinks.json'), { dotfiles: 'allow' });
+});
+
 app.get('/sw.js', (req, res) => {
   res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
   res.setHeader('Service-Worker-Allowed', '/');
   res.sendFile(path.join(__dirname, 'www', 'sw.js'));
 });
 
-app.use(express.static(path.join(__dirname, "www")));
+// System Health Diagnostics API Endpoint
+app.get('/api/system/health', (req, res) => {
+  const mongoose = require('mongoose');
+  const memoryUsage = process.memoryUsage();
+  const uptimeSeconds = Math.floor(process.uptime());
+
+  const isDbConnected = mongoose.connection.readyState === 1;
+
+  res.json({
+    status: isDbConnected ? 'healthy' : 'degraded',
+    timestamp: new Date().toISOString(),
+    uptime: `${Math.floor(uptimeSeconds / 3600)}h ${Math.floor((uptimeSeconds % 3600) / 60)}m ${uptimeSeconds % 60}s`,
+    database: {
+      connected: isDbConnected,
+      state: ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoose.connection.readyState] || 'unknown'
+    },
+    memory: {
+      rssMB: Math.round(memoryUsage.rss / 1024 / 1024),
+      heapTotalMB: Math.round(memoryUsage.heapTotal / 1024 / 1024),
+      heapUsedMB: Math.round(memoryUsage.heapUsed / 1024 / 1024)
+    },
+    environment: process.env.NODE_ENV || 'production'
+  });
+});
+
+app.use(express.static(path.join(__dirname, 'www'), { maxAge: process.env.NODE_ENV === 'production' ? '7d' : 0, setHeaders(res, filePath) { if (path.extname(filePath).toLowerCase() === '.html') res.setHeader('Cache-Control', 'no-cache'); } }));
 
 // ===== Health Check =====
 app.get("/health", (req, res) => {
@@ -293,16 +577,22 @@ app.use("/api/leaderboard", require("./routes/leaderboard.routes.js"));
 app.use("/api/calendar",   require("./routes/calendar.routes.js"));
 app.use("/api/search",     require("./routes/search.routes.js"));
 app.use("/api/financials", require("./routes/financial.routes.js"));
-app.use("/api/public",     require("./routes/public.routes.js"));        // صفحة الاستقبال - بدون مصادقة
-app.use("/api/admin/public", require("./routes/public-admin.routes.js")); // إدارة المحتوى - أدمن فقط
-app.use("/api/ai",         require("./routes/ai.routes.js"));             // مساعد الدراسة بالذكاء الاصطناعي
+app.use("/api/public",     require("./routes/public.routes.js"));
+app.use("/api/admin/public", require("./routes/public-admin.routes.js"));
+app.use("/api/past-exams",  require("./routes/past-exam.routes.js"));
+app.use("/api/study-pods",  require("./routes/study-pod.routes.js"));
+app.use("/api/surveys",     require("./routes/survey.routes.js"));
+app.use("/api/ai",         require("./routes/ai.routes.js"));
+app.use("/api/admin",      require("./routes/observability.routes.js"));
+app.use("/api/moderation", require("./routes/moderation.routes.js"));
+app.use("/api/app-version", require("./routes/app-version.routes.js"));
 
 // ===== API Documentation =====
 app.get("/api", (req, res) => {
   res.json({
     success: true,
-    app: "نظام إدارة كلية تقنية المعلومات - جامعة النصر التقنية",
-    version: "1.4.0",
+    app: "نظام إدارة كلية النصر التقنية - جامعة النصر التقنية",
+    version: "2.1.0",
     auth: {
       register: "POST /api/auth/register (dean only)",
       login: "POST /api/auth/login",
@@ -381,12 +671,6 @@ app.get("/api", (req, res) => {
   });
 });
 
-// ===== Root =====
-app.get("/", (req, res) => {
-  res.setHeader("Content-Type", "text/html");
-  res.sendFile(path.join(__dirname, "www", "login.html")); 
-});
-
 // ===== Database =====
 connectDB();
 
@@ -454,7 +738,11 @@ cron.schedule("0 9 * * *", async () => {
           });
         }
         notifiedCount++;
-      } catch { /* تجاهل أخطاء الإشعار الفردية */ }
+      } catch (notifErr) {
+        /* لا نُفشل بقية الطلاب بسبب واحد، لكن نُسجّل السبب: الابتلاع الصامت
+           هنا أخفى لأشهرٍ أن كل هذه الإشعارات كانت تُرفض عند التحقق. */
+        console.error('[FeeReminder] فشل إشعار الطالب', studentId, '—', notifErr.message);
+      }
     }
 
     if (notifiedCount > 0) {
@@ -465,6 +753,19 @@ cron.schedule("0 9 * * *", async () => {
   }
 });
 
+// 3. إشعارات كيدي الذكية للتحفيز الأكاديمي وحماية الستريك (Duolingo Style) — يومياً الساعة 5:00 مساءً
+cron.schedule("0 17 * * *", async () => {
+  try {
+    const kedyService = require("./services/kedySmartNotification.service");
+    const io = app.get('io');
+    const result = await kedyService.evaluateAndSendSmartNudges(io);
+    if (result.sent > 0) {
+      console.log(`🦉 [Kedy AI] تم إرسال ${result.sent} إشعار تحفيزي ذكي للطلاب بنجاح`);
+    }
+  } catch (err) {
+    console.error("❌ فشل إرسال إشعارات كيدي الذكية:", err.message);
+  }
+});
 // ===== Error Handling =====
 app.use((req, res, next) => {
   if (req.accepts('html')) {

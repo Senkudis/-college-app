@@ -4,10 +4,10 @@
 <head>
   <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>إدارة الدفعات | كلية تقنية المعلومات</title>
-  <link rel="stylesheet" href="/css/style.css?v=2026073128">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026073128">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>إدارة الدفعات | كلية النصر التقنية</title>
+  <link rel="stylesheet" href="/css/style.css?v=2026081907">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026081907">
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
   <style>
     .batches-grid {
@@ -115,6 +115,7 @@
   </style>
 
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
 </head>
 
@@ -122,9 +123,9 @@
 
   <header class="main-header">
     <div class="header-brand">
-      <img src="/assets/logo.png" class="header-logo" alt="الشعار">
+      <img src="/assets/logo.png" class="header-logo" alt="شعار كلية النصر التقنية - جامعة النصر التقنية">
       <div class="header-title-group">
-        <strong>كلية تقنية المعلومات</strong>
+        <strong>كلية النصر التقنية</strong>
         <small>النظام الجامعي المتكامل</small>
       </div>
     </div>
@@ -153,9 +154,14 @@
           <div class="page-subtitle">إنشاء وتعديل وإدارة جميع الدفعات بالكلية</div>
         </div>
       </div>
-      <button class="btn btn-primary" onclick="openAddModal()">
-        <i class="ri-add-line"></i> إضافة دفعة جديدة
-      </button>
+      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+        <button class="btn btn-secondary" onclick="openCopySubjectsModal()" style="border: 1px solid var(--border);">
+          <i class="ri-file-copy-2-line"></i> استيراد المقررات بين الدفعات
+        </button>
+        <button class="btn btn-primary" onclick="openAddModal()">
+          <i class="ri-add-line"></i> إضافة دفعة جديدة
+        </button>
+      </div>
     </div>
 
     <div id="alertMsg" class="alert"></div>
@@ -172,21 +178,21 @@
     <div class="modal-box">
       <div class="modal-header">
         <span class="modal-title" id="modalTitle">إضافة دفعة</span>
-        <button class="modal-close" onclick="CBS.closeModal('batchModal')"><i class="ri-close-line"></i></button>
+        <button class="modal-close" onclick="CBS.closeModal('batchModal')" aria-label="إغلاق"><i class="ri-close-line"></i></button>
       </div>
       <div class="modal-body">
         <div id="modalAlert" class="alert"></div>
         <input type="hidden" id="editId">
 
         <div class="form-group">
-          <label class="form-label">اسم الدفعة *</label>
+          <label class="form-label" for="batchName">اسم الدفعة *</label>
           <div class="input-wrapper"><i class="input-icon ri-text"></i>
             <input class="form-control" type="text" id="batchName" placeholder="مثال: الدفعة 2024">
           </div>
         </div>
 
         <div class="form-group">
-          <label class="form-label">رمز الدفعة (كود فريد) *</label>
+          <label class="form-label" for="batchCode">رمز الدفعة (كود فريد) *</label>
           <div class="input-wrapper"><i class="input-icon ri-barcode-box-line"></i>
             <input class="form-control" type="text" id="batchCode" placeholder="مثال: B24">
           </div>
@@ -194,7 +200,7 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">كود الدعوة للتسجيل الذاتي (Invite Code)</label>
+          <label class="form-label" for="batchInviteCode">كود الدعوة للتسجيل الذاتي (Invite Code)</label>
           <div class="input-wrapper"><i class="input-icon ri-key-2-line"></i>
             <input class="form-control" type="text" id="batchInviteCode" placeholder="مثال: IT2026 أو B24">
           </div>
@@ -202,7 +208,7 @@
         </div>
 
         <div class="form-group" id="statusGroup" style="display:none;">
-          <label class="form-label">حالة الدفعة</label>
+          <label class="form-label" for="batchStatus">حالة الدفعة</label>
           <select class="form-control" id="batchStatus">
             <option value="active">نشط (مفتوح)</option>
             <option value="archived">مؤرشف (مغلق)</option>
@@ -226,11 +232,60 @@
     </div>
   </div>
 
+  <!-- Copy Subjects Modal -->
+  <div class="modal-overlay" id="copySubjectsModal">
+    <div class="modal-box" style="max-width:520px;">
+      <div class="modal-header">
+        <span class="modal-title">استيراد ونقل المقررات بين الدفعات</span>
+        <button class="modal-close" onclick="CBS.closeModal('copySubjectsModal')" aria-label="إغلاق"><i class="ri-close-line"></i></button>
+      </div>
+      <div class="modal-body">
+        <div class="alert" id="copySubjectsAlert" style="display:none;margin-bottom:15px;"></div>
+        <p style="font-size:0.9rem; color:var(--text-muted); margin-bottom:15px; line-height:1.6;">
+          اختر الدفعة السابقة لنقل مقرراتها إلى دفعة جديدة لتجهيز المنهج والمقررات تلقائياً.
+        </p>
+        <div class="form-group">
+          <label class="form-label">من الدفعة (الدفعة المصدر التي تحتوي المقررات):</label>
+          <div class="input-wrapper">
+            <i class="input-icon ri-folder-shared-line"></i>
+            <select class="form-control" id="fromBatchSelect">
+              <option value="">-- اختر الدفعة المصدر --</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="toBatchSelect">إلى الدفعة (الدفعة الهدف التي ستستقبل المقررات):</label>
+          <div class="input-wrapper">
+            <i class="input-icon ri-folder-received-line"></i>
+            <select class="form-control" id="toBatchSelect">
+              <option value="">-- اختر الدفعة الهدف --</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group" style="margin-top: 14px;">
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.88rem; color:var(--text-main); font-weight:500;">
+            <input type="checkbox" id="replaceExistingCheck" checked style="width:17px; height:17px; accent-color:var(--primary);">
+            <span>إزالة المقررات القديمة من الدفعة الهدف (بدء فصل دراسي جديد)</span>
+          </label>
+          <small style="color:var(--text-muted); display:block; margin-top:4px; font-size:0.8rem; margin-right:25px;">
+            عند التفعيل، سيتم إخفاء مقررات الفصل السابق عن طلاب هذه الدفعة واعتماد المقررات المستوردة فقط.
+          </small>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-ghost" onclick="CBS.closeModal('copySubjectsModal')">إلغاء</button>
+        <button class="btn btn-primary" id="btnCopySubjects" onclick="submitCopySubjects()">
+          <i class="ri-file-copy-2-line"></i> تنفيذ استيراد المقررات
+        </button>
+      </div>
+    </div>
+  </div>
+
   <div id="toast-container"></div>
 
-  <script src="/js/shared.js?v=2026073128"></script>
-<script src="/js/app.js?v=2026073128"></script>
-  <script src="/js/socket-client.js?v=2026073128" defer></script>
+  <script src="/js/shared.js?v=2026081907"></script>
+<script src="/js/app.js?v=2026081907"></script>
+  <script src="/js/socket-client.js?v=2026081907" defer></script>
   <script>
     CBS.init({ requireRoles: ['dean', 'leader', 'admin'] });
     const user = CBS.getUser();
@@ -257,6 +312,7 @@
       container.innerHTML = PALETTE.map(color => `
       <div class="color-option ${color === selectedColor ? 'selected' : ''}" 
            style="background-color: ${color}"
+           role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}"
            onclick="selectColor('${color}')"></div>
     `).join('');
     }
@@ -300,7 +356,7 @@
         </div>
         
         <div class="batch-acts">
-          <button class="btn btn-secondary" onclick="openEditModal('${b._id}')"><i class="ri-pencil-line"></i> تعديل</button>
+          <button class="btn btn-secondary" onclick="openEditModal('${b._id}')" aria-label="تعديل"><i class="ri-pencil-line"></i> تعديل</button>
           <a href="/dashboard.html?batch=${b._id}" class="btn" style="background:var(--bg-main);" onclick="CBS.toast('جاري فتح لوحة تحكم الدفعة...')">لوحة التحكم</a>
         </div>
       </div>
@@ -373,6 +429,66 @@
         CBS.showAlert('modalAlert', e.message || 'حدث خطأ غير متوقع', 'error');
       } finally {
         document.getElementById('saveBtn').disabled = false;
+      }
+    }
+
+    // Copy subjects between batches
+    async function openCopySubjectsModal() {
+      CBS.hideAlert('copySubjectsAlert');
+      CBS.openModal('copySubjectsModal');
+      const fromSelect = document.getElementById('fromBatchSelect');
+      const toSelect = document.getElementById('toBatchSelect');
+      fromSelect.innerHTML = '<option value="">جاري تحميل الدفعات...</option>';
+      toSelect.innerHTML = '<option value="">جاري تحميل الدفعات...</option>';
+      
+      if (batches && batches.length > 0) {
+        const optionsHtml = '<option value="">-- اختر الدفعة --</option>' + 
+          batches.map(b => `<option value="${b._id}">${CBS.escapeHTML(b.name)}</option>`).join('');
+        fromSelect.innerHTML = optionsHtml;
+        toSelect.innerHTML = optionsHtml;
+      } else {
+        fromSelect.innerHTML = '<option value="">لا توجد دفعات متاحة</option>';
+        toSelect.innerHTML = '<option value="">لا توجد دفعات متاحة</option>';
+      }
+    }
+
+    async function submitCopySubjects() {
+      const fromBatchId = document.getElementById('fromBatchSelect').value;
+      const toBatchId = document.getElementById('toBatchSelect').value;
+      const btn = document.getElementById('btnCopySubjects');
+
+      if (!fromBatchId) {
+        CBS.showAlert('copySubjectsAlert', 'يرجى اختيار الدفعة المصدر', 'error');
+        return;
+      }
+      if (!toBatchId) {
+        CBS.showAlert('copySubjectsAlert', 'يرجى اختيار الدفعة الهدف', 'error');
+        return;
+      }
+      if (fromBatchId === toBatchId) {
+        CBS.showAlert('copySubjectsAlert', 'لا يمكن استيراد المقررات من وإلى نفس الدفعة', 'error');
+        return;
+      }
+
+      const replaceExisting = document.getElementById('replaceExistingCheck')?.checked ?? true;
+
+      try {
+        btn.disabled = true;
+        btn.innerHTML = '<div class="spinner-sm"></div> جاري الاستيراد...';
+        const res = await CBS.apiPost('/api/subjects/copy-batch-subjects', { fromBatchId, toBatchId, replaceExisting });
+        const data = await res.json();
+        if (!res.ok) {
+          CBS.showAlert('copySubjectsAlert', data.message || 'فشل استيراد المقررات', 'error');
+          return;
+        }
+        CBS.toast(data.message || 'تم استيراد المقررات بنجاح', '', 'success');
+        CBS.closeModal('copySubjectsModal');
+        loadBatches();
+      } catch(err) {
+        CBS.showAlert('copySubjectsAlert', 'حدث خطأ في الاتصال بالسيرفر', 'error');
+      } finally {
+        btn.disabled = false;
+        btn.innerHTML = '<i class="ri-file-copy-2-line"></i> تنفيذ استيراد المقررات';
       }
     }
 

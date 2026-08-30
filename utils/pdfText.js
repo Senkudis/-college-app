@@ -10,7 +10,7 @@
  *
  * هذه الدالة تتعامل مع الإصدارين حتى لا تتكرر المشكلة عند أي ترقية.
  */
-const MAX_CHARS = 25000;
+const MAX_CHARS = 150000;
 
 async function extractPdfText(buffer, { maxChars = MAX_CHARS } = {}) {
   if (!buffer || !buffer.length) return '';

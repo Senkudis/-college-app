@@ -32,6 +32,32 @@ function resetDB() {
   }
 }
 
+/* يقرأ قيمة مسار قد يكون منقّطاً ("students.student") بدلالة MongoDB:
+   المرور بمصفوفة يوزّع بقية المسار على عناصرها، والنتيجة مصفوفة القيم
+   الورقية — فيكفي تطابق أحدها. المسار البسيط يعود كما هو. */
+function resolvePath(item, key) {
+  if (!key.includes('.')) return item[key];
+
+  let current = [item];
+  for (const segment of key.split('.')) {
+    const next = [];
+    for (const node of current) {
+      if (node === null || node === undefined) continue;
+      if (Array.isArray(node)) {
+        for (const entry of node) {
+          if (entry && entry[segment] !== undefined) next.push(entry[segment]);
+        }
+      } else if (node[segment] !== undefined) {
+        next.push(node[segment]);
+      }
+    }
+    current = next;
+  }
+  // مصفوفة مسطّحة من القيم الورقية؛ undefined إن لم يوجد المسار إطلاقاً
+  const flat = current.flat(Infinity);
+  return flat.length ? flat : undefined;
+}
+
 // Match filters
 function matchFilter(item, filter, modelName) {
   if (!filter) return true;
@@ -58,11 +84,18 @@ function matchFilter(item, filter, modelName) {
       continue;
     }
 
-    if (val && typeof val === 'object' && !Array.isArray(val) && !(val instanceof Date)) {
+    /* المسارات المنقّطة مثل "students.student" كانت تُقرأ عبر item[key]
+       حرفياً فلا تطابق شيئاً أبداً — رغم أن كوداً إنتاجياً يعتمد عليها في
+       الحضور والتقارير. نحلّها بدلالة MongoDB: إن مرّ المسار بمصفوفة،
+       يكفي أن يطابق أحد عناصرها. */
+    const resolved = resolvePath(item, key);
+
+    const isOperatorObj = val && typeof val === 'object' && !Array.isArray(val) && !(val instanceof Date) && !(val instanceof RegExp) && Object.keys(val).some(k => k.startsWith('$'));
+    if (isOperatorObj) {
       const operators = Object.keys(val);
       for (const op of operators) {
         if (op === '$ne') {
-          const itemVal = item[key];
+          const itemVal = resolved;
           if (Array.isArray(itemVal)) {
             if (itemVal.map(x => x.toString()).includes(val['$ne'].toString())) return false;
           } else {
@@ -70,17 +103,19 @@ function matchFilter(item, filter, modelName) {
             const valStr = val['$ne'] !== null && val['$ne'] !== undefined ? val['$ne'].toString() : '';
             if (itemStr === valStr) return false;
           }
-        } else if (op === '$gt') {
-          const itemVal = item[key] ? new Date(item[key]).getTime() : 0;
-          const compareVal = new Date(val['$gt']).getTime();
-          if (itemVal <= compareVal) return false;
-        } else if (op === '$lt') {
-          const itemVal = item[key] ? new Date(item[key]).getTime() : 0;
-          const compareVal = new Date(val['$lt']).getTime();
-          if (itemVal >= compareVal) return false;
+        } else if (op === '$gt' || op === '$gte') {
+          const itemVal = resolved ? new Date(resolved).getTime() : 0;
+          const compareVal = new Date(val[op]).getTime();
+          if (op === '$gt' && itemVal <= compareVal) return false;
+          if (op === '$gte' && itemVal < compareVal) return false;
+        } else if (op === '$lt' || op === '$lte') {
+          const itemVal = resolved ? new Date(resolved).getTime() : 0;
+          const compareVal = new Date(val[op]).getTime();
+          if (op === '$lt' && itemVal >= compareVal) return false;
+          if (op === '$lte' && itemVal > compareVal) return false;
         } else if (op === '$in') {
           const arr = val['$in'];
-          const itemVal = item[key];
+          const itemVal = resolved;
           if (Array.isArray(itemVal)) {
             const itemStrs = itemVal.map(x => x.toString());
             const match = arr.some(x => itemStrs.includes(x.toString()));
@@ -90,14 +125,14 @@ function matchFilter(item, filter, modelName) {
             if (!arr.map(x => x.toString()).includes(itemStr)) return false;
           }
         } else if (op === '$size') {
-          const itemVal = item[key];
+          const itemVal = resolved;
           if (!Array.isArray(itemVal) || itemVal.length !== val['$size']) return false;
         } else if (op === '$exists') {
-          const exists = item[key] !== undefined;
+          const exists = resolved !== undefined;
           if (Boolean(val['$exists']) !== exists) return false;
         } else if (op === '$nin') {
           const arr = val['$nin'];
-          const itemVal = item[key];
+          const itemVal = resolved;
           if (Array.isArray(itemVal)) {
             const itemStrs = itemVal.map(x => x.toString());
             const match = arr.some(x => itemStrs.includes(x.toString()));
@@ -106,19 +141,28 @@ function matchFilter(item, filter, modelName) {
             const itemStr = itemVal ? itemVal.toString() : '';
             if (arr.map(x => x.toString()).includes(itemStr)) return false;
           }
+        } else if (op === '$regex') {
+          const pattern = val['$regex'];
+          const regex = pattern instanceof RegExp ? pattern : new RegExp(pattern, val['$options'] || '');
+          const itemStr = resolved ? resolved.toString() : '';
+          if (!regex.test(itemStr)) return false;
         } else {
-          if (JSON.stringify(item[key]) !== JSON.stringify(val)) return false;
+          if (JSON.stringify(resolved) !== JSON.stringify(val)) return false;
         }
       }
-    } else {
-      const itemVal = item[key];
-      if (itemVal === undefined || itemVal === null) {
-        if (val !== undefined && val !== null) return false;
-      } else if (val === undefined || val === null) {
+    } else if (val instanceof RegExp) {
+      const itemStr = resolved ? resolved.toString() : '';
+      if (!val.test(itemStr)) return false;
+    } else if (Array.isArray(resolved) && !Array.isArray(val)) {
+      const valStr = val !== null && val !== undefined ? val.toString() : '';
+      if (!resolved.map(x => x !== null && x !== undefined ? x.toString() : '').includes(valStr)) {
         return false;
-      } else if (itemVal instanceof Date || val instanceof Date) {
-        if (new Date(itemVal).getTime() !== new Date(val).getTime()) return false;
-      } else if (itemVal.toString() !== val.toString()) {
+      }
+    } else {
+      const itemVal = resolved;
+      const itemStr = itemVal !== null && itemVal !== undefined ? itemVal.toString() : '';
+      const valStr = val !== null && val !== undefined ? val.toString() : '';
+      if (itemStr !== valStr && JSON.stringify(itemVal) !== JSON.stringify(val)) {
         return false;
       }
     }
@@ -342,6 +386,11 @@ const ModelOverrides = {
     }
   },
   
+  async exists(filter) {
+    const doc = await this.findOne(filter);
+    return doc ? { _id: doc._id } : null;
+  },
+
   async updateOne(filter, update) {
     const modelName = this.modelName;
     const store = getStore(modelName);
@@ -516,14 +565,64 @@ mongoose.model = function(name, schema) {
       return true;
     }
 
+    /* يفحص قيود المخطط لا الحقول المطلوبة وحدها.
+       كان الاكتفاء بـ required يجعل المجموعة تمرّ على كود يفشل حتماً في
+       الإنتاج: قيمة خارج enum (مثل target:'custom') كانت تُحفظ هنا بلا
+       اعتراض بينما ترفضها Mongoose الحقيقية. */
     async validate() {
-      if (schema && schema.paths) {
-        for (const path of Object.keys(schema.paths)) {
-          const pathObj = schema.paths[path];
-          if (pathObj.isRequired && (this[path] === undefined || this[path] === null)) {
-            throw new Error(`${path} is required`);
-          }
+      if (!schema || !schema.paths) return;
+
+      const checkOne = (label, pathObj, value) => {
+        const opts = (pathObj && pathObj.options) || {};
+
+        // enum — يقبل المصفوفة المباشرة أو { values: [...] }
+        const enumValues = Array.isArray(opts.enum)
+          ? opts.enum
+          : (opts.enum && Array.isArray(opts.enum.values) ? opts.enum.values : null);
+        if (enumValues && value !== undefined && value !== null && !enumValues.includes(value)) {
+          throw new Error(`${label}: \`${value}\` is not a valid enum value for path \`${label}\`.`);
         }
+
+        const limit = (opt) => (Array.isArray(opt) ? opt[0] : opt);
+
+        if (typeof value === 'number') {
+          const min = limit(opts.min);
+          const max = limit(opts.max);
+          if (min !== undefined && value < min) throw new Error(`${label} (${value}) is less than minimum allowed value (${min}).`);
+          if (max !== undefined && value > max) throw new Error(`${label} (${value}) is more than maximum allowed value (${max}).`);
+        }
+
+        if (typeof value === 'string') {
+          const minlength = limit(opts.minlength ?? opts.minLength);
+          const maxlength = limit(opts.maxlength ?? opts.maxLength);
+          if (minlength !== undefined && value.length < minlength) throw new Error(`${label} is shorter than the minimum allowed length (${minlength}).`);
+          if (maxlength !== undefined && value.length > maxlength) throw new Error(`${label} is longer than the maximum allowed length (${maxlength}).`);
+          if (opts.match instanceof RegExp && !opts.match.test(value)) throw new Error(`${label} is invalid.`);
+        }
+      };
+
+      for (const path of Object.keys(schema.paths)) {
+        if (path.includes('.')) continue;
+        const pathObj = schema.paths[path];
+        const value = this[path];
+
+        if (pathObj.isRequired && (value === undefined || value === null)) {
+          throw new Error(`${path} is required`);
+        }
+        if (value === undefined || value === null) continue;
+
+        /* مصفوفة: القيود تخصّ العناصر لا المصفوفة نفسها.
+           { type: [String], enum: [...] } يعني أن كل عنصر ضمن القائمة. */
+        if (Array.isArray(value)) {
+          const caster = pathObj.caster || pathObj.$embeddedSchemaType || pathObj;
+          for (const item of value) {
+            if (item === undefined || item === null) continue;
+            if (typeof item === 'object') continue; // مستندات فرعية — خارج نطاق هذا الفحص
+            checkOne(path, caster, item);
+          }
+          continue;
+        }
+        checkOne(path, pathObj, value);
       }
     }
 
@@ -557,6 +656,8 @@ mongoose.model = function(name, schema) {
             let targetModelName = null;
             if (field === 'createdBy' || field === 'doctor' || field === 'recordedBy' || field === 'addedBy' || field === 'student') {
               targetModelName = 'User';
+            } else if (field === 'assignment') {
+              targetModelName = 'Assignment';
             } else if (field === 'subject') {
               targetModelName = 'Subject';
             } else if (field === 'batch') {
@@ -588,6 +689,8 @@ mongoose.model = function(name, schema) {
         let targetModelName = null;
         if (field === 'createdBy' || field === 'doctor' || field === 'recordedBy' || field === 'addedBy' || field === 'student') {
           targetModelName = 'User';
+        } else if (field === 'assignment') {
+          targetModelName = 'Assignment';
         } else if (field === 'subject') {
           targetModelName = 'Subject';
         } else if (field === 'batch') {

@@ -6,9 +6,38 @@ const User = require("../models/User");
 const Fee = require("../models/Fee");
 const Payment = require("../models/Payment");
 const PaymentRequest = require("../models/PaymentRequest");
+const Notification = require("../models/Notification");
 const upload = require("../config/multer");
 const { success, fail, serverError } = require("../utils/response");
 const { allocatePaymentToFees, getStudentBalanceSummary } = require("../utils/feeAllocation");
+const { uploadLimiter } = require("../middleware/rateLimiter");
+
+/* ─── مساعد: إرسال إشعار مالي للطالب (DB + Socket.io لحظي) ─── */
+async function notifyStudent(req, studentId, title, message) {
+  try {
+    const notif = await Notification.create({
+      title,
+      message,
+      type: 'normal',
+      target: 'custom',
+      recipients: [studentId],
+      createdBy: req.user?.id || null
+    });
+    const io = req.app?.get('io');
+    if (io) {
+      io.to(`user:${studentId}`).emit('notification:new', {
+        _id: notif._id,
+        title: notif.title,
+        message: notif.message,
+        type: notif.type,
+        createdAt: notif.createdAt
+      });
+    }
+  } catch (notifErr) {
+    // لا نُخفق الطلب الأصلي بسبب فشل الإشعار
+    console.error('[Financial] فشل إرسال الإشعار:', notifErr.message);
+  }
+}
 
 // 1. POST /api/financials/fees (dean only)
 router.post("/fees", auth, role("dean", "admin"), async (req, res) => {
@@ -54,6 +83,15 @@ router.post("/fees", auth, role("dean", "admin"), async (req, res) => {
         batch: studentObj.batch
       });
 
+      // إشعار الطالب بالرسوم الجديدة
+      const netAmt = Math.max(0, amount - discount);
+      await notifyStudent(
+        req,
+        studentId,
+        ' رسوم دراسية جديدة',
+        `تمت إضافة رسوم بعنوان "${title}" بقيمة ${netAmt.toLocaleString('ar-SA')} ج.س. تاريخ الاستحقاق: ${new Date(dueDate).toLocaleDateString('ar-SA')}.`
+      );
+
       return res.status(201).json({
         success: true,
         message: "تم إضافة الرسوم بنجاح للطالب",
@@ -79,6 +117,13 @@ router.post("/fees", auth, role("dean", "admin"), async (req, res) => {
       }));
 
       const createdFees = await Fee.insertMany(feeDocs);
+
+      // إشعار كل طالب في الدفعة بالرسوم الجديدة (بدون await لتجنب التأخير)
+      const netAmt = Math.max(0, amount - discount);
+      const notifMsg = `تمت إضافة رسوم بعنوان "${title}" بقيمة ${netAmt.toLocaleString('ar-SA')} ج.س. تاريخ الاستحقاق: ${new Date(dueDate).toLocaleDateString('ar-SA')}.`;
+      Promise.allSettled(
+        students.map(st => notifyStudent(req, st._id.toString(), ' رسوم دراسية جديدة', notifMsg))
+      ).catch(() => {});
 
       return res.status(201).json({
         success: true,
@@ -117,18 +162,54 @@ router.post("/payments", auth, role("dean", "admin"), async (req, res) => {
       return fail(res, "رقم المرجع/الإيصال مسجل مسبقاً", 400);
     }
 
-    // Create the Payment record
-    const payment = await Payment.create({
-      student: studentId,
-      amount,
-      paymentMethod,
-      reference,
-      notes,
-      recordedBy: req.user.id
-    });
+    /* التسجيل والتخصيص عملية واحدة لا خطوتان: كان الدفع يُنشأ أولاً ثم
+       تُخصَّص الرسوم، فأي فشل بينهما يترك دفعة مسجّلة ورسوماً بحالة
+       "pending" — أي أن الإجمالي يقول مدفوع بينما حالة كل رسم تقول خلاف
+       ذلك. نلفّهما في معاملة حيث تتوفر (Replica Set)، ونعود للسلوك
+       التتابعي على النشر المستقل حيث لا معاملات. */
+    let session = null;
+    try {
+      session = await mongoose.startSession();
+      session.startTransaction();
+    } catch {
+      session = null;
+    }
 
-    // تخصيص الدفعة على الرسوم بأسلوب FIFO باستخدام الدالة المشتركة
-    const { remainingPayment } = await allocatePaymentToFees(studentId, amount);
+    let payment;
+    let remainingPayment;
+    try {
+      const created = await Payment.create(
+        [{
+          student: studentId,
+          amount,
+          paymentMethod,
+          reference,
+          notes,
+          recordedBy: req.user.id
+        }],
+        session ? { session } : {}
+      );
+      payment = Array.isArray(created) ? created[0] : created;
+
+      // تخصيص الدفعة على الرسوم بأسلوب FIFO باستخدام الدالة المشتركة
+      ({ remainingPayment } = await allocatePaymentToFees(studentId, amount, session));
+
+      if (session) await session.commitTransaction();
+    } catch (txErr) {
+      if (session) await session.abortTransaction().catch(() => {});
+      throw txErr;
+    } finally {
+      if (session) session.endSession();
+    }
+
+    // إشعار الطالب بتسجيل دفعته
+    const methodLabels = { cash: 'نقداً', bank_transfer: 'تحويل بنكي', card: 'بطاقة', deposit: 'إيداع' };
+    await notifyStudent(
+      req,
+      studentId,
+      ' تم تسجيل دفعتك',
+      `تم تسجيل دفعة بمبلغ ${amount.toLocaleString('ar-SA')} ج.س. بطريقة ${methodLabels[paymentMethod] || paymentMethod}. رقم المرجع: ${reference}.`
+    );
 
     return res.status(201).json({
       success: true,
@@ -172,12 +253,33 @@ router.get("/registry", auth, role("dean", "admin"), async (req, res) => {
               email: "$email",
               batch: "$batch"
             },
-            totalFees: { $sum: "$fees.amount" },
+            totalFees: {
+              $sum: {
+                $map: {
+                  input: "$fees",
+                  as: "f",
+                  in: { $max: [0, { $subtract: ["$$f.amount", { $ifNull: ["$$f.discount", 0] }] }] }
+                }
+              }
+            },
             totalPaid: { $sum: "$payments.amount" },
             balance: {
               $max: [
                 0,
-                { $subtract: [{ $sum: "$fees.amount" }, { $sum: "$payments.amount" }] }
+                {
+                  $subtract: [
+                    {
+                      $sum: {
+                        $map: {
+                          input: "$fees",
+                          as: "f",
+                          in: { $max: [0, { $subtract: ["$$f.amount", { $ifNull: ["$$f.discount", 0] }] }] }
+                        }
+                      }
+                    },
+                    { $sum: "$payments.amount" }
+                  ]
+                }
               ]
             }
           }
@@ -195,7 +297,8 @@ router.get("/registry", auth, role("dean", "admin"), async (req, res) => {
       balances = students.map(st => {
         const sFees = allFees.filter(f => f.student?.toString() === st._id.toString());
         const sPays = allPayments.filter(p => p.student?.toString() === st._id.toString());
-        const totalFees = sFees.reduce((sum, f) => sum + (f.amount || 0), 0);
+        // استخدام القيمة الصافية (amount - discount) لحساب صحيح
+        const totalFees = sFees.reduce((sum, f) => sum + Math.max(0, (f.amount || 0) - (f.discount || 0)), 0);
         const totalPaid = sPays.reduce((sum, p) => sum + (p.amount || 0), 0);
         return {
           student: st,
@@ -223,22 +326,23 @@ router.get("/balance/:studentId", auth, async (req, res) => {
       return fail(res, "ليس لديك صلاحية للوصول إلى هذا المورد", 403);
     }
 
-    const [fees, payments] = await Promise.all([
-      Fee.find({ student: studentId }).sort({ createdAt: -1 }),
+    /* الحساب يمرّ عبر getStudentBalanceSummary لا بنسخة ثانية من المنطق:
+       تكرار المعادلة في مكانين كان يعني أن أي تعديل مستقبلي على طريقة
+       احتساب الخصم أو الفائض يصحّ في مسار ويخطئ في الآخر. */
+    const [summary, payments] = await Promise.all([
+      getStudentBalanceSummary(studentId),
       Payment.find({ student: studentId }).sort({ createdAt: -1 })
     ]);
-
-    const totalFees = fees.reduce((sum, f) => sum + f.amount, 0);
-    const totalPaid = payments.reduce((sum, p) => sum + p.amount, 0);
-    const balance = Math.max(0, totalFees - totalPaid);
 
     return res.json({
       success: true,
       studentId,
-      totalFees,
-      totalPaid,
-      balance,
-      fees,
+      totalFees: summary.totalFees,
+      totalPaid: summary.totalPaid,
+      balance: summary.balance,
+      // فائض السداد عن إجمالي الرسوم — رصيد دائن للطالب
+      creditBalance: Math.max(0, summary.totalPaid - summary.totalFees),
+      fees: summary.fees,
       payments
     });
   } catch (err) {
@@ -247,7 +351,7 @@ router.get("/balance/:studentId", auth, async (req, res) => {
 });
 
 // 5. POST /api/financials/payment-requests (student) - Upload a receipt
-router.post("/payment-requests", auth, role("student", "leader"), upload.single("receiptFile"), async (req, res) => {
+router.post("/payment-requests", auth, role("student", "leader"), uploadLimiter, upload.single("receiptFile"), async (req, res) => {
   try {
     const { reference, notes, paymentMethod } = req.body;
     const amount = Number(req.body.amount);
@@ -309,27 +413,33 @@ router.get("/payment-requests", auth, role("dean", "admin"), async (req, res) =>
 
 // 7. POST /api/financials/payment-requests/:id/action (dean only) - Approve or Reject
 router.post("/payment-requests/:id/action", auth, role("dean", "admin"), async (req, res) => {
-  const session = await mongoose.startSession();
-  session.startTransaction();
+  let session = null;
+  let useTransaction = true;
+  try {
+    session = await mongoose.startSession();
+    session.startTransaction();
+  } catch {
+    useTransaction = false;
+    session = null;
+  }
 
   try {
     const { action, rejectionReason } = req.body; // action: "approve" or "reject"
     if (!["approve", "reject"].includes(action)) {
-      await session.abortTransaction();
-      session.endSession();
+      if (session) { await session.abortTransaction(); session.endSession(); }
       return fail(res, "إجراء غير صالح", 400);
     }
 
-    const request = await PaymentRequest.findById(req.params.id).session(session);
+    const query = PaymentRequest.findById(req.params.id);
+    if (session) query.session(session);
+    const request = await query;
     if (!request) {
-      await session.abortTransaction();
-      session.endSession();
+      if (session) { await session.abortTransaction(); session.endSession(); }
       return fail(res, "طلب السداد غير موجود", 404);
     }
 
     if (request.status !== "pending") {
-      await session.abortTransaction();
-      session.endSession();
+      if (session) { await session.abortTransaction(); session.endSession(); }
       return fail(res, "تمت معالجة هذا الطلب مسبقاً", 400);
     }
 
@@ -338,24 +448,37 @@ router.post("/payment-requests/:id/action", auth, role("dean", "admin"), async (
       request.rejectionReason = rejectionReason;
       request.reviewedBy = req.user.id;
       request.reviewDate = Date.now();
-      await request.save({ session });
+      await (session ? request.save({ session }) : request.save());
 
-      await session.commitTransaction();
-      session.endSession();
+      if (session) {
+        await session.commitTransaction();
+        session.endSession();
+      }
+
+      // إشعار الطالب برفض طلبه
+      const rejectMsg = rejectionReason
+        ? `تم رفض طلب السداد الخاص بك بمبلغ ${request.amount.toLocaleString('ar-SA')} ج.س. السبب: ${rejectionReason}.`
+        : `تم رفض طلب السداد الخاص بك بمبلغ ${request.amount.toLocaleString('ar-SA')} ج.س. يرجى التواصل مع الإدارة.`;
+      await notifyStudent(req, request.student.toString(), ' رفض طلب السداد', rejectMsg);
 
       return res.json({ success: true, message: "تم رفض طلب السداد" });
     }
 
     // If Approve -> Create Payment and update Fee balances
     // 1. Create Payment
-    const payment = await Payment.create([{
+    const paymentDoc = {
       student: request.student,
       amount: request.amount,
       paymentMethod: request.paymentMethod,
       reference: request.reference || `PRQ-${request._id}`,
       notes: request.notes,
       recordedBy: req.user.id
-    }], { session });
+    };
+    if (session) {
+      await Payment.create([paymentDoc], { session });
+    } else {
+      await Payment.create(paymentDoc);
+    }
 
     // 2. تخصيص الرسوم باستخدام الدالة المشتركة (FIFO)
     const { remainingPayment, updatedFees } = await allocatePaymentToFees(request.student, request.amount, session);
@@ -364,21 +487,30 @@ router.post("/payment-requests/:id/action", auth, role("dean", "admin"), async (
     request.status = "approved";
     request.reviewedBy = req.user.id;
     request.reviewDate = Date.now();
-    await request.save({ session });
+    await (session ? request.save({ session }) : request.save());
 
-    await session.commitTransaction();
-    session.endSession();
+    if (session) {
+      await session.commitTransaction();
+      session.endSession();
+    }
+
+    // إشعار الطالب بقبول طلب سداده
+    await notifyStudent(
+      req,
+      request.student.toString(),
+      ' تم قبول طلب السداد',
+      `تم قبول طلب السداد الخاص بك بمبلغ ${request.amount.toLocaleString('ar-SA')} ج.س. وتحديث رصيدك. شكراً لك.`
+    );
 
     return res.json({
       success: true,
       message: "تم قبول إشعار السداد وتحديث أرصدة الرسوم بنجاح",
-      payment: payment[0],
-      updatedFeesCount: updatedFees.length,
       remainingPayment
     });
   } catch (err) {
-    await session.abortTransaction();
-    session.endSession();
+    if (session) {
+      try { await session.abortTransaction(); session.endSession(); } catch {}
+    }
     return serverError(res, err, "معالجة طلب السداد");
   }
 });
@@ -404,6 +536,7 @@ router.get("/overdue-report", auth, role("dean", "admin"), async (req, res) => {
     // Group by student
     const studentsMap = new Map();
     for (const fee of overdueFees) {
+      if (!fee.student || !fee.student._id) continue;
       const studentId = fee.student._id.toString();
       if (!studentsMap.has(studentId)) {
         studentsMap.set(studentId, {
@@ -414,17 +547,22 @@ router.get("/overdue-report", auth, role("dean", "admin"), async (req, res) => {
           overdueCount: 0
         });
       }
+      const netAmount = Math.max(0, (fee.amount || 0) - (fee.discount || 0));
+      const remaining = Math.max(0, netAmount - (fee.paidAmount || 0));
+
       const studentData = studentsMap.get(studentId);
       studentData.overdueFees.push({
         _id: fee._id,
         title: fee.title,
         amount: fee.amount,
-        paidAmount: fee.paidAmount,
-        remainingAmount: fee.amount - fee.paidAmount,
+        discount: fee.discount || 0,
+        netAmount,
+        paidAmount: fee.paidAmount || 0,
+        remainingAmount: remaining,
         dueDate: fee.dueDate,
         status: fee.status
       });
-      studentData.totalOverdueAmount += fee.amount - fee.paidAmount;
+      studentData.totalOverdueAmount += remaining;
       studentData.overdueCount++;
     }
 

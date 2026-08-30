@@ -3,6 +3,10 @@ const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const normalizeEmail = require("../utils/normalizeEmail");
 
+/* تكلفة التشفير في مكان واحد: كانت 10 في خطّافات المخطط و12 في مسارَي
+   استعادة المستخدم المحذوف — نفس العملية بقوّتين مختلفتين. */
+const BCRYPT_COST = 12;
+
 const userSchema = new mongoose.Schema({
   name: { 
     type: String, 
@@ -141,6 +145,27 @@ const userSchema = new mongoose.Schema({
     min: 0
   },
 
+  // تتبع نشاط الطالب والستريك (لإشعارات كيدي الذكية الشبيهة بدولينغو)
+  lastActiveAt: {
+    type: Date,
+    default: Date.now
+  },
+  studyStreak: {
+    type: Number,
+    default: 1
+  },
+  lastStreakDate: {
+    type: Date,
+    default: Date.now
+  },
+  lastKedyNudgeAt: {
+    type: Date,
+    default: null
+  },
+  kedyNudgeSettings: {
+    enabled: { type: Boolean, default: true }
+  },
+
   // رقم الهاتف / الواتساب
   phone: {
     type: String,
@@ -152,6 +177,14 @@ const userSchema = new mongoose.Schema({
     type: Boolean,
     default: false
   },
+
+  /* المستخدمون الذين حظرهم صاحب الحساب — لا يرى محتواهم بعد الآن.
+     متطلب إلزامي في App Store (بند 1.2): وجود وسيلة لحظر المستخدم
+     المسيء إلى جانب الإبلاغ عن المحتوى. */
+  blockedUsers: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User"
+  }],
 
   // Soft delete
   deletedAt: {
@@ -167,12 +200,26 @@ const isBcryptHash = (str) => typeof str === "string" && /^\$2[abxy]\$\d+\$/.tes
 
 // ==== Middleware قبل الحفظ ====
 
-// Soft delete: استبعاد المحذوفين تلقائياً
-userSchema.pre('find', function() {
+/* Soft delete: استبعاد المحذوفين تلقائياً.
+   كان الخطّافان على find و findOne وحدهما، بينما countDocuments و
+   updateMany و findOneAndUpdate تمرّ دون تصفية — فيظهر المحذوفون في
+   إحصاءات لوحة العميد وفي عدّ الطلاب داخل السجل الأكاديمي. */
+const excludeDeleted = function() {
   this.where({ deletedAt: null });
-});
-userSchema.pre('findOne', function() {
-  this.where({ deletedAt: null });
+};
+userSchema.pre('find', excludeDeleted);
+userSchema.pre('findOne', excludeDeleted);
+userSchema.pre('countDocuments', excludeDeleted);
+userSchema.pre('updateMany', excludeDeleted);
+userSchema.pre('distinct', excludeDeleted);
+/* findOneAndUpdate مستثنى عمداً: statics.restore يعتمد عليه لإعادة تفعيل
+   مستخدم محذوف، وإضافة الشرط هنا كانت ستمنعه من العثور عليه أصلاً. */
+
+// التجميع كذلك — سجل الرسوم يبني تقاريره عبر User.aggregate
+userSchema.pre('aggregate', function() {
+  const stages = this.pipeline();
+  const alreadyFiltered = stages.length && stages[0].$match && 'deletedAt' in stages[0].$match;
+  if (!alreadyFiltered) stages.unshift({ $match: { deletedAt: null } });
 });
 
 userSchema.pre('save', async function() {
@@ -186,7 +233,7 @@ userSchema.pre('save', async function() {
   
   try {
     // تشفير كلمة السر
-    const salt = await bcrypt.genSalt(10);
+    const salt = await bcrypt.genSalt(BCRYPT_COST);
     this.password = await bcrypt.hash(this.password, salt);
     
     // تحديث وقت تغيير كلمة السر
@@ -216,7 +263,7 @@ userSchema.pre('findOneAndUpdate', async function() {
       }
 
       // تشفير كلمة السر الجديدة
-      const salt = await bcrypt.genSalt(10);
+      const salt = await bcrypt.genSalt(BCRYPT_COST);
       const hashedPassword = await bcrypt.hash(passwordToHash, salt);
       
       // تحديث object التعديل

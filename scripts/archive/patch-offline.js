@@ -1,4 +1,4 @@
-﻿const fs = require('fs');
+const fs = require('fs');
 const file = 'c:/Users/kde/Desktop/kedwebcbs-main/www/js/app.js';
 let content = fs.readFileSync(file, 'utf8');
 

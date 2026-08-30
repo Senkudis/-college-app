@@ -3,12 +3,12 @@
 <head>
   <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>الرسوم المالية | كلية تقنية المعلومات</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>الرسوم المالية | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=2026073128">
+  <link rel="stylesheet" href="/css/style.css?v=2026081907">
   
-  <link rel="stylesheet" href="/css/mobile.css?v=2026073128">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026081907">
   <style>
     .financials-wrap {
       max-width: 1200px;
@@ -357,7 +357,7 @@
     .admin-stat-red   { background: linear-gradient(135deg, #7f1d1d, #ef4444); }
 
     /* ====================================================
-       Table action buttons — smaller on mobile
+       Table action buttons â€” smaller on mobile
        ==================================================== */
     .btn-sm {
       padding: 5px 10px !important;
@@ -447,6 +447,7 @@
 
 
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
 </head>
 <body>
@@ -461,8 +462,8 @@
       </div>
     </div>
     <div class="header-actions">
-      <button class="btn-icon" onclick="CBS.toggleDark()"><i class="ri-moon-line" id="themeIcon"></i></button>
-      <button class="btn-icon" onclick="CBS.goHome()"><i class="ri-home-4-line"></i></button>
+      <button class="btn-icon" onclick="CBS.toggleDark()" aria-label="تبديل الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+      <button class="btn-icon" onclick="CBS.goHome()" title="الرئيسية" aria-label="الرئيسية"><i class="ri-home-4-line"></i></button>
     </div>
   </header>
 
@@ -478,7 +479,7 @@
             <div class="hero-blob hero-blob-1"></div>
             <div class="hero-blob hero-blob-2"></div>
             <div class="hero-card-label">كشف الحساب المالي</div>
-            <div class="hero-student-name" id="heroStudentName">—</div>
+            <div class="hero-student-name" id="heroStudentName">â€”</div>
             <div class="hero-amount-row">
               <div id="heroBalanceDue" class="hero-amount">0.00</div>
               <div class="hero-amount-label">ج.س مستحق</div>
@@ -499,7 +500,7 @@
             </button>
           </div>
 
-          <!-- ── Fees List ── -->
+          <!-- â”€â”€ Fees List â”€â”€ -->
           <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:20px;padding:20px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,0.06);">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border);">
               <div style="width:34px;height:34px;background:linear-gradient(135deg,#0d3b66,#2176c7);border-radius:10px;display:flex;align-items:center;justify-content:center;">
@@ -515,7 +516,7 @@
             </div>
           </div>
 
-          <!-- ── Payment Requests History ── -->
+          <!-- â”€â”€ Payment Requests History â”€â”€ -->
           <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:20px;padding:20px;box-shadow:0 2px 12px rgba(0,0,0,0.06);">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border);">
               <div style="width:34px;height:34px;background:linear-gradient(135deg,#7c3aed,#a855f7);border-radius:10px;display:flex;align-items:center;justify-content:center;">
@@ -536,20 +537,20 @@
         <!-- ================= Deans View (Admin Financials) ================= -->
         <div id="deanView" style="display: none;">
           <!-- Admin Tabs Navigation -->
-          <div class="admin-tabs">
-            <button class="admin-tab-btn active" id="tabBtn_dashboard" onclick="switchAdminTab('dashboard')">
+          <div class="admin-tabs" role="tablist">
+            <button class="admin-tab-btn active" id="tabBtn_dashboard" role="tab" aria-selected="true" aria-controls="adminTab_dashboard" onclick="switchAdminTab('dashboard')">
               <i class="ri-dashboard-line"></i>
               <span>نظرة عامة</span>
             </button>
-            <button class="admin-tab-btn" id="tabBtn_registry" onclick="switchAdminTab('registry')">
+            <button class="admin-tab-btn" id="tabBtn_registry" role="tab" aria-selected="false" aria-controls="adminTab_registry" onclick="switchAdminTab('registry')">
               <i class="ri-group-line"></i>
               <span>سجل الطلاب</span>
             </button>
-            <button class="admin-tab-btn" id="tabBtn_actions" onclick="switchAdminTab('actions')">
+            <button class="admin-tab-btn" id="tabBtn_actions" role="tab" aria-selected="false" aria-controls="adminTab_actions" onclick="switchAdminTab('actions')">
               <i class="ri-add-box-line"></i>
               <span>رسوم ودفعات</span>
             </button>
-            <button class="admin-tab-btn" id="tabBtn_settings" onclick="switchAdminTab('settings')">
+            <button class="admin-tab-btn" id="tabBtn_settings" role="tab" aria-selected="false" aria-controls="adminTab_settings" onclick="switchAdminTab('settings')">
               <i class="ri-bank-line"></i>
               <span>إعدادات البنك</span>
             </button>
@@ -658,7 +659,7 @@
                 <hr style="border-top: 1px solid var(--border); margin: 15px 0;">
                 <form id="createFeeForm">
                   <div class="form-group">
-                    <label>تطبيق الرسوم على:</label>
+                    <label for="feeDistType">تطبيق الرسوم على:</label>
                     <select id="feeDistType" onchange="toggleFeeDistType()" required class="form-control">
                       <option value="student">طالب محدد فقط</option>
                       <option value="batch">دفعة كاملة (جميع طلاب الدفعة)</option>
@@ -666,31 +667,31 @@
                   </div>
                   
                   <div class="form-group" id="feeStudentGroup">
-                    <label>اختر الطالب المعني:</label>
+                    <label for="feeStudentId">اختر الطالب المعني:</label>
                     <select id="feeStudentId" style="width: 100%;" class="form-control">
                       <option value="">جاري تحميل قائمة الطلاب...</option>
                     </select>
                   </div>
 
                   <div class="form-group" id="feeBatchGroup" style="display: none;">
-                    <label>اختر الدفعة المستهدفة:</label>
+                    <label for="feeBatchId">اختر الدفعة المستهدفة:</label>
                     <select id="feeBatchId" class="form-control">
                       <option value="">جاري تحميل الدفعات الأكاديمية...</option>
                     </select>
                   </div>
 
                   <div class="form-group">
-                    <label>عنوان / سبب الرسوم</label>
+                    <label for="feeTitle">عنوان / سبب الرسوم</label>
                     <input type="text" id="feeTitle" placeholder="مثال: رسوم التسجيل للفصل الدراسي الأول" class="form-control" required>
                   </div>
 
                   <div class="form-group-row">
                     <div class="form-group">
-                      <label>المبلغ المطلوب ($)</label>
+                      <label for="feeAmount">المبلغ المطلوب ($)</label>
                       <input type="number" id="feeAmount" min="0" step="0.01" placeholder="0.00" class="form-control" required>
                     </div>
                     <div class="form-group">
-                      <label>آخر موعد للسداد (الاستحقاق)</label>
+                      <label for="feeDueDate">آخر موعد للسداد (الاستحقاق)</label>
                       <input type="date" id="feeDueDate" class="form-control" required>
                     </div>
                   </div>
@@ -705,7 +706,7 @@
                 <hr style="border-top: 1px solid var(--border); margin: 15px 0;">
                 <form id="recordPaymentForm">
                   <div class="form-group">
-                    <label>اسم الطالب المسدِّد</label>
+                    <label for="paymentStudentId">اسم الطالب المسدِّد</label>
                     <select id="paymentStudentId" required class="form-control">
                       <option value="">جاري تحميل قائمة الطلاب...</option>
                     </select>
@@ -713,11 +714,11 @@
 
                   <div class="form-group-row">
                     <div class="form-group">
-                      <label>المبلغ المدفوع ($)</label>
+                      <label for="paymentAmount">المبلغ المدفوع ($)</label>
                       <input type="number" id="paymentAmount" min="0.01" step="0.01" placeholder="0.00" class="form-control" required>
                     </div>
                     <div class="form-group">
-                      <label>وسيلة الدفع</label>
+                      <label for="paymentMethod">وسيلة الدفع</label>
                       <select id="paymentMethod" required class="form-control">
                         <option value="cash">نقداً (Cash)</option>
                         <option value="bank_transfer">تحويل بنكي</option>
@@ -728,12 +729,12 @@
                   </div>
 
                   <div class="form-group">
-                    <label>رقم إيصال الدفع / المرجع</label>
+                    <label for="paymentReference">رقم إيصال الدفع / المرجع</label>
                     <input type="text" id="paymentReference" placeholder="رقم المعاملة لتسهيل المراجعة مستقبلاً" class="form-control" required>
                   </div>
 
                   <div class="form-group">
-                    <label>ملاحظات حول الدفعة (اختياري)</label>
+                    <label for="paymentNotes">ملاحظات حول الدفعة (اختياري)</label>
                     <textarea id="paymentNotes" rows="2" placeholder="أية تفاصيل إضافية..." class="form-control"></textarea>
                   </div>
 
@@ -751,21 +752,21 @@
               <form id="bankSettingsForm">
                 <div class="form-group-row">
                   <div class="form-group">
-                    <label>اسم البنك</label>
+                    <label for="settingBankName">اسم البنك</label>
                     <input type="text" id="settingBankName" placeholder="مثال: بنك الخرطوم" class="form-control" required>
                   </div>
                   <div class="form-group">
-                    <label>رقم الحساب البنكي</label>
+                    <label for="settingBankAccount">رقم الحساب البنكي</label>
                     <input type="text" id="settingBankAccount" class="form-control" required>
                   </div>
                 </div>
                 <div class="form-group-row">
                   <div class="form-group">
-                    <label>رقم الآيبان (IBAN)</label>
+                    <label for="settingBankIban">رقم الآيبان (IBAN)</label>
                     <input type="text" id="settingBankIban" dir="ltr" placeholder="SA00..." class="form-control" required>
                   </div>
                   <div class="form-group">
-                    <label>اسم المستفيد (الكلية/الإدارة)</label>
+                    <label for="settingBankBeneficiary">اسم المستفيد (الكلية/الإدارة)</label>
                     <input type="text" id="settingBankBeneficiary" class="form-control" required>
                   </div>
                 </div>
@@ -783,8 +784,10 @@
                 const content = document.getElementById('adminTab_' + t);
                 const btn = document.getElementById('tabBtn_' + t);
                 if (content && btn) {
-                  content.style.display = (t === tabName) ? 'block' : 'none';
-                  btn.classList.toggle('active', t === tabName);
+                  const isActive = (t === tabName);
+                  content.style.display = isActive ? 'block' : 'none';
+                  btn.classList.toggle('active', isActive);
+                  btn.setAttribute('aria-selected', isActive.toString());
                 }
               });
             }
@@ -803,7 +806,7 @@
         <div style="position:absolute;top:-40px;left:-40px;width:200px;height:200px;background:rgba(255,255,255,0.04);border-radius:50%;pointer-events:none;"></div>
         <div style="position:absolute;bottom:-60px;right:-30px;width:240px;height:240px;background:rgba(255,255,255,0.03);border-radius:50%;pointer-events:none;"></div>
         
-        <button onclick="CBS.closeModal('billingModal')" style="position:absolute;top:20px;right:20px;background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:34px;height:34px;color:white;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2;transition:background 0.2s;">
+        <button onclick="CBS.closeModal('billingModal')" style="position:absolute;top:20px;right:20px;background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:34px;height:34px;color:white;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;z-index:2;transition:background 0.2s;" aria-label="إغلاق">
           <i class="ri-close-line"></i>
         </button>
 
@@ -896,7 +899,7 @@
           </div>
           <div style="font-size:0.78rem;color:rgba(255,255,255,0.7);margin-top:3px;">سدد ثم ارفع الإيصال للإدارة</div>
         </div>
-        <button onclick="CBS.closeModal('payNowModal')" style="background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:34px;height:34px;color:white;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;">
+        <button onclick="CBS.closeModal('payNowModal')" style="background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:34px;height:34px;color:white;font-size:1.2rem;cursor:pointer;display:flex;align-items:center;justify-content:center;" aria-label="إغلاق">
           <i class="ri-close-line"></i>
         </button>
       </div>
@@ -926,11 +929,11 @@
 
         <form id="studentPaymentRequestForm">
           <div class="form-group" style="margin-bottom:14px;">
-            <label style="font-weight:600;font-size:0.88rem;color:var(--text-secondary);display:block;margin-bottom:6px;">المبلغ المحوَّل (ج.س)</label>
+            <label style="font-weight:600;font-size:0.88rem;color:var(--text-secondary);display:block;margin-bottom:6px;" for="requestAmount">المبلغ المحوَّل (ج.س)</label>
             <input type="number" id="requestAmount" min="0.01" step="0.01" placeholder="0.00" class="form-control" required style="font-size:1.1rem;font-weight:700;text-align:center;">
           </div>
           <div class="form-group" style="margin-bottom:14px;">
-            <label style="font-weight:600;font-size:0.88rem;color:var(--text-secondary);display:block;margin-bottom:6px;">طريقة الدفع</label>
+            <label style="font-weight:600;font-size:0.88rem;color:var(--text-secondary);display:block;margin-bottom:6px;" for="requestPaymentMethod">طريقة الدفع</label>
             <select id="requestPaymentMethod" class="form-control" required>
               <option value="bank_transfer">تحويل بنكي</option>
               <option value="deposit">إيداع مباشر</option>
@@ -939,11 +942,11 @@
             </select>
           </div>
           <div class="form-group" style="margin-bottom:14px;">
-            <label style="font-weight:600;font-size:0.88rem;color:var(--text-secondary);display:block;margin-bottom:6px;">صورة الإيصال / وصل التحويل</label>
+            <label style="font-weight:600;font-size:0.88rem;color:var(--text-secondary);display:block;margin-bottom:6px;" for="requestFile">صورة الإيصال / وصل التحويل</label>
             <input type="file" id="requestFile" accept="image/*,.pdf" class="form-control" style="padding-top: 7px;" required>
           </div>
           <div class="form-group" style="margin-bottom:18px;">
-            <label style="font-weight:600;font-size:0.88rem;color:var(--text-secondary);display:block;margin-bottom:6px;">رقم المرجع (اختياري)</label>
+            <label style="font-weight:600;font-size:0.88rem;color:var(--text-secondary);display:block;margin-bottom:6px;" for="requestReference">رقم المرجع (اختياري)</label>
             <input type="text" id="requestReference" placeholder="رقم العملية أو أي ملاحظة..." class="form-control">
           </div>
           <button type="submit" class="btn btn-primary btn-block" style="padding: 13px; font-size: 1rem; font-weight:800; border-radius:14px;">
@@ -956,9 +959,9 @@
 
 <div id="toast-container" class="toast-container"></div>
 
-  <script src="/js/shared.js?v=2026073128"></script>
-<script src="/js/app.js?v=2026073128"></script>
-  <script src="/js/socket-client.js?v=2026073128" defer></script>
+  <script src="/js/shared.js?v=2026081907"></script>
+<script src="/js/app.js?v=2026081907"></script>
+  <script src="/js/socket-client.js?v=2026081907" defer></script>
   <script>
     /* كشف الحساب: كان يُطبع عبر iframe + window.print()، وهذا لا يعمل إطلاقاً
        داخل WebView أندرويد (زر الطباعة لا يستجيب على الهاتف). صار يولّد PDF
@@ -1088,7 +1091,7 @@
         const deanView = document.getElementById('deanView');
         if(deanView) deanView.remove();
         document.getElementById('userRoleSubtitle').innerText = 'لوحة كشف الحساب المالي';
-        // ✅ إظهار زر السداد فقط للطلاب
+        //  إظهار زر السداد فقط للطلاب
         const payBtn = document.getElementById('payNowBtn');
         if (payBtn) payBtn.style.display = 'flex';
         await initStudentView(user.id || user._id);
@@ -1111,7 +1114,7 @@
           <p style="color: var(--text-muted, #94a3b8); font-size: 1rem; max-width: 500px; margin: 0 auto 20px;">
             نظام المالية مخصص للطلاب لمعرفة الرسوم وسدادها، ولعمادة الكلية لإدارة الخزينة ومراجعة الإيصالات. أعضاء هيئة التدريس لا يمتلكون سجلات رسوم في هذا القسم.
           </p>
-          <button onclick="location.href='/dashboard.html'" class="btn btn-primary px-4 py-2" style="border-radius: 10px; font-weight: 600;">
+          <button onclick="location.href='/dashboard.html'" class="btn btn-primary px-4 py-2" style="border-radius: 10px; font-weight: 600;" aria-label="رجوع">
             <i class="ri-arrow-right-line"></i> العودة للرئيسية
           </button>
         `;
@@ -1174,7 +1177,7 @@
             const sc = statusConfig[f.status] || statusConfig.pending;
             const remaining = Math.max(0, f.amount - paid).toFixed(2);
             const pct = f.amount > 0 ? Math.min(100, (paid / f.amount) * 100) : 0;
-            const dueDate = f.dueDate ? new Date(f.dueDate).toLocaleDateString('ar-EG', { year:'numeric', month:'short', day:'numeric' }) : '—';
+            const dueDate = f.dueDate ? new Date(f.dueDate).toLocaleDateString('ar-EG', { year:'numeric', month:'short', day:'numeric' }) : 'â€”';
             return `
               <div style="
                 padding: 16px;
@@ -1238,7 +1241,9 @@
         const container = document.getElementById('paymentRequestsContainer');
         if (!container) return;
 
-        if (!data.requests || data.requests.length === 0) {
+        // الخادم يغلّف الحمولة داخل data (utils/response.js)
+        const requests = data.data?.requests || data.requests || [];
+        if (requests.length === 0) {
           container.innerHTML = `
             <div style="text-align:center;padding:32px 16px;color:var(--text-muted);">
               <i class="ri-file-upload-line" style="font-size:2.5rem;display:block;margin-bottom:10px;opacity:0.5;"></i>
@@ -1251,7 +1256,7 @@
             approved: { label: 'مقبول',         color: '#22c55e', bg: 'rgba(34,197,94,0.1)',  icon: 'ri-checkbox-circle-fill' },
             rejected: { label: 'مرفوض',         color: '#ef4444', bg: 'rgba(239,68,68,0.1)',  icon: 'ri-close-circle-fill' },
           };
-          container.innerHTML = data.requests.map((r, idx) => {
+          container.innerHTML = requests.map((r, idx) => {
             const st = stMap[r.status] || stMap.pending;
             const dateStr = CBS.formatDateTime ? CBS.formatDateTime(r.createdAt) : new Date(r.createdAt).toLocaleDateString('ar-EG');
             const rejNote = r.rejectionReason ? `
@@ -1262,11 +1267,11 @@
               <div style="
                 display:flex;align-items:flex-start;gap:14px;padding:14px 16px;
                 border-radius:14px;border:1px solid var(--border);background:var(--bg-body);
-                margin-bottom:${idx < data.requests.length - 1 ? '10px' : '0'};
+                margin-bottom:${idx < requests.length - 1 ? '10px' : '0'};
               ">
                 <!-- Receipt thumbnail -->
-                <a href="/uploads/misc/${r.receiptFile}" target="_blank" style="flex-shrink:0;display:block;border-radius:10px;overflow:hidden;border:1px solid var(--border);">
-                  <img src="/uploads/misc/${r.receiptFile}" alt="إشعار"
+                <a href="${CBS.privateFileUrl('receipts', r.receiptFile)}" target="_blank" rel="noopener noreferrer" style="flex-shrink:0;display:block;border-radius:10px;overflow:hidden;border:1px solid var(--border);">
+                  <img src="${CBS.privateFileUrl('receipts', r.receiptFile)}" alt="إشعار"
                        onerror="this.parentElement.innerHTML='<div style=\'width:52px;height:52px;display:flex;align-items:center;justify-content:center;background:var(--bg-input);border-radius:10px;\'><i class=\'ri-image-line\' style=\'font-size:1.4rem;color:var(--text-muted);\'></i></div>'"
                        style="width:52px;height:52px;object-fit:cover;display:block;">
                 </a>
@@ -1421,7 +1426,7 @@
           return;
         }
 
-        const options = students.map(s => `<option value="${s._id}">${CBS.escapeHTML(s.name)} — ${CBS.escapeHTML(s.email)}</option>`).join('');
+        const options = students.map(s => `<option value="${s._id}">${CBS.escapeHTML(s.name)} â€” ${CBS.escapeHTML(s.email)}</option>`).join('');
         
         document.getElementById('feeStudentId').innerHTML = `<option value="">اختر الطالب...</option>` + options;
         document.getElementById('paymentStudentId').innerHTML = `<option value="">اختر الطالب...</option>` + options;
@@ -1498,17 +1503,17 @@
 
             return `
               <tr>
-                <td>
+                <td data-label="الطالب">
                   <div class="d-flex flex-column">
                     <span class="fw-bold">${esc(studentName)}</span>
                     <small class="text-muted">${esc(studentEmail)}</small>
                   </div>
                 </td>
-                <td><span class="badge" style="background:var(--bg-hover);color:var(--text-main);font-size:0.75rem; border:1px solid var(--border)">${esc(batchName)}</span></td>
-                <td><span class="badge bg-primary-subtle text-primary">${(b.totalFees || 0).toFixed(2)} ج.س</span></td>
-                <td><span class="badge bg-success-subtle text-success">${(b.totalPaid || 0).toFixed(2)} ج.س</span></td>
-                <td><span class="badge bg-danger-subtle text-danger fw-bold">${Math.max(0, (b.totalFees || 0) - (b.totalPaid || 0)).toFixed(2)} ج.س</span></td>
-                <td>
+                <td data-label="الدفعة"><span class="badge" style="background:var(--bg-hover);color:var(--text-main);font-size:0.75rem; border:1px solid var(--border)">${esc(batchName)}</span></td>
+                <td data-label="إجمالي الرسوم"><span class="badge bg-primary-subtle text-primary">${(b.totalFees || 0).toFixed(2)} ج.س</span></td>
+                <td data-label="المدفوع"><span class="badge bg-success-subtle text-success">${(b.totalPaid || 0).toFixed(2)} ج.س</span></td>
+                <td data-label="المتبقي"><span class="badge bg-danger-subtle text-danger fw-bold">${Math.max(0, (b.totalFees || 0) - (b.totalPaid || 0)).toFixed(2)} ج.س</span></td>
+                <td data-label="إجراءات">
                   <button class="btn btn-sm btn-outline-primary" data-registry-idx="${idx}" onclick="openBillingFromRegistry(this)" title="عرض التفاصيل المالية"><i class="ri-eye-line"></i> كشف الحساب</button>
                   <button class="btn btn-sm btn-outline-success" data-student-id="${esc(String(b.student?._id || ''))}" onclick="quickAddPayment(this)" title="إضافة دفعة سريعة"><i class="ri-money-dollar-circle-line"></i></button>
                 </td>
@@ -1819,25 +1824,25 @@
         }
 
         tbody.innerHTML = requestsList.map(r => {
-          const fileUrl = API_BASE + '/uploads/misc/' + encodeURIComponent(r.receiptFile || '');
+          const fileUrl = API_BASE + CBS.privateFileUrl('receipts', r.receiptFile || '');
           return `
             <tr>
-              <td class="font-bold">${CBS.escapeHTML(r.student?.name || 'طالب محذوف')}</td>
-              <td class="text-success font-bold">${r.amount.toFixed(2)} ج.س</td>
-              <td>${CBS.escapeHTML(r.reference || r.notes || '-')}</td>
-              <td>${CBS.formatDate(r.createdAt)}</td>
-              <td>
-                <a href="${fileUrl}" target="_blank" style="display: inline-block; position: relative; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); box-shadow: var(--shadow-sm); transition: transform 0.2s; background: var(--bg-card);" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
+              <td data-label="الطالب" class="font-bold">${CBS.escapeHTML(r.student?.name || 'طالب محذوف')}</td>
+              <td data-label="المبلغ" class="text-success font-bold">${r.amount.toFixed(2)} ج.س</td>
+              <td data-label="رقم الإيصال">${CBS.escapeHTML(r.reference || r.notes || '-')}</td>
+              <td data-label="التاريخ">${CBS.formatDate(r.createdAt)}</td>
+              <td data-label="صورة الإشعار">
+                <a href="${fileUrl}" target="_blank" rel="noopener noreferrer" style="display: inline-block; position: relative; border-radius: 8px; overflow: hidden; border: 1px solid var(--border); box-shadow: var(--shadow-sm); transition: transform 0.2s; background: var(--bg-card);" onmouseover="this.style.transform='scale(1.05)'" onmouseout="this.style.transform='scale(1)'">
                   <div style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.4); display: flex; align-items: center; justify-content: center; opacity: 0; transition: opacity 0.2s; color: white; pointer-events: none;"><i class="ri-zoom-in-line" style="font-size: 1.5rem;"></i></div>
                   <img src="${fileUrl}" onerror="this.src='/img/placeholder.jpg'" alt="إشعار" style="width: 60px; height: 60px; object-fit: cover; display: block;" onmouseover="this.previousElementSibling.style.opacity='1'" onmouseout="this.previousElementSibling.style.opacity='0'">
                 </a>
               </td>
-              <td>
+              <td data-label="الإجراء">
                 <div style="display: flex; gap: 8px;">
                   <button onclick="approvePaymentRequest('${r._id}')" class="btn btn-sm btn-success" style="padding: 4px 10px;" title="موافقة واعتماد المبلغ">
                     <i class="ri-check-line"></i> موافقة
                   </button>
-                  <button onclick="rejectPaymentRequest('${r._id}')" class="btn btn-sm btn-danger" style="padding: 4px 10px;" title="رفض الإشعار">
+                  <button onclick="rejectPaymentRequest('${r._id}')" class="btn btn-sm btn-danger" style="padding: 4px 10px;" title="رفض الإشعار" aria-label="إغلاق">
                     <i class="ri-close-line"></i> رفض
                   </button>
                 </div>

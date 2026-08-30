@@ -1,18 +1,57 @@
 const router = require("express").Router();
 const StudentSubmission = require("../models/StudentSubmission");
 const Assignment = require("../models/Assignment");
+const Subject = require("../models/Subject");
 const User = require("../models/User");
+
 const auth = require("../middleware/auth.middleware");
 const role = require("../middleware/role.middleware");
 const upload = require("../config/multer");
+const { uploadLimiter } = require("../middleware/rateLimiter");
 const mongoose = require("mongoose");
 const { success, fail, notFound, serverError } = require("../utils/response");
 const { logActivity } = require("../utils/activityLogger");
 
+/* موعد التسليم بالتوقيت المحلي للكلية لا بـ UTC.
+   setUTCHours كان يعامل "23:59" كتوقيت عالمي بينما الدكتور يقصد التوقيت
+   المحلي والواجهة تعرضه محلياً — فالسودان UTC+2 يمنح الطلاب ساعتين
+   إضافيتين بصمت، والرقم المعروض لا يطابق الرقم المطبَّق. */
+const COLLEGE_UTC_OFFSET_HOURS = Number(process.env.COLLEGE_UTC_OFFSET || 2);
+
+function resolveDueDateTime(assignment) {
+  if (!assignment?.dueDate) return null;
+  const due = new Date(assignment.dueDate);
+  const [hours, minutes] = String(assignment.dueTime || "23:59").split(":").map(Number);
+  if (Number.isNaN(hours) || Number.isNaN(minutes)) return due;
+  due.setUTCHours(hours - COLLEGE_UTC_OFFSET_HOURS, minutes, 0, 0);
+  return due;
+}
+
+async function canManageAssignment(user, assignment) {
+  if (user.roles.includes("dean") || user.roles.includes("admin")) return true;
+  if (!user.roles.includes("doctor")) return false;
+
+  const subjectId = assignment?.subject?._id || assignment?.subject;
+  const subject = assignment?.subject?.doctor
+    ? assignment.subject
+    : await Subject.findById(subjectId).select("doctor batches").lean();
+  if (!subject) return false;
+
+  const subjectDoctor = subject.doctor?._id || subject.doctor;
+  if (!subjectDoctor || String(subjectDoctor) !== String(user.id)) return false;
+
+  const doctor = await User.findById(user.id).select("batches").lean();
+  const assignedBatches = new Set((doctor?.batches || []).map(String));
+  const assignmentBatches = Array.isArray(assignment.batches) ? assignment.batches.map(String) : [];
+  const subjectBatches = Array.isArray(subject.batches) ? subject.batches.map(String) : [];
+  const scopedBatches = assignmentBatches.length > 0 ? assignmentBatches : subjectBatches;
+  return scopedBatches.some(batchId => assignedBatches.has(batchId));
+}
+
 // ============ مسارات الطلاب ============
 
 // تسليم واجب جديد (الطلاب والليدر)
-router.post("/submit", auth, role("student", "leader"), upload.single("file"), async (req, res) => {
+router.post("/submit", auth, role("student", "leader"), uploadLimiter, upload.single("file"), async (req, res) => {
   try {
     if (!req.file) {
       return fail(res, "يجب رفع ملف التسليم");
@@ -44,21 +83,12 @@ router.post("/submit", auth, role("student", "leader"), upload.single("file"), a
     // التحقق من موعد التسليم (بـ UTC)
     const now = new Date();
 
-    // ✅ حماية من غياب dueDate أو dueTime
+    // حماية من غياب dueDate أو dueTime
     if (!assignment.dueDate) {
       return fail(res, "لم يتم تحديد موعد تسليم لهذا التكليف", 400);
     }
 
-    const dueDateTime = new Date(assignment.dueDate);
-    
-    // تعيين الوقت المحدد للتسليم
-    if (assignment.dueTime && typeof assignment.dueTime === 'string') {
-      const [hours, minutes] = assignment.dueTime.split(":").map(Number);
-      if (!isNaN(hours) && !isNaN(minutes)) {
-        dueDateTime.setUTCHours(hours, minutes, 0, 0);
-      }
-    }
-
+    const dueDateTime = resolveDueDateTime(assignment);
     const isLate = now > dueDateTime;
 
     // منع التسليم بعد انتهاء الموعد
@@ -93,11 +123,15 @@ router.post("/submit", auth, role("student", "leader"), upload.single("file"), a
     const submission = await StudentSubmission.create({
       assignment: assignmentId,
       student: req.user.id,
-      submissionType: assignment.type, // استخدام نوع التكليف وليس نوع التسليم المرسل
+      submissionType: assignment.type,
       file: req.file.filename,
       fileType: fileType,
       notes: notes,
-      isLate: false,
+      /* التسليم هنا يكون دائماً في الموعد (المتأخر مرفوض أعلاه)، لكن
+         تثبيت false كان يجعل الحقل بلا معنى بينما تعرضه الواجهة كحالة.
+         نكتب القيمة المحسوبة كي يبقى الحقل صادقاً — وتصير إعادة التسليم
+         بعد الموعد هي الحالة الوحيدة التي تضبطه على true. */
+      isLate,
       submissionDate: now
     });
 
@@ -122,6 +156,10 @@ router.post("/submit", auth, role("student", "leader"), upload.single("file"), a
     }
 
     logActivity(req.user.id, "ASSIGNMENT_SUBMITTED", { assignmentId: assignment._id, title: assignment.title });
+    try {
+      const { recordActivity } = require("../services/kedySmartNotification.service");
+      recordActivity(req.user.id);
+    } catch(e) {}
 
     success(res, { submission }, "تم تسليم الواجب بنجاح", 201);
   } catch (err) {
@@ -145,13 +183,9 @@ router.delete("/:id/undo", auth, role("student", "leader"), async (req, res) => 
     }
 
     const now = new Date();
-    let dueDateTime = new Date(submission.assignment.dueDate);
-    if (submission.assignment.dueTime) {
-      const [hours, minutes] = submission.assignment.dueTime.split(":").map(Number);
-      if (!isNaN(hours) && !isNaN(minutes)) dueDateTime.setUTCHours(hours, minutes, 0, 0);
-    }
+    const dueDateTime = resolveDueDateTime(submission.assignment);
 
-    if (now > dueDateTime) {
+    if (dueDateTime && now > dueDateTime) {
       return fail(res, "انتهى وقت التسليم، لا يمكن إلغاء التسليم الآن");
     }
 
@@ -163,7 +197,7 @@ router.delete("/:id/undo", auth, role("student", "leader"), async (req, res) => 
 });
 
 // إعادة تسليم بعد التقييم (الطلاب والليدر) — فقط إذا لم يكن مقبولاً بالكامل
-router.post("/:id/resubmit", auth, role("student", "leader"), upload.single("file"), async (req, res) => {
+router.post("/:id/resubmit", auth, role("student", "leader"), uploadLimiter, upload.single("file"), async (req, res) => {
   try {
     const submission = await StudentSubmission.findById(req.params.id)
       .populate("assignment");
@@ -186,10 +220,31 @@ router.post("/:id/resubmit", auth, role("student", "leader"), upload.single("fil
       return fail(res, "يجب رفع ملف التسليم الجديد");
     }
 
-    // التحقق من موعد التسليم (يسمح بإعادة التسليم بعد الموعد الأصلي كاستثناء)
     const assignment = await Assignment.findById(submission.assignment);
     if (!assignment) {
       return notFound(res, "التكليف غير موجود");
+    }
+
+    /* نافذة إصلاح محدودة بعد الموعد لا باب مفتوح إلى الأبد.
+       لم يكن هنا أي فحص للتاريخ إطلاقاً، فيكفي رفع ملف فارغ قبل الموعد
+       والحصول على درجة دون 60 ثم رفع العمل الحقيقي بعد أسابيع — وهو ما
+       يُفرغ منع التسليم المتأخر من مضمونه. */
+    const RESUBMIT_GRACE_DAYS = Number(process.env.RESUBMIT_GRACE_DAYS || 7);
+    const dueDateTime = resolveDueDateTime(assignment);
+    const now = new Date();
+    let isLateResubmission = false;
+
+    if (dueDateTime) {
+      isLateResubmission = now > dueDateTime;
+      const graceEnds = new Date(dueDateTime.getTime() + RESUBMIT_GRACE_DAYS * 24 * 60 * 60 * 1000);
+      if (now > graceEnds) {
+        return fail(
+          res,
+          `انتهت مهلة إعادة التسليم (${RESUBMIT_GRACE_DAYS} أيام بعد الموعد المحدد)`,
+          400,
+          { dueDateTime, graceEnds }
+        );
+      }
     }
 
     // التحقق من أن الطالب لا يزال في الدفعة المسموح بها
@@ -211,7 +266,8 @@ router.post("/:id/resubmit", auth, role("student", "leader"), upload.single("fil
     submission.file = req.file.filename;
     submission.fileType = fileType;
     submission.notes = req.body.notes || submission.notes;
-    submission.submissionDate = new Date();
+    submission.submissionDate = now;
+    submission.isLate = isLateResubmission; // يظهر للمقيّم أن هذه النسخة جاءت بعد الموعد
     submission.status = "pending";
     submission.grade = undefined;
     submission.feedback = undefined;
@@ -228,7 +284,7 @@ router.post("/:id/resubmit", auth, role("student", "leader"), upload.single("fil
 });
 
 // جلب تسليمات الطالب (أو قائمة فارغة للدكاترة/الإدارة دون أخطاء 403)
-router.get("/my-submissions", auth, role("student", "leader", "doctor", "dean"), async (req, res) => {
+router.get("/my-submissions", auth, role("student", "leader", "doctor", "dean", "admin"), async (req, res) => {
   try {
     const isStudentOrLeader = req.user.roles.includes("student") || req.user.roles.includes("leader");
     if (!isStudentOrLeader) {
@@ -268,14 +324,18 @@ router.get("/:id", auth, async (req, res) => {
     if (!isOwner && !isStaff) {
       return fail(res, "ليس لديك صلاحية للوصول إلى هذا التسليم", 403);
     }
+    if (!isOwner && req.user.roles.includes("doctor") && !(await canManageAssignment(req.user, submission.assignment))) {
+      return fail(res, "ليس لديك صلاحية للوصول إلى هذا التسليم", 403);
+    }
 
     success(res, { submission });
+
   } catch (err) {
     serverError(res, err, "جلب تفاصيل تسليم");
   }
 });
 
-// ============ مسارات الدكاترة والعمداء والليدر ============
+// ============ مسارات الدكاترة والعمداء والأدمن ============
 
 // جلب جميع التسليمات لتكليف معين (مع Pagination)
 router.get("/assignment/:assignmentId/submissions", auth, role("dean", "doctor", "admin"), async (req, res) => {
@@ -289,6 +349,9 @@ router.get("/assignment/:assignmentId/submissions", auth, role("dean", "doctor",
     const assignment = await Assignment.findById(assignmentId);
     if (!assignment) {
       return notFound(res, "التكليف غير موجود");
+    }
+    if (!(await canManageAssignment(req.user, assignment))) {
+      return fail(res, "ليس لديك صلاحية للوصول إلى تسليمات هذا التكليف", 403);
     }
 
     // Pagination
@@ -334,13 +397,15 @@ router.get("/assignment/:assignmentId/not-submitted", auth, role("dean", "doctor
     if (!assignment) {
       return notFound(res, "التكليف غير موجود");
     }
+    if (!(await canManageAssignment(req.user, assignment))) {
+      return fail(res, "ليس لديك صلاحية للوصول إلى تسليمات هذا التكليف", 403);
+    }
 
     // جلب جميع التسليمات للتكليف
     const submissions = await StudentSubmission.find({ assignment: assignmentId });
     const submittedStudentIds = submissions.map(s => s.student.toString());
 
     // جلب جميع الطلاب وتصفية من لم يسلموا
-    // تصفية حسب دفعة التكليف إن وجدت
     let query = { roles: { $in: ["student", "leader"] } };
     if (assignment.batches && assignment.batches.length > 0) {
       query.batch = { $in: assignment.batches };
@@ -362,7 +427,7 @@ router.get("/assignment/:assignmentId/not-submitted", auth, role("dean", "doctor
   }
 });
 
-// تقييم التسليم (الدكتور/العميد/الليدر)
+// تقييم التسليم (الدكتور/العميد/الأدمن)
 router.put("/:id/grade", auth, role("dean", "doctor", "admin"), async (req, res) => {
   try {
     const { feedback } = req.body;
@@ -373,24 +438,26 @@ router.put("/:id/grade", auth, role("dean", "doctor", "admin"), async (req, res)
       return fail(res, "التقييم يجب أن يكون رقماً بين 0 و 100");
     }
 
-    const submission = await StudentSubmission.findByIdAndUpdate(
-      req.params.id,
-      {
-        grade: grade,
-        feedback: feedback,
-        status: "graded",
-        reviewedBy: req.user.id,
-        reviewDate: new Date()
-      },
-      { returnDocument: 'after' }
-    ).populate("student", "name email").populate("assignment");
-
+    const submission = await StudentSubmission.findById(req.params.id).populate("assignment");
     if (!submission) {
       return notFound(res, "التسليم غير موجود");
     }
+    if (!(await canManageAssignment(req.user, submission.assignment))) {
+      return fail(res, "ليس لديك صلاحية لتقييم هذا التسليم", 403);
+    }
 
-    // إضافة نقاط للطالب (نظام Leaderboard)
-    if (grade >= 60) {
+    submission.grade = grade;
+    submission.feedback = feedback;
+    submission.status = "graded";
+    submission.reviewedBy = req.user.id;
+    submission.reviewDate = new Date();
+    await submission.save();
+    await submission.populate("student", "name email");
+
+    // إضافة نقاط للطالب (نظام Leaderboard) مرة واحدة فقط عند اجتياز الواجب
+    if (grade >= 60 && !submission.pointsAwarded) {
+      submission.pointsAwarded = true;
+      await submission.save();
       await User.findByIdAndUpdate(submission.student._id, { $inc: { points: 10 } });
     }
 
@@ -425,8 +492,11 @@ router.put("/:id/grade", auth, role("dean", "doctor", "admin"), async (req, res)
   }
 });
 
-// تحديث حالة التسليم
-router.put("/:id/status", auth, role("dean", "doctor", "leader"), async (req, res) => {
+/* تحديث حالة التسليم — العميد/الدكتور/الأدمن.
+   كان "leader" مذكوراً هنا بينما canManageAssignment تُرجع false له دائماً
+   (تشترط dean/admin أو doctor مالك المادة)، فالنتيجة 403 مضمونة: صلاحية
+   معلنة ومستحيلة التنفيذ. و"admin" كان ناقصاً رغم أن الدالة تقبله. */
+router.put("/:id/status", auth, role("dean", "doctor", "admin"), async (req, res) => {
   try {
     const { status } = req.body;
 
@@ -434,17 +504,18 @@ router.put("/:id/status", auth, role("dean", "doctor", "leader"), async (req, re
       return fail(res, "حالة غير صحيحة. القيم المسموحة: pending, reviewed, graded");
     }
 
-    const submission = await StudentSubmission.findByIdAndUpdate(
-      req.params.id,
-      { status: status },
-      { returnDocument: 'after' }
-    );
-
+    const submission = await StudentSubmission.findById(req.params.id).populate("assignment");
     if (!submission) {
       return notFound(res, "التسليم غير موجود");
     }
+    if (!(await canManageAssignment(req.user, submission.assignment))) {
+      return fail(res, "ليس لديك صلاحية لتحديث حالة هذا التسليم", 403);
+    }
 
+    submission.status = status;
+    await submission.save();
     success(res, { submission }, "تم تحديث الحالة");
+
   } catch (err) {
     serverError(res, err, "تحديث حالة تسليم");
   }

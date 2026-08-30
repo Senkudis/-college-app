@@ -142,7 +142,7 @@ htmlFiles.forEach(file => {
   for (const m of getElementCalls) {
     const targetId = m[1];
     // Dynamic / global layout elements that exist in app.js or common layout
-    const commonGlobalIds = new Set(['toast-container', 'year', 'batchSwitcherSelect', 'bottomNavContainer', 'pdfModal', 'pdfCanvasWrap', 'pdfIframe', 'pdfDownloadBtn', 'globalSearchOverlay', 'globalSearchInput', 'globalSearchResults']);
+    const commonGlobalIds = new Set(['toast-container', 'year', 'batchSwitcherSelect', 'bottomNavContainer', 'pdfModal', 'pdfCanvasWrap', 'pdfIframe', 'pdfDownloadBtn', 'globalSearchOverlay', 'globalSearchInput', 'globalSearchResults', 'reportOverlay', 'searchEmptyState', 'subjectTitle']);
     if (!domIds.has(targetId) && !commonGlobalIds.has(targetId)) {
       logWarning(file, `document.getElementById('${targetId}') referenced in script but id="${targetId}" not found in HTML markup!`);
     }

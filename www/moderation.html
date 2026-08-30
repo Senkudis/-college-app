@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>مراجعة البلاغات | كلية النصر التقنية</title>
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
+  <link rel="stylesheet" href="/css/style.css?v=2026081907">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026081907">
+  <style>
+    .sla-bar {
+      display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-right: 4px solid var(--primary);
+      border-radius: var(--radius-lg); padding: 14px 18px;
+      margin-bottom: 20px; box-shadow: var(--shadow-sm);
+    }
+    .sla-bar strong { font-size: 0.95rem; }
+    .sla-bar span { font-size: 0.85rem; color: var(--text-muted); }
+    .sla-overdue { color: var(--danger); font-weight: 700; }
+
+    .status-tabs { display: flex; gap: 8px; margin-bottom: 18px; flex-wrap: wrap; }
+    .status-tab {
+      padding: 9px 18px; border-radius: var(--radius-md); cursor: pointer;
+      border: 1px solid var(--border); background: var(--bg-card);
+      color: var(--text-muted); font-weight: 700; font-size: 0.85rem;
+      font-family: inherit; min-height: 44px; transition: var(--transition-fast);
+    }
+    .status-tab.active { background: var(--primary); color: #fff; border-color: var(--primary); }
+
+    .report-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-right: 4px solid var(--warning);
+      border-radius: var(--radius-lg); padding: 18px;
+      margin-bottom: 14px; box-shadow: var(--shadow-sm);
+      display: flex; flex-direction: column; gap: 12px;
+    }
+    .report-card.late { border-right-color: var(--danger); }
+    .report-head { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; align-items: flex-start; }
+    .report-reason { font-weight: 800; font-size: 0.98rem; }
+    .report-meta { font-size: 0.8rem; color: var(--text-muted); display: flex; flex-wrap: wrap; gap: 12px; }
+    .report-snapshot {
+      background: var(--bg-hover); border-radius: var(--radius-md);
+      padding: 12px; font-size: 0.88rem; white-space: pre-wrap;
+      word-break: break-word; max-height: 160px; overflow-y: auto;
+    }
+    .report-actions { display: flex; gap: 10px; flex-wrap: wrap; }
+    .report-actions button { min-height: 44px; padding: 0 18px; }
+    .badge-late { background: var(--danger-bg); color: var(--danger); }
+  </style>
+  <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+</head>
+<body>
+
+<header class="main-header">
+  <div class="header-brand">
+    <img src="/assets/logo.png" class="header-logo" alt="شعار كلية النصر التقنية">
+    <div class="header-title-group">
+      <strong>كلية النصر التقنية</strong>
+      <small>مراجعة البلاغات</small>
+    </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي" aria-label="تبديل الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="CBS.goHome()" title="الرئيسية" aria-label="الرئيسية"><i class="ri-home-4-line"></i></button>
+  </div>
+</header>
+
+<div class="page-content">
+  <div class="page-header">
+    <div class="page-header-left">
+      <div class="page-icon"><i class="ri-flag-line"></i></div>
+      <div>
+        <div class="page-title">مراجعة البلاغات</div>
+        <div class="page-subtitle">المحتوى الذي أبلغ عنه الطلاب</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="sla-bar">
+    <i class="ri-time-line" style="font-size:1.4rem;color:var(--primary);"></i>
+    <div>
+      <strong>الالتزام المعلن: مراجعة كل بلاغ خلال 24 ساعة</strong><br>
+      <span id="slaSummary">جاري التحميل…</span>
+    </div>
+  </div>
+
+  <div class="status-tabs">
+    <button class="status-tab active" data-status="pending"   onclick="switchStatus(this)">قيد المراجعة</button>
+    <button class="status-tab"        data-status="removed"   onclick="switchStatus(this)">أُزيل المحتوى</button>
+    <button class="status-tab"        data-status="dismissed" onclick="switchStatus(this)">بلاغات مرفوضة</button>
+  </div>
+
+  <div id="alertMsg" class="alert" role="alert"></div>
+  <div id="reportsList"></div>
+</div>
+
+<script src="/js/shared.js?v=2026081907"></script>
+<script src="/js/app.js?v=2026081907"></script>
+<script src="/js/socket-client.js?v=2026081907" defer></script>
+<script>
+  CBS.init({ requireRoles: ['dean', 'admin'] });
+
+  let currentStatus = 'pending';
+
+  const REASON_LABELS = {
+    harassment: 'تنمّر أو إساءة',
+    hate: 'خطاب كراهية',
+    sexual: 'محتوى جنسي',
+    violence: 'عنف أو تهديد',
+    spam: 'إزعاج أو إعلانات',
+    cheating: 'غش أو تسريب امتحانات',
+    other: 'سبب آخر'
+  };
+  const TYPE_LABELS = {
+    comment: 'تعليق على فيديو',
+    gallery: 'صورة في المعرض',
+    'pod-task': 'مهمة في غرفة مذاكرة',
+    user: 'مستخدم'
+  };
+
+  function switchStatus(btn) {
+    document.querySelectorAll('.status-tab').forEach(t => t.classList.remove('active'));
+    btn.classList.add('active');
+    currentStatus = btn.dataset.status;
+    loadReports();
+  }
+
+  async function loadReports() {
+    const list = document.getElementById('reportsList');
+    list.innerHTML = '<div style="text-align:center;padding:34px;color:var(--text-muted);"><i class="ri-loader-4-line" style="font-size:1.8rem;"></i></div>';
+    try {
+      const res  = await CBS.apiGet('/api/moderation/reports?status=' + currentStatus);
+      const data = await CBS.readJson(res, 'تعذّر جلب البلاغات');
+      const payload = data.data || data;
+      const reports = payload.reports || [];
+
+      document.getElementById('slaSummary').innerHTML = payload.overdue
+        ? `<span class="sla-overdue">${payload.overdue} بلاغ تجاوز المهلة</span> — يرجى البتّ فيها الآن.`
+        : 'لا توجد بلاغات متأخرة عن المهلة.';
+
+      if (!reports.length) {
+        list.innerHTML = '<div style="text-align:center;padding:44px;color:var(--text-muted);"><i class="ri-checkbox-circle-line" style="font-size:2.4rem;display:block;margin-bottom:10px;"></i>لا توجد بلاغات في هذه القائمة</div>';
+        return;
+      }
+
+      const slaMs = (payload.slaHours || 24) * 3600 * 1000;
+      list.innerHTML = reports.map(r => {
+        const late = r.status === 'pending' && (Date.now() - new Date(r.createdAt).getTime()) > slaMs;
+        return `
+        <div class="report-card ${late ? 'late' : ''}">
+          <div class="report-head">
+            <div>
+              <div class="report-reason">${CBS.escapeHTML(REASON_LABELS[r.reason] || r.reason)}</div>
+              <div class="report-meta">
+                <span><i class="ri-price-tag-3-line"></i> ${CBS.escapeHTML(TYPE_LABELS[r.targetType] || r.targetType)}</span>
+                <span><i class="ri-user-line"></i> صاحب المحتوى: ${CBS.escapeHTML(r.targetAuthor?.name || 'غير معروف')}</span>
+                <span><i class="ri-flag-line"></i> أبلغ: ${CBS.escapeHTML(r.reportedBy?.name || 'مجهول')}</span>
+                <span><i class="ri-time-line"></i> ${CBS.formatDateTime(r.createdAt)}</span>
+              </div>
+            </div>
+            ${late ? '<span class="badge badge-late">تجاوز المهلة</span>' : ''}
+          </div>
+
+          ${r.snapshot ? `<div class="report-snapshot">${CBS.escapeHTML(r.snapshot)}</div>` : ''}
+          ${r.details ? `<div style="font-size:0.84rem;color:var(--text-muted);"><strong>تفاصيل المُبلِّغ:</strong> ${CBS.escapeHTML(r.details)}</div>` : ''}
+
+          ${r.status === 'pending' ? `
+            <div class="report-actions">
+              <button class="btn btn-danger"    onclick="act('${r._id}','remove')"><i class="ri-delete-bin-line"></i> إزالة المحتوى</button>
+              <button class="btn btn-secondary" onclick="act('${r._id}','dismiss')"><i class="ri-close-circle-line"></i> رفض البلاغ</button>
+            </div>` : `
+            <div style="font-size:0.82rem;color:var(--text-muted);">
+              بُتّ فيه بواسطة ${CBS.escapeHTML(r.reviewedBy?.name || 'الإدارة')} — ${CBS.formatDateTime(r.reviewedAt)}
+              ${r.reviewNote ? `<br>ملاحظة: ${CBS.escapeHTML(r.reviewNote)}` : ''}
+            </div>`}
+        </div>`;
+      }).join('');
+    } catch (err) {
+      list.innerHTML = '';
+      CBS.toast('تعذّر جلب البلاغات', err.message || '', 'error');
+    }
+  }
+
+  async function act(reportId, action) {
+    const verb = action === 'remove' ? 'إزالة المحتوى المخالف' : 'رفض هذا البلاغ';
+    if (!confirm(`تأكيد ${verb}؟`)) return;
+    const note = prompt('ملاحظة للسجل (اختياري):') || '';
+    try {
+      const res  = await CBS.apiPost(`/api/moderation/reports/${reportId}/action`, { action, note });
+      const data = await CBS.readJson(res, 'تعذّر تنفيذ الإجراء');
+      CBS.toast('تم', data.message || '', 'success');
+      loadReports();
+    } catch (err) {
+      CBS.toast('تعذّر التنفيذ', err.message || '', 'error');
+    }
+  }
+
+  loadReports();
+</script>
+</body>
+</html>

@@ -85,11 +85,22 @@ const aiDailyLimiter = createRateLimiter(
   (req) => req.user?.id ? `aiday:user:${req.user.id}` : `aiday:ip:${getIpPrefix(req.ip)}`
 );
 
+/* تفاعلات الصفحات العامة (الإعجابات) — مفتوحة بلا تسجيل دخول، وكانت
+   تستدعي $inc بلا أي حدّ: أي زائر يرفع عدّاد خبر أو صورة أو يخفضه بلا
+   نهاية بحلقة بسيطة، فيفقد الرقم أي دلالة. */
+const publicActionLimiter = createRateLimiter(
+  10 * 60 * 1000, // 10 دقائق
+  30,
+  'تفاعلات كثيرة خلال وقت قصير، يرجى المحاولة لاحقاً',
+  (req) => `public:${getIpPrefix(req.ip)}`
+);
+
 module.exports = {
   apiLimiter,
   authLimiter,
   passwordResetLimiter,
   uploadLimiter,
   aiLimiter,
-  aiDailyLimiter
+  aiDailyLimiter,
+  publicActionLimiter
 };

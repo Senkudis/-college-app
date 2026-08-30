@@ -1,13 +1,13 @@
-﻿﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="ar" dir="rtl">
 <head>
   <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>مشاهدة المحاضرة | كلية تقنية المعلومات</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>مشاهدة المحاضرة | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=2026073128">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026073128">
+  <link rel="stylesheet" href="/css/style.css?v=2026081907">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026081907">
   <style>
     .watch-layout { display: grid; grid-template-columns: 1fr; gap: 24px; }
 
@@ -125,6 +125,15 @@
       background: none; border: none; color: var(--danger);
       cursor: pointer; font-size: 0.8rem; padding: 2px 6px; border-radius: 4px;
     }
+    /* الإبلاغ والحظر: حياديان بصرياً — إجراءان متاحان لا تحذيران. */
+    .qa-comment-report {
+      background: none; border: none; color: var(--text-muted);
+      cursor: pointer; font-size: 0.85rem; padding: 4px 6px; border-radius: 4px;
+      transition: var(--transition-fast);
+      min-width: 28px; min-height: 28px;
+    }
+    .qa-comment-report:hover { color: var(--danger); background: var(--danger-bg); }
+    .qa-comment-report:focus-visible { outline: 2px solid var(--border-focus); outline-offset: 1px; }
 
     .sort-tabs { display: flex; gap: 0; border: 1px solid var(--border); border-radius: var(--radius-md); overflow: hidden; }
     .sort-tab {
@@ -142,20 +151,21 @@
   </style>
 
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
 </head>
 <body>
 
 <header class="main-header">
   <div class="header-brand">
-    <img src="/assets/logo.png" class="header-logo" alt="Logo">
+    <img src="/assets/logo.png" class="header-logo" alt="شعار كلية النصر التقنية - جامعة النصر التقنية">
     <div class="header-title-group">
-      <strong>كلية تقنية المعلومات</strong>
+      <strong>كلية النصر التقنية</strong>
       <small id="headerSub">مشاهدة المحاضرة</small>
     </div>
   </div>
   <div class="header-actions">
-    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي" aria-label="تبديل الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
     <button class="btn-icon" onclick="location.href='/video-library.html'" title="المكتبة"><i class="ri-video-line"></i></button>
     <button class="btn-icon" onclick="CBS.goHome()" title="الرئيسية"><i class="ri-home-4-line"></i></button>
   </div>
@@ -222,29 +232,66 @@
       <div class="download-btns" id="downloadBtns"></div>
     </div>
 
-    <!-- Timestamped Q&A -->
+    <!-- Smart Tabbed Section: Discussions & Smart Notebook -->
     <div class="qa-section">
-      <div class="qa-header">
-        <h3><i class="ri-question-answer-line"></i> أسئلة ونقاش</h3>
-        <div class="sort-tabs">
+      <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:16px; border-bottom:1px solid var(--border); padding-bottom:12px; gap:8px; flex-wrap:wrap;">
+        <div style="display:flex; gap:8px;">
+          <button id="tabCommentsBtn" class="btn btn-primary" style="padding:6px 14px; font-size:0.85rem;" onclick="switchVideoTab('comments')">
+            <i class="ri-question-answer-line"></i> نقاش الدفعة
+          </button>
+          <button id="tabNotesBtn" class="btn btn-outline" style="padding:6px 14px; font-size:0.85rem;" onclick="switchVideoTab('notes')">
+            <i class="ri-book-mark-line"></i> مذكرتي الذكية 
+          </button>
+        </div>
+        <div id="commentsSortControls" class="sort-tabs">
           <button class="sort-tab active" onclick="sortComments('date', this)">الأحدث</button>
           <button class="sort-tab" onclick="sortComments('time', this)">حسب التوقيت</button>
         </div>
-      </div>
-
-      <div class="qa-form">
-        <textarea id="commentInput" placeholder="اكتب سؤالك أو ملاحظتك..." rows="2"></textarea>
-        <div style="display:flex; flex-direction:column; gap:6px;">
-          <span class="qa-timestamp-badge" id="currentTimeBadge" onclick="document.getElementById('mainVideo').pause()">
-            <i class="ri-time-line"></i> <span id="capturedTime">0:00</span>
-          </span>
-          <button class="btn btn-primary" style="padding:8px 16px; font-size:0.85rem; white-space:nowrap;" onclick="postComment()">
-            <i class="ri-send-plane-fill"></i> إرسال
+        <div id="notesControls" style="display:none;">
+          <button class="btn btn-outline" style="padding:6px 12px; font-size:0.8rem;" onclick="exportMyNotes()">
+            <i class="ri-download-2-line"></i> تصدير الملاحظات
           </button>
         </div>
       </div>
 
-      <div id="commentsList"></div>
+      <!-- Tab 1: Comments / Q&A -->
+      <div id="viewCommentsTab">
+        <div class="qa-form">
+          <textarea id="commentInput" placeholder="اكتب سؤالك أو ملاحظتك للدفعة..." rows="2"></textarea>
+          <div style="display:flex; flex-direction:column; gap:6px;">
+            <span class="qa-timestamp-badge" id="currentTimeBadge" onclick="document.getElementById('mainVideo').pause()">
+              <i class="ri-time-line"></i> <span id="capturedTime">0:00</span>
+            </span>
+            <button class="btn btn-primary" style="padding:8px 16px; font-size:0.85rem; white-space:nowrap;" onclick="postComment()">
+              <i class="ri-send-plane-fill"></i> إرسال
+            </button>
+          </div>
+        </div>
+        <div id="commentsList"></div>
+      </div>
+
+      <!-- Tab 2: Smart Timestamped Notes -->
+      <div id="viewNotesTab" style="display:none;">
+        <div class="qa-form" style="background:var(--bg-main); padding:14px; border-radius:var(--radius-lg); margin-bottom:16px;">
+          <div style="width:100%;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:8px;">
+              <span style="font-size:0.85rem; font-weight:800; color:var(--primary); display:flex; align-items:center; gap:6px;">
+                <i class="ri-edit-line"></i> تدوين فكرة عند التوقيت الحالي:
+              </span>
+              <span class="qa-timestamp-badge" id="noteTimeBadge" style="cursor:pointer;" onclick="captureNoteTime()">
+                <i class="ri-time-line"></i> <span id="noteCapturedTime">0:00</span> (تحديث)
+              </span>
+            </div>
+            <textarea id="noteTextInput" placeholder="اكتب فكرة ملخصة، معادلة، أو ملاحظة تود تذكرها في هذه الدقيقة..." rows="2" style="width:100%; border:2px solid var(--border); border-radius:var(--radius-md); padding:10px; background:var(--bg-card); color:var(--text-main); font-family:'Cairo',sans-serif;"></textarea>
+            <div style="display:flex; justify-content:flex-end; margin-top:8px;">
+              <button class="btn btn-primary" style="padding:7px 18px; font-size:0.85rem;" onclick="savePersonalNote()">
+                <i class="ri-save-line"></i> حفظ في مذكرتي
+              </button>
+            </div>
+          </div>
+        </div>
+        <div id="personalNotesList"></div>
+      </div>
     </div>
 
   </div>
@@ -253,9 +300,9 @@
 <div id="toast-container"></div>
 <footer class="main-footer">حقوق النشر &copy; <span id="year"></span> جامعة النصر التقنية</footer>
 
-<script src="/js/shared.js?v=2026073128"></script>
-<script src="/js/app.js?v=2026073128"></script>
-<script src="/js/socket-client.js?v=2026073128" defer></script>
+<script src="/js/shared.js?v=2026081907"></script>
+<script src="/js/app.js?v=2026081907"></script>
+<script src="/js/socket-client.js?v=2026081907" defer></script>
 <script>
   CBS.init();
   const user = CBS.getUser();
@@ -283,7 +330,7 @@
 
       document.getElementById('videoTitle').textContent = videoData.title;
       document.getElementById('headerSub').textContent = videoData.title;
-      document.title = `${videoData.title} | كلية تقنية المعلومات`;
+      document.title = `${videoData.title} | كلية النصر التقنية`;
 
       if (videoData.subject) document.getElementById('videoSubject').innerHTML = `<i class="ri-book-open-line"></i> ${CBS.escapeHTML(videoData.subject.name || '')}`;
       if (videoData.uploadedBy) document.getElementById('videoUploader').innerHTML = `<i class="ri-user-voice-line"></i> ${CBS.escapeHTML(videoData.uploadedBy.name || '')}`;
@@ -467,9 +514,10 @@
     try {
       const res = await CBS.apiGet(`/api/videos/${videoId}/comments?sort=${commentSort}`);
       const data = await CBS.readJson(res);
-      allComments = data.success ? data.comments : [];
+      // الخادم يغلّف الحمولة داخل data (utils/response.js)
+      allComments = data.success ? (data.data?.comments || data.comments || []) : [];
       renderComments();
-    } catch(e) {}
+    } catch(e) { console.error('[watch-video/loadComments]', e); }
   }
 
   function renderComments() {
@@ -480,7 +528,8 @@
     }
     el.innerHTML = allComments.map(c => {
       const authorName = typeof c.author === 'object' ? (c.author?.name || 'مستخدم') : 'مستخدم';
-      const isOwn = (typeof c.author === 'object' ? c.author?._id : c.author) === user.id;
+      const authorId = typeof c.author === 'object' ? (c.author?._id || '') : (c.author || '');
+      const isOwn = authorId === user.id;
       const isAdmin = user.roles && (user.roles.includes('doctor') || user.roles.includes('dean'));
       return `
       <div class="qa-comment">
@@ -491,11 +540,61 @@
               <i class="ri-play-circle-line"></i> ${fmtDur(Math.floor(c.timestamp))}
             </span>` : ''}
           <span class="qa-comment-date">${CBS.formatDateTime(c.createdAt)}</span>
-          ${isOwn || isAdmin ? `<button class="qa-comment-delete" onclick="deleteComment('${c._id}')"><i class="ri-delete-bin-line"></i></button>` : ''}
+          ${isOwn || isAdmin ? `<button class="qa-comment-delete" onclick="deleteComment('${c._id}')" aria-label="حذف"><i class="ri-delete-bin-line"></i></button>` : ''}
+          ${!isOwn ? `
+            <button class="qa-comment-report" onclick="reportComment('${c._id}')" title="إبلاغ عن محتوى مسيء" aria-label="إبلاغ عن هذا التعليق"><i class="ri-flag-line"></i></button>
+            <button class="qa-comment-report" onclick="blockAuthor('${authorId}', '${escapeHTML(authorName)}')" title="حظر هذا المستخدم" aria-label="حظر ${escapeHTML(authorName)}"><i class="ri-forbid-2-line"></i></button>` : ''}
         </div>
         <div class="qa-comment-text">${escapeHTML(c.text)}</div>
       </div>`;
     }).join('');
+  }
+
+  /* ===== الإبلاغ والحظر =====
+     شرط إلزامي في App Store (بند 1.2) لأي تطبيق يعرض محتوى ينشئه
+     المستخدمون: وسيلة إبلاغ + وسيلة حظر + التزام بالمراجعة خلال 24 ساعة.
+     غيابها سبب رفض متكرر، والتعليقات هنا محتوى مستخدمين بامتياز. */
+  const REPORT_REASONS = {
+    harassment: 'تنمّر أو إساءة شخصية',
+    hate:       'خطاب كراهية',
+    sexual:     'محتوى جنسي',
+    violence:   'عنف أو تهديد',
+    spam:       'إزعاج أو إعلانات',
+    cheating:   'غش أو تسريب امتحانات',
+    other:      'سبب آخر'
+  };
+
+  async function reportComment(commentId) {
+    const keys = Object.keys(REPORT_REASONS);
+    const menu = keys.map((k, i) => `${i + 1}. ${REPORT_REASONS[k]}`).join('\n');
+    const pick = prompt(`سبب الإبلاغ عن هذا التعليق:\n\n${menu}\n\nاكتب الرقم:`);
+    if (!pick) return;
+
+    const reason = keys[parseInt(pick, 10) - 1];
+    if (!reason) { CBS.toast('اختيار غير صالح', '', 'error'); return; }
+
+    try {
+      const res  = await CBS.apiPost('/api/moderation/report', {
+        targetType: 'comment', targetId: commentId, reason
+      });
+      const data = await CBS.readJson(res, 'تعذّر إرسال البلاغ');
+      CBS.toast('تم استلام البلاغ', data.message || 'ستراجعه الإدارة خلال 24 ساعة', 'success');
+    } catch (err) {
+      CBS.toast('تعذّر الإبلاغ', err.message || 'حاول مرة أخرى', 'error');
+    }
+  }
+
+  async function blockAuthor(userId, name) {
+    if (!userId) return;
+    if (!confirm(`حظر ${name}؟\n\nلن تظهر لك تعليقاته بعد الآن.`)) return;
+    try {
+      const res  = await CBS.apiPost(`/api/moderation/block/${userId}`, {});
+      const data = await CBS.readJson(res, 'تعذّر الحظر');
+      CBS.toast('تم الحظر', data.message || '', 'success');
+      loadComments(); // يختفي محتواه فوراً
+    } catch (err) {
+      CBS.toast('تعذّر الحظر', err.message || 'حاول مرة أخرى', 'error');
+    }
   }
 
   async function postComment() {
@@ -521,7 +620,7 @@
     try {
       const res = await CBS.apiDelete(`/api/videos/comments/${id}`);
       if (res.ok) { loadComments(); CBS.toast('تم الحذف', '', 'success'); }
-    } catch(e) {}
+    } catch(e) { console.error('[watch-video/deleteComment]', e); }
   }
 
   function seekTo(seconds) {
@@ -556,6 +655,151 @@
 
   function escapeHTML(str) {
     return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  // ===== Smart Notebook Logic =====
+  let currentVideoTab = 'comments';
+  let personalNotes = [];
+
+  function switchVideoTab(tab) {
+    currentVideoTab = tab;
+    const isComments = tab === 'comments';
+    document.getElementById('tabCommentsBtn').className = `btn ${isComments ? 'btn-primary' : 'btn-outline'}`;
+    document.getElementById('tabNotesBtn').className = `btn ${!isComments ? 'btn-primary' : 'btn-outline'}`;
+    document.getElementById('viewCommentsTab').style.display = isComments ? 'block' : 'none';
+    document.getElementById('viewNotesTab').style.display = !isComments ? 'block' : 'none';
+    document.getElementById('commentsSortControls').style.display = isComments ? 'flex' : 'none';
+    document.getElementById('notesControls').style.display = !isComments ? 'block' : 'none';
+    if (!isComments) {
+      captureNoteTime();
+      loadPersonalNotes();
+    }
+  }
+
+  function captureNoteTime() {
+    const secs = Math.floor(activeMedia.currentTime || 0);
+    const badge = document.getElementById('noteCapturedTime');
+    if (badge) badge.textContent = fmtDur(secs);
+    window._lastCapturedNoteTime = secs;
+  }
+
+  async function loadPersonalNotes() {
+    const el = document.getElementById('personalNotesList');
+    try {
+      const res = await CBS.apiGet('/api/ai/notes');
+      const data = await CBS.readJson(res);
+      const allNotes = data.notes || [];
+      // Filter notes for this video
+      personalNotes = allNotes.filter(n => n.subject === `video_${videoId}` || (n.title && n.title.includes(videoData?.title || '')));
+      renderPersonalNotes();
+    } catch(e) {
+      // Fallback local storage
+      const local = JSON.parse(localStorage.getItem(`notes_video_${videoId}`) || '[]');
+      personalNotes = local;
+      renderPersonalNotes();
+    }
+  }
+
+  function renderPersonalNotes() {
+    const el = document.getElementById('personalNotesList');
+    if (!el) return;
+    if (!personalNotes.length) {
+      el.innerHTML = '<div style="text-align:center; padding:24px; color:var(--text-muted);"><i class="ri-sticky-note-line" style="font-size:2rem; display:block; margin-bottom:8px;"></i>لم تدون أي ملاحظات لهذه المحاضرة بعد. دوّن ملاحظاتك للرجوع إليها سريعاً قبل الاختبارات!</div>';
+      return;
+    }
+
+    el.innerHTML = personalNotes.map((n, idx) => {
+      const timeMatch = n.title?.match(/\[(\d+:\d+)\]/);
+      const timeStr = timeMatch ? timeMatch[1] : '';
+      const timeSecs = n.timestamp || (timeStr ? parseTimeStrToSecs(timeStr) : 0);
+
+      return `
+      <div class="qa-comment" style="border-right: 4px solid var(--primary);">
+        <div class="qa-comment-header">
+          <span class="qa-timestamp-badge" style="cursor:pointer;" onclick="seekTo(${timeSecs})">
+            <i class="ri-play-circle-fill"></i> ${timeStr || fmtDur(timeSecs)}
+          </span>
+          <span class="qa-comment-date">${CBS.formatDateTime(n.createdAt)}</span>
+          <button class="qa-comment-delete" onclick="deletePersonalNote('${n._id || idx}')" aria-label="حذف"><i class="ri-delete-bin-line"></i></button>
+        </div>
+        <div class="qa-comment-text" style="white-space:pre-wrap;">${escapeHTML(n.content)}</div>
+      </div>`;
+    }).join('');
+  }
+
+  function parseTimeStrToSecs(str) {
+    const parts = str.split(':').map(Number);
+    if (parts.length === 2) return parts[0] * 60 + parts[1];
+    if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+    return 0;
+  }
+
+  async function savePersonalNote() {
+    const input = document.getElementById('noteTextInput');
+    const content = input.value.trim();
+    if (!content) { CBS.toast('اكتب ملاحظتك أولاً', '', 'error'); return; }
+
+    const timeSecs = window._lastCapturedNoteTime !== undefined ? window._lastCapturedNoteTime : Math.floor(activeMedia.currentTime || 0);
+    const timeStr = fmtDur(timeSecs);
+    const title = `[${timeStr}] ملاحظة - ${videoData?.title || 'المحاضرة'}`;
+
+    try {
+      const res = await CBS.apiPost('/api/ai/notes', {
+        title,
+        subject: `video_${videoId}`,
+        content,
+        type: 'video_note'
+      });
+      const data = await CBS.readJson(res);
+      if (data.success) {
+        input.value = '';
+        CBS.toast('تم حفظ الملاحظة بنجاح ', '', 'success');
+        loadPersonalNotes();
+      }
+    } catch(e) {
+      // Local fallback
+      const list = JSON.parse(localStorage.getItem(`notes_video_${videoId}`) || '[]');
+      list.push({ _id: 'loc_' + Date.now(), title, content, timestamp: timeSecs, createdAt: new Date() });
+      localStorage.setItem(`notes_video_${videoId}`, JSON.stringify(list));
+      input.value = '';
+      CBS.toast('تم حفظ الملاحظة محلياً', '', 'success');
+      loadPersonalNotes();
+    }
+  }
+
+  async function deletePersonalNote(id) {
+    if (!confirm('حذف هذه الملاحظة؟')) return;
+    try {
+      if (id.startsWith('loc_')) {
+        let list = JSON.parse(localStorage.getItem(`notes_video_${videoId}`) || '[]');
+        list = list.filter(n => n._id !== id);
+        localStorage.setItem(`notes_video_${videoId}`, JSON.stringify(list));
+      } else {
+        await CBS.apiDelete(`/api/ai/notes/${id}`);
+      }
+      CBS.toast('تم الحذف', '', 'success');
+      loadPersonalNotes();
+    } catch(e) { console.error('[watch-video/deletePersonalNote]', e); }
+  }
+
+  function exportMyNotes() {
+    if (!personalNotes.length) { CBS.toast('لا توجد ملاحظات لتصديرها', '', 'error'); return; }
+    let md = `#  ملخص وملاحظات محاضرة: ${videoData?.title || 'المحاضرة'}\n\n`;
+    md += `**المقرر:** ${videoData?.subject?.name || 'مقرر دراسي'}\n`;
+    md += `**تاريخ التصدير:** ${new Date().toLocaleDateString('ar-EG')}\n\n---\n\n`;
+
+    personalNotes.forEach(n => {
+      md += `###  ${n.title || 'ملاحظة'}\n${n.content}\n\n`;
+    });
+
+    const blob = new Blob([md], { type: 'text/markdown;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `notes_${videoData?.title || 'lecture'}.md`;
+    a.click();
+    URL.revokeObjectURL(url);
+    CBS.toast('تم تصدير المذكرات بنجاح ', '', 'success');
   }
 
   // Keyboard shortcuts

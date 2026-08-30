@@ -3,15 +3,15 @@
 <head>
   <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#0d3b66">
   <link rel="manifest" href="/manifest.json">
-  <title>إدارة المستخدمين | كلية تقنية المعلومات</title>
+  <title>إدارة المستخدمين | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=2026073128">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026073128">
+  <link rel="stylesheet" href="/css/style.css?v=2026081907">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026081907">
 
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -58,15 +58,15 @@
 
 <header class="main-header">
   <div class="header-brand">
-    <img src="/assets/logo.png" class="header-logo" alt="Logo">
+    <img src="/assets/logo.png" class="header-logo" alt="شعار كلية النصر التقنية - جامعة النصر التقنية">
     <div class="header-title-group">
-      <strong>كلية تقنية المعلومات</strong>
+      <strong>كلية النصر التقنية</strong>
       <small>إدارة المستخدمين</small>
     </div>
   </div>
   <div class="header-actions">
-    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
-    <button class="btn-icon" onclick="CBS.logout()" title="خروج"><i class="ri-logout-box-r-line"></i></button>
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي" aria-label="تبديل الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="CBS.logout()" title="خروج" aria-label="تسجيل الخروج"><i class="ri-logout-box-r-line"></i></button>
   </div>
 </header>
 
@@ -120,10 +120,10 @@
     <button class="btn btn-primary" onclick="CBS.openModal('userModal')">
       <i class="ri-user-add-line"></i> إضافة مستخدم جديد
     </button>
-    <a href="/pending-registrations.html" class="btn btn-secondary" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b; border: 1px solid rgba(245, 158, 11, 0.4); text-decoration: none; display: inline-flex; align-items: center; gap: 6px;">
+    <a href="/pending-registrations.html" class="btn btn-warning" style="text-decoration: none;">
       <i class="ri-user-received-line"></i> إدارة طلبات التسجيل المعلقة
     </a>
-    <button class="btn btn-secondary" onclick="copyAllEmails()" style="background: rgba(16, 185, 129, 0.2); color: #10b981; border: 1px solid rgba(16, 185, 129, 0.4);">
+    <button class="btn btn-success" onclick="copyAllEmails()">
       <i class="ri-file-copy-line"></i> نسخ إيميلات المستخدمين
     </button>
   </div>
@@ -159,6 +159,16 @@
     </div>
   </div>
 
+  <div class="pagination-controls" style="display:flex;justify-content:center;align-items:center;gap:12px;padding:16px;">
+    <button class="btn btn-secondary btn-sm" onclick="prevPage()" id="prevPageBtn" disabled aria-label="الصفحة السابقة">
+      <i class="ri-arrow-right-s-line"></i> السابق
+    </button>
+    <span id="pageInfo" style="font-size:14px;color:var(--text-muted);">صفحة 1 من 1</span>
+    <button class="btn btn-secondary btn-sm" onclick="nextPage()" id="nextPageBtn" aria-label="الصفحة التالية">
+      التالي <i class="ri-arrow-left-s-line"></i>
+    </button>
+  </div>
+
 </div>
 
 <div id="toast-container"></div>
@@ -168,7 +178,7 @@
   <div class="modal-box">
     <div class="modal-header">
       <h3 class="modal-title" id="modalTitle">إضافة مستخدم جديد</h3>
-      <button class="modal-close" onclick="CBS.closeModal('userModal')"><i class="ri-close-line"></i></button>
+      <button class="modal-close" onclick="CBS.closeModal('userModal')" aria-label="إغلاق"><i class="ri-close-line"></i></button>
     </div>
     <div class="modal-body">
       <form id="userForm">
@@ -178,15 +188,15 @@
           <input type="text" id="userName" required placeholder="أدخل الاسم الكامل">
         </div>
         <div class="form-group">
-          <label>البريد الإلكتروني</label>
+          <label for="userEmail">البريد الإلكتروني</label>
           <input type="email" id="userEmail" required placeholder="example@email.com">
         </div>
         <div class="form-group">
-          <label>كلمة المرور</label>
+          <label for="userPass">كلمة المرور</label>
           <input type="password" id="userPass" placeholder="أدخل كلمة المرور">
         </div>
         <div class="form-group">
-          <label>الصلاحية</label>
+          <label for="userRole">الصلاحية</label>
           <select id="userRole" required>
             <option value="student">طالب</option>
             <option value="leader">قائد دفعة</option>
@@ -196,7 +206,7 @@
           </select>
         </div>
         <div class="form-group" id="batchFormGroup">
-          <label>الدفعة</label>
+          <label for="userBatch">الدفعة</label>
           <select id="userBatch">
             <option value="">غير محدد</option>
             <!-- Batches will be loaded here -->
@@ -221,9 +231,9 @@
   حقوق النشر &copy; <span id="year"></span> جامعة النصر التقنية &nbsp;|&nbsp; تطوير: ضياء الدين إبراهيم
 </footer>
 
-<script src="/js/shared.js?v=2026073128"></script>
-<script src="/js/app.js?v=2026073128"></script>
-<script src="/js/socket-client.js?v=2026073128" defer></script>
+<script src="/js/shared.js?v=2026081907"></script>
+<script src="/js/app.js?v=2026081907"></script>
+<script src="/js/socket-client.js?v=2026081907" defer></script>
 <script>
   CBS.init({ requireRoles: ['dean', 'admin'] });
 
@@ -275,6 +285,90 @@
     }
   });
 
+  let allUsers = [];
+  let filteredUsers = [];
+  let currentPage = 1;
+  const pageSize = 25;
+
+  function renderPage() {
+    const container = document.getElementById('usersList');
+    if (!filteredUsers.length) {
+      container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:2rem">لا يوجد مستخدمون مطابقون</p>';
+      updatePaginationControls();
+      return;
+    }
+
+    const start = (currentPage - 1) * pageSize;
+    const end = start + pageSize;
+    const pageUsers = filteredUsers.slice(start, end);
+
+    container.innerHTML = pageUsers.map(u => {
+      const role = u.roles?.[0] || 'student';
+      const initial = CBS.escapeHTML((u.name || '?')[0]);
+      let batchBadge = '';
+      let batchesDataAttr = '';
+      if (role === 'doctor') {
+        const docBatches = u.batches && u.batches.length ? u.batches.map(b => b.name || b.code || b).join(', ') : 'لا يوجد';
+        batchBadge = `<span class="badge" style="background:var(--bg-hover);color:var(--text-main);font-size:0.75rem;margin-right:8px; border:1px solid var(--border)" title="${CBS.escapeHTML(docBatches)}">مواد لـ ${u.batches?.length || 0} دفعات</span>`;
+        batchesDataAttr = u.batches ? JSON.stringify(u.batches.map(b => String(b._id || b))).replace(/"/g, '&quot;') : '[]';
+      } else {
+        batchBadge = u.batch && u.batch.name ? `<span class="badge" style="background:var(--bg-hover);color:var(--text-main);font-size:0.75rem;margin-right:8px; border:1px solid var(--border)">${CBS.escapeHTML(u.batch.name)}</span>` : '';
+      }
+      const batchId = u.batch ? (u.batch._id || u.batch) : '';
+      
+      return `
+        <div class="card" style="margin-bottom:10px;padding:13px 14px">
+          <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+            <input type="checkbox" class="cb-user" value="${CBS.escapeHTML(u.email || '')}" style="width:18px;height:18px;cursor:pointer;flex-shrink:0">
+            <div class="user-card-avatar" style="flex-shrink:0">${initial}</div>
+            <div style="flex:1;min-width:0">
+              <div style="font-weight:700;font-size:0.88rem;color:var(--text-primary);display:flex;align-items:center;flex-wrap:wrap;gap:4px">
+                ${CBS.escapeHTML(u.name || '-')}
+                ${batchBadge}
+              </div>
+              <div style="font-size:0.76rem;color:var(--text-muted);margin-top:1px">${CBS.escapeHTML(u.email || '-')}</div>
+            </div>
+            <span class="badge ${roleColors[role] || 'badge-info'}" style="font-size:0.72rem;padding:4px 8px">${roleLabels[role] || CBS.escapeHTML(role)}</span>
+          </div>
+          <div class="user-card-actions">
+            <button class="btn btn-ghost btn-xs" data-id="${u._id}" data-name="${CBS.escapeHTML(u.name)}" data-email="${CBS.escapeHTML(u.email)}" data-role="${role}" data-batch="${batchId}" data-batches="${batchesDataAttr}" onclick="editUser(this.dataset.id,this.dataset.name,this.dataset.email,this.dataset.role,this.dataset.batch,this.dataset.batches)" aria-label="تعديل">
+              <i class="ri-edit-line"></i> تعديل
+            </button>
+            <button class="btn btn-ghost btn-xs" onclick="deleteUser('${u._id}')" aria-label="حذف" style="color:var(--danger)">
+              <i class="ri-delete-bin-line"></i> حذف
+            </button>
+          </div>
+        </div>
+      `;
+    }).join('');
+
+    updatePaginationControls();
+  }
+
+  function updatePaginationControls() {
+    const totalPages = Math.ceil(filteredUsers.length / pageSize) || 1;
+    document.getElementById('pageInfo').textContent = `صفحة ${currentPage} من ${totalPages}`;
+    document.getElementById('prevPageBtn').disabled = currentPage === 1;
+    document.getElementById('nextPageBtn').disabled = currentPage === totalPages;
+  }
+
+  function prevPage() {
+    if (currentPage > 1) {
+      currentPage--;
+      renderPage();
+      document.getElementById('selectAllUsers').checked = false;
+    }
+  }
+
+  function nextPage() {
+    const totalPages = Math.ceil(filteredUsers.length / pageSize) || 1;
+    if (currentPage < totalPages) {
+      currentPage++;
+      renderPage();
+      document.getElementById('selectAllUsers').checked = false;
+    }
+  }
+
   async function loadUsers() {
     const container = document.getElementById('usersList');
     container.innerHTML = '<div class="loading-state"><div class="uib-loader dark"><div class="half"></div><div class="half"></div></div><p>جاري التحميل...</p></div>';
@@ -287,57 +381,22 @@
       const res = await CBS.apiGet(url);
       if (!res.ok) throw new Error();
       const data = await res.json();
-      const users = data.users || data;
+      allUsers = data.users || data;
 
-      document.getElementById('statTotal').textContent = users.length || 0;
-      document.getElementById('statDoctors').textContent = users.filter(u => u.roles?.includes('doctor')).length || 0;
-      document.getElementById('statStudents').textContent = users.filter(u => u.roles?.includes('student')).length || 0;
+      document.getElementById('statTotal').textContent = allUsers.length || 0;
+      document.getElementById('statDoctors').textContent = allUsers.filter(u => u.roles?.includes('doctor')).length || 0;
+      document.getElementById('statStudents').textContent = allUsers.filter(u => u.roles?.includes('student')).length || 0;
 
-      if (!users.length) {
-        container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:2rem">لا يوجد مستخدمون مطابقون</p>';
-        return;
+      const sq = document.getElementById('searchUserInput').value;
+      if (sq) {
+        searchUsers(sq);
+      } else {
+        filteredUsers = [...allUsers];
+        currentPage = 1;
+        renderPage();
       }
-
-      container.innerHTML = users.map(u => {
-        const role = u.roles?.[0] || 'student';
-        const initial = CBS.escapeHTML((u.name || '?')[0]);
-        let batchBadge = '';
-        let batchesDataAttr = '';
-        if (role === 'doctor') {
-          const docBatches = u.batches && u.batches.length ? u.batches.map(b => b.name || b.code || b).join(', ') : 'لا يوجد';
-          batchBadge = `<span class="badge" style="background:var(--bg-hover);color:var(--text-main);font-size:0.75rem;margin-right:8px; border:1px solid var(--border)" title="${CBS.escapeHTML(docBatches)}">مواد لـ ${u.batches?.length || 0} دفعات</span>`;
-          batchesDataAttr = u.batches ? JSON.stringify(u.batches.map(b => String(b._id || b))).replace(/"/g, '&quot;') : '[]';
-        } else {
-          batchBadge = u.batch && u.batch.name ? `<span class="badge" style="background:var(--bg-hover);color:var(--text-main);font-size:0.75rem;margin-right:8px; border:1px solid var(--border)">${CBS.escapeHTML(u.batch.name)}</span>` : '';
-        }
-        const batchId = u.batch ? (u.batch._id || u.batch) : '';
-        
-        return `
-          <div class="card" style="margin-bottom:10px;padding:13px 14px">
-            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
-              <input type="checkbox" class="cb-user" value="${CBS.escapeHTML(u.email || '')}" style="width:18px;height:18px;cursor:pointer;flex-shrink:0">
-              <div class="user-card-avatar" style="flex-shrink:0">${initial}</div>
-              <div style="flex:1;min-width:0">
-                <div style="font-weight:700;font-size:0.88rem;color:var(--text-primary);display:flex;align-items:center;flex-wrap:wrap;gap:4px">
-                  ${CBS.escapeHTML(u.name || '-')}
-                  ${batchBadge}
-                </div>
-                <div style="font-size:0.76rem;color:var(--text-muted);margin-top:1px">${CBS.escapeHTML(u.email || '-')}</div>
-              </div>
-              <span class="badge ${roleColors[role] || 'badge-info'}" style="font-size:0.72rem;padding:4px 8px">${roleLabels[role] || CBS.escapeHTML(role)}</span>
-            </div>
-            <div class="user-card-actions">
-              <button class="btn btn-ghost btn-xs" data-id="${u._id}" data-name="${CBS.escapeHTML(u.name)}" data-email="${CBS.escapeHTML(u.email)}" data-role="${role}" data-batch="${batchId}" data-batches="${batchesDataAttr}" onclick="editUser(this.dataset.id,this.dataset.name,this.dataset.email,this.dataset.role,this.dataset.batch,this.dataset.batches)">
-                <i class="ri-edit-line"></i> تعديل
-              </button>
-              <button class="btn btn-danger btn-xs" data-id="${u._id}" onclick="deleteUser(this.dataset.id)">
-                <i class="ri-delete-bin-line"></i>
-              </button>
-            </div>
-          </div>`;
-      }).join('');
-    } catch {
-      container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:2rem">تعذر تحميل المستخدمين</p>';
+    } catch (err) {
+      container.innerHTML = '<div class="alert alert-danger show" role="alert">تعذر تحميل المستخدمين</div>';
     }
   }
 
@@ -459,38 +518,27 @@
     });
   }
 
+  let searchTimeout;
   function searchUsers(query) {
-    const q = query.toLowerCase().trim();
-    const cards = document.querySelectorAll('#usersList .card');
-    let hasVisible = false;
-    cards.forEach(card => {
-      const text = card.innerText.toLowerCase();
-      if (text.includes(q)) {
-        card.style.display = '';
-        hasVisible = true;
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+      const q = query.toLowerCase().trim();
+      if (!q) {
+        filteredUsers = [...allUsers];
       } else {
-        card.style.display = 'none';
-        const cb = card.querySelector('.cb-user');
-        if(cb) cb.checked = false;
+        filteredUsers = allUsers.filter(u => {
+          const name = (u.name || '').toLowerCase();
+          const email = (u.email || '').toLowerCase();
+          const role = (u.roles?.[0] || 'student').toLowerCase();
+          const roleLabel = (roleLabels[role] || '').toLowerCase();
+          return name.includes(q) || email.includes(q) || role.includes(q) || roleLabel.includes(q);
+        });
       }
-    });
-    
-    // Uncheck selectAll if searching
-    document.getElementById('selectAllUsers').checked = false;
-    
-    // Show empty state if no match
-    let emptyState = document.getElementById('searchEmptyState');
-    if (!hasVisible && cards.length > 0) {
-      if (!emptyState) {
-        emptyState = document.createElement('div');
-        emptyState.id = 'searchEmptyState';
-        emptyState.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:2rem">لا يوجد مستخدمون يطابقون بحثك</p>';
-        document.getElementById('usersList').appendChild(emptyState);
-      }
-      emptyState.style.display = 'block';
-    } else if (emptyState) {
-      emptyState.style.display = 'none';
-    }
+      
+      document.getElementById('selectAllUsers').checked = false;
+      currentPage = 1;
+      renderPage();
+    }, 300);
   }
 
   async function initAll() {

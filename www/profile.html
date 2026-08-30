@@ -2,17 +2,17 @@
 <html lang="ar" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#0d3b66">
   <link rel="manifest" href="/manifest.json">
-  <title>حسابي | كلية تقنية المعلومات</title>
+  <title>حسابي | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=2026073128">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026073128">
+  <link rel="stylesheet" href="/css/style.css?v=2026081907">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026081907">
   <style>
-    /* ── Profile Hero ── */
+    /* â”€â”€ Profile Hero â”€â”€ */
     .profile-hero {
       background: linear-gradient(135deg, #0d3b66 0%, #1a5c9a 50%, #2176c7 100%);
       border-radius: 20px;
@@ -98,7 +98,7 @@
       z-index: 1;
       letter-spacing: 0.4px;
     }
-    /* ── Info Cards ── */
+    /* â”€â”€ Info Cards â”€â”€ */
     .profile-card {
       background: var(--bg-card, #fff);
       border: 1px solid var(--border, #e5e7eb);
@@ -156,7 +156,7 @@
       flex: 1;
     }
     .profile-field i { color: var(--primary, #0d3b66); font-size: 1rem; flex-shrink: 0; }
-    /* ── Quick Actions ── */
+    /* â”€â”€ Quick Actions â”€â”€ */
     .quick-actions-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -184,7 +184,7 @@
     }
     .quick-action-btn i { font-size: 1.5rem; color: var(--primary, #0d3b66); }
     .quick-action-btn span { font-size: 0.75rem; font-weight: 600; color: var(--text-primary, #1a1a2e); text-align: center; }
-    /* ── Logout Button ── */
+    /* â”€â”€ Logout Button â”€â”€ */
     .profile-logout-btn {
       width: 100%;
       padding: 15px;
@@ -210,7 +210,7 @@
       box-shadow: 0 8px 24px rgba(239,68,68,0.40);
     }
     .profile-logout-btn:active { transform: translateY(0); }
-    /* ── Section Label ── */
+    /* â”€â”€ Section Label â”€â”€ */
     .profile-section-label {
       font-size: 0.78rem;
       font-weight: 700;
@@ -221,7 +221,7 @@
       margin-top: 4px;
       padding-right: 4px;
     }
-    /* ── Batch Chip ── */
+    /* â”€â”€ Batch Chip â”€â”€ */
     .batch-chip {
       display: inline-flex;
       align-items: center;
@@ -234,7 +234,7 @@
       font-size: 0.78rem;
       font-weight: 600;
     }
-    /* ── Dark Mode Overrides ── */
+    /* â”€â”€ Dark Mode Overrides â”€â”€ */
     body.dark .profile-card, [data-theme="dark"] .profile-card,
     body.dark .quick-action-btn, [data-theme="dark"] .quick-action-btn {
       background: #1E293B !important;
@@ -267,22 +267,25 @@
 
 <header class="main-header">
   <div class="header-brand">
-    <img src="/assets/logo.png" class="header-logo" alt="Logo">
+    <img src="/assets/logo.png" class="header-logo" alt="شعار كلية النصر التقنية - جامعة النصر التقنية">
     <div class="header-title-group">
-      <strong>كلية تقنية المعلومات</strong>
+      <strong>كلية النصر التقنية</strong>
       <small>حسابي</small>
     </div>
   </div>
   <div class="header-actions">
-    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي">
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي" aria-label="تبديل الوضع الليلي">
       <i class="ri-moon-line" id="themeIcon"></i>
+    </button>
+    <button class="btn-icon" onclick="CBS.goBack()" title="رجوع" aria-label="رجوع">
+      <i class="ri-arrow-right-line"></i>
     </button>
   </div>
 </header>
 
 <div class="page-content">
 
-  <!-- ── Hero / Avatar Card ── -->
+  <!-- â”€â”€ Hero / Avatar Card â”€â”€ -->
   <div class="profile-hero">
     <div class="profile-avatar" id="profileAvatar" style="position:relative">
       <span id="avatarInitial">؟</span>
@@ -290,18 +293,18 @@
     </div>
     <div class="profile-hero-name" id="profileName">جاري التحميل...</div>
     <div class="profile-hero-email" id="profileEmail"></div>
-    <div class="profile-role-badge" id="profileRoleBadge">—</div>
+    <div class="profile-role-badge" id="profileRoleBadge">â€”</div>
   </div>
 
-  <!-- ── Digital Student ID Card ── -->
+  <!-- â”€â”€ Digital Student ID Card â”€â”€ -->
   <div class="profile-section-label">بطاقة الهوية الأكاديمية الرقمية</div>
   <div class="student-id-card" id="studentIdCard">
     <div class="id-card-header">
       <div class="id-card-brand">
-        <img src="/assets/logo.png" class="id-card-logo" alt="Logo">
+        <img src="/assets/logo.png" class="id-card-logo" alt="شعار كلية النصر التقنية - جامعة النصر التقنية">
         <div class="id-card-title">
           <strong>جامعة النصر التقنية</strong>
-          <small>كلية تقنية المعلومات</small>
+          <small>كلية النصر التقنية</small>
         </div>
       </div>
       <div class="id-card-badge" id="idCardRoleBadge">طالب</div>
@@ -320,7 +323,7 @@
     </div>
   </div>
 
-  <!-- ── My Level Card ── -->
+  <!-- â”€â”€ My Level Card â”€â”€ -->
   <div class="profile-section-label">مستواي</div>
   <div class="profile-card">
     <div class="profile-card-header">
@@ -336,9 +339,14 @@
         <div id="xpProgress" style="height:100%; width:0%; background:linear-gradient(135deg, #f59e0b, #facc15); transition:width 0.5s ease-out;"></div>
       </div>
     </div>
+    <div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--border);">
+      <a href="/student-portfolio.html" class="btn btn-outline" style="width:100%; display:flex; justify-content:center; align-items:center; gap:8px; font-weight:800; font-size:0.88rem; border-color:var(--primary); color:var(--primary);">
+        <i class="ri-verified-badge-fill" style="color:#f59e0b;"></i> عرض السجل الأكاديمي الرقمي الموثق
+      </a>
+    </div>
   </div>
 
-  <!-- ── Personal Info Card ── -->
+  <!-- â”€â”€ Personal Info Card â”€â”€ -->
   <div class="profile-section-label">البيانات الشخصية</div>
   <div class="profile-card">
     <div class="profile-card-header">
@@ -348,26 +356,26 @@
     <div class="profile-field">
       <i class="ri-account-circle-line"></i>
       <div class="profile-field-label">الاسم الكامل</div>
-      <div class="profile-field-value" id="infoName">—</div>
+      <div class="profile-field-value" id="infoName">â€”</div>
     </div>
     <div class="profile-field">
       <i class="ri-mail-line"></i>
       <div class="profile-field-label">البريد الإلكتروني</div>
-      <div class="profile-field-value" id="infoEmail">—</div>
+      <div class="profile-field-value" id="infoEmail">â€”</div>
     </div>
     <div class="profile-field">
       <i class="ri-shield-user-line"></i>
       <div class="profile-field-label">الصلاحية</div>
-      <div class="profile-field-value" id="infoRole">—</div>
+      <div class="profile-field-value" id="infoRole">â€”</div>
     </div>
     <div class="profile-field">
       <i class="ri-fingerprint-line"></i>
       <div class="profile-field-label">المعرّف</div>
-      <div class="profile-field-value" id="infoId" style="font-size:0.75rem;word-break:break-all;color:var(--text-muted)">—</div>
+      <div class="profile-field-value" id="infoId" style="font-size:0.75rem;word-break:break-all;color:var(--text-muted)">â€”</div>
     </div>
   </div>
 
-  <!-- ── Batch Info Card ── -->
+  <!-- â”€â”€ Batch Info Card â”€â”€ -->
   <div class="profile-section-label">معلومات الدفعة</div>
   <div class="profile-card">
     <div class="profile-card-header">
@@ -387,11 +395,11 @@
     <div class="profile-field">
       <i class="ri-calendar-event-line"></i>
       <div class="profile-field-label">آخر دخول</div>
-      <div class="profile-field-value" id="infoLastSeen">—</div>
+      <div class="profile-field-value" id="infoLastSeen">â€”</div>
     </div>
   </div>
 
-  <!-- ── Quick Actions ── -->
+  <!-- â”€â”€ Quick Actions â”€â”€ -->
   <div class="profile-section-label">روابط سريعة</div>
   <div class="quick-actions-grid">
     <a class="quick-action-btn" id="qaBtnSubjects" href="/subjects.html">
@@ -420,7 +428,7 @@
     </a>
   </div>
 
-  <!-- ── Settings ── -->
+  <!-- â”€â”€ Settings â”€â”€ -->
   <div class="profile-section-label">الإعدادات</div>
   <div class="profile-card">
     <div class="profile-field" style="justify-content: space-between; cursor: pointer;" onclick="toggleDarkModeUI()">
@@ -431,6 +439,20 @@
       <div>
         <input type="checkbox" id="darkModeCheckbox" style="transform: scale(1.2); pointer-events: none;">
       </div>
+        </div>
+    <div class="profile-field" role="button" tabindex="0" style="justify-content: space-between; cursor: pointer;" onclick="toggleNotificationSoundUI()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleNotificationSoundUI();}">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <i class="ri-volume-up-line"></i>
+        <div class="profile-field-label" style="font-size: 0.88rem; font-weight: 600; color: var(--text-primary);">صوت الإشعارات</div>
+      </div>
+      <input type="checkbox" id="notificationSoundCheckbox" style="transform: scale(1.2); pointer-events: none;">
+    </div>
+    <div class="profile-field" role="button" tabindex="0" style="justify-content: space-between; cursor: pointer;" onclick="toggleNotificationVibrationUI()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleNotificationVibrationUI();}">
+      <div style="display: flex; align-items: center; gap: 12px;">
+        <i class="ri-smartphone-line"></i>
+        <div class="profile-field-label" style="font-size: 0.88rem; font-weight: 600; color: var(--text-primary);">اهتزاز الإشعارات</div>
+      </div>
+      <input type="checkbox" id="notificationVibrationCheckbox" style="transform: scale(1.2); pointer-events: none;">
     </div>
     <div class="profile-field" style="justify-content: center; padding: 15px 0 0 0;">
       <button id="setupBiometricBtn" onclick="setupBiometric()" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); padding: 10px 20px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 8px; width: 100%; justify-content: center;">
@@ -438,22 +460,22 @@
       </button>
     </div>
     <div class="profile-field" style="justify-content: center; padding: 15px 0;">
-      <button id="pushNotifBtn" onclick="enablePushNotifs()" style="background: var(--primary, #0d3b66); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 8px; width: 100%; justify-content: center;">
+      <button id="pushNotifBtn" onclick="enablePushNotifs()" style="background: var(--primary, #0d3b66); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 8px; width: 100%; justify-content: center;" aria-label="الإشعارات">
         <i class="ri-notification-badge-line" style="color: #fff; font-size: 1.1rem;"></i> تفعيل إشعارات الدفع
       </button>
     </div>
   </div>
 
-  <!-- ── Logout ── -->
-  <button class="profile-logout-btn" id="logoutBtn" onclick="CBS.logout()">
+  <!-- â”€â”€ Logout â”€â”€ -->
+  <button class="profile-logout-btn" id="logoutBtn" onclick="CBS.logout()" aria-label="تسجيل الخروج">
     <i class="ri-logout-box-r-line"></i>
     تسجيل الخروج
   </button>
 
-  <!-- ── Account Deletion (Google Play Compliance) ── -->
+  <!-- â”€â”€ Account Deletion (Google Play Compliance) â”€â”€ -->
   <button class="profile-logout-btn" id="deleteAccountBtn" onclick="requestAccountDeletion()" style="background: transparent; color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); box-shadow: none; margin-top: -10px; margin-bottom: 30px;">
     <i class="ri-user-unfollow-line"></i>
-    طلب حذف الحساب
+    حذف الحساب نهائياً
   </button>
 
 </div>
@@ -464,9 +486,9 @@
   جميع الحقوق محفوظة &copy; <span id="year"></span> النظام الجامعي المتكامل
 </footer>
 
-<script src="/js/shared.js?v=2026073128"></script>
-<script src="/js/app.js?v=2026073128"></script>
-<script src="/js/socket-client.js?v=2026073128" defer></script>
+<script src="/js/shared.js?v=2026081907"></script>
+<script src="/js/app.js?v=2026081907"></script>
+<script src="/js/socket-client.js?v=2026081907" defer></script>
 <script>
   CBS.init();
 
@@ -527,7 +549,7 @@
   document.getElementById('profileEmail').textContent = user.email || '';
 
   // Role label
-  let roleLabel = '—';
+  let roleLabel = 'â€”';
   if (typeof CBS.roleLabel === 'function') {
     roleLabel = CBS.roleLabel(user.roles && user.roles[0] ? user.roles[0] : '');
   } else {
@@ -538,8 +560,8 @@
 
   // Digital Student ID Card Population & QR Code Generation
   document.getElementById('idCardName').textContent = name;
-  document.getElementById('idCardEmail').textContent = user.email || '—';
-  document.getElementById('idCardStudentId').textContent = user.studentId || (user._id ? user._id.substring(0, 10) : '—');
+  document.getElementById('idCardEmail').textContent = user.email || 'â€”';
+  document.getElementById('idCardStudentId').textContent = user.studentId || (user._id ? user._id.substring(0, 10) : 'â€”');
   document.getElementById('idCardRoleBadge').textContent = roleLabel;
   document.getElementById('idCardBatch').textContent = '...';
 
@@ -556,9 +578,9 @@
 
   // Info fields
   document.getElementById('infoName').textContent  = name;
-  document.getElementById('infoEmail').textContent = user.email || '—';
+  document.getElementById('infoEmail').textContent = user.email || 'â€”';
   document.getElementById('infoRole').textContent  = roleLabel;
-  document.getElementById('infoId').textContent    = user._id || user.id || '—';
+  document.getElementById('infoId').textContent    = user._id || user.id || 'â€”';
 
   // Batch — جلب الاسم الحقيقي من API
   (async function loadBatchName() {
@@ -718,11 +740,37 @@
     }
     document.getElementById('darkModeCheckbox').checked = document.body.classList.contains('dark');
   }
-  if (localStorage.getItem('darkMode') === 'true') {
+    if (localStorage.getItem('darkMode') === 'true') {
     document.getElementById('darkModeCheckbox').checked = true;
   }
 
+  function toggleNotificationSoundUI() {
+    const checkbox = document.getElementById('notificationSoundCheckbox');
+    const enabled = !(checkbox && checkbox.checked);
+    if (window.CBS?.setNotificationSoundEnabled) CBS.setNotificationSoundEnabled(enabled);
+    else localStorage.setItem('notificationSound', enabled ? 'on' : 'off');
+    if (checkbox) checkbox.checked = enabled;
+    if (enabled && window.CBS?.playNotificationSound) CBS.playNotificationSound(false);
+    if (window.CBS?.toast) CBS.toast(enabled ? 'تم تفعيل صوت الإشعارات' : 'تم كتم صوت الإشعارات', '', 'success');
+  }
+
+  const notificationSoundCheckbox = document.getElementById('notificationSoundCheckbox');
+  if (notificationSoundCheckbox) notificationSoundCheckbox.checked = localStorage.getItem('notificationSound') !== 'off';
+
+  function toggleNotificationVibrationUI() {
+    const checkbox = document.getElementById('notificationVibrationCheckbox');
+    const enabled = !(checkbox && checkbox.checked);
+    localStorage.setItem('notificationVibration', enabled ? 'on' : 'off');
+    if (checkbox) checkbox.checked = enabled;
+    if (enabled && navigator.vibrate) navigator.vibrate([80]);
+    if (window.CBS?.toast) CBS.toast(enabled ? 'تم تفعيل اهتزاز الإشعارات' : 'تم كتم اهتزاز الإشعارات', '', 'success');
+  }
+
+  const notificationVibrationCheckbox = document.getElementById('notificationVibrationCheckbox');
+  if (notificationVibrationCheckbox) notificationVibrationCheckbox.checked = localStorage.getItem('notificationVibration') !== 'off';
+
   // Feature 5: Push Notifications Logic
+
   async function enablePushNotifs() {
     const isNative = !!(window.Capacitor?.isNativePlatform?.());
     if (isNative) {
@@ -941,26 +989,27 @@
     bBtn.style.opacity = '0.85';
   })();
 
-  /* ===== طلب حذف الحساب (متطلب Google Play) =====
-     الزر كان موجوداً والدالة غير معرَّفة إطلاقاً، فلا يحدث شيء عند الضغط —
-     وهذا وحده كفيل برفض المراجعة لأن Google تتحقق من عمل مسار الحذف.
-     الخادم ينفّذ حذفاً ناعماً (تعطيل الحساب) عبر POST /api/users/request-deletion. */
+  /* ===== حذف الحساب (متطلب App Store 5.1.1(v) و Google Play) =====
+     الصياغة تقول ما يحدث فعلاً: حذف لا "طلب حذف" ولا "تعطيل". آبل ترفض
+     صراحةً أي مسار يقدّم التعطيل بديلاً عن الحذف، أو يطلب مراسلة الدعم
+     لإتمامه. الخادم يمسح البيانات الشخصية فوراً عبر
+     POST /api/users/request-deletion. */
   async function requestAccountDeletion() {
     const btn = document.getElementById('deleteAccountBtn');
-    if (!confirm('سيتم إرسال طلب حذف حسابك وتعطيله فوراً، ولن تتمكن من تسجيل الدخول بعدها.\n\nهل أنت متأكد؟')) return;
-    // تأكيد ثانٍ لأن الإجراء غير قابل للتراجع من داخل التطبيق
-    if (!confirm('تأكيد أخير: سيُعطَّل حسابك الآن. للاستعادة يلزم التواصل مع إدارة الكلية.')) return;
+    if (!confirm('سيُحذف حسابك نهائياً وتُمسح بياناتك الشخصية (الاسم والبريد والهاتف والأجهزة المسجّلة).\n\nتبقى سجلاتك الأكاديمية والمالية بصيغة مجهولة الهوية وفق اللوائح الجامعية.\n\nهل تريد المتابعة؟')) return;
+    // تأكيد ثانٍ لأن الإجراء غير قابل للتراجع
+    if (!confirm('تأكيد أخير: لا يمكن التراجع عن حذف الحساب.')) return;
 
     const original = btn ? btn.innerHTML : '';
-    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ri-loader-4-line"></i> جاري إرسال الطلب...'; }
+    if (btn) { btn.disabled = true; btn.innerHTML = '<i class="ri-loader-4-line"></i> جاري حذف الحساب...'; }
     try {
       const res  = await CBS.apiPost('/api/users/request-deletion', {});
-      const data = await CBS.readJson(res, 'تعذر إرسال طلب الحذف');
-      CBS.toast('تم إرسال الطلب', data.message || 'تم تعطيل حسابك', 'success');
+      const data = await CBS.readJson(res, 'تعذر حذف الحساب');
+      CBS.toast('تم حذف الحساب', data.message || 'أُزيلت بياناتك الشخصية', 'success');
       setTimeout(() => CBS.logout(false), 2500);
     } catch (err) {
       if (btn) { btn.disabled = false; btn.innerHTML = original; }
-      CBS.toast('تعذر إرسال الطلب', err.message || 'حاول مرة أخرى', 'error');
+      CBS.toast('تعذر حذف الحساب', err.message || 'حاول مرة أخرى', 'error');
     }
   }
 </script>

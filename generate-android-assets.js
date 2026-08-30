@@ -73,8 +73,8 @@ if (!fs.existsSync(valuesDir)) fs.mkdirSync(valuesDir, { recursive: true });
 const colorsPath = path.join(valuesDir, 'colors.xml');
 const colorsContent = `<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="ic_launcher_background">#0d3b66</color>
-    <color name="splash_background">#0d3b66</color>
+    <color name="ic_launcher_background">#083459</color>
+    <color name="splash_background">#083459</color>
 </resources>`;
 
 fs.writeFileSync(colorsPath, colorsContent, 'utf8');
@@ -84,14 +84,14 @@ console.log('\n🎨 تم إنشاء values/colors.xml');
 const stringsPath = path.join(valuesDir, 'strings.xml');
 const stringsContent = `<?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">IT College</string>
-    <string name="title_activity_main">IT College</string>
+    <string name="app_name">كلية النصر التقنية</string>
+    <string name="title_activity_main">كلية النصر التقنية</string>
     <string name="package_name">com.elnasrcsit.cbs</string>
     <string name="custom_url_scheme">com.elnasrcsit.cbs</string>
 </resources>`;
 
 fs.writeFileSync(stringsPath, stringsContent, 'utf8');
-console.log('📝 تم تحديث values/strings.xml (اسم التطبيق: IT College)');
+console.log('📝 تم تحديث values/strings.xml (اسم التطبيق: كلية النصر التقنية)');
 
 // ===== تحديث ic_launcher_background.xml =====
 const backgroundPath = path.join(path.join(ANDROID, 'mipmap-anydpi-v26'), 'ic_launcher_background.xml');

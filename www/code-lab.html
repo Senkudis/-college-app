@@ -1,0 +1,2499 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>مختبر البرمجة السحابي | كلية النصر التقنية</title>
+  <link href="/vendor/remixicon/remixicon.css" rel="stylesheet">
+  <link rel="stylesheet" href="/css/style.css?v=2026081907">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026081907">
+  <style>
+    /* إخفاء زر كيدي العائم العام وشريط التنقل السفلي في صفحة المختبر */
+    /* لأن المختبر عنده شريطه الخاص .lab-mobile-dock */
+    #globalKedyFab,
+    .kedy-global-fab,
+    #bottom-nav,
+    .bottom-nav {
+      display: none !important;
+    }
+    :root {
+      --lab-bg: #070b14;
+      --lab-surface: #0f172a;
+      --lab-card: #141e33;
+      --lab-border: #1e293b;
+      --lab-text: #f1f5f9;
+      --lab-muted: #94a3b8;
+      --lab-primary: #38bdf8;
+      --lab-accent: #818cf8;
+      --lab-success: #10b981;
+      --lab-warning: #f59e0b;
+      --lab-danger: #ef4444;
+    }
+
+    [data-theme="light"] {
+      --lab-bg: #f1f5f9;
+      --lab-surface: #ffffff;
+      --lab-card: #ffffff;
+      --lab-border: #cbd5e1;
+      --lab-text: #0f172a;
+      --lab-muted: #64748b;
+    }
+
+    body {
+      background: var(--lab-bg);
+      color: var(--lab-text);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .lab-app-container {
+      max-width: 1300px;
+      margin: 0 auto;
+      width: 100%;
+      padding: 10px 14px 100px;
+      display: flex;
+      flex-direction: column;
+      flex: 1;
+    }
+
+    /* ===== شريط الأدوات العلوي الموحد (Unified Compact Navbar) ===== */
+    .lab-navbar {
+      background: var(--lab-surface);
+      border: 1px solid var(--lab-border);
+      border-radius: var(--radius-lg, 16px);
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.06);
+      margin-bottom: 10px;
+      flex-wrap: nowrap;
+      min-width: 0;
+    }
+
+    .lab-nav-left {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      min-width: 0;
+      flex: 1 1 auto;
+      overflow: hidden;
+    }
+
+    .lab-nav-right {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-shrink: 0;
+    }
+
+    .lab-back-btn {
+      width: 36px;
+      height: 36px;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--lab-border);
+      color: var(--lab-text);
+      text-decoration: none;
+      transition: all 0.2s ease;
+      flex-shrink: 0;
+    }
+    .lab-back-btn:hover {
+      background: rgba(255,255,255,0.12);
+      border-color: var(--primary);
+      transform: scale(1.05);
+    }
+
+    .lab-lang-selector {
+      display: inline-flex;
+      align-items: center;
+      background: rgba(0,0,0,0.25);
+      border: 1px solid var(--lab-border);
+      border-radius: 10px;
+      padding: 2px 8px;
+      gap: 6px;
+      min-width: 0;
+      max-width: 170px;
+      flex-shrink: 1;
+      overflow: hidden;
+    }
+    .lab-lang-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #fbbf24;
+      flex-shrink: 0;
+    }
+    .lab-lang-select {
+      background: transparent;
+      border: none;
+      color: var(--lab-text);
+      font-weight: 800;
+      font-size: 0.82rem;
+      padding: 4px 2px;
+      outline: none;
+      cursor: pointer;
+      width: 100%;
+      min-width: 0;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      overflow: hidden;
+      direction: ltr;
+    }
+    .lab-lang-select option {
+      background: #0f172a;
+      color: #fff;
+    }
+
+    .lab-file-badge {
+      font-family: 'Consolas', monospace;
+      font-size: 0.78rem;
+      font-weight: 700;
+      color: var(--lab-muted);
+      background: rgba(255,255,255,0.04);
+      padding: 4px 10px;
+      border-radius: 6px;
+      border: 1px solid var(--lab-border);
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
+    .lab-tool-btn {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid var(--lab-border);
+      color: var(--lab-text);
+      border-radius: 8px;
+      padding: 6px 10px;
+      font-size: 0.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      transition: all 0.15s ease;
+      min-height: 34px;
+      flex-shrink: 0;
+    }
+    .lab-tool-btn:hover {
+      background: rgba(255,255,255,0.12);
+      border-color: var(--primary);
+    }
+    .lab-tool-btn:active {
+      transform: scale(0.95);
+    }
+    
+    .lab-tool-btn.btn-sm-action {
+      padding: 3px 8px;
+      min-height: 30px;
+      height: 30px;
+      font-size: 0.78rem;
+      border-radius: 6px;
+    }
+
+    /* ===== أشرطة التبويب على الجوال (Mobile Segmented Tabs) ===== */
+    .lab-mobile-segments {
+      display: none;
+      background: var(--lab-surface);
+      border: 1px solid var(--lab-border);
+      border-radius: 12px;
+      padding: 4px;
+      gap: 4px;
+      margin-bottom: 10px;
+    }
+
+    .lab-segment-btn {
+      flex: 1;
+      padding: 8px 4px;
+      border-radius: 8px;
+      border: none;
+      background: transparent;
+      color: var(--lab-muted);
+      font-size: 0.8rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      white-space: nowrap;
+    }
+
+    .lab-segment-btn.active {
+      background: var(--primary, #0284c7);
+      color: #ffffff;
+      box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35);
+    }
+
+    /* ===== بيئة العمل ومساحة التحرير (Workspace Layout) ===== */
+    .lab-workspace {
+      display: grid;
+      grid-template-columns: 1.15fr 0.85fr;
+      gap: 12px;
+      flex: 1;
+      min-height: 0;
+    }
+
+    .lab-editor-pane,
+    .lab-inspector-pane {
+      background: var(--lab-surface);
+      border: 1px solid var(--lab-border);
+      border-radius: var(--radius-lg, 16px);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.06);
+      min-width: 0;
+    }
+
+    /* شريط أدوات المحرر */
+    .lab-pane-header {
+      background: rgba(0, 0, 0, 0.2);
+      border-bottom: 1px solid var(--lab-border);
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .lab-pane-title {
+      font-size: 0.85rem;
+      font-weight: 800;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--lab-text);
+    }
+
+    /* المحرر الحقيقي وطبقة التلوين */
+    .lab-editor-wrapper {
+      position: relative;
+      display: flex;
+      flex: 1;
+      min-height: 420px;
+      background: #090d16;
+      direction: ltr;
+    }
+
+    .lab-line-numbers {
+      width: 44px;
+      padding: 16px 6px;
+      text-align: center;
+      font-family: 'Consolas', 'Fira Code', 'Courier New', monospace;
+      font-size: var(--editor-font-size, 15px) !important;
+      line-height: 1.6 !important;
+      color: #64748b;
+      background: rgba(0,0,0,0.3);
+      border-right: 1px solid #1e293b;
+      user-select: none;
+      white-space: pre;
+      overflow: hidden;
+    }
+
+    .lab-editor-stack {
+      position: relative;
+      flex: 1;
+      display: flex;
+      min-width: 0;
+    }
+
+    .lab-code-area,
+    .lab-highlight-layer {
+      font-family: 'Consolas', 'Fira Code', 'Courier New', monospace;
+      font-size: var(--editor-font-size, 15px) !important;
+      line-height: 1.6 !important;
+      letter-spacing: normal !important;
+      word-spacing: normal !important;
+      text-rendering: auto !important;
+      font-kerning: none !important;
+      font-variant-ligatures: none !important;
+      text-indent: 0 !important;
+      padding: 16px;
+      border: none;
+      margin: 0;
+      direction: ltr;
+      text-align: left;
+      tab-size: 2;
+      white-space: pre;
+      overflow-wrap: normal;
+      word-break: normal;
+    }
+
+    .lab-code-area {
+      flex: 1;
+      position: relative;
+      z-index: 1;
+      background: transparent;
+      color: transparent;
+      caret-color: #38bdf8;
+      outline: none;
+      resize: none;
+      overflow: auto;
+      width: 100%;
+    }
+    .lab-code-area::selection { background: rgba(56, 189, 248, 0.35); }
+
+    .lab-highlight-layer {
+      position: absolute;
+      inset: 0;
+      z-index: 0;
+      overflow: hidden;
+      pointer-events: none;
+      color: #f1f5f9;
+      background: transparent;
+    }
+
+    /* ألوان الرموز البرمجية (Syntax Tokens) */
+    .tok-comment { color: #64748b; font-style: italic; }
+    .tok-string  { color: #86efac; }
+    .tok-number  { color: #fbbf24; }
+    .tok-keyword { color: #c084fc; font-weight: 700; }
+    .tok-builtin { color: #38bdf8; }
+    .tok-func    { color: #f9a8d4; }
+    .tok-op      { color: #94a3b8; }
+
+    /* شريط الرموز السريعة (Accessory Key Bar) */
+    .lab-symbol-strip {
+      display: flex;
+      gap: 6px;
+      padding: 8px 10px;
+      direction: ltr;
+      background: rgba(0,0,0,0.3);
+      border-top: 1px solid var(--lab-border);
+      overflow-x: auto;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
+    }
+    .lab-symbol-strip::-webkit-scrollbar { display: none; }
+
+    .lab-sym-key {
+      flex: 0 0 auto;
+      min-width: 40px;
+      height: 38px;
+      padding: 0 10px;
+      border-radius: 8px;
+      border: 1px solid #334155;
+      background: rgba(255,255,255,0.06);
+      color: #f8fafc;
+      font-family: 'Consolas', 'Courier New', monospace;
+      font-size: 0.95rem;
+      font-weight: 700;
+      cursor: pointer;
+      direction: ltr;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.15s ease;
+    }
+    .lab-sym-key:hover { background: rgba(255,255,255,0.15); border-color: var(--primary); }
+    .lab-sym-key:active { transform: scale(0.92); }
+
+    /* صندوق المدخلات (Stdin Box) */
+    .lab-stdin-box {
+      background: rgba(0, 0, 0, 0.25);
+      border-top: 1px solid var(--lab-border);
+      padding: 8px 12px;
+    }
+    .lab-stdin-box label {
+      display: block;
+      font-size: 0.76rem;
+      font-weight: 700;
+      color: var(--lab-muted);
+      margin-bottom: 4px;
+    }
+    .lab-stdin-box textarea {
+      width: 100%;
+      background: rgba(0,0,0,0.35);
+      border: 1px solid #334155;
+      border-radius: 8px;
+      color: #e2e8f0;
+      font-family: 'Consolas', monospace;
+      font-size: 0.85rem;
+      padding: 6px 10px;
+      direction: ltr;
+      outline: none;
+      resize: vertical;
+    }
+
+    /* تبويبات الطرفية والمفتش */
+    .lab-inspector-tabs {
+      display: flex;
+      background: rgba(0, 0, 0, 0.2);
+      border-bottom: 1px solid var(--lab-border);
+      padding: 0 8px;
+      gap: 4px;
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+    .lab-inspector-tabs::-webkit-scrollbar { display: none; }
+
+    .lab-tab-btn {
+      padding: 10px 12px;
+      font-size: 0.82rem;
+      font-weight: 700;
+      border: none;
+      background: transparent;
+      color: var(--lab-muted);
+      cursor: pointer;
+      border-bottom: 2px solid transparent;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      white-space: nowrap;
+      transition: all 0.2s;
+    }
+    .lab-tab-btn.active {
+      color: var(--primary, #0284c7);
+      border-bottom-color: var(--primary, #0284c7);
+    }
+
+    /* ===== شاشة المخرجات الاحترافية (Rich Console Output) ===== */
+    .lab-console-body {
+      flex: 1;
+      min-height: 220px;
+      max-height: 480px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      direction: ltr;
+      text-align: left;
+      background: #040914;
+      display: flex;
+      flex-direction: column;
+      gap: 0;
+      padding: 0;
+    }
+
+    /* شاشة الترحيب قبل أي تشغيل */
+    .console-welcome {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      flex: 1;
+      padding: 32px 16px;
+      color: #334155;
+      gap: 10px;
+      text-align: center;
+    }
+    .console-welcome i { font-size: 2.4rem; color: #1e3a5f; }
+    .console-welcome strong { color: #475569; font-size: 0.9rem; }
+    .console-welcome span { font-size: 0.78rem; color: #334155; }
+
+    /* سطر واحد في المخرجات */
+    .clog-line {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      padding: 7px 14px;
+      border-bottom: 1px solid rgba(255,255,255,0.03);
+      font-family: 'Consolas', 'Fira Code', 'Courier New', monospace;
+      font-size: 0.84rem;
+      line-height: 1.55;
+      word-break: break-word;
+      transition: background 0.1s;
+    }
+    .clog-line:hover { background: rgba(255,255,255,0.025); }
+    .clog-line:last-child { border-bottom: none; }
+
+    /* أنواع السطور */
+    .clog-line.clog-log   { color: #e2e8f0; }
+    .clog-line.clog-info  { color: #7dd3fc; }
+    .clog-line.clog-warn  { color: #fbbf24; background: rgba(251,191,36,0.05); }
+    .clog-line.clog-error { color: #f87171; background: rgba(248,113,113,0.07); }
+    .clog-line.clog-success { color: #4ade80; }
+    .clog-line.clog-system { color: #475569; font-style: italic; }
+
+    /* أيقونة السطر */
+    .clog-icon {
+      flex-shrink: 0;
+      width: 16px;
+      font-size: 0.75rem;
+      margin-top: 2px;
+      opacity: 0.75;
+    }
+    .clog-line.clog-error .clog-icon  { color: #f87171; opacity: 1; }
+    .clog-line.clog-warn  .clog-icon  { color: #fbbf24; opacity: 1; }
+    .clog-line.clog-success .clog-icon{ color: #4ade80; opacity: 1; }
+
+    /* رقم السطر */
+    .clog-num {
+      flex-shrink: 0;
+      font-size: 0.72rem;
+      color: #1e293b;
+      min-width: 22px;
+      text-align: right;
+      user-select: none;
+      margin-top: 2px;
+    }
+
+    /* نص السطر مع إمكانية الالتفاف */
+    .clog-text {
+      flex: 1;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    /* جدول SQL */
+    .clog-sql-table {
+      border-collapse: collapse;
+      font-family: 'Consolas', monospace;
+      font-size: 0.8rem;
+      margin: 8px 14px;
+      width: calc(100% - 28px);
+      border-radius: 8px;
+      overflow: hidden;
+      border: 1px solid #1e293b;
+    }
+    .clog-sql-table th {
+      background: #0c1829;
+      color: #38bdf8;
+      font-weight: 700;
+      padding: 6px 10px;
+      text-align: left;
+      border-bottom: 1px solid #1e3a5f;
+      white-space: nowrap;
+    }
+    .clog-sql-table td {
+      padding: 5px 10px;
+      color: #cbd5e1;
+      border-bottom: 1px solid #0f1f38;
+      word-break: break-word;
+    }
+    .clog-sql-table tr:last-child td { border-bottom: none; }
+    .clog-sql-table tr:nth-child(even) td { background: rgba(255,255,255,0.02); }
+    .clog-sql-row-count {
+      font-size: 0.75rem;
+      color: #475569;
+      padding: 5px 14px 10px;
+      font-family: monospace;
+    }
+
+    /* شريط الحالة الإجمالية السفلي */
+    .clog-status-bar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 5px 12px;
+      background: rgba(0,0,0,0.35);
+      border-top: 1px solid #0f172a;
+      font-size: 0.72rem;
+      color: #334155;
+      font-family: monospace;
+      flex-shrink: 0;
+    }
+    .clog-status-bar.status-ok   { border-top-color: #064e3b; }
+    .clog-status-bar.status-err  { border-top-color: #7f1d1d; color: #f87171; }
+    .clog-status-bar.status-warn { border-top-color: #78350f; color: #fbbf24; }
+    .clog-copy-btn {
+      background: rgba(255,255,255,0.06);
+      border: 1px solid #1e293b;
+      color: #475569;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 0.7rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .clog-copy-btn:hover { background: rgba(255,255,255,0.12); color: #94a3b8; }
+
+    .lab-ai-body {
+      padding: 16px;
+      flex: 1;
+      min-height: 220px;
+      max-height: 480px;
+      overflow-y: auto;
+      line-height: 1.7;
+      font-size: 0.9rem;
+      color: var(--lab-text);
+    }
+
+    /* ===== شريط الإجراءات السفلي العائم (Desktop Actions & Mobile Dock) ===== */
+    .lab-desktop-actions {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .lab-action-btn-run {
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 0.85rem;
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(16, 185, 129, 0.3);
+      transition: all 0.2s ease;
+    }
+    .lab-action-btn-run:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(16, 185, 129, 0.4);
+    }
+
+    .lab-action-btn-ai {
+      background: linear-gradient(135deg, #818cf8, #6366f1);
+      color: #ffffff;
+      border: none;
+      border-radius: 10px;
+      font-weight: 800;
+      font-size: 0.85rem;
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.3);
+      transition: all 0.2s ease;
+    }
+    .lab-action-btn-ai:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 16px rgba(99, 102, 241, 0.4);
+    }
+
+    /* شريط الجوال العائم السفلي */
+    .lab-mobile-dock {
+      display: none;
+      position: fixed;
+      bottom: calc(20px + env(safe-area-inset-bottom, 0px));
+      left: 12px;
+      right: 12px;
+      background: rgba(15, 23, 42, 0.95);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid #334155;
+      border-radius: 20px;
+      padding: 10px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.6);
+      z-index: 999;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .lab-mobile-dock .btn-dock-run {
+      flex: 1.2;
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #ffffff;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.92rem;
+      font-weight: 800;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+    }
+
+    .lab-mobile-dock .btn-dock-ai {
+      flex: 1;
+      background: linear-gradient(135deg, #818cf8, #6366f1);
+      color: #ffffff;
+      border: none;
+      border-radius: 12px;
+      font-size: 0.92rem;
+      font-weight: 800;
+      padding: 12px 14px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+    }
+
+    /* ===== تجاوب الجوال المتقدم (< 900px) ===== */
+    @media (max-width: 900px) {
+      .lab-app-container {
+        padding: 6px 8px 90px;
+      }
+      .lab-mobile-segments {
+        display: flex;
+        background: var(--lab-surface);
+        border: 1px solid var(--lab-border);
+        border-radius: 12px;
+        padding: 3px;
+        gap: 3px;
+        margin-bottom: 8px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+      }
+      .lab-segment-btn {
+        flex: 1;
+        padding: 7px 2px;
+        border-radius: 8px;
+        border: none;
+        background: transparent;
+        color: var(--lab-muted);
+        font-size: 0.76rem;
+        font-weight: 700;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+        white-space: nowrap;
+        min-width: 0;
+      }
+      .lab-segment-btn i {
+        font-size: 0.88rem;
+        flex-shrink: 0;
+      }
+      .lab-segment-btn.active {
+        background: var(--primary, #0284c7);
+        color: #ffffff;
+        box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35);
+      }
+
+      /* إخفاء تبويبات المفتش الداخلية على الجوال لمنع التكرار */
+      .lab-inspector-tabs {
+        display: none !important;
+      }
+
+      .lab-mobile-dock {
+        display: flex;
+      }
+      .lab-desktop-actions {
+        display: none;
+      }
+      .lab-workspace {
+        grid-template-columns: 1fr;
+        padding-bottom: 80px;
+        gap: 8px;
+      }
+      .lab-editor-pane {
+        display: flex;
+      }
+      .lab-inspector-pane {
+        display: none;
+      }
+      /* عند تفعيل تبويب الطرفية أو AI على الجوال */
+      .lab-workspace.show-console .lab-editor-pane { display: none; }
+      .lab-workspace.show-console .lab-inspector-pane { display: flex; }
+      .lab-workspace.show-ai .lab-editor-pane { display: none; }
+      .lab-workspace.show-ai .lab-inspector-pane { display: flex; }
+      .lab-workspace.show-cheat .lab-editor-pane { display: none; }
+      .lab-workspace.show-cheat .lab-inspector-pane { display: flex; }
+
+      /* استخدام 100svh للتعامل مع شريط المتصفح */
+      .lab-editor-wrapper {
+        min-height: calc(100svh - 310px);
+      }
+      .lab-console-body,
+      .lab-ai-body {
+        min-height: calc(100svh - 310px);
+        max-height: calc(100svh - 310px);
+      }
+
+      /* شريط الـ navbar العلوي على الجوال */
+      .lab-navbar {
+        padding: 6px 8px;
+        gap: 6px;
+        flex-wrap: nowrap;
+        min-width: 0;
+      }
+      .lab-nav-left {
+        gap: 6px;
+        flex-wrap: nowrap;
+        min-width: 0;
+        flex: 1 1 auto;
+      }
+      .lab-nav-right {
+        gap: 3px;
+        flex-shrink: 0;
+      }
+      /* أزرار أدوات: أيقونة فقط، بدون نص */
+      .lab-tool-btn .btn-label-text {
+        display: none;
+      }
+      .lab-tool-btn {
+        min-width: 32px;
+        height: 32px;
+        padding: 0 6px;
+        font-size: 0.85rem;
+      }
+      /* إخفاء اسم الملف في شاشات الجوال */
+      .lab-file-badge { display: none; }
+      
+      /* قائمة اختيار اللغات على الجوال */
+      .lab-lang-selector {
+        padding: 2px 6px;
+        gap: 4px;
+        max-width: 135px;
+        flex: 1 1 auto;
+        min-width: 0;
+      }
+      .lab-lang-select {
+        font-size: 0.76rem;
+        width: 100%;
+        max-width: 100%;
+        min-width: 0;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        overflow: hidden;
+      }
+
+      /* تنسيق شريط الرأس لكل بطاقة */
+      .lab-pane-header {
+        flex-wrap: nowrap;
+        padding: 6px 10px;
+        min-height: 40px;
+      }
+      .lab-pane-title {
+        font-size: 0.78rem;
+        white-space: nowrap;
+        flex-shrink: 0;
+        margin-bottom: 0;
+        width: auto;
+      }
+      .lab-pane-toolbar {
+        display: flex;
+        align-items: center;
+        gap: 3px;
+        overflow-x: auto;
+        scrollbar-width: none;
+        min-width: 0;
+      }
+      .lab-pane-toolbar::-webkit-scrollbar { display: none; }
+      
+      .btn-input-text { display: none; } /* إخفاء نص المدخلات الإضافي */
+    }
+
+    /* ===== مؤشر الحفظ التلقائي ===== */
+    .lab-autosave-badge {
+      position: fixed;
+      bottom: 90px;
+      left: 50%;
+      transform: translateX(-50%) translateY(8px);
+      background: rgba(16, 185, 129, 0.92);
+      color: #fff;
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 5px 14px;
+      border-radius: 20px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.3s ease, transform 0.3s ease;
+      z-index: 9998;
+      white-space: nowrap;
+      box-shadow: 0 4px 12px rgba(16,185,129,0.3);
+    }
+    .lab-autosave-badge.visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+
+    /* ===== وضع التركيز الكامل (Focus Mode) ===== */
+    body.lab-focus-mode .lab-navbar,
+    body.lab-focus-mode .lab-mobile-segments,
+    body.lab-focus-mode .lab-inspector-pane,
+    body.lab-focus-mode .lab-mobile-dock {
+      display: none !important;
+    }
+    body.lab-focus-mode .lab-app-container {
+      padding: 0 !important;
+      margin: 0 !important;
+      max-width: 100vw !important;
+    }
+    body.lab-focus-mode .lab-workspace {
+      padding-bottom: 0 !important;
+      grid-template-columns: 1fr !important;
+      height: 100svh !important;
+    }
+    body.lab-focus-mode .lab-editor-pane {
+      position: fixed !important;
+      inset: 0 !important;
+      z-index: 10000 !important;
+      border-radius: 0 !important;
+      border: none !important;
+      height: 100svh !important;
+      max-height: 100svh !important;
+    }
+    body.lab-focus-mode .lab-editor-wrapper {
+      min-height: 0 !important;
+      flex: 1 !important;
+    }
+  </style>
+</head>
+<body>
+
+<div class="lab-app-container">
+  
+  <!-- 1. شريط التنقل الموحد المدمج (Unified Navbar) -->
+  <header class="lab-navbar">
+    <div class="lab-nav-left">
+      <a href="/dashboard.html" class="lab-back-btn" aria-label="رجوع للرئيسية">
+        <i class="ri-arrow-right-line" style="font-size:1.2rem;"></i>
+      </a>
+
+      <!-- اختيار لغة البرمجة -->
+      <div class="lab-lang-selector">
+        <span id="langDot" class="lab-lang-dot"></span>
+        <select id="langSelect" class="lab-lang-select" onchange="onLanguageChange()" aria-label="اختر لغة البرمجة">
+          <option value="javascript">JavaScript (ES6)</option>
+          <option value="python">Python 3 (Pyodide)</option>
+          <option value="sql">SQL (SQLite)</option>
+          <option value="cpp">C++ (GCC 14)</option>
+        </select>
+      </div>
+
+      <span id="editorFileName" class="lab-file-badge">main.js</span>
+    </div>
+
+    <div class="lab-nav-right">
+      <!-- نماذج المنهج الجاهزة -->
+      <button type="button" class="lab-tool-btn" onclick="openTemplatesModal()" aria-label="نماذج المنهج">
+        <i class="ri-book-read-line"></i>
+        <span class="btn-label-text">النماذج</span>
+      </button>
+
+      <!-- أدوات التحرير السريعة -->
+      <button type="button" class="lab-tool-btn" onclick="formatCode()" aria-label="تنسيق الكود">
+        <i class="ri-magic-line"></i>
+      </button>
+      <button type="button" class="lab-tool-btn" onclick="copyCode()" aria-label="نسخ الكود">
+        <i class="ri-file-copy-line"></i>
+      </button>
+      <button type="button" class="lab-tool-btn" onclick="clearEditor()" aria-label="مسح المحتوى">
+        <i class="ri-delete-bin-line"></i>
+      </button>
+
+      <!-- أزرار التشغيل للشاشات الكبيرة (Desktop Only) -->
+      <div class="lab-desktop-actions">
+        <button id="runCodeBtn" class="lab-action-btn-run" onclick="runCode()">
+          <i class="ri-play-fill"></i> تشغيل
+        </button>
+        <button id="aiDebugBtn" class="lab-action-btn-ai" onclick="debugWithAI()">
+          <i class="ri-sparkling-fill"></i> فحص كيدي AI
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 2. أشرطة التبديل على الجوال (Mobile Segmented Tabs) -->
+  <nav class="lab-mobile-segments" aria-label="تبويبات العرض">
+    <button type="button" class="lab-segment-btn active" id="segBtnEditor" onclick="switchMobileSegment('editor')">
+      <i class="ri-code-s-slash-line"></i> المحرر
+    </button>
+    <button type="button" class="lab-segment-btn" id="segBtnConsole" onclick="switchMobileSegment('console')">
+      <i class="ri-terminal-line"></i> المخرجات <span id="segConsoleBadge" style="display:none;width:7px;height:7px;border-radius:50%;background:#10b981;"></span>
+    </button>
+    <button type="button" class="lab-segment-btn" id="segBtnAi" onclick="switchMobileSegment('ai')">
+      <i class="ri-sparkling-fill" style="color:#c084fc;"></i> كيدي AI
+    </button>
+    <button type="button" class="lab-segment-btn" id="segBtnCheat" onclick="switchMobileSegment('cheat')">
+      <i class="ri-bookmark-3-line"></i> القواعد
+    </button>
+  </nav>
+
+  <!-- 3. مساحة العمل (Workspace: Editor + Inspector) -->
+  <main class="lab-workspace" id="labWorkspace">
+    
+    <!-- قسم المحرر (Code Editor Pane) -->
+    <section class="lab-editor-pane" id="editorPane">
+      <div class="lab-pane-header">
+        <div class="lab-pane-title">
+          <i class="ri-code-box-line" style="color:var(--primary);"></i>
+          <span>المحرر</span>
+        </div>
+        <div class="lab-pane-toolbar">
+          <!-- أزرار التحكم بحجم الخط -->
+          <button type="button" class="lab-tool-btn btn-sm-action" onclick="changeFontSize(-1)" aria-label="تصغير الخط" title="تصغير الخط">
+            <i class="ri-subtract-line"></i>A
+          </button>
+          <button type="button" class="lab-tool-btn btn-sm-action" onclick="changeFontSize(1)" aria-label="تكبير الخط" title="تكبير الخط">
+            <i class="ri-add-line"></i>A
+          </button>
+          <!-- تنزيل ومشاركة -->
+          <button type="button" class="lab-tool-btn btn-sm-action" onclick="downloadCodeFile()" aria-label="تنزيل الملف" title="تنزيل الملف">
+            <i class="ri-download-2-line"></i>
+          </button>
+          <button type="button" class="lab-tool-btn btn-sm-action" onclick="shareCode()" aria-label="مشاركة الكود" title="مشاركة الكود">
+            <i class="ri-share-forward-line"></i>
+          </button>
+          <!-- وضع التركيز -->
+          <button type="button" class="lab-tool-btn btn-sm-action" id="focusEnterBtn" onclick="toggleFocusMode()" aria-label="وضع التركيز الكامل" title="وضع التركيز">
+            <i class="ri-fullscreen-line"></i>
+          </button>
+          <button type="button" class="lab-tool-btn btn-sm-action" id="focusExitBtn" onclick="toggleFocusMode()" aria-label="خروج من التركيز" style="display:none;background:#dc2626;color:#fff;border-color:#b91c1c;">
+            <i class="ri-fullscreen-exit-line"></i> خروج
+          </button>
+          <!-- زر المدخلات لـ C++/Python -->
+          <button type="button" class="lab-tool-btn btn-sm-action" id="toggleStdinBtn" onclick="toggleStdinDrawer()" style="display:none;">
+            <i class="ri-keyboard-line"></i><span class="btn-input-text"> المدخلات</span>
+          </button>
+          <span id="codeLengthBadge" style="font-family:monospace;font-size:0.75rem;color:var(--lab-muted);white-space:nowrap;margin-right:auto;padding-right:6px;">1 سطر</span>
+        </div>
+      </div>
+
+      <div class="lab-editor-wrapper">
+        <div id="lineNumbers" class="lab-line-numbers" aria-hidden="true">1</div>
+        <div class="lab-editor-stack">
+          <pre id="highlightLayer" class="lab-highlight-layer" aria-hidden="true"></pre>
+          <textarea id="codeEditor" class="lab-code-area" spellcheck="false"
+                    autocomplete="off" autocorrect="off" autocapitalize="off"
+                    oninput="syncEditor()" onscroll="syncEditorScroll()"
+                    onkeydown="handleEditorKeydown(event)"
+                    placeholder="// اكتب الشيفرة البرمجية هنا..."></textarea>
+        </div>
+      </div>
+
+      <!-- شريط الرموز السريعة للجوال -->
+      <div id="symbolBar" class="lab-symbol-strip" role="toolbar" aria-label="شريط الرموز السريعة"></div>
+
+      <!-- صندوق مدخلات البرنامج (Collapsible Stdin Drawer) -->
+      <div id="stdinDrawer" class="lab-stdin-box" style="display:none;">
+        <label for="stdinBox">
+          <i class="ri-keyboard-box-line"></i> مدخلات البرنامج المباشرة (<span dir="ltr">cin</span> / <span dir="ltr">input()</span>):
+        </label>
+        <textarea id="stdinBox" rows="2" spellcheck="false" placeholder="أدخل القيم هنا سطراً بسطر..."></textarea>
+      </div>
+    </section>
+
+    <!-- قسم المفتش والطرفية (Inspector & Output Pane) -->
+    <section class="lab-inspector-pane" id="inspectorPane">
+      <div class="lab-inspector-tabs">
+        <button type="button" class="lab-tab-btn active" id="tabBtnConsole" onclick="switchInspectorTab('console')">
+          <i class="ri-terminal-box-line"></i> وحدة التشغيل (Console)
+        </button>
+        <button type="button" class="lab-tab-btn" id="tabBtnAi" onclick="switchInspectorTab('ai')">
+          <i class="ri-sparkling-fill" style="color:#c084fc;"></i> تقرير كيدي AI
+        </button>
+        <button type="button" class="lab-tab-btn" id="tabBtnCheat" onclick="switchInspectorTab('cheat')">
+          <i class="ri-bookmark-3-line"></i> ملخص القواعد
+        </button>
+      </div>
+
+      <!-- تبويب وحدة التشغيل (Console Output) -->
+      <div id="paneConsole" style="display:flex;flex-direction:column;flex:1;">
+        <div class="lab-pane-header">
+          <div class="lab-pane-title">
+            <i class="ri-terminal-line" style="color:#38bdf8;"></i>
+            <span>مخرجات التنفيذ:</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+            <span id="execStats" class="badge" style="background:rgba(255,255,255,0.08);color:var(--lab-muted);font-size:0.75rem;padding:3px 8px;border-radius:6px;border:1px solid var(--lab-border);">جاهز</span>
+            <button type="button" class="lab-tool-btn btn-sm-action" onclick="clearConsole()" style="padding:2px 8px;font-size:0.75rem;" aria-label="مسح المخرجات" title="مسح المخرجات">
+              <i class="ri-eraser-line"></i> مسح
+            </button>
+          </div>
+        </div>
+        <!-- منطقة المخرجات الغنية -->
+        <div id="terminalOutput" class="lab-console-body">
+          <div class="console-welcome" id="consoleWelcome">
+            <i class="ri-terminal-box-line"></i>
+            <strong>وحدة التشغيل جاهزة</strong>
+            <span>اضغط «تشغيل الكود» لرؤية المخرجات هنا</span>
+          </div>
+        </div>
+        <!-- شريط الحالة السفلي -->
+        <div class="clog-status-bar" id="consoleStatusBar">
+          <span id="consoleStatusText">لا توجد مخرجات بعد</span>
+          <button class="clog-copy-btn" onclick="copyConsoleOutput()" title="نسخ المخرجات">
+            <i class="ri-file-copy-line"></i> نسخ
+          </button>
+        </div>
+      </div>
+
+      <!-- تبويب كيدي AI (Kedy Diagnostic Report) -->
+      <div id="paneAi" style="display:none;flex-direction:column;flex:1;">
+        <div class="lab-pane-header">
+          <div class="lab-pane-title">
+            <i class="ri-brain-line" style="color:#c084fc;"></i>
+            <span>تحليل كيدي AI:</span>
+          </div>
+          <div style="display:flex;align-items:center;gap:6px;flex-shrink:0;">
+            <span class="badge" style="background:rgba(129,140,248,0.15);color:#818cf8;font-size:0.72rem;padding:3px 8px;border-radius:6px;border:1px solid rgba(129,140,248,0.3);white-space:nowrap;">Kedy Reasoner</span>
+            <button type="button" class="lab-tool-btn btn-sm-action" onclick="debugWithAI()" style="color:#c084fc;padding:2px 8px;font-size:0.75rem;" aria-label="إعادة الفحص الذكي" title="إعادة الفحص الذكي">
+              <i class="ri-refresh-line"></i> فحص
+            </button>
+          </div>
+        </div>
+        <div id="aiAnalysisOutput" class="lab-ai-body">
+          <div style="text-align:center;padding:36px 16px;color:var(--lab-muted);">
+            <i class="ri-sparkling-line" style="font-size:2.4rem;color:#c084fc;display:block;margin-bottom:10px;"></i>
+            <strong style="font-size:0.95rem;color:var(--lab-text);display:block;margin-bottom:6px;">جاهز للتحليل البرمجي الذكي</strong>
+            انقر على «فحص بكيدي AI» لفحص الخوارزمية، واكتشاف الثغرات، وحساب التعقيد الزمني والمكاني (\(O(n)\)).
+          </div>
+        </div>
+      </div>
+
+      <!-- تبويب ملخص القواعد (Quick Cheat Sheet) -->
+      <div id="paneCheat" style="display:none;padding:14px;overflow-y:auto;flex:1;">
+        <div class="card" style="background:rgba(0,0,0,0.2);border:1px solid var(--lab-border);border-radius:12px;padding:12px;margin-bottom:10px;">
+          <div style="font-weight:800;font-size:0.85rem;margin-bottom:6px;color:var(--primary);"><i class="ri-printer-line"></i> طباعة المخرجات (Standard Output)</div>
+          <pre style="font-family:monospace;font-size:0.8rem;direction:ltr;color:#86efac;margin:0;">JS: console.log(x);
+Python: print(x)
+C++: cout &lt;&lt; x &lt;&lt; endl;
+SQL: SELECT x FROM table;</pre>
+        </div>
+
+        <div class="card" style="background:rgba(0,0,0,0.2);border:1px solid var(--lab-border);border-radius:12px;padding:12px;margin-bottom:10px;">
+          <div style="font-weight:800;font-size:0.85rem;margin-bottom:6px;color:#c084fc;"><i class="ri-repeat-line"></i> حلقات التكرار (Loops)</div>
+          <pre style="font-family:monospace;font-size:0.8rem;direction:ltr;color:#fbbf24;margin:0;">JS: for (let i = 0; i &lt; n; i++) {}
+Python: for i in range(n):
+C++: for (int i = 0; i &lt; n; i++) {}
+SQL: WHERE id BETWEEN 1 AND n</pre>
+        </div>
+
+        <div class="card" style="background:rgba(0,0,0,0.2);border:1px solid var(--lab-border);border-radius:12px;padding:12px;">
+          <div style="font-weight:800;font-size:0.85rem;margin-bottom:6px;color:#10b981;"><i class="ri-database-2-line"></i> استعلامات SQL الأساسية</div>
+          <pre style="font-family:monospace;font-size:0.8rem;direction:ltr;color:#38bdf8;margin:0;">SELECT s.full_name, g.score 
+FROM Students s 
+JOIN Grades g ON s.student_id = g.student_id;</pre>
+        </div>
+      </div>
+
+    </section>
+
+  </main>
+
+  <!-- 4. شريط الإجراءات السفلي العائم للجوال (Floating Mobile Dock) -->
+  <aside class="lab-mobile-dock" aria-label="إجراءات الجوال السريعة">
+    <button type="button" class="btn-dock-run" onclick="runCode()">
+      <i class="ri-play-fill" style="font-size:1.1rem;"></i>
+      <span>تشغيل الكود</span>
+    </button>
+    <button type="button" class="btn-dock-ai" onclick="debugWithAI()">
+      <i class="ri-sparkling-fill" style="font-size:1.1rem;"></i>
+      <span>فحص كيدي AI</span>
+    </button>
+  </aside>
+
+</div>
+
+<!-- Modal: نماذج المنهج الجاهزة -->
+<div class="modal-overlay" id="templatesModal" style="display:none;">
+  <div class="modal-box" style="max-width:500px;">
+    <div class="modal-header">
+      <h3><i class="ri-book-read-line" style="color:var(--primary);"></i> نماذج الأكواد المنهجية</h3>
+      <button type="button" class="btn-icon" aria-label="إغلاق" onclick="CBS.closeModal('templatesModal')"><i class="ri-close-line"></i></button>
+    </div>
+    <div class="modal-body" style="padding:14px;">
+      <p style="font-size:0.85rem;color:var(--lab-muted);margin-bottom:12px;">اختر خوارزمية أو قالباً برمجياً للتحميل المباشر في المحرر:</p>
+      <div id="templatesList" style="display:flex;flex-direction:column;gap:8px;"></div>
+    </div>
+  </div>
+</div>
+
+<div id="toast-container"></div>
+<div id="autosaveBadge" class="lab-autosave-badge">✓ محفوظ تلقائياً</div>
+
+<script src="/js/shared.js?v=2026081907"></script>
+<script src="/js/app.js?v=2026081907"></script>
+<script>
+  CBS.init({ requireAuth: true });
+
+  const sampleLibrary = {
+    javascript: {
+      binary_search: {
+        title: 'خوارزمية البحث الثنائي (Binary Search)',
+        code: `// خوارزمية البحث الثنائي - Binary Search
+function binarySearch(arr, target) {
+  let left = 0, right = arr.length - 1;
+  while (left <= right) {
+    let mid = Math.floor((left + right) / 2);
+    if (arr[mid] === target) return mid;
+    if (arr[mid] < target) left = mid + 1;
+    else right = mid - 1;
+  }
+  return -1;
+}
+
+const numbers = [2, 5, 8, 12, 16, 23, 38, 56, 72, 91];
+console.log("Array:", numbers);
+console.log("Searching for 23 -> Index:", binarySearch(numbers, 23));
+console.log("Searching for 100 -> Index:", binarySearch(numbers, 100));`
+      },
+      stack_queue: {
+        title: 'هيكل بيانات المكدس (Stack Implementation)',
+        code: `// هيكل بيانات المكدس - Stack Implementation
+class Stack {
+  constructor() { this.items = []; }
+  push(elem) { this.items.push(elem); }
+  pop() { return this.isEmpty() ? null : this.items.pop(); }
+  peek() { return this.isEmpty() ? null : this.items[this.items.length - 1]; }
+  isEmpty() { return this.items.length === 0; }
+  size() { return this.items.length; }
+}
+
+const s = new Stack();
+s.push("Data Structures");
+s.push("Algorithms");
+s.push("Operating Systems");
+console.log("Top Element (Peek):", s.peek());
+console.log("Popped Element:", s.pop());
+console.log("Current Stack Size:", s.size());`
+      }
+    },
+    python: {
+      binary_search: {
+        title: 'البحث الثنائي بلغة بايثون (Binary Search)',
+        code: `# Binary Search Algorithm in Python
+def binary_search(arr, target):
+    left, right = 0, len(arr) - 1
+    while left <= right:
+        mid = (left + right) // 2
+        if arr[mid] == target:
+            return mid
+        elif arr[mid] < target:
+            left = mid + 1
+        else:
+            right = mid - 1
+    return -1
+
+numbers = [10, 20, 30, 40, 50, 60, 70]
+print("Array:", numbers)
+print("Index of 40:", binary_search(numbers, 40))`
+      },
+      oop_inheritance: {
+        title: 'الوراثة وتعدد الأشكال (OOP Inheritance)',
+        code: `# Object-Oriented Programming (OOP) Inheritance
+class Student:
+    def __init__(self, name, student_id):
+        self.name = name
+        self.student_id = student_id
+        
+    def get_details(self):
+        return f"Student: {self.name} | ID: {self.student_id}"
+
+class ITStudent(Student):
+    def __init__(self, name, student_id, track):
+        super().__init__(name, student_id)
+        self.track = track
+        
+    def get_details(self):
+        base = super().get_details()
+        return f"{base} | Track: {self.track}"
+
+s = ITStudent("Mohammed", "IT-2026-001", "Software Engineering")
+print(s.get_details())`
+      }
+    },
+    cpp: {
+      binary_search: {
+        title: 'البحث الثنائي بلغة C++ (Binary Search)',
+        code: `// خوارزمية البحث الثنائي - Binary Search
+#include <iostream>
+#include <vector>
+using namespace std;
+
+int binarySearch(const vector<int>& arr, int target) {
+    int left = 0, right = arr.size() - 1;
+    while (left <= right) {
+        int mid = left + (right - left) / 2;
+        if (arr[mid] == target) return mid;
+        if (arr[mid] < target) left = mid + 1;
+        else right = mid - 1;
+    }
+    return -1;
+}
+
+int main() {
+    vector<int> numbers = {2, 5, 8, 12, 16, 23, 38, 56, 72, 91};
+    cout << "Index of 23  -> " << binarySearch(numbers, 23) << endl;
+    cout << "Index of 100 -> " << binarySearch(numbers, 100) << endl;
+    return 0;
+}`
+      },
+      oop_inheritance: {
+        title: 'الوراثة وتعدد الأشكال (OOP Inheritance)',
+        code: `// الوراثة البرمجية - OOP Inheritance
+#include <iostream>
+#include <string>
+using namespace std;
+
+class Student {
+protected:
+    string name;
+    string studentId;
+public:
+    Student(string n, string id) : name(n), studentId(id) {}
+    virtual string getDetails() {
+        return "Student: " + name + " | ID: " + studentId;
+    }
+    virtual ~Student() {}
+};
+
+class ITStudent : public Student {
+    string track;
+public:
+    ITStudent(string n, string id, string t) : Student(n, id), track(t) {}
+    string getDetails() override {
+        return Student::getDetails() + " | Track: " + track;
+    }
+};
+
+int main() {
+    ITStudent s("Mohammed", "IT-2026-001", "Software Engineering");
+    cout << s.getDetails() << endl;
+
+    Student* ptr = &s;          // تعدد الأشكال - Polymorphism
+    cout << ptr->getDetails() << endl;
+    return 0;
+}`
+      }
+    },
+    sql: {
+      sql_join: {
+        title: 'استعلام ربط الجداول (SQL Inner Join)',
+        code: `-- تقرير ربط بيانات الطلاب مع نتائج المقررات الدراسية
+SELECT 
+    s.student_id AS "الرقم الجامعي",
+    s.full_name AS "اسم الطالب",
+    c.course_name AS "المقرر",
+    g.score AS "الدرجة",
+    g.grade_letter AS "التقدير"
+FROM Students s
+INNER JOIN Enrollments e ON s.student_id = e.student_id
+INNER JOIN Courses c ON e.course_id = c.course_id
+INNER JOIN Grades g ON e.enrollment_id = g.enrollment_id
+WHERE g.score >= 60
+ORDER BY g.score DESC;`
+      }
+    }
+  };
+
+  function toggleStdinDrawer() {
+    const drawer = document.getElementById('stdinDrawer');
+    const isHidden = drawer.style.display === 'none';
+    drawer.style.display = isHidden ? 'block' : 'none';
+    if (isHidden) {
+      document.getElementById('stdinBox').focus();
+    }
+  }
+
+  function openTemplatesModal() {
+    const lang = document.getElementById('langSelect').value;
+    const lib = sampleLibrary[lang] || {};
+    const list = document.getElementById('templatesList');
+    list.innerHTML = '';
+
+    const keys = Object.keys(lib);
+    if (!keys.length) {
+      list.innerHTML = '<div style="color:var(--lab-muted);text-align:center;padding:12px;">لا توجد نماذج مسبقة لهذه اللغة</div>';
+    } else {
+      keys.forEach(k => {
+        const item = lib[k];
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn btn-outline';
+        btn.style.cssText = 'display:flex;align-items:center;justify-content:space-between;width:100%;padding:10px 14px;text-align:right;border-radius:10px;font-weight:700;';
+        btn.innerHTML = `<span><i class="ri-code-line" style="color:var(--primary);"></i> ${CBS.escapeHTML(item.title)}</span> <i class="ri-arrow-left-s-line"></i>`;
+        btn.onclick = () => {
+          document.getElementById('codeEditor').value = item.code;
+          syncEditor();
+          saveDraft();
+          CBS.closeModal('templatesModal');
+          CBS.toast('تم تحميل النموذج في المحرر', '', 'info');
+          switchMobileSegment('editor');
+        };
+        list.appendChild(btn);
+      });
+    }
+    CBS.openModal('templatesModal');
+  }
+
+  /* ===== نظام التبديل على الجوال (Mobile Segment Routing) ===== */
+  function switchMobileSegment(segment) {
+    const workspace = document.getElementById('labWorkspace');
+    workspace.className = 'lab-workspace';
+
+    ['editor', 'console', 'ai', 'cheat'].forEach(s => {
+      const btn = document.getElementById(`segBtn${s.charAt(0).toUpperCase() + s.slice(1)}`);
+      if (btn) btn.classList.toggle('active', s === segment);
+    });
+
+    if (segment === 'console') {
+      workspace.classList.add('show-console');
+      switchInspectorTab('console');
+    } else if (segment === 'ai') {
+      workspace.classList.add('show-ai');
+      switchInspectorTab('ai');
+    } else if (segment === 'cheat') {
+      workspace.classList.add('show-cheat');
+      switchInspectorTab('cheat');
+    }
+
+    CBS.haptic('selection');
+  }
+
+  function switchInspectorTab(tab) {
+    ['console', 'ai', 'cheat'].forEach(t => {
+      const btn = document.getElementById(`tabBtn${t.charAt(0).toUpperCase() + t.slice(1)}`);
+      const pane = document.getElementById(`pane${t.charAt(0).toUpperCase() + t.slice(1)}`);
+      if (btn && pane) {
+        btn.classList.toggle('active', t === tab);
+        pane.style.display = t === tab ? 'flex' : 'none';
+      }
+    });
+  }
+
+  function clearConsole() {
+    const out = document.getElementById('terminalOutput');
+    out.innerHTML = `<div class="console-welcome" id="consoleWelcome">
+      <i class="ri-terminal-box-line"></i>
+      <strong>تم مسح وحدة التشغيل</strong>
+      <span>اضغط «تشغيل الكود» لرؤية المخرجات هنا</span>
+    </div>`;
+    const bar = document.getElementById('consoleStatusBar');
+    if (bar) { bar.className = 'clog-status-bar'; }
+    const st = document.getElementById('consoleStatusText');
+    if (st) st.textContent = 'لا توجد مخرجات بعد';
+    setRunStatus('جاهز');
+    CBS.haptic('selection');
+  }
+
+  function updateLineNumbers() {
+    const editor = document.getElementById('codeEditor');
+    const lines = editor.value.split('\n').length;
+    const nums = [];
+    for (let i = 1; i <= Math.max(lines, 1); i++) nums.push(i);
+    document.getElementById('lineNumbers').textContent = nums.join('\n');
+    document.getElementById('codeLengthBadge').textContent = `${lines} أسطر`;
+  }
+
+  /* =========================================================
+     تلوين الكلمات المفتاحية (Syntax Highlighting)
+     ========================================================= */
+  const HL_KEYWORDS = {
+    javascript: ['const','let','var','function','return','if','else','for','while','do','break','continue',
+      'class','extends','super','new','this','typeof','instanceof','try','catch','finally','throw','switch',
+      'case','default','async','await','of','in','delete','void','yield','import','export','from','static','get','set'],
+    python: ['def','return','if','elif','else','for','while','break','continue','class','import','from','as',
+      'try','except','finally','raise','with','lambda','global','nonlocal','pass','yield','assert','del','async','await','in','is','not','and','or'],
+    cpp: ['int','float','double','char','bool','void','long','short','unsigned','signed','const','static',
+      'class','struct','public','private','protected','virtual','override','return','if','else','for','while',
+      'do','break','continue','switch','case','default','new','delete','this','using','namespace','template',
+      'typename','try','catch','throw','include','define','auto','true','false','nullptr','enum','typedef','sizeof','operator','friend','inline'],
+    sql: ['SELECT','FROM','WHERE','INNER','LEFT','RIGHT','FULL','OUTER','JOIN','ON','GROUP','BY','ORDER','HAVING',
+      'INSERT','INTO','VALUES','UPDATE','SET','DELETE','CREATE','TABLE','DROP','ALTER','ADD','PRIMARY','KEY',
+      'FOREIGN','REFERENCES','AND','OR','NOT','NULL','AS','DISTINCT','COUNT','SUM','AVG','MIN','MAX','LIMIT',
+      'OFFSET','UNION','ALL','LIKE','BETWEEN','IN','EXISTS','CASE','WHEN','THEN','ELSE','END','INTEGER','TEXT','REAL','ASC','DESC']
+  };
+  const HL_LITERALS = {
+    javascript: ['true','false','null','undefined','NaN','Infinity'],
+    python: ['True','False','None','self','print','len','range','int','str','float','list','dict','set','tuple','sum','sorted','enumerate','zip','abs','max','min'],
+    cpp: ['cout','cin','endl','string','vector','map','set','pair','std','printf','scanf','size_t','to_string','push_back','sort','max','min','swap'],
+    sql: []
+  };
+
+  function escapeHtmlChunk(s) {
+    return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
+  function buildHighlightRegex(lang) {
+    const comment = lang === 'python' ? '#[^\\n]*'
+      : lang === 'sql' ? '--[^\\n]*'
+      : '\\/\\/[^\\n]*|\\/\\*[\\s\\S]*?\\*\\/';
+    const strings = lang === 'python'
+      ? `"""[\\s\\S]*?"""|'''[\\s\\S]*?'''|"(?:\\\\.|[^"\\\\])*"|'(?:\\\\.|[^'\\\\])*'`
+      : lang === 'sql'
+      ? `'(?:''|[^'])*'|"(?:""|[^"])*"`
+      : '`(?:\\\\.|[^`\\\\])*`|"(?:\\\\.|[^"\\\\])*"|\'(?:\\\\.|[^\'\\\\])*\'';
+    const number = '\\b\\d+(?:\\.\\d+)?\\b';
+    const word = '[A-Za-z_$][\\w$]*';
+    return new RegExp(`(${comment})|(${strings})|(${number})|(${word})`, 'g');
+  }
+
+  function highlightCode(code, lang) {
+    const kw = new Set(HL_KEYWORDS[lang] || []);
+    const lit = new Set(HL_LITERALS[lang] || []);
+    const kwLower = lang === 'sql' ? new Set([...kw].map(k => k.toLowerCase())) : null;
+    const re = buildHighlightRegex(lang);
+    let out = '', last = 0, m;
+    while ((m = re.exec(code)) !== null) {
+      out += escapeHtmlChunk(code.slice(last, m.index));
+      const [full, comment, str, num, word] = m;
+      if (comment !== undefined) out += `<span class="tok-comment">${escapeHtmlChunk(full)}</span>`;
+      else if (str !== undefined) out += `<span class="tok-string">${escapeHtmlChunk(full)}</span>`;
+      else if (num !== undefined) out += `<span class="tok-number">${full}</span>`;
+      else {
+        const isKw = kwLower ? kwLower.has(word.toLowerCase()) : kw.has(word);
+        if (isKw) out += `<span class="tok-keyword">${word}</span>`;
+        else if (lit.has(word)) out += `<span class="tok-builtin">${word}</span>`;
+        else if (code[m.index + full.length] === '(') out += `<span class="tok-func">${word}</span>`;
+        else out += escapeHtmlChunk(word);
+      }
+      last = m.index + full.length;
+    }
+    out += escapeHtmlChunk(code.slice(last));
+    return out;
+  }
+
+  function syncEditor() {
+    const editor = document.getElementById('codeEditor');
+    const layer = document.getElementById('highlightLayer');
+    const lang = document.getElementById('langSelect').value;
+    layer.innerHTML = highlightCode(editor.value + '\n', lang);
+    updateLineNumbers();
+    syncEditorScroll();
+  }
+
+  function syncEditorScroll() {
+    const editor = document.getElementById('codeEditor');
+    const layer = document.getElementById('highlightLayer');
+    layer.scrollTop = editor.scrollTop;
+    layer.scrollLeft = editor.scrollLeft;
+    document.getElementById('lineNumbers').scrollTop = editor.scrollTop;
+  }
+
+  /* ===== اختصارات لوحة المفاتيح وإغلاق الأقواس ===== */
+  const AUTO_PAIRS = { '(': ')', '[': ']', '{': '}', '"': '"', "'": "'", '`': '`' };
+  const CLOSERS = new Set([')', ']', '}', '"', "'", '`']);
+
+  function setEditorValue(editor, value, caret) {
+    editor.value = value;
+    editor.selectionStart = editor.selectionEnd = caret;
+    syncEditor();
+  }
+
+  function handleEditorKeydown(e) {
+    const editor = e.target;
+    const start = editor.selectionStart, end = editor.selectionEnd;
+    const val = editor.value;
+
+    if (e.key === 'Tab') {
+      e.preventDefault();
+      setEditorValue(editor, val.slice(0, start) + '  ' + val.slice(end), start + 2);
+      return;
+    }
+
+    if (AUTO_PAIRS[e.key]) {
+      const close = AUTO_PAIRS[e.key];
+      const nextCh = val[end] || '';
+      if (start === end && (e.key === '"' || e.key === "'" || e.key === '`') && /[\w"'`]/.test(nextCh)) return;
+      e.preventDefault();
+      const selected = val.slice(start, end);
+      setEditorValue(editor, val.slice(0, start) + e.key + selected + close + val.slice(end),
+        selected ? start + 1 + selected.length + 1 : start + 1);
+      return;
+    }
+
+    if (start === end && CLOSERS.has(e.key) && val[start] === e.key) {
+      e.preventDefault();
+      editor.selectionStart = editor.selectionEnd = start + 1;
+      return;
+    }
+
+    if (e.key === 'Backspace' && start === end && start > 0) {
+      const before = val[start - 1], after = val[start];
+      if (AUTO_PAIRS[before] && AUTO_PAIRS[before] === after) {
+        e.preventDefault();
+        setEditorValue(editor, val.slice(0, start - 1) + val.slice(start + 1), start - 1);
+        return;
+      }
+    }
+
+    if (e.key === 'Enter' && start === end) {
+      const lineStart = val.lastIndexOf('\n', start - 1) + 1;
+      const line = val.slice(lineStart, start);
+      const indent = (line.match(/^[ \t]*/) || [''])[0];
+      const opensBlock = /[{([]\s*$/.test(line) || /:\s*$/.test(line);
+      const extra = opensBlock ? '  ' : '';
+      const closingAhead = AUTO_PAIRS[line.trimEnd().slice(-1)] === val[start];
+      e.preventDefault();
+      if (closingAhead) {
+        const insert = '\n' + indent + extra + '\n' + indent;
+        setEditorValue(editor, val.slice(0, start) + insert + val.slice(start),
+          start + 1 + indent.length + extra.length);
+      } else {
+        const insert = '\n' + indent + extra;
+        setEditorValue(editor, val.slice(0, start) + insert + val.slice(start), start + insert.length);
+      }
+      return;
+    }
+  }
+
+  /* ===== شريط الرموز السريعة لكل لغة ===== */
+  const SYMBOL_SETS = {
+    javascript: ['{', '}', '(', ')', '[', ']', ';', '=>', '===', '!==', '&&', '||', '`', '"', "'", '+', '-', '<', '>'],
+    python:     [':', '(', ')', '[', ']', '{', '}', '=', '==', '!=', '#', '"', "'", '_', '+', '-', '<', '>', '%'],
+    sql:        ['SELECT', 'FROM', 'WHERE', 'JOIN', 'ON', 'GROUP BY', 'ORDER BY', '*', ',', ';', '=', '>', '<', "'", '(', ')'],
+    cpp:        ['{', '}', '(', ')', '[', ']', ';', '<<', '>>', '::', '->', '&', '*', '"', '==', '!=', '+', '-', '#']
+  };
+
+  function buildSymbolBar() {
+    const lang = document.getElementById('langSelect').value;
+    const bar = document.getElementById('symbolBar');
+    bar.innerHTML = '';
+    (SYMBOL_SETS[lang] || []).forEach(sym => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.className = 'lab-sym-key';
+      b.textContent = sym;
+      b.onclick = () => insertSymbol(sym);
+      bar.appendChild(b);
+    });
+  }
+
+  function insertSymbol(sym) {
+    const editor = document.getElementById('codeEditor');
+    const start = editor.selectionStart, end = editor.selectionEnd;
+    const val = editor.value;
+    let insert = sym, caretOffset = sym.length;
+    if (/^[A-Z ]+$/.test(sym)) { insert = sym + ' '; caretOffset = insert.length; }
+    else if (AUTO_PAIRS[sym]) { insert = sym + AUTO_PAIRS[sym]; caretOffset = 1; }
+    editor.value = val.slice(0, start) + insert + val.slice(end);
+    editor.selectionStart = editor.selectionEnd = start + caretOffset;
+    editor.focus();
+    syncEditor();
+    CBS.haptic('selection');
+  }
+
+  /* =========================================================
+     محركات التنفيذ الحقيقية (Real Code Execution Engines)
+     ========================================================= */
+  const RUNTIME_CDN = {
+    pyodide: 'https://cdn.jsdelivr.net/pyodide/v0.29.2/full/',
+    sqljs:   'https://cdn.jsdelivr.net/npm/sql.js@1.13.0/dist/'
+  };
+
+  let _pyodidePromise = null;
+  let _sqlDbPromise = null;
+
+  function loadScriptOnce(src) {
+    return new Promise((resolve, reject) => {
+      const el = document.createElement('script');
+      el.src = src;
+      el.onload = () => resolve();
+      el.onerror = () => reject(new Error('تعذّر تحميل محرك التنفيذ، تحقق من اتصال الإنترنت'));
+      document.head.appendChild(el);
+    });
+  }
+
+  function setRunStatus(text, color) {
+    const el = document.getElementById('execStats');
+    if (el) {
+      el.textContent = text;
+      el.style.color = color || 'var(--lab-muted)';
+    }
+  }
+
+  async function getPyodide() {
+    if (!_pyodidePromise) {
+      _pyodidePromise = (async () => {
+        await loadScriptOnce(RUNTIME_CDN.pyodide + 'pyodide.js');
+        return await loadPyodide({ indexURL: RUNTIME_CDN.pyodide });
+      })().catch(err => { _pyodidePromise = null; throw err; });
+    }
+    return _pyodidePromise;
+  }
+
+  const DEMO_SCHEMA = `
+    CREATE TABLE Students (student_id TEXT PRIMARY KEY, full_name TEXT, level INTEGER);
+    CREATE TABLE Courses (course_id INTEGER PRIMARY KEY, course_name TEXT, credit_hours INTEGER);
+    CREATE TABLE Enrollments (enrollment_id INTEGER PRIMARY KEY, student_id TEXT, course_id INTEGER);
+    CREATE TABLE Grades (grade_id INTEGER PRIMARY KEY, enrollment_id INTEGER, score INTEGER, grade_letter TEXT);
+
+    INSERT INTO Students VALUES
+      ('IT-2026-001','محمد أحمد',3), ('IT-2026-002','سارة عثمان',3),
+      ('IT-2026-003','عمر الطيب',2),  ('IT-2026-004','ليلى إبراهيم',4);
+    INSERT INTO Courses VALUES
+      (1,'قواعد البيانات',3), (2,'هياكل البيانات',3),
+      (3,'الشبكات',2), (4,'هندسة البرمجيات',3);
+    INSERT INTO Enrollments VALUES
+      (1,'IT-2026-001',1), (2,'IT-2026-001',2), (3,'IT-2026-002',1),
+      (4,'IT-2026-002',3), (5,'IT-2026-003',2), (6,'IT-2026-004',4), (7,'IT-2026-004',1);
+    INSERT INTO Grades VALUES
+      (1,1,88,'A'), (2,2,73,'B'), (3,3,95,'A+'),
+      (4,4,54,'F'), (5,5,66,'C'), (6,6,81,'A-'), (7,7,49,'F');
+  `;
+
+  async function getSqlDb() {
+    if (!_sqlDbPromise) {
+      _sqlDbPromise = (async () => {
+        await loadScriptOnce(RUNTIME_CDN.sqljs + 'sql-wasm.js');
+        const SQL = await initSqlJs({ locateFile: f => RUNTIME_CDN.sqljs + f });
+        const db = new SQL.Database();
+        db.run(DEMO_SCHEMA);
+        return db;
+      })().catch(err => { _sqlDbPromise = null; throw err; });
+    }
+    return _sqlDbPromise;
+  }
+
+  function renderSqlResults(results) {
+    if (!results.length) return '[تم التنفيذ بنجاح — الاستعلام لم يُرجع صفوفاً]';
+    return results.map(r => {
+      const widths = r.columns.map((c, i) =>
+        Math.max(String(c).length, ...r.values.map(v => String(v[i] ?? 'NULL').length)));
+      const line = (cells) => cells.map((c, i) => String(c ?? 'NULL').padEnd(widths[i])).join(' | ');
+      return [
+        line(r.columns),
+        widths.map(w => '-'.repeat(w)).join('-+-'),
+        ...r.values.map(v => line(v)),
+        `\n(${r.values.length} صف)`
+      ].join('\n');
+    }).join('\n\n');
+  }
+
+  // دوال تشفير وفك تشفير Base64 متوافقة مع النصوص العربية والـ UTF-8
+  function utoa(str) {
+    try {
+      return btoa(unescape(encodeURIComponent(str || '')));
+    } catch (e) {
+      return btoa(str || '');
+    }
+  }
+
+  function atou(b64) {
+    try {
+      return decodeURIComponent(escape(atob(b64 || '')));
+    } catch (e) {
+      return atob(b64 || '');
+    }
+  }
+
+  async function runCppRemote(code, stdin) {
+    // 1. المحاولة أولاً عبر خادم النظام الداخلي (لتفادي CORS ومشاكل الحجب والجدار الناري)
+    try {
+      const res = await CBS.apiPost('/api/ai/run-cpp', { code, stdin: stdin || '' });
+      if (res && res.ok) {
+        const data = await res.json();
+        if (data && (data.stdout !== undefined || data.compile_output !== undefined || data.stderr !== undefined)) {
+          return data;
+        }
+      }
+    } catch (e) {
+      console.warn('[CodeLab] Local run-cpp proxy failed, trying direct Judge0 Base64 fallback:', e);
+    }
+
+    // 2. المحاولة الاحتياطية مباشرة إلى Judge0 مع Base64 لتفادي أخطاء 400 Bad Request
+    const b64Code = utoa(code);
+    const b64Stdin = utoa(stdin || '');
+    const res = await fetch('https://ce.judge0.com/submissions?base64_encoded=true&wait=true', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        source_code: b64Code,
+        language_id: 105, // C++ (GCC 14.1.0)
+        stdin: b64Stdin
+      })
+    });
+
+    if (!res.ok) {
+      throw new Error(`خدمة الترجمة ردّت بالرمز ${res.status}`);
+    }
+
+    const data = await res.json();
+    return {
+      stdout: data.stdout ? atou(data.stdout) : null,
+      stderr: data.stderr ? atou(data.stderr) : null,
+      compile_output: data.compile_output ? atou(data.compile_output) : null,
+      message: data.message ? atou(data.message) : null,
+      time: data.time,
+      memory: data.memory,
+      status: data.status
+    };
+  }
+
+  function getStdin() {
+    const box = document.getElementById('stdinBox');
+    return box ? box.value : '';
+  }
+
+  /* =========================================================
+     نظام العرض الغني للمخرجات (Rich Console Renderer)
+     ========================================================= */
+  let _consoleRawLines = []; // لنسخ المخرجات كنص
+
+  function clogClear() {
+    _consoleRawLines = [];
+    const out = document.getElementById('terminalOutput');
+    out.innerHTML = '';
+    const bar = document.getElementById('consoleStatusBar');
+    if (bar) bar.className = 'clog-status-bar';
+    const st = document.getElementById('consoleStatusText');
+    if (st) st.textContent = 'جاري التنفيذ...';
+  }
+
+  function clogAppend(text, type = 'log') {
+    const iconMap = { log: '›', info: 'ℹ', warn: '⚠', error: '✕', success: '✔', system: '⋯' };
+    const out = document.getElementById('terminalOutput');
+    // تقسيم على الأسطر
+    const lines = String(text).split('\n');
+    lines.forEach(line => {
+      _consoleRawLines.push(line);
+      const lineNum = _consoleRawLines.length;
+      const row = document.createElement('div');
+      row.className = `clog-line clog-${type}`;
+      row.innerHTML =
+        `<span class="clog-num">${lineNum}</span>` +
+        `<span class="clog-icon">${iconMap[type] || '›'}</span>` +
+        `<span class="clog-text">${CBS.escapeHTML(line)}</span>`;
+      out.appendChild(row);
+    });
+    out.scrollTop = out.scrollHeight;
+  }
+
+  function clogSetStatus(text, state = 'ok') {
+    const bar = document.getElementById('consoleStatusBar');
+    const st  = document.getElementById('consoleStatusText');
+    if (bar) bar.className = `clog-status-bar status-${state}`;
+    if (st)  st.textContent = text;
+  }
+
+  function clogSqlTable(result) {
+    if (!result || !result.columns) return;
+    const out = document.getElementById('terminalOutput');
+    const tbl = document.createElement('table');
+    tbl.className = 'clog-sql-table';
+    // رأس الجدول
+    const thead = document.createElement('thead');
+    const hr = document.createElement('tr');
+    result.columns.forEach(col => {
+      const th = document.createElement('th');
+      th.textContent = col;
+      hr.appendChild(th);
+    });
+    thead.appendChild(hr);
+    tbl.appendChild(thead);
+    // صفوف البيانات
+    const tbody = document.createElement('tbody');
+    result.values.forEach(row => {
+      const tr = document.createElement('tr');
+      row.forEach(cell => {
+        const td = document.createElement('td');
+        td.textContent = cell ?? 'NULL';
+        tr.appendChild(td);
+      });
+      tbody.appendChild(tr);
+    });
+    tbl.appendChild(tbody);
+    out.appendChild(tbl);
+    // عدد الصفوف
+    const rc = document.createElement('div');
+    rc.className = 'clog-sql-row-count';
+    rc.textContent = `↳ ${result.values.length} صف`;
+    out.appendChild(rc);
+    out.scrollTop = out.scrollHeight;
+    _consoleRawLines.push(`[جدول: ${result.columns.join(', ')} — ${result.values.length} صف]`);
+  }
+
+  function copyConsoleOutput() {
+    const text = _consoleRawLines.join('\n');
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text).then(() => CBS.toast('تم نسخ المخرجات', '', 'success'));
+    }
+  }
+
+  async function runCode() {
+    if (window.innerWidth <= 900) {
+      switchMobileSegment('console');
+    } else {
+      switchInspectorTab('console');
+    }
+
+    const lang = document.getElementById('langSelect').value;
+    const code = document.getElementById('codeEditor').value;
+    const t0 = performance.now();
+
+    clogClear();
+
+    try {
+      if (lang === 'javascript') {
+        const res = await runJsWithTimeout(code, 3500);
+        if (res.logs && res.logs.length) {
+          res.logs.forEach(l => clogAppend(l.text, l.type));
+        }
+        if (res.timeout) {
+          clogAppend('تجاوز الكود الحد الزمني المسموح (3.5 ثوانٍ) — تحقق من الحلقات التكرارية اللانهائية (Infinite Loops مثل while(true))', 'error');
+          setRunStatus('تجاوز الزمن', 'var(--lab-danger)');
+          clogSetStatus('✕ حلقة تكرار لانهائية (Infinite Loop)', 'err');
+          CBS.haptic('error');
+        } else if (!res.ok) {
+          clogAppend(`Runtime Error: ${res.error}`, 'error');
+          if (res.stack) clogAppend(res.stack.split('\n').slice(1, 3).join('\n'), 'error');
+          setRunStatus('خطأ برمجي', 'var(--lab-danger)');
+          clogSetStatus('✕ خطأ برمجي', 'err');
+          CBS.haptic('error');
+        } else {
+          const ms = Math.round(performance.now() - t0);
+          if (_consoleRawLines.length === 0) clogAppend('تنفيذ سليم — لا توجد مخرجات console.log', 'system');
+          setRunStatus(`${ms} ms`, 'var(--lab-success)');
+          clogSetStatus(`✔ تم التنفيذ في ${ms} ms`, 'ok');
+          CBS.haptic('success');
+        }
+
+      } else if (lang === 'python') {
+        clogAppend('جاري تجهيز مفسّر Python (يُحمَّل لأول مرة فقط)...', 'system');
+        setRunStatus('جاري التحميل...');
+        const py = await getPyodide();
+        clogAppend('جاري التنفيذ...', 'system');
+        setRunStatus('جاري التنفيذ...');
+        let buffer = '';
+        py.setStdout({ batched: s => { buffer += s + '\n'; } });
+        py.setStderr({ batched: s => { buffer += s + '\n'; } });
+        const inputLines = getStdin().split('\n');
+        let inputIdx = 0;
+        py.setStdin({ stdin: () => (inputIdx < inputLines.length ? inputLines[inputIdx++] : null) });
+        const tRun = performance.now();
+        try {
+          await py.runPythonAsync(code);
+          const ms = Math.round(performance.now() - tRun);
+          const trimmed = buffer.trim();
+          if (trimmed) {
+            trimmed.split('\n').forEach(l => clogAppend(l, l.toLowerCase().includes('error') ? 'error' : 'log'));
+          } else {
+            clogAppend('تنفيذ سليم — لا توجد مخرجات print', 'system');
+          }
+          setRunStatus(`${ms} ms`, 'var(--lab-success)');
+          clogSetStatus(`✔ تم التنفيذ في ${ms} ms`, 'ok');
+          CBS.haptic('success');
+        } catch (err) {
+          if (buffer.trim()) buffer.trim().split('\n').forEach(l => clogAppend(l, 'log'));
+          clogAppend(String(err.message || err), 'error');
+          setRunStatus('خطأ برمجي', 'var(--lab-danger)');
+          clogSetStatus('✕ خطأ برمجي', 'err');
+          CBS.haptic('error');
+        }
+
+      } else if (lang === 'cpp') {
+        clogAppend('جاري الترجمة والتنفيذ على خادم GCC...', 'system');
+        setRunStatus('جاري الترجمة...');
+        const tRun = performance.now();
+        const r = await runCppRemote(code, getStdin());
+        const ms = Math.round(performance.now() - tRun);
+        const statusText = r.status && r.status.description;
+        if (r.compile_output) {
+          r.compile_output.trim().split('\n').forEach(l => clogAppend(l, 'error'));
+          setRunStatus('خطأ في الترجمة', 'var(--lab-danger)');
+          clogSetStatus('✕ خطأ في الترجمة', 'err');
+          CBS.haptic('error');
+        } else if (statusText && statusText !== 'Accepted') {
+          const combined = ((r.stdout || '') + (r.stderr || '')).trim();
+          if (combined) combined.split('\n').forEach(l => clogAppend(l, 'error'));
+          else clogAppend(statusText, 'error');
+          setRunStatus(statusText, 'var(--lab-danger)');
+          clogSetStatus(`✕ ${statusText}`, 'err');
+          CBS.haptic('error');
+        } else {
+          const combined = ((r.stdout || '') + (r.stderr || '')).trim();
+          if (combined) combined.split('\n').forEach(l => clogAppend(l, 'log'));
+          else clogAppend('تنفيذ سليم — لا توجد مخرجات cout', 'system');
+          setRunStatus(`${ms} ms`, 'var(--lab-success)');
+          clogSetStatus(`✔ تم التنفيذ في ${ms} ms`, 'ok');
+          CBS.haptic('success');
+        }
+
+      } else if (lang === 'sql') {
+        clogAppend('جاري تجهيز محرك SQLite...', 'system');
+        setRunStatus('جاري التحميل...');
+        const db = await getSqlDb();
+        const tRun = performance.now();
+        try {
+          const results = db.exec(code);
+          const ms = Math.round(performance.now() - tRun);
+          if (!results.length) {
+            clogAppend('تم تنفيذ الاستعلام بنجاح — لم يُرجع صفوفاً', 'success');
+          } else {
+            results.forEach(r => clogSqlTable(r));
+          }
+          setRunStatus(`${ms} ms`, 'var(--lab-success)');
+          clogSetStatus(`✔ تم الاستعلام في ${ms} ms`, 'ok');
+          CBS.haptic('success');
+        } catch (err) {
+          clogAppend(`SQL Error: ${err.message}`, 'error');
+          setRunStatus('خطأ في الاستعلام', 'var(--lab-danger)');
+          clogSetStatus('✕ خطأ في الاستعلام', 'err');
+          CBS.haptic('error');
+        }
+      }
+    } catch (err) {
+      clogAppend(err.message, 'error');
+      clogAppend('تأكد من اتصالك بالإنترنت عند تشغيل Python وC++ وSQL.', 'system');
+      setRunStatus('تعذّر التشغيل', 'var(--lab-danger)');
+      clogSetStatus('✕ تعذّر التشغيل', 'err');
+      CBS.haptic('error');
+    }
+  }
+
+  async function debugWithAI() {
+    if (window.innerWidth <= 900) {
+      switchMobileSegment('ai');
+    } else {
+      switchInspectorTab('ai');
+    }
+
+    const lang = document.getElementById('langSelect').value;
+    const code = document.getElementById('codeEditor').value.trim();
+    const termOut = document.getElementById('terminalOutput').textContent;
+    const panel = document.getElementById('aiAnalysisOutput');
+
+    if (!code) {
+      CBS.toast('اكتب شيفرة برمجية أولاً للفحص', '', 'error');
+      return;
+    }
+
+    panel.innerHTML = '<div style="text-align:center;padding:36px 16px;color:#818cf8;font-weight:700;"><i class="ri-loader-4-line ri-spin" style="font-size:2rem;display:block;margin-bottom:8px;"></i> كيدي يفحص منطق الكود ويحلل التعقيد الحسابي...</div>';
+
+    try {
+      const res = await CBS.apiPost('/api/ai/code-debug', {
+        language: lang,
+        code: code,
+        errorOutput: termOut.includes('Error') ? termOut : ''
+      });
+
+      if (!res.ok) {
+        let errMsg = 'تعذر إكمال التحليل البرمجي';
+        try {
+          const errData = await res.json();
+          errMsg = errData.message || errMsg;
+        } catch(_) {}
+
+        panel.innerHTML = `<div style="text-align:center;padding:30px;">
+          <i class="ri-error-warning-line" style="font-size:2rem;color:var(--lab-danger);display:block;margin-bottom:8px;"></i>
+          <strong style="display:block;margin-bottom:6px;font-size:0.95rem;color:var(--lab-text);">${CBS.escapeHTML(errMsg)}</strong>
+          <span style="font-size:0.82rem;color:var(--lab-muted);">يمكنك المحاولة مجدداً بعد لحظات.</span>
+        </div>`;
+        CBS.haptic('error');
+        return;
+      }
+
+      const data = await res.json();
+
+      if (data.success && data.analysis) {
+        panel.innerHTML = `<div style="line-height:1.75;font-size:0.9rem;">${formatAiMarkdown(data.analysis)}</div>`;
+        CBS.haptic('success');
+      } else {
+        panel.innerHTML = `<div style="text-align:center;padding:30px;">
+          <i class="ri-error-warning-line" style="font-size:2rem;color:var(--lab-warning);display:block;margin-bottom:8px;"></i>
+          <strong style="display:block;margin-bottom:6px;font-size:0.95rem;color:var(--lab-text);">${CBS.escapeHTML(data.message || 'تعذر إكمال التحليل البرمجي')}</strong>
+        </div>`;
+      }
+    } catch(e) {
+      panel.innerHTML = `<div style="text-align:center;padding:30px;">
+        <i class="ri-wifi-off-line" style="font-size:2rem;color:var(--lab-danger);display:block;margin-bottom:8px;"></i>
+        <strong style="display:block;margin-bottom:6px;font-size:0.95rem;color:var(--lab-text);">تعذر الاتصال بالخادم</strong>
+        <span style="font-size:0.82rem;color:var(--lab-muted);">تحقق من اتصالك بالإنترنت وحاول مجدداً.</span>
+      </div>`;
+      CBS.haptic('error');
+    }
+  }
+
+  function formatAiMarkdown(text) {
+    let s = CBS.escapeHTML(text);
+    s = s.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+    const codeBlocks = [];
+    s = s.replace(/```([a-zA-Z]*)\r?\n([\s\S]*?)```/g, (match, lang, code) => {
+      const idx = codeBlocks.length;
+      codeBlocks.push('<pre style="background:#090d16;color:#f8fafc;padding:12px;border-radius:8px;direction:ltr;text-align:left;overflow-x:auto;margin:10px 0;border:1px solid #1e293b;"><code>' + code + '</code></pre>');
+      return `__CODEBLOCK_${idx}__`;
+    });
+    s = s.replace(/`([^`]+)`/g, '<code style="background:rgba(255,255,255,0.08);padding:2px 6px;border-radius:4px;font-family:monospace;color:var(--primary);">$1</code>');
+    s = s.replace(/\n/g, '<br>');
+    codeBlocks.forEach((block, i) => { s = s.replace(`__CODEBLOCK_${i}__`, block); });
+    return s;
+  }
+
+  function formatCode() {
+    const lang = document.getElementById('langSelect').value;
+    if (lang === 'python') {
+      CBS.toast('التنسيق التلقائي غير مدعوم لـ Python لاعتمادها على المسافات البادئة', '', 'info', 3000);
+      return;
+    }
+    const editor = document.getElementById('codeEditor');
+    const lines = editor.value.split('\n');
+    let indent = 0;
+    const formatted = lines.map(line => {
+      const trimmed = line.trim();
+      if (trimmed.startsWith('}') || trimmed.startsWith(']') || trimmed.startsWith(')')) {
+        indent = Math.max(0, indent - 1);
+      }
+      const res = '  '.repeat(indent) + trimmed;
+      if (trimmed.endsWith('{') || trimmed.endsWith('[') || trimmed.endsWith('(')) {
+        indent++;
+      }
+      return res;
+    }).join('\n');
+    editor.value = formatted;
+    syncEditor();
+    saveDraft();
+    CBS.toast('تم تنسيق الكود', '', 'info', 1500);
+  }
+
+  function clearEditor() {
+    if (confirm('مسح محتوى المحرر بالكامل؟')) {
+      document.getElementById('codeEditor').value = '';
+      syncEditor();
+      saveDraft();
+      document.getElementById('terminalOutput').textContent = '// المحرر فارغ';
+      CBS.haptic('warning');
+    }
+  }
+
+  function copyCode() {
+    const code = document.getElementById('codeEditor').value;
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(code).then(() => CBS.toast('تم نسخ الكود للحافظة', '', 'success'));
+    } else {
+      CBS.toast('النسخ غير مدعوم في هذا المتصفح', '', 'info');
+    }
+  }
+
+  /* ===== تشغيل جافاسكريبت مع حماية من الحلقات اللانهائية ===== */
+  function runJsWithTimeout(code, timeoutMs = 3500) {
+    return new Promise((resolve) => {
+      try {
+        const workerScript = `
+          self.onmessage = function(e) {
+            const code = e.data;
+            const logs = [];
+            const origLog = console.log, origWarn = console.warn, origErr = console.error;
+            console.log = function(...args) {
+              logs.push({ type: 'log', text: args.map(a => typeof a === 'object' && a !== null ? JSON.stringify(a, null, 2) : String(a)).join(' ') });
+            };
+            console.warn = function(...args) {
+              logs.push({ type: 'warn', text: '[WARN] ' + args.join(' ') });
+            };
+            console.error = function(...args) {
+              logs.push({ type: 'error', text: '[ERROR] ' + args.join(' ') });
+            };
+            try {
+              new Function(code)();
+              self.postMessage({ ok: true, logs: logs });
+            } catch (err) {
+              self.postMessage({ ok: false, error: err.message, stack: err.stack, logs: logs });
+            }
+          };
+        `;
+        const blob = new Blob([workerScript], { type: 'application/javascript' });
+        const workerUrl = URL.createObjectURL(blob);
+        const worker = new Worker(workerUrl);
+
+        let finished = false;
+        const timer = setTimeout(() => {
+          if (!finished) {
+            finished = true;
+            worker.terminate();
+            URL.revokeObjectURL(workerUrl);
+            resolve({ ok: false, timeout: true });
+          }
+        }, timeoutMs);
+
+        worker.onmessage = function(ev) {
+          if (!finished) {
+            finished = true;
+            clearTimeout(timer);
+            worker.terminate();
+            URL.revokeObjectURL(workerUrl);
+            resolve(ev.data);
+          }
+        };
+
+        worker.onerror = function(err) {
+          if (!finished) {
+            finished = true;
+            clearTimeout(timer);
+            worker.terminate();
+            URL.revokeObjectURL(workerUrl);
+            resolve({ ok: false, error: err.message });
+          }
+        };
+
+        worker.postMessage(code);
+      } catch (_) {
+        // Fallback في حال تعذر إنشاء الـ Worker
+        const original = { log: console.log, warn: console.warn, error: console.error };
+        const logs = [];
+        console.log = (...args) => logs.push({ type: 'log', text: args.map(a => typeof a === 'object' && a !== null ? JSON.stringify(a, null, 2) : String(a)).join(' ') });
+        console.warn = (...args) => logs.push({ type: 'warn', text: '[WARN] ' + args.join(' ') });
+        console.error = (...args) => logs.push({ type: 'error', text: '[ERROR] ' + args.join(' ') });
+        try {
+          new Function(code)();
+          resolve({ ok: true, logs: logs });
+        } catch (err) {
+          resolve({ ok: false, error: err.message, stack: err.stack, logs: logs });
+        } finally {
+          Object.assign(console, original);
+        }
+      }
+    });
+  }
+
+  /* ===== تنزيل ومشاركة الملفات البرمجية ===== */
+  function downloadCodeFile() {
+    const lang = document.getElementById('langSelect').value;
+    const exts = { javascript: 'main.js', python: 'script.py', sql: 'query.sql', cpp: 'main.cpp' };
+    const mimes = { javascript: 'text/javascript', python: 'text/x-python', sql: 'application/sql', cpp: 'text/x-c++src' };
+    const filename = exts[lang] || 'code.txt';
+    const code = document.getElementById('codeEditor').value;
+
+    const blob = new Blob([code], { type: mimes[lang] || 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    CBS.toast(`تم تنزيل الملف (${filename})`, '', 'success');
+  }
+
+  async function shareCode() {
+    const lang = document.getElementById('langSelect').value;
+    const exts = { javascript: 'main.js', python: 'script.py', sql: 'query.sql', cpp: 'main.cpp' };
+    const filename = exts[lang] || 'code.txt';
+    const code = document.getElementById('codeEditor').value;
+
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: `كود ${lang.toUpperCase()} - كلية النصر التقنية`,
+          text: `// ملف: ${filename}\n\n` + code
+        });
+        CBS.toast('تمت المشاركة بنجاح', '', 'success');
+        return;
+      } catch (_) {}
+    }
+    copyCode();
+  }
+
+  /* ===== التحكم بحجم خط المحرر ===== */
+  const FONT_SIZES = [12, 13, 15, 17, 19, 22];
+  let _currentFontIdx = 2; // 15px
+
+  function changeFontSize(delta) {
+    _currentFontIdx = Math.max(0, Math.min(FONT_SIZES.length - 1, _currentFontIdx + delta));
+    const sz = FONT_SIZES[_currentFontIdx];
+    document.documentElement.style.setProperty('--editor-font-size', sz + 'px');
+    try { localStorage.setItem('cbs_lab_fontsize', sz); } catch (_) {}
+    CBS.toast(`حجم الخط: ${sz}px`, '', 'info', 900);
+    syncEditorScroll();
+  }
+
+  function initFontSize() {
+    try {
+      const saved = parseInt(localStorage.getItem('cbs_lab_fontsize'), 10);
+      if (saved && FONT_SIZES.includes(saved)) {
+        _currentFontIdx = FONT_SIZES.indexOf(saved);
+        document.documentElement.style.setProperty('--editor-font-size', saved + 'px');
+      }
+    } catch (_) {}
+  }
+
+  /* ===== وضع التركيز الكامل (Focus Mode) ===== */
+  function toggleFocusMode() {
+    const isFocus = document.body.classList.toggle('lab-focus-mode');
+    const exitBtn = document.getElementById('focusExitBtn');
+    const enterBtn = document.getElementById('focusEnterBtn');
+    if (exitBtn) exitBtn.style.display = isFocus ? 'inline-flex' : 'none';
+    if (enterBtn) enterBtn.style.display = isFocus ? 'none' : 'inline-flex';
+    CBS.toast(isFocus ? 'تم تفعيل وضع التركيز الكامل' : 'تم الخروج من وضع التركيز', '', 'info', 1200);
+    CBS.haptic('selection');
+  }
+
+  /* =========================================================
+     نظام الحفظ التلقائي والذاكرة الدائمة (Auto-Save & Persistence)
+     — يحفظ الكود لكل لغة بشكل منفصل وفوري
+     — يسترجع الكود وحالة المحرر تلقائياً عند الدخول
+     — يحفظ فوراً عند الخروج/قفل الهاتف/المكالمات المفاجئة
+     ========================================================= */
+  const DRAFT_PREFIX = 'cbs_lab_draft_';
+  const DRAFT_LANG_KEY = 'cbs_lab_lang';
+  let _currentActiveLang = 'javascript';
+  let _saveTimer = null;
+  let _badgeTimer = null;
+
+  function draftKey(lang) {
+    return DRAFT_PREFIX + (lang || _currentActiveLang);
+  }
+
+  function saveDraft(langToSave) {
+    try {
+      const targetLang = langToSave || _currentActiveLang;
+      const code = document.getElementById('codeEditor').value;
+      localStorage.setItem(draftKey(targetLang), code);
+      localStorage.setItem(DRAFT_LANG_KEY, _currentActiveLang);
+      showSaveBadge();
+    } catch (_) { /* حماية في حال امتلاء الذاكرة */ }
+  }
+
+  function loadDraft(lang) {
+    try {
+      return localStorage.getItem(draftKey(lang));
+    } catch (_) { return null; }
+  }
+
+  function showSaveBadge() {
+    const badge = document.getElementById('autosaveBadge');
+    if (!badge) return;
+    clearTimeout(_badgeTimer);
+    badge.classList.add('visible');
+    _badgeTimer = setTimeout(() => badge.classList.remove('visible'), 1600);
+  }
+
+  function scheduleSave() {
+    clearTimeout(_saveTimer);
+    _saveTimer = setTimeout(() => saveDraft(_currentActiveLang), 600);
+  }
+
+  // ربط الحفظ بالكتابة في المحرر
+  document.getElementById('codeEditor').addEventListener('input', scheduleSave);
+
+  // حفظ فوري عند قفل الشاشة أو وصول مكالمة أو الخروج
+  window.addEventListener('beforeunload', () => saveDraft(_currentActiveLang));
+  window.addEventListener('pagehide', () => saveDraft(_currentActiveLang));
+  window.addEventListener('blur', () => saveDraft(_currentActiveLang));
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') saveDraft(_currentActiveLang);
+  });
+
+  function onLanguageChange() {
+    // 1. حفظ كود اللغة الحالية قبل التبديل
+    saveDraft(_currentActiveLang);
+
+    // 2. تحديث اللغة النشطة
+    const newLang = document.getElementById('langSelect').value;
+    _currentActiveLang = newLang;
+    try { localStorage.setItem(DRAFT_LANG_KEY, newLang); } catch (_) {}
+
+    const exts = { javascript: 'main.js', python: 'script.py', sql: 'query.sql', cpp: 'main.cpp' };
+    const dots = { javascript: '#fbbf24', python: '#3b82f6', sql: '#06b6d4', cpp: '#6366f1' };
+
+    document.getElementById('editorFileName').textContent = exts[newLang] || 'code.txt';
+    document.getElementById('langDot').style.background = dots[newLang] || '#fff';
+
+    // 3. استرجاع مسودة اللغة الجديدة أو النموذج الافتراضي
+    const saved = loadDraft(newLang);
+    if (saved !== null) {
+      document.getElementById('codeEditor').value = saved;
+    } else {
+      const lib = sampleLibrary[newLang];
+      if (lib) {
+        const firstKey = Object.keys(lib)[0];
+        document.getElementById('codeEditor').value = lib[firstKey].code;
+      } else {
+        document.getElementById('codeEditor').value = '';
+      }
+    }
+
+    const out = document.getElementById('terminalOutput');
+    if (newLang === 'sql') {
+      out.innerHTML =
+        '<div class="clog-line clog-info"><span class="clog-icon">ℹ</span><span class="clog-text">'
+        + 'قاعدة بيانات تجريبية جاهزة (SQLite): Students · Courses · Enrollments · Grades'
+        + '</span></div>';
+    } else {
+      clearConsole();
+    }
+
+    setRunStatus('جاهز');
+
+    const stdinBtn = document.getElementById('toggleStdinBtn');
+    const isStdinSupported = (newLang === 'cpp' || newLang === 'python');
+    if (stdinBtn) stdinBtn.style.display = isStdinSupported ? 'inline-flex' : 'none';
+    if (!isStdinSupported) document.getElementById('stdinDrawer').style.display = 'none';
+
+    buildSymbolBar();
+    syncEditor();
+  }
+
+  // ===== تهيئة المحرر عند فتح الصفحة لأول مرة =====
+  (function initEditorState() {
+    const langSelect = document.getElementById('langSelect');
+    let savedLang = 'javascript';
+    try {
+      savedLang = localStorage.getItem(DRAFT_LANG_KEY) || 'javascript';
+    } catch (_) {}
+
+    if (langSelect && ['javascript', 'python', 'sql', 'cpp'].includes(savedLang)) {
+      langSelect.value = savedLang;
+    }
+    _currentActiveLang = langSelect ? langSelect.value : 'javascript';
+
+    const exts = { javascript: 'main.js', python: 'script.py', sql: 'query.sql', cpp: 'main.cpp' };
+    const dots = { javascript: '#fbbf24', python: '#3b82f6', sql: '#06b6d4', cpp: '#6366f1' };
+    document.getElementById('editorFileName').textContent = exts[_currentActiveLang] || 'code.txt';
+    document.getElementById('langDot').style.background = dots[_currentActiveLang] || '#fff';
+
+    const saved = loadDraft(_currentActiveLang);
+    if (saved !== null) {
+      document.getElementById('codeEditor').value = saved;
+    } else {
+      const lib = sampleLibrary[_currentActiveLang];
+      if (lib) {
+        const firstKey = Object.keys(lib)[0];
+        document.getElementById('codeEditor').value = lib[firstKey].code;
+      }
+    }
+
+    const stdinBtn = document.getElementById('toggleStdinBtn');
+    const isStdinSupported = (_currentActiveLang === 'cpp' || _currentActiveLang === 'python');
+    if (stdinBtn) stdinBtn.style.display = isStdinSupported ? 'inline-flex' : 'none';
+
+    initFontSize();
+    buildSymbolBar();
+    syncEditor();
+  })();
+
+  /* =========================================================
+     Bug Fix #3 — الشريط السفلي يظهر فوق لوحة المفاتيح
+     يستخدم visualViewport API للكشف عن ارتفاع الكيبورد
+     ========================================================= */
+  (function initKeyboardDock() {
+    const dock = document.querySelector('.lab-mobile-dock');
+    if (!dock || !window.visualViewport) return;
+
+    function adjustDock() {
+      const keyboardHeight = window.innerHeight - window.visualViewport.height - window.visualViewport.offsetTop;
+      const safeOffset = Math.max(0, keyboardHeight) + 12;
+      dock.style.bottom = safeOffset + 'px';
+      dock.style.transition = 'bottom 0.15s ease';
+    }
+
+    window.visualViewport.addEventListener('resize', adjustDock);
+    window.visualViewport.addEventListener('scroll', adjustDock);
+    adjustDock();
+  })();
+
+  /* =========================================================
+     Bug Fix #4 — إغلاق الأقواس تلقائياً على لوحات مفاتيح الجوال
+     keydown لا يحمل e.key صحيحاً في أغلب لوحات مفاتيح الأندرويد
+     لذا نستمع لـ input event ونكمل من selecionStart
+     ========================================================= */
+  (function initMobileAutoPairs() {
+    const editor = document.getElementById('codeEditor');
+
+    editor.addEventListener('input', function(e) {
+      // نتجاهل غير insertText (مثل deleteByCut أو insertCompositionText)
+      if (!e || e.inputType !== 'insertText' || !e.data) return;
+
+      const ch = e.data;
+      const close = AUTO_PAIRS[ch];
+      if (!close) return;
+
+      // لا نغلق الزوجيات إذا كان الحرف التالي هو نفسه (لتفادي التكرار)
+      const val = editor.value;
+      const pos = editor.selectionStart; // بعد الإدراج
+      const nextCh = val[pos] || '';
+
+      if ((ch === '"' || ch === "'" || ch === '`') && /[\w"'`]/.test(nextCh)) return;
+      if (nextCh === close) return; // مغلق أصلاً
+
+      // أدرج الحرف المغلق
+      const before = val.slice(0, pos);
+      const after  = val.slice(pos);
+      editor.value = before + close + after;
+      editor.selectionStart = editor.selectionEnd = pos;
+      syncEditor();
+    });
+  })();
+</script>
+</body>
+</html>

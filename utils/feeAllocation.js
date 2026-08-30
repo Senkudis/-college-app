@@ -40,17 +40,21 @@ async function allocatePaymentToFees(studentId, amount, session = null) {
   for (const fee of pendingFees) {
     if (remainingPayment <= 0) break;
 
-    const feeRemaining = fee.amount - fee.paidAmount;
+    const netAmount = Math.max(0, (fee.amount || 0) - (fee.discount || 0));
+    const feeRemaining = Math.max(0, netAmount - (fee.paidAmount || 0));
 
-    if (remainingPayment >= feeRemaining) {
+    if (feeRemaining <= 0) {
+      fee.paidAmount = netAmount;
+      fee.status = "paid";
+    } else if (remainingPayment >= feeRemaining) {
       // Fully pay this fee
-      fee.paidAmount = fee.amount;
+      fee.paidAmount = netAmount;
       fee.status = "paid";
       remainingPayment -= feeRemaining;
     } else {
       // Partially pay this fee
-      fee.paidAmount += remainingPayment;
-      fee.status = "partially_paid";
+      fee.paidAmount = (fee.paidAmount || 0) + remainingPayment;
+      fee.status = fee.paidAmount >= netAmount ? "paid" : "partially_paid";
       remainingPayment = 0;
     }
 
@@ -79,7 +83,7 @@ async function getStudentBalanceSummary(studentId) {
     require("../models/Payment").find({ student: studentId }).lean()
   ]);
 
-  const totalFees = fees.reduce((sum, f) => sum + (f.amount || 0), 0);
+  const totalFees = fees.reduce((sum, f) => sum + Math.max(0, (f.amount || 0) - (f.discount || 0)), 0);
   const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
   const balance = Math.max(0, totalFees - totalPaid);
 
@@ -94,7 +98,9 @@ async function getStudentBalanceSummary(studentId) {
       _id: f._id,
       title: f.title,
       amount: f.amount,
-      paidAmount: f.paidAmount,
+      discount: f.discount || 0,
+      netAmount: Math.max(0, (f.amount || 0) - (f.discount || 0)),
+      paidAmount: f.paidAmount || 0,
       status: f.status,
       dueDate: f.dueDate
     }))

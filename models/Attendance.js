@@ -33,7 +33,11 @@ const AttendanceSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-// منع تكرار تسجيل الحضور لنفس المادة في نفس اليوم من قبل نفس الشخص
-AttendanceSchema.index({ subject: 1, date: 1, recordedBy: 1 }, { unique: true });
+/* حصة واحدة لكل مادة في اليوم — لا سجل لكل راصد.
+   إدراج recordedBy في الفهرس كان يجعل التفرّد "لكل شخص": الدكتور والليدر
+   كلاهما مخوّل برصد الحضور، فإن رصدا اليوم نفسه ظهر سجلان وحُسبت الحصة
+   مرتين. النسبة الناتجة تغذّي تحذيرات الغياب وتقرير الإنذار المبكر وحالة
+   "معرّض للخطر" في السجل الأكاديمي — فالخطأ كان ينتشر في كل مكان. */
+AttendanceSchema.index({ subject: 1, date: 1 }, { unique: true });
 
 module.exports = mongoose.model("Attendance", AttendanceSchema);

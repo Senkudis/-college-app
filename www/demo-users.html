@@ -3,7 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>حسابات الاختبار | كلية تقنية المعلومات</title>
+  <title>حسابات الاختبار | كلية النصر التقنية</title>
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Al-Nasr CBS">
@@ -448,7 +449,7 @@
     </div>
     <div class="login-heading">لوحة الحسابات التجريبية</div>
     <div class="login-sub">
-      كلية تقنية المعلومات<br>الوصول مقيد بالإدارة
+      كلية النصر التقنية<br>الوصول مقيد بالإدارة
     </div>
 
     <div style="text-align:center;margin-bottom:24px">
@@ -464,7 +465,7 @@
              onkeyup="if(event.key==='Enter') login()">
     </div>
 
-    <button class="btn-primary" onclick="login()">
+    <button class="btn-primary" onclick="login()" aria-label="رجوع">
       <i class="ri-arrow-right-line"></i>
       دخول
     </button>
@@ -485,7 +486,7 @@
       </div>
       حسابات اختبار التطبيق
     </div>
-    <button class="btn-logout" onclick="logout()">
+    <button class="btn-logout" onclick="logout()" aria-label="تسجيل الخروج">
       <i class="ri-logout-box-r-line"></i>
       خروج
     </button>
@@ -624,7 +625,7 @@
   function credRow(icon, label, value) {
     const safe = esc(value);
     return `
-      <div class="cred-row" onclick="copyVal('${safe}','${esc(label)}')">
+      <div class="cred-row" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" onclick="copyVal('${safe}','${esc(label)}')">
         <div class="cred-label">
           <i class="${icon}"></i>
           ${label}

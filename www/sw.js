@@ -1,5 +1,5 @@
-// Service Worker for CBS College LMS — v1.5.0 (Offline + Speed Boost)
-const CACHE_VERSION = 'cbs-v1.5.0';
+// Service Worker for CBS College LMS — v2.1.0 (Offline + Speed Boost)
+const CACHE_VERSION = 'cbs-v2.1.0';
 const STATIC_CACHE  = CACHE_VERSION + '-static';
 const API_CACHE     = CACHE_VERSION + '-api';
 const FILES_CACHE   = 'cbs-offline-files'; // الثبات للحفاظ على الملفات المحملة يدوياً
@@ -19,6 +19,10 @@ const STATIC_ASSETS = [
   '/attendance-history.html',
   '/financials.html',
   '/quizzes.html',
+  '/past-exams.html',
+  '/study-pods.html',
+  '/student-portfolio.html',
+  '/code-lab.html',
   '/campus.html',
   '/batch-selector.html',
   '/admin_dashboard.html',
@@ -52,6 +56,7 @@ const STATIC_ASSETS = [
   '/vendor/remixicon/remixicon.woff2',
   '/vendor/fonts/cairo.css',
   '/vendor/simplewebauthn.umd.min.js',
+  '/vendor/qrcode.min.js',
   '/sounds/cbs_notif.wav',
   '/sounds/cbs_emergency.wav',
   '/sounds/message-sound.mp3'
@@ -102,7 +107,17 @@ self.addEventListener('push', (event) => {
   try { payload = event.data ? event.data.json() : {}; } catch (e) { payload = { body: event.data && event.data.text() }; }
 
   const isEmergency = payload.data?.isEmergency === 'true' || payload.data?.isEmergency === true;
-  const title = payload.title || 'كلية تقنية المعلومات';
+  const title = payload.title || 'كلية النصر التقنية';
+  const targetUrl = (payload.data && payload.data.url) || '/notifications.html';
+  const defaultActions = [];
+  if (targetUrl.includes('assignment')) {
+    defaultActions.push({ action: 'view_item', title: ' عرض الواجب' });
+  } else if (targetUrl.includes('subject') || targetUrl.includes('lecture')) {
+    defaultActions.push({ action: 'view_item', title: ' فتح المحاضرة' });
+  } else if (targetUrl.includes('financial')) {
+    defaultActions.push({ action: 'view_item', title: ' السجل المالي' });
+  }
+
   const options = {
     body: payload.body || '',
     icon: '/assets/icon-192.png',
@@ -112,16 +127,20 @@ self.addEventListener('push', (event) => {
     tag: isEmergency ? 'emergency' : 'general',
     renotify: isEmergency,
     requireInteraction: isEmergency,
+    actions: payload.actions || defaultActions,
     sound: isEmergency ? '/sounds/cbs_emergency.wav' : '/sounds/cbs_notif.wav',
     vibrate: isEmergency ? [200, 100, 200, 100, 200] : [100],
-    data: { url: (payload.data && payload.data.url) || '/notifications.html' }
+    data: { url: targetUrl }
   };
   event.waitUntil(self.registration.showNotification(title, options));
 });
 
 self.addEventListener('notificationclick', (event) => {
   event.notification.close();
-  const target = (event.notification.data && event.notification.data.url) || '/notifications.html';
+  let target = (event.notification.data && event.notification.data.url) || '/notifications.html';
+  if (event.action === 'view_item' && event.notification.data?.url) {
+    target = event.notification.data.url;
+  }
   event.waitUntil(
     self.clients.matchAll({ type: 'window', includeUncontrolled: true }).then((list) => {
       // لو التطبيق مفتوح، نركّز عليه وننقله للصفحة بدل فتح نافذة جديدة
@@ -164,6 +183,8 @@ self.addEventListener('fetch', (event) => {
   // الخادم يرد عليها بـ 206 Partial Content، و Cache API يرفض تخزينه ويرمي
   // "Failed to execute 'put' on 'Cache': Partial response (status code 206) is unsupported".
   // نتركها للمتصفح مباشرة — لا اعتراض ولا تخزين.
+  // NOTE: Skipping 206 Partial Content is necessary to avoid Cache API errors,
+  // but it limits offline playback support for large videos that rely on range requests.
   if (request.headers.has('range')) return;
 
   const isRemoteApi = (url.hostname === 'elnasrcsit.website' || url.pathname.startsWith('/api/'));
@@ -304,7 +325,11 @@ async function filesCacheStrategy(request) {
     const response = await fetch(request);
     if (response.status === 200) {
       // خزّن الملف تلقائياً بمجرد فتحه (PDF أو فيديو)
-      safeCachePut(cache, request, response.clone());
+      // Only cache if under 5MB to prevent storage bloat
+      const contentLength = response.headers.get('content-length');
+      if (!contentLength || parseInt(contentLength, 10) <= 5242880) {
+        safeCachePut(cache, request, response.clone());
+      }
     }
     return response;
   } catch {

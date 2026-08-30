@@ -3,11 +3,11 @@
 <head>
   <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>إدارة التسليمات | كلية تقنية المعلومات</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>إدارة التسليمات | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=2026073128">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026073128">
+  <link rel="stylesheet" href="/css/style.css?v=2026081907">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026081907">
   <style>
     .stats-row {
       display: grid;
@@ -111,20 +111,21 @@
   </style>
 
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
 </head>
 <body>
 
 <header class="main-header">
   <div class="header-brand">
-    <img src="/assets/logo.png" class="header-logo" alt="Logo">
+    <img src="/assets/logo.png" class="header-logo" alt="شعار كلية النصر التقنية - جامعة النصر التقنية">
     <div class="header-title-group">
-      <strong>كلية تقنية المعلومات</strong>
+      <strong>كلية النصر التقنية</strong>
       <small>إدارة التسليمات</small>
     </div>
   </div>
   <div class="header-actions">
-    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي" aria-label="تبديل الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
     <button class="btn-icon" onclick="CBS.goHome()" title="الرئيسية"><i class="ri-home-4-line"></i></button>
   </div>
 </header>
@@ -160,7 +161,7 @@
   <!-- Filters -->
   <div class="filters-bar">
     <div class="form-group">
-      <label class="form-label">التكليف</label>
+      <label class="form-label" for="filterAssign">التكليف</label>
       <div class="input-wrapper"><i class="input-icon ri-file-list-line"></i>
         <select class="form-control" id="filterAssign" onchange="loadSubmissions()">
           <option value="">جميع التكليفات</option>
@@ -168,7 +169,7 @@
       </div>
     </div>
     <div class="form-group">
-      <label class="form-label">النوع</label>
+      <label class="form-label" for="filterType">النوع</label>
       <div class="input-wrapper"><i class="input-icon ri-bookmark-line"></i>
         <select class="form-control" id="filterType" onchange="loadSubmissions()">
           <option value="">الكل</option>
@@ -179,7 +180,7 @@
       </div>
     </div>
     <div class="form-group">
-      <label class="form-label">الحالة</label>
+      <label class="form-label" for="filterStatus">الحالة</label>
       <div class="input-wrapper"><i class="input-icon ri-filter-line"></i>
         <select class="form-control" id="filterStatus" onchange="loadSubmissions()">
           <option value="">الكل</option>
@@ -190,7 +191,7 @@
       </div>
     </div>
     <div class="form-group" style="flex: 2; min-width: 200px;">
-      <label class="form-label">بحث بالاسم</label>
+      <label class="form-label" for="searchSubInput">بحث بالاسم</label>
       <div class="input-wrapper">
         <i class="input-icon ri-search-line"></i>
         <input type="text" id="searchSubInput" class="form-control" placeholder="ابحث باسم الطالب..." oninput="searchSubmissions(this.value)">
@@ -216,19 +217,19 @@
   <div class="modal-box">
     <div class="modal-header">
       <span class="modal-title" id="gradeModalTitle">تقييم الطالب</span>
-      <button class="modal-close" onclick="CBS.closeModal('gradeModal')"><i class="ri-close-line"></i></button>
+      <button class="modal-close" onclick="CBS.closeModal('gradeModal')" aria-label="إغلاق"><i class="ri-close-line"></i></button>
     </div>
     <div class="modal-body">
       <div id="gradeModalAlert" class="alert"></div>
       <div id="subInfo" style="background:var(--bg-hover); border-radius:var(--radius-md); padding:14px; margin-bottom:16px; font-size:0.88rem;"></div>
       <div class="form-group">
-        <label class="form-label">الدرجة (0 - 100)</label>
+        <label class="form-label" for="gradeInput">الدرجة (0 - 100)</label>
         <div class="input-wrapper"><i class="input-icon ri-star-line"></i>
           <input class="form-control" type="number" id="gradeInput" min="0" max="100">
         </div>
       </div>
       <div class="form-group">
-        <label class="form-label">ملاحظات (اختياري)</label>
+        <label class="form-label" for="feedbackInput">ملاحظات (اختياري)</label>
         <textarea class="form-control" id="feedbackInput" rows="3" placeholder="اكتب ملاحظاتك..."></textarea>
       </div>
     </div>
@@ -245,9 +246,9 @@
   جميع الحقوق محفوظة © <span id="year"></span> النظام الجامعي المتكامل
 </footer>
 
-<script src="/js/shared.js?v=2026073128"></script>
-<script src="/js/app.js?v=2026073128"></script>
-<script src="/js/socket-client.js?v=2026073128" defer></script>
+<script src="/js/shared.js?v=2026081907"></script>
+<script src="/js/app.js?v=2026081907"></script>
+<script src="/js/socket-client.js?v=2026081907" defer></script>
 <script>
   CBS.init({ requireRoles: ['dean', 'doctor', 'leader', 'admin'] });
 
@@ -332,10 +333,10 @@
               <span><i class="ri-star-line"></i> ${s.grade != null ? `<strong>${s.grade}/100</strong>` : 'لم يقيم'}</span>
             </div>
             <div class="sub-card-actions">
-              <button class="btn btn-secondary" style="flex:1;" onclick="openGrade('${s._id}')">
+              <button class="btn btn-secondary" style="flex:1;" onclick="openGrade('${s._id}')" aria-label="تعديل">
                 <i class="ri-edit-line"></i> تقييم
               </button>
-              <a href="${API_BASE}/uploads/${s.file}" target="_blank" class="btn btn-primary" style="text-decoration:none;">
+              <a href="${API_BASE}${CBS.privateFileUrl('submissions', s.file)}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="text-decoration:none;">
                 <i class="ri-download-line"></i>
               </a>
             </div>
@@ -410,9 +411,11 @@
       const res  = await CBS.apiGet(`/api/submissions/assignment/${assignId}/not-submitted`);
       const data = await CBS.readJson(res);
       const card = document.getElementById('notSubCard');
-      if (!data.notSubmitted?.length) { card.style.display = 'none'; return; }
+      // الخادم يغلّف الحمولة داخل data (utils/response.js)
+      const notSubmitted = data.data?.notSubmitted || data.notSubmitted || [];
+      if (!notSubmitted.length) { card.style.display = 'none'; return; }
       card.style.display = 'block';
-      document.getElementById('notSubList').innerHTML = data.notSubmitted.map(st => `
+      document.getElementById('notSubList').innerHTML = notSubmitted.map(st => `
         <div class="not-sub-item">
           <div><strong>${CBS.escapeHTML(st.name)}</strong><div style="font-size:0.75rem;color:var(--text-muted);">${CBS.escapeHTML(st.email)}</div></div>
           <span class="badge badge-danger">لم يسلم</span>

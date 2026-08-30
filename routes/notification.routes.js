@@ -119,13 +119,33 @@ router.post("/", auth, role("dean", "doctor", "leader", "admin"), async (req, re
       }
     }
 
+    /* المستلمون المباشرون يتخطّون كل قيود الدفعات أعلاه: قاعدة الرؤية تمنح
+       recipients الأولوية المطلقة، فكان الليدر المقيَّد بدفعته يُرسل إلى أي
+       مستخدم في الكلية بمجرد تمرير معرّفه. نحصر المستلمين في نطاق المرسل. */
+    let recipients = Array.isArray(req.body.recipients) ? req.body.recipients.filter(Boolean) : [];
+    if (recipients.length && !isDeanOrAdmin) {
+      const allowedBatches = batches.filter(Boolean);
+      if (!allowedBatches.length) {
+        return fail(res, "لا يمكنك إرسال إشعار مباشر دون نطاق دفعة", 403);
+      }
+      const reachable = await User.find({
+        _id: { $in: recipients },
+        batch: { $in: allowedBatches }
+      }).select("_id").lean();
+
+      if (reachable.length !== recipients.length) {
+        return fail(res, "بعض المستلمين خارج نطاق دفعاتك", 403);
+      }
+      recipients = reachable.map(u => u._id);
+    }
+
     const notification = await Notification.create({
       title: req.body.title,
       message: req.body.message,
       type: req.body.type || "normal",
       target: req.body.target || "all",
       batches,
-      recipients: req.body.recipients || [],
+      recipients,
       createdBy: req.user.id
     });
 
@@ -339,18 +359,26 @@ router.get("/emergency/new", auth, async (req, res) => {
 
 // تحديد تنبيه كمقروء للمستخدم الحالي
 router.post("/read/:id", auth, async (req, res) => {
-  try {
+    try {
+    const user = await User.findById(req.user.id).select("batch batches").lean();
+    const visibilityQuery = Notification.buildVisibilityQuery(
+      req.user.id, req.user.roles, user?.batch, user?.batches || []
+    );
+    const visibleNotification = await Notification.findOne({
+      $and: [{ _id: req.params.id }, visibilityQuery]
+    }).lean();
+    if (!visibleNotification) {
+      return notFound(res, "التنبيه");
+    }
+
     const notification = await Notification.findByIdAndUpdate(
       req.params.id,
       { $addToSet: { readBy: req.user.id } },
       { returnDocument: 'after' }
     );
-    
-    if (!notification) {
-      return notFound(res, "التنبيه");
-    }
 
     res.json({ 
+ 
       success: true,
       message: "تم تحديد التنبيه كمقروء",
       readBy: notification.readBy.length
@@ -363,10 +391,13 @@ router.post("/read/:id", auth, async (req, res) => {
 // تحديد جميع التنبيهات كمقروءة للمستخدم الحالي
 router.post("/read-all", auth, async (req, res) => {
   try {
-    // تحديث جميع التنبيهات التي لم يقرأها المستخدم الحالي
-    // ملاحظة: $addToSet يمنع تكرار المعرّف في المصفوفة
+    const user = await User.findById(req.user.id).select("batch batches").lean();
+    const visibilityQuery = Notification.buildVisibilityQuery(
+      req.user.id, req.user.roles, user?.batch, user?.batches || []
+    );
+    // ملاحظة: لا نضيف المستخدم إلا إلى التنبيهات الظاهرة له فعلياً.
     const result = await Notification.updateMany(
-      { readBy: { $ne: req.user.id } },
+      { $and: [visibilityQuery, { readBy: { $ne: req.user.id } }] },
       { $addToSet: { readBy: req.user.id } }
     );
 

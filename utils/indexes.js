@@ -59,8 +59,18 @@ async function createIndexes() {
   await Notification.collection.createIndex({ readBy: 1 });
   await Notification.collection.createIndex({ shownInDashboard: 1 });
 
-  // Attendance indexes
-  await Attendance.collection.createIndex({ subject: 1, date: 1, recordedBy: 1 }, { unique: true });
+  /* Attendance indexes
+     الفهرس القديم كان (المادة، التاريخ، الراصد) فيسمح بسجلين للحصة الواحدة
+     إذا رصدها الدكتور والليدر معاً — ومن ثم احتساب مزدوج في كل النسب.
+     نُسقط القديم صراحةً لأن createIndex لا يُعدّل فهرساً قائماً بنفس الاسم. */
+  try {
+    await Attendance.collection.dropIndex('subject_1_date_1_recordedBy_1');
+    console.log('[indexes] أُسقط فهرس الحضور القديم (كان يسمح بالتكرار)');
+  } catch (err) {
+    // 27 = IndexNotFound — الفهرس غير موجود أصلاً، وهذا الوضع المطلوب
+    if (err.code !== 27 && !/index not found/i.test(err.message || '')) throw err;
+  }
+  await Attendance.collection.createIndex({ subject: 1, date: 1 }, { unique: true });
   await Attendance.collection.createIndex({ recordedBy: 1, date: -1 });
   await Attendance.collection.createIndex({ 'students.student': 1 });
 

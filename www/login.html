@@ -4,26 +4,26 @@
 <head>
   <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, user-scalable=no">
-  <title>تسجيل الدخول | كلية تقنية المعلومات</title>
-  <meta name="description" content="صفحة تسجيل الدخول لنظام كلية تقنية المعلومات - النظام الجامعي المتكامل">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>تسجيل الدخول | كلية النصر التقنية</title>
+  <meta name="description" content="صفحة تسجيل الدخول لنظام كلية النصر التقنية - النظام الجامعي المتكامل">
   <link href="/vendor/fonts/cairo.css" rel="stylesheet">
   <link rel="stylesheet" href="/vendor/remixicon/remixicon.css">
   <!-- إصدار مثبَّت v13 ليطابق @simplewebauthn/server على الخادم — الأحدث غير المثبَّت كسر البصمة سابقاً -->
   <script src="/vendor/simplewebauthn.umd.min.js"></script>
-  <script src="/js/shared.js?v=2026073128"></script>
-<script src="/js/app.js?v=2026073128"></script>
+  <script src="/js/shared.js?v=2026081907"></script>
+<script src="/js/app.js?v=2026081907"></script>
 
   <style>
     @font-face {
       font-family: 'CustomHeadingFont';
-      src: url('fonts/heading-font.ttf') format('truetype');
+      src: url('/fonts/heading-font.ttf') format('truetype');
       font-weight: normal;
       font-style: normal;
     }
     @font-face {
       font-family: 'CustomBodyFont';
-      src: url('fonts/body-font.otf') format('opentype');
+      src: url('/fonts/body-font.otf') format('opentype');
       font-weight: normal;
       font-style: normal;
     }
@@ -411,7 +411,7 @@
     }
 
     .input-wrap input::placeholder {
-      color: rgba(255, 255, 255, 0.3);
+      color: rgba(255, 255, 255, 0.55);
     }
 
     .input-wrap input:focus {
@@ -455,24 +455,37 @@
       margin-top: -4px;
     }
 
+    /* منطقة اللمس كانت 57×20 بكسل — أقل من نصف الحد الأدنى المريح (44px)،
+       فيخطئها الإصبع على الهاتف. نُوسّع المساحة القابلة للنقر رأسياً دون
+       تكبير المربع نفسه بصرياً. */
     .remember-check {
       display: flex;
       align-items: center;
-      gap: 7px;
+      gap: 8px;
+      min-height: 44px;
+      padding-inline: 4px;
       font-size: 0.82rem;
-      color: rgba(255, 255, 255, 0.55);
+      color: rgba(255, 255, 255, 0.72); /* 0.55 كانت باهتة على الخلفية الداكنة */
       cursor: pointer;
       user-select: none;
     }
 
     .remember-check input[type="checkbox"] {
-      width: 15px;
-      height: 15px;
+      width: 18px;
+      height: 18px;
       accent-color: #2563eb;
       cursor: pointer;
+      flex: none;
+    }
+    .remember-check input[type="checkbox"]:focus-visible {
+      outline: 2px solid #93c5fd;
+      outline-offset: 2px;
     }
 
     .forgot-link {
+      display: inline-flex;
+      align-items: center;
+      min-height: 44px; /* نفس السبب: هدف لمس مريح */
       font-size: 0.82rem;
       color: #93c5fd;
       text-decoration: none;
@@ -634,7 +647,9 @@
   </style>
 
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
+  <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
+  <link rel="stylesheet" href="/css/login.css">
 </head>
 
 <body>
@@ -661,10 +676,10 @@
     <!-- الشعار -->
     <div class="logo-section">
       <div class="logo-ring">
-        <img src="/assets/logo.png" class="logo-img" alt="Logo"
-          onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2280%22%3E🎓%3C/text%3E%3C/svg%3E'">
+        <img src="/assets/logo.png" class="logo-img" alt="شعار كلية النصر التقنية - جامعة النصر التقنية"
+          onerror="this.src='data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22%3E%3Ctext y=%22.9em%22 font-size=%2280%22%3EðŸŽ“%3C/text%3E%3C/svg%3E'">
       </div>
-      <div class="logo-title">كلية تقنية المعلومات</div>
+      <div class="logo-title">كلية النصر التقنية</div>
       <div class="logo-sub">النظام الجامعي المتكامل</div>
     </div>
 
@@ -675,15 +690,15 @@
         <p>أدخل بيانات حسابك للمتابعة</p>
       </div>
 
-      <div class="login-alert la-error" id="alertError"></div>
-      <div class="login-alert la-success" id="alertSuccess"></div>
-      <div class="login-alert la-warn" id="alertWarn"></div>
+      <div class="login-alert la-error" id="alertError" role="alert"></div>
+      <div class="login-alert la-success" id="alertSuccess" role="alert"></div>
+      <div class="login-alert la-warn" id="alertWarn" role="alert"></div>
 
       <form onsubmit="event.preventDefault(); login();">
         <div class="form-group">
           <div class="input-wrap">
             <input type="email" id="email" name="email" placeholder=" " autocomplete="email username" inputmode="email" autocorrect="on" spellcheck="true" required>
-            <label class="floating-label">البريد الإلكتروني</label>
+            <label for="email" class="floating-label">البريد الإلكتروني</label>
             <i class="ri-mail-line i-start"></i>
           </div>
         </div>
@@ -691,24 +706,21 @@
         <div class="form-group">
           <div class="input-wrap">
             <input type="password" id="password" name="password" placeholder=" " autocomplete="current-password" required>
-            <label class="floating-label">كلمة المرور</label>
+            <label for="password" class="floating-label">كلمة المرور</label>
             <i class="ri-lock-password-line i-start"></i>
             <i class="ri-eye-off-line i-end" id="togglePass" onclick="togglePass()"></i>
           </div>
         </div>
 
         <div class="remember-row">
-          <label class="remember-check">
+          <label for="rememberMe" class="remember-check">
             <input type="checkbox" id="rememberMe"> تذكرني
           </label>
           <a href="/forgot-password.html" class="forgot-link">نسيت كلمة المرور؟</a>
         </div>
 
-        <button type="submit" class="btn-login" id="loginBtn">
-          <div class="btn-loader" id="btnLoader">
-            <div class="h"></div>
-            <div class="h"></div>
-          </div>
+        <button type="submit" class="btn-login" id="loginBtn" aria-label="رجوع">
+          <span class="btn-loading" id="btnLoader" style="display: none;"></span>
           <span id="btnText">تسجيل الدخول</span>
           <i class="ri-arrow-left-line" id="btnArrow"></i>
         </button>
@@ -720,7 +732,7 @@
       </form>
 
       <div class="card-divider">
-        <span></span><small>نظام كلية تقنية المعلومات</small><span></span>
+        <span></span><small>نظام كلية النصر التقنية</small><span></span>
       </div>
 
       <a href="/register.html" style="display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 10px; margin-bottom: 6px; padding: 11px; background: rgba(16, 185, 129, 0.15); border: 1px solid rgba(16, 185, 129, 0.3); border-radius: 12px; color: #6ee7b7; font-size: 0.85rem; font-weight: 700; text-decoration: none; transition: all 0.2s ease;">
@@ -736,7 +748,7 @@
 
     <div class="login-footer" style="padding-bottom: 20px;">
       جميع الحقوق محفوظة © <span id="year"></span> النظام الجامعي المتكامل<br>
-      <a href="/privacy.html" style="color: rgba(255,255,255,0.6); text-decoration: none; font-size: 0.8rem; margin-top: 5px; display: inline-block; transition: 0.2s;">سياسة الخصوصية</a>
+      <a href="/privacy.html" style="color: rgba(255,255,255,0.72); text-decoration: none; font-size: 0.8rem; display: inline-flex; align-items: center; min-height: 44px; padding-inline: 8px; transition: 0.2s;">سياسة الخصوصية</a>
     </div>
   </div>
 
