@@ -36,7 +36,7 @@ C_TEXT_MUTED = c('64748B')  # نصوص توضيحية
 C_TEXT_LIGHT = c('F8FAFC')
 C_TEXT_SKY   = c('38BDF8')
 
-FONT_FAMILY  = 'Calibri'
+FONT_FAMILY  = 'Times New Roman'
 
 prs = pptx.Presentation()
 prs.slide_width = Inches(13.333)
@@ -432,11 +432,17 @@ apply_p(tx_foot_final.text_frame.paragraphs[0],
 out_file = 'عرض-نظام-كلية-النصر-التقنية-النهائي.pptx'
 prs.save(out_file)
 
+# حفظ نسخة مخصصة أيضاً باسم صريح
+prs.save('عرض-نظام-كلية-النصر-التقنية-Times-New-Roman.pptx')
+
 desktop = os.path.expanduser('~/Desktop')
 downloads = os.path.expanduser('~/Downloads')
 for p in [desktop, downloads]:
     if os.path.exists(p):
-        target = os.path.join(p, 'عرض-نظام-كلية-النصر-التقنية-النهائي.pptx')
-        shutil.copy2(out_file, target)
+        for name in ['عرض-نظام-كلية-النصر-التقنية-النهائي.pptx', 'عرض-نظام-كلية-النصر-التقنية-Times-New-Roman.pptx', 'عرض-نظام-كلية-النصر-التقنية.pptx']:
+            try:
+                shutil.copy2(out_file, os.path.join(p, name))
+            except Exception:
+                pass
 
-print('SUCCESS_FINAL_SAVED')
+print('SUCCESS_TIMES_NEW_ROMAN_SAVED')
