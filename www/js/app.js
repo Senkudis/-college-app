@@ -1009,7 +1009,7 @@ const CBS = {
     }
   },
 
-    async _fetchWithTimeout(url, options = {}) {
+  async _fetchWithTimeout(url, options = {}) {
     const timeoutMs = options.timeout || 20000;
     const controller = new AbortController();
     const id = setTimeout(() => controller.abort(), timeoutMs);
