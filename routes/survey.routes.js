@@ -7,26 +7,45 @@ const Subject = require('../models/Subject');
 const auth = require('../middleware/auth.middleware');
 const { success, fail, notFound, serverError } = require('../utils/response');
 
+/* العام الأكاديمي يحدده الخادم (سبتمبر–أغسطس): كان القيمة من العميل وافتراضها
+   '2025/2026' ثابت — فيكفي تغيير النص لإعادة تقييم المقرر مرات بلا حد. */
+function currentAcademicYear(d = new Date()) {
+  const y = d.getUTCFullYear();
+  const start = d.getUTCMonth() >= 8 ? y : y - 1; // سبتمبر = 8
+  return `${start}/${start + 1}`;
+}
+
+/* بصمة منع التكرار بمفتاح سري (HMAC): sha256 العارية لمعرّف الطالب+المقرر
+   يحسبها أي مطّلع على القاعدة لكل طالب فيعرف صاحب كل تقييم "مجهول". */
+const SURVEY_KEY = process.env.SURVEY_SECRET || process.env.JWT_SECRET || 'survey';
+const surveyHash = (userId, subjectId, year) =>
+  crypto.createHmac('sha256', SURVEY_KEY).update(`${userId}-${subjectId}-${year}`).digest('hex');
+
+const isStudentLike = (user) => (user?.roles || []).some(r => r === 'student' || r === 'leader');
+
 // جلب المقررات المتاحة للتقييم مع التحقق من التقديم المسبق
 router.get('/active', auth, async (req, res) => {
   try {
-    const batchId = req.user?.batch || req.user?.batchId;
-    const academicYear = req.query.year || '2025/2026';
+    const batchId = req.user?.batch;
+    const academicYear = currentAcademicYear();
+    // التقييم للطلاب عن مقررات دفعتهم فقط (لا يقيّم الدكتور نفسه)
+    if (!isStudentLike(req.user) || !batchId) {
+      return success(res, { subjects: [], academicYear });
+    }
 
-    const subjects = await Subject.find({
-      ...(batchId ? { batches: batchId } : {})
-    }).select('name code doctor').populate('doctor', 'name').lean();
+    const subjects = await Subject.find({ batches: batchId })
+      .select('name code doctor').populate('doctor', 'name').lean();
 
     const userSubmissions = await CourseSurvey.find({
       submittedByHash: {
-        $in: subjects.map(s => crypto.createHash('sha256').update(`${req.user.id}-${s._id}-${academicYear}`).digest('hex'))
+        $in: subjects.map(s => surveyHash(req.user.id, s._id, academicYear))
       }
     }).lean();
 
     const submittedHashes = new Set(userSubmissions.map(s => s.submittedByHash));
 
     const result = subjects.map(s => {
-      const hash = crypto.createHash('sha256').update(`${req.user.id}-${s._id}-${academicYear}`).digest('hex');
+      const hash = surveyHash(req.user.id, s._id, academicYear);
       return {
         _id: s._id,
         name: s.name,
@@ -45,32 +64,41 @@ router.get('/active', auth, async (req, res) => {
 // إرسال استبيان تقييم مجهول الهوية
 router.post('/submit', auth, async (req, res) => {
   try {
-    const { subjectId, ratings = {}, feedbackText = '', academicYear = '2025/2026', semester = 1 } = req.body;
+    const { subjectId, ratings = {}, feedbackText = '', semester = 1 } = req.body;
+    const academicYear = currentAcademicYear();
+    if (!isStudentLike(req.user)) {
+      return fail(res, 'تقييم المقررات متاح للطلاب فقط', 403);
+    }
     if (!subjectId || !mongoose.Types.ObjectId.isValid(subjectId)) {
       return fail(res, 'معرف المقرر مطلوب');
     }
 
     const { contentClarity, teachingMethod, labUsefulness, examFairness } = ratings;
-    if (!contentClarity || !teachingMethod || !labUsefulness || !examFairness) {
-      return fail(res, 'يجب تعبئة كافة معايير التقييم من 1 إلى 5');
+    const ratingValues = [contentClarity, teachingMethod, labUsefulness, examFairness];
+    const allValid = ratingValues.every(v => Number.isInteger(Number(v)) && Number(v) >= 1 && Number(v) <= 5);
+    if (!allValid) {
+      return fail(res, 'يجب تعبئة كافة معايير التقييم بأرقام صحيحة من 1 إلى 5');
     }
 
     const subject = await Subject.findById(subjectId);
     if (!subject) return notFound(res, 'المقرر غير موجود');
+    if (!req.user.batch || !(subject.batches || []).some(b => String(b) === String(req.user.batch))) {
+      return fail(res, 'لا يمكنك تقييم مقرر خارج دفعتك', 403);
+    }
 
     // إنشاء توقيع تشفير مجهول لمنع التكرار
-    const hash = crypto.createHash('sha256').update(`${req.user.id}-${subjectId}-${academicYear}`).digest('hex');
+    const hash = surveyHash(req.user.id, subjectId, academicYear);
 
     const existing = await CourseSurvey.findOne({ submittedByHash: hash });
     if (existing) {
       return fail(res, 'لقد قمت بإرسال تقييمك لهذا المقرر مسبقاً');
     }
 
-    const targetBatch = (subject.batches && subject.batches[0]) || subject.batch || req.user.batch || req.user.batchId;
+    const targetBatch = req.user.batch;
     const survey = await CourseSurvey.create({
       subject: subjectId,
       batch: targetBatch,
-      semester: parseInt(semester, 10) || 1,
+      semester: [1, 2, 3].includes(parseInt(semester, 10)) ? parseInt(semester, 10) : 1,
       academicYear,
       ratings: {
         contentClarity: Number(contentClarity),
@@ -78,7 +106,7 @@ router.post('/submit', auth, async (req, res) => {
         labUsefulness: Number(labUsefulness),
         examFairness: Number(examFairness)
       },
-      feedbackText: (feedbackText || '').slice(0, 1000),
+      feedbackText: String(feedbackText || '').slice(0, 1000),
       submittedByHash: hash
     });
 
@@ -98,7 +126,22 @@ router.get('/analytics', auth, async (req, res) => {
 
     const { subjectId } = req.query;
     const filter = {};
-    if (subjectId && mongoose.Types.ObjectId.isValid(subjectId)) filter.subject = subjectId;
+    const isStaff = userRoles.some(r => ['dean', 'admin'].includes(r));
+
+    if (!isStaff && userRoles.includes('doctor')) {
+      const mySubjects = await Subject.find({ doctor: req.user.id }).distinct('_id');
+      const mySubjStrs = new Set(mySubjects.map(id => id.toString()));
+      if (subjectId) {
+        if (!mySubjStrs.has(subjectId)) {
+          return fail(res, 'غير مصرح لك بعرض تحليلات هذا المقرر', 403);
+        }
+        filter.subject = subjectId;
+      } else {
+        filter.subject = { $in: mySubjects };
+      }
+    } else if (subjectId && mongoose.Types.ObjectId.isValid(subjectId)) {
+      filter.subject = subjectId;
+    }
 
     const surveys = await CourseSurvey.find(filter).populate('subject', 'name code').lean();
 

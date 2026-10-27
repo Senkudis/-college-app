@@ -93,6 +93,54 @@ function describeApiError(json, fallback) {
   return pick(json?.error?.message) || pick(json?.error) || pick(json?.message) || fallback;
 }
 
+/* سجل المحادثة كأدوار حقيقية (user/assistant) لا كنص ملصوق داخل رسالة واحدة:
+   النماذج تتابع الحوار بالأدوار أفضل بكثير — كان "اديني مثال تاني" يُعيد
+   التعريف نفسه لأن السجل كان مجرد "سياق" نصي. نحتفظ بآخر 10 رسائل، ونترك
+   لرد كيدي مساحة أكبر (1500 حرف) كي تبقى أسئلة الكويز كاملة لتصحيحها. */
+const HISTORY_MAX_MESSAGES = 10;
+
+function chatHistoryMessages(history) {
+  if (!Array.isArray(history)) return [];
+  const msgs = history
+    .filter(m => m && typeof m.content === 'string' && m.content.trim())
+    .slice(-HISTORY_MAX_MESSAGES)
+    .map(m => {
+      const role = m.role === 'user' ? 'user' : 'assistant';
+      const limit = role === 'assistant' ? 1500 : 600;
+      return { role, content: m.content.replace(/\s+\n/g, '\n').trim().slice(0, limit) };
+    });
+  // بعض المزوّدين يرفضون محادثة تبدأ برد المساعد
+  while (msgs.length && msgs[0].role === 'assistant') msgs.shift();
+  return msgs;
+}
+
+/* عطل يخص المفتاح نفسه لا الطلب: مفتاح موقوف (403 "has been suspended")، غير
+   صالح (401/400 "API key not valid")، أو بلا رصيد (402 "prepayment credits are
+   depleted"). لن يعود بعد دقيقة كتجاوز الحصة، فنُنحّيه ساعات ونجرّب غيره.
+   كان 403 يُعامَل كعطل نهائي فيصل الطالب "خطأ 500" مع وجود مفاتيح سليمة. */
+const RATE_LIMIT_BLOCK_MS = 60 * 60 * 1000;
+const KEY_PROBLEM_BLOCK_MS = 6 * 60 * 60 * 1000;
+function isKeyLevelFailure(status, message) {
+  return [401, 402, 403].includes(Number(status))
+    || /api key not valid|invalid api key|suspended|prepayment|billing|permission denied|unauthori[sz]ed/i.test(message || '');
+}
+
+/* يكرر طلب مزوّد على مفاتيحه واحداً بعد آخر: كل طلب يختار أول مفتاح غير
+   محظور، وعند عطل يخص المفتاح يحظره الطلب نفسه فيأخذ التالي الدور. كان كل
+   مزوّد يُجرَّب بمفتاح واحد فقط، فيسقط المزوّد كله بسقوط مفتاحه الأول. */
+async function tryEachKey(requestFn, keyCount, ...args) {
+  let lastErr;
+  for (let i = 0; i < Math.max(1, keyCount); i++) {
+    try {
+      return await requestFn(...args);
+    } catch (err) {
+      lastErr = err;
+      if (!(err.isRateLimit || err.isKeyProblem)) throw err;
+    }
+  }
+  throw lastErr;
+}
+
 const _rawGeminiKeys = [
   process.env.GEMINI_API_KEY,
   process.env.GEMINI_API_KEY_2,
@@ -109,17 +157,6 @@ const _geminiKeyPool = _rawGeminiKeys.map(key => ({
 
 let _rrIdx = 0;
 
-function getAvailableGeminiKey() {
-  const now = Date.now();
-  const available = _geminiKeyPool.filter(k => k.blockedUntil <= now);
-  if (available.length > 0) {
-    _rrIdx = (_rrIdx + 1) % available.length;
-    return available[_rrIdx];
-  }
-  // كل المفاتيح محظورة — ارجع الأقرب للانتهاء
-  return _geminiKeyPool.slice().sort((a, b) => a.blockedUntil - b.blockedUntil)[0];
-}
-
 function blockGeminiKey(keyObj, ms = 65_000) {
   keyObj.blockedUntil = Date.now() + ms;
   console.warn(`[AI]  مفتاح Gemini ...${keyObj.key.slice(-6)} محظور ${Math.round(ms/1000)}ث`);
@@ -133,7 +170,13 @@ const GEMINI_MODEL = 'gemini-flash-latest';
 function geminiRequest(apiKey, prompt, opts = {}) {
   return new Promise((resolve, reject) => {
     const body = JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
+      contents: [
+        ...chatHistoryMessages(opts.history).map(m => ({
+          role: m.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: m.content }]
+        })),
+        { role: 'user', parts: [{ text: prompt }] }
+      ],
       generationConfig: {
         // الحرارة والطول يحددهما نوع الطلب: الأسئلة المباشرة تحتاج ردوداً قصيرة
         // ودقيقة، والشرح الأكاديمي يحتاج مساحة أكبر. القيمة الثابتة 8192 كانت
@@ -148,6 +191,7 @@ function geminiRequest(apiKey, prompt, opts = {}) {
       hostname: 'generativelanguage.googleapis.com',
       path: `/v1beta/models/${GEMINI_MODEL}:generateContent`,
       method: 'POST',
+      timeout: Math.min(45000, opts.timeoutMs || Infinity),
       headers: {
         'Content-Type': 'application/json',
         'X-goog-api-key': apiKey,
@@ -165,6 +209,8 @@ function geminiRequest(apiKey, prompt, opts = {}) {
           if (json.error) {
             const err = new Error(describeApiError(json, 'Gemini API error'));
             err.status = json.error.code;
+            err.isKeyProblem = isKeyLevelFailure(json.error.code, json.error.message)
+              || ['PERMISSION_DENIED', 'UNAUTHENTICATED'].includes(json.error.status);
             err.isRateLimit = json.error.code === 429
               || (json.error.message || '').toLowerCase().includes('quota')
               || (json.error.message || '').toLowerCase().includes('exhausted');
@@ -203,6 +249,7 @@ function geminiRequest(apiKey, prompt, opts = {}) {
         } catch(e) { reject(e); }
       });
     });
+    req.on('timeout', () => { req.destroy(new Error('Gemini request timed out')); });
     req.on('error', reject);
     req.write(body);
     req.end();
@@ -210,28 +257,24 @@ function geminiRequest(apiKey, prompt, opts = {}) {
 }
 
 async function geminiWithFallback(prompt, opts = {}) {
-  if (_geminiKeyPool.length === 0) throw new Error('RATE_LIMIT_ALL_KEYS');
+  /* كل مفتاح غير محظور يُجرَّب مرة واحدة بالتناوب. حين تكون كلها محظورة لا
+     ننتظر أقربها انتهاءً (كان يعيد محاولة مفتاح موقوف في كل طلب) — نرمي
+     RATE_LIMIT_ALL_KEYS فوراً لينتقل الطلب إلى المزوّد الاحتياطي. */
+  const now = Date.now();
+  const usable = _geminiKeyPool.filter(k => k.blockedUntil <= now);
+  if (!usable.length) throw new Error('RATE_LIMIT_ALL_KEYS');
 
-  const tried = new Set();
-  const maxTries = _geminiKeyPool.length + 1;
+  const start = _rrIdx++ % usable.length;
+  const order = usable.slice(start).concat(usable.slice(0, start));
 
-  for (let attempt = 0; attempt < maxTries; attempt++) {
-    const keyObj = getAvailableGeminiKey();
-    if (tried.has(keyObj.key) && tried.size < _geminiKeyPool.length) continue;
-    tried.add(keyObj.key);
-
+  for (const keyObj of order) {
     try {
       keyObj.requestCount++;
-      const text = await geminiRequest(keyObj.key, prompt, opts);
-      return text;
+      return await geminiRequest(keyObj.key, prompt, opts);
     } catch (err) {
-      if (err.isRateLimit) {
-        blockGeminiKey(keyObj, err.retryAfterMs || 65_000);
-        if (tried.size >= _geminiKeyPool.length) throw new Error('RATE_LIMIT_ALL_KEYS');
-        console.log(`[AI]  تحويل لمفتاح Gemini آخر... (${attempt + 2}/${maxTries})`);
-        continue;
-      }
-      throw err;
+      if (!(err.isRateLimit || err.isKeyProblem)) throw err;
+      blockGeminiKey(keyObj, err.isKeyProblem ? KEY_PROBLEM_BLOCK_MS : (err.retryAfterMs || 65_000));
+      console.log(`[AI]  تحويل لمفتاح Gemini آخر بعد: ${err.message.slice(0, 80)}`);
     }
   }
   throw new Error('RATE_LIMIT_ALL_KEYS');
@@ -269,6 +312,7 @@ function cohereRequest(systemPrompt, userPrompt, opts = {}) {
       model: COHERE_MODEL,
       messages: [
         { role: 'system', content: systemPrompt },
+        ...chatHistoryMessages(opts.history),
         { role: 'user',   content: userPrompt }
       ],
       temperature: opts.temperature ?? 0.4,
@@ -279,6 +323,7 @@ function cohereRequest(systemPrompt, userPrompt, opts = {}) {
       hostname: 'api.cohere.com',
       path: '/v2/chat',
       method: 'POST',
+      timeout: Math.min(45000, opts.timeoutMs || Infinity),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${cohereKey}`,
@@ -293,16 +338,20 @@ function cohereRequest(systemPrompt, userPrompt, opts = {}) {
       res.on('end', () => {
         try {
           const json = JSON.parse(data);
-          if (res.statusCode >= 400 || json.message || json.error) {
-            // 429 تجاوز الحصة و402 حساب موقوف للدفع: نُنحّي المفتاح ونترك
-            // الدور للتالي بدل تكرار الفشل على نفس المفتاح
-            if (res.statusCode === 429) keyEntry.blockedUntil = Date.now() + 60 * 60 * 1000;
-            if (res.statusCode === 402) keyEntry.blockedUntil = Date.now() + 24 * 60 * 60 * 1000;
-            // Cohere قد يُرجع message أو error ككائن لا كنص، وتمريره إلى Error
-            // ينتج "[object Object]" فيضيع سبب العطل الحقيقي من السجل
-            const err = new Error(describeApiError(json, `Cohere API error ${res.statusCode}`));
+          /* في v2 كل رد ناجح يحمل الحقل message (= رسالة المساعد {role, content})،
+             فالشرط القديم "json.message" كان يرفض كل إجابة صحيحة كخطأ ويطبع
+             الإجابة نفسها في السجل — أي أن Cohere الاحتياطي لم يعمل قط. رسالة
+             الخطأ في Cohere نصٌّ مع حالة ≥400، لا كائن. */
+          const isErrorBody = json.error || (typeof json.message === 'string' && !json.message?.content);
+          if (res.statusCode >= 400 || isErrorBody) {
+            const reason = describeApiError(json, `Cohere API error ${res.statusCode}`);
+            const err = new Error(reason);
             err.status = res.statusCode;
             err.isRateLimit = res.statusCode === 429;
+            err.isKeyProblem = isKeyLevelFailure(res.statusCode, reason);
+            // نُنحّي المفتاح المعطّل ليأخذ التالي الدور بدل تكرار الفشل عليه
+            if (err.isKeyProblem) keyEntry.blockedUntil = Date.now() + KEY_PROBLEM_BLOCK_MS;
+            else if (err.isRateLimit) keyEntry.blockedUntil = Date.now() + RATE_LIMIT_BLOCK_MS;
             return reject(err);
           }
           // v2 API: الرد يأتي في message.content[0].text
@@ -324,6 +373,7 @@ function cohereRequest(systemPrompt, userPrompt, opts = {}) {
         } catch(e) { reject(e); }
       });
     });
+    req.on('timeout', () => { req.destroy(new Error('Cohere request timed out')); });
     req.on('error', reject);
     req.write(body);
     req.end();
@@ -357,64 +407,56 @@ function getAvailableGroqKey() {
   return pool[_groqIdx];
 }
 
+/* حدّ Groq المجاني بالدقيقة (8 آلاف توكن لكل نموذج) ورسالته تقول متى يعود:
+   "Please try again in 7.5s". كان المفتاح يُنحّى ساعة كاملة بعد أول تجاوز،
+   فيخرج أسرع مزوّد من الخدمة طوال الساعة بسبب ثلاثة أسئلة متتالية. */
+function groqRetryAfterMs(reason) {
+  const m = /try again in (?:(\d+)m)?([\d.]+)s/i.exec(reason || '');
+  return m ? Math.ceil(((Number(m[1]) || 0) * 60 + Number(m[2])) * 1000) + 500 : 60_000;
+}
+
+const GROQ_PROVIDER = {
+  label: 'Groq',
+  hostname: 'api.groq.com',
+  path: '/openai/v1/chat/completions',
+  model: GROQ_MODEL,
+  timeout: 30000,
+  pickKey: getAvailableGroqKey,
+  // gpt-oss نموذج تفكير: الجهد المنخفض يكفي لأسئلة الطلاب ويوفّر الوقت وحصة الدقيقة
+  extraBody: /^openai\/gpt-oss/.test(GROQ_MODEL) ? { reasoning_effort: 'low' } : {},
+  rateLimitBlockMs: groqRetryAfterMs
+};
+
 function groqRequest(systemPrompt, userPrompt, opts = {}) {
-  return new Promise((resolve, reject) => {
-    const keyEntry = getAvailableGroqKey();
-    if (!keyEntry) return reject(new Error('NO_GROQ_KEY'));
-    const groqKey = keyEntry.key;
+  return openAICompatibleRequest(GROQ_PROVIDER, systemPrompt, userPrompt, opts);
+}
 
-    console.log(`[AI]  تفعيل الخطة الاحتياطية الأخيرة (Groq - ${GROQ_MODEL})...`);
-    const body = JSON.stringify({
-      model: GROQ_MODEL,
-      messages: [
-        { role: 'system', content: systemPrompt },
-        { role: 'user',   content: userPrompt }
-      ],
-      temperature: opts.temperature ?? 0.4,
-      max_tokens: opts.maxOutputTokens ?? 2048
-    });
-
-    const optsReq = {
-      hostname: 'api.groq.com',
-      path: '/openai/v1/chat/completions',
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${groqKey}`,
-        'Content-Length': Buffer.byteLength(body)
-      }
-    };
-
-    const req = https.request(optsReq, res => {
-      res.setEncoding('utf8');
-      let data = '';
-      res.on('data', chunk => { data += chunk; });
-      res.on('end', () => {
-        try {
-          const json = JSON.parse(data);
-          if (res.statusCode >= 400 || json.error) {
-            // 429 = استُنفدت حصة هذا المفتاح، نوقفه ساعة ليأخذ غيره الدور
-            if (res.statusCode === 429) keyEntry.blockedUntil = Date.now() + 60 * 60 * 1000;
-            const err = new Error(describeApiError(json, 'Groq API error'));
-            err.status = res.statusCode;
-            err.isRateLimit = res.statusCode === 429;
-            return reject(err);
-          }
-          let text = (json.choices?.[0]?.message?.content || '').trim();
-          if (!text) return reject(new Error('لم يتم إرجاع أي رد من نموذج Groq'));
-          if (json.choices?.[0]?.finish_reason === 'length') {
-            console.warn('[AI/Groq] رد مبتور (MAX_TOKENS)');
-            text += '\n\n(اختصرتُ الإجابة لبلوغ الحد الأقصى — اسألني عن أي جزء تريد تفصيله.)';
-          }
-          text = text.replace(/[\uFFFD\uFFFE\uFFFF]/g, '');
-          resolve(text);
-        } catch(e) { reject(e); }
-      });
-    });
-    req.on('error', reject);
-    req.write(body);
-    req.end();
-  });
+/* نموذج Groq الثاني: الحصة في Groq لكل نموذج، فحين يبلغ gpt-oss حدّ الدقيقة
+   يبقى هذا متاحاً بالمفاتيح نفسها. لكل نموذج حالة حظر مستقلة للمفاتيح.
+   qwen3.8-27b أجاب بعربية سليمة في ~1 ث (2026-10-22). */
+const GROQ_MODEL_2 = process.env.GROQ_MODEL_2 || 'qwen/qwen3.8-27b';
+const _groq2Keys = _groqKeys.map(k => ({ key: k.key, blockedUntil: 0 }));
+let _groq2Idx = 0;
+function getAvailableGroq2Key() {
+  const now = Date.now();
+  const free = _groq2Keys.filter(k => k.blockedUntil <= now);
+  const pool = free.length ? free : _groq2Keys;
+  if (!pool.length) return null;
+  _groq2Idx = (_groq2Idx + 1) % pool.length;
+  return pool[_groq2Idx];
+}
+const GROQ2_PROVIDER = {
+  label: 'Groq-2',
+  hostname: 'api.groq.com',
+  path: '/openai/v1/chat/completions',
+  model: GROQ_MODEL_2,
+  timeout: 30000,
+  pickKey: getAvailableGroq2Key,
+  extraBody: /qwen3/i.test(GROQ_MODEL_2) ? { reasoning_effort: 'none' } : {},
+  rateLimitBlockMs: groqRetryAfterMs
+};
+function groq2Request(systemPrompt, userPrompt, opts = {}) {
+  return openAICompatibleRequest(GROQ2_PROVIDER, systemPrompt, userPrompt, opts);
 }
 
 // =========================================================
@@ -449,27 +491,238 @@ function getAvailableQwenKey() {
   return pool[_qwenIdx];
 }
 
-function qwenRequest(systemPrompt, userPrompt, opts = {}) {
-  return new Promise((resolve, reject) => {
-    const keyEntry = getAvailableQwenKey();
-    if (!keyEntry) return reject(new Error('NO_QWEN_KEY'));
+const QWEN_PROVIDER = {
+  label: 'Qwen',
+  hostname: QWEN_HOST,
+  path: QWEN_PATH,
+  model: QWEN_MODEL,
+  timeout: 60000,
+  pickKey: getAvailableQwenKey
+};
 
-    console.log(`[AI]  استدعاء Qwen (${QWEN_MODEL}) عبر ${QWEN_HOST}...`);
+function qwenRequest(systemPrompt, userPrompt, opts = {}) {
+  return openAICompatibleRequest(QWEN_PROVIDER, systemPrompt, userPrompt, opts);
+}
+
+// =========================================================
+// ===== مزوّد Mistral (خطة Experiment المجانية) =====
+// =========================================================
+/* المزوّد الأساسي بعد نفاد رصيد Gemini المدفوع: الخطة المجانية تعطي قرابة
+   مليار توكن شهرياً ونافذة سياق 128 ألف توكن — تكفي "لخّص المادة" كاملة،
+   وهو ما لا يستطيعه Groq المجاني (8 آلاف توكن في الدقيقة للطلب كله).
+   عيبها حدّ طلب واحد تقريباً في الثانية، فنعيد المحاولة مرة بعد لحظة قبل
+   التحويل لغيره. تنبيه: طلبات الخطة المجانية قد تستخدمها Mistral في التدريب. */
+const MISTRAL_MODEL = process.env.MISTRAL_MODEL || 'mistral-small-latest';
+
+const _mistralKeys = [
+  process.env.MISTRAL_API_KEY,
+  process.env.MISTRAL_API_KEY_2,
+  process.env.MISTRAL_API_KEY_3,
+].filter(Boolean).map(key => ({ key, blockedUntil: 0 }));
+
+let _mistralIdx = 0;
+
+function getAvailableMistralKey() {
+  const now = Date.now();
+  const free = _mistralKeys.filter(k => k.blockedUntil <= now);
+  const pool = free.length ? free : _mistralKeys;
+  if (!pool.length) return null;
+  _mistralIdx = (_mistralIdx + 1) % pool.length;
+  return pool[_mistralIdx];
+}
+
+// 429 بسبب نفاد الحصة الشهرية يدوم؛ أما حدّ الطلبات في الثانية فعابر
+const MISTRAL_QUOTA_RE = /month|quota|exhaust/i;
+const MISTRAL_RETRY_DELAY_MS = 1200;
+
+const MISTRAL_PROVIDER = {
+  label: 'Mistral',
+  hostname: 'api.mistral.ai',
+  path: '/v1/chat/completions',
+  model: MISTRAL_MODEL,
+  timeout: 60000,
+  pickKey: getAvailableMistralKey,
+  // لا نحظر المفتاح على حدّ الثانية — كان سيُحرم منه الجميع ساعة بسبب طالبين متزامنين
+  rateLimitBlockMs: reason => (MISTRAL_QUOTA_RE.test(reason) ? RATE_LIMIT_BLOCK_MS : 0)
+};
+
+async function mistralRequest(systemPrompt, userPrompt, opts = {}) {
+  try {
+    return await openAICompatibleRequest(MISTRAL_PROVIDER, systemPrompt, userPrompt, opts);
+  } catch (err) {
+    if (!err.isRateLimit || MISTRAL_QUOTA_RE.test(err.message)) throw err;
+    await new Promise(resolve => setTimeout(resolve, MISTRAL_RETRY_DELAY_MS));
+    return openAICompatibleRequest(MISTRAL_PROVIDER, systemPrompt, userPrompt, opts);
+  }
+}
+
+// =========================================================
+// ===== مزوّد Z.AI (GLM — نماذج Flash المجانية) =====
+// =========================================================
+/* شركة صينية، فلا تخضع للقيود الأمريكية التي حجبت تسجيل NVIDIA من السودان.
+   glm-4.5-flash مجاني بسياق 128 ألف توكن: لخّص 12 ألف حرف في ~8 ثوانٍ في
+   الاختبار، فهو المزوّد الأنسب للطلبات الطويلة التي يتخطاها Groq.
+   - التفكير مُعطّل: نماذج GLM تفكّر قبل الرد، وglm-4.7-flash استهلك كامل حد
+     المخرجات في التفكير فعاد بنص فارغ (نفس فخ Gemini).
+   - حدّه طلب واحد متزامن؛ 429 بالرمز 1305 ("overloaded") عابر، فلا نحظر
+     المفتاح ويحوَّل الطلب للمزوّد التالي.
+   - glm-5.3-flash/flashx مدفوعان (1113 Insufficient balance) — لا تستخدمهما. */
+const ZAI_MODEL = process.env.ZAI_MODEL || 'glm-4.5-flash';
+
+const _zaiKeys = [
+  process.env.ZAI_API_KEY,
+  process.env.ZAI_API_KEY_2,
+  process.env.ZAI_API_KEY_3,
+].filter(Boolean).map(key => ({ key, blockedUntil: 0 }));
+
+let _zaiIdx = 0;
+
+function getAvailableZaiKey() {
+  const now = Date.now();
+  const free = _zaiKeys.filter(k => k.blockedUntil <= now);
+  const pool = free.length ? free : _zaiKeys;
+  if (!pool.length) return null;
+  _zaiIdx = (_zaiIdx + 1) % pool.length;
+  return pool[_zaiIdx];
+}
+
+const ZAI_PROVIDER = {
+  label: 'Z.AI',
+  hostname: process.env.ZAI_API_HOST || 'api.z.ai',
+  path: '/api/paas/v4/chat/completions',
+  model: ZAI_MODEL,
+  timeout: 60000,
+  pickKey: getAvailableZaiKey,
+  extraBody: { thinking: { type: 'disabled' } },
+  rateLimitBlockMs: () => 0
+};
+
+function zaiRequest(systemPrompt, userPrompt, opts = {}) {
+  return openAICompatibleRequest(ZAI_PROVIDER, systemPrompt, userPrompt, opts);
+}
+
+// =========================================================
+// ===== مزوّد NVIDIA NIM (build.nvidia.com — تجريبي مجاني) =====
+// =========================================================
+/* الأسرع في الاختبار (2026-10-14): nemotron-3-super-120b أجاب سؤالاً قصيراً
+   في ~2 ث ولخّص 12 ألف حرف في ~3.5 ث بعربية سليمة. الحد ~40 طلباً في الدقيقة
+   لكل نموذج بلا حد يومي صارم، والسياق واسع — فهو الخيار الأول للطلبات الطويلة.
+   تنبيه: NVIDIA تصف الخدمة بأنها للتجربة والتطوير، ومفتاحها "for API testing". */
+/* 2026-10-22: nemotron-3-super-120b صار يرد 404 على كل طلب (ما زال في قائمة
+   /v1/models لكنه سُحب من الاستدعاء)، فكان المزوّد الثاني في السلسلة ميتاً.
+   nemotron-3.5-lightning مع إيقاف التفكير أجاب بعربية سليمة في ~1.5 ث. */
+const NVIDIA_MODEL = process.env.NVIDIA_MODEL || 'nvidia/nemotron-3.5-lightning-30b-a3b';
+
+const _nvidiaKeys = [
+  process.env.NVIDIA_API_KEY,
+  process.env.NVIDIA_API_KEY_2,
+  process.env.NVIDIA_API_KEY_3,
+].filter(Boolean).map(key => ({ key, blockedUntil: 0 }));
+
+let _nvidiaIdx = 0;
+
+function getAvailableNvidiaKey() {
+  const now = Date.now();
+  const free = _nvidiaKeys.filter(k => k.blockedUntil <= now);
+  const pool = free.length ? free : _nvidiaKeys;
+  if (!pool.length) return null;
+  _nvidiaIdx = (_nvidiaIdx + 1) % pool.length;
+  return pool[_nvidiaIdx];
+}
+
+const NVIDIA_PROVIDER = {
+  label: 'NVIDIA',
+  hostname: 'integrate.api.nvidia.com',
+  path: '/v1/chat/completions',
+  model: NVIDIA_MODEL,
+  timeout: 45000,
+  pickKey: getAvailableNvidiaKey,
+  // نماذج Nemotron 3.x تفكّر افتراضياً (6.7 ث بدل 1.5 ث للسؤال القصير)
+  extraBody: /nemotron-3/i.test(NVIDIA_MODEL) ? { chat_template_kwargs: { enable_thinking: false } } : {},
+  // حدّه بالدقيقة: نُنحّي المفتاح دقيقة واحدة فقط لا ساعة
+  rateLimitBlockMs: () => 60_000
+};
+
+function nvidiaRequest(systemPrompt, userPrompt, opts = {}) {
+  return openAICompatibleRequest(NVIDIA_PROVIDER, systemPrompt, userPrompt, opts);
+}
+
+// =========================================================
+// ===== مزوّد Radox AI (وسيط — احتياطي أخير فقط) =====
+// =========================================================
+/* وسيط يمرّر الطلبات لمزوّدين آخرين (شروطه: "لا نستضيف النماذج"، وأسماء
+   النماذج قد تختلف عن الأصل)، ويضيف ~280 توكن تعليمات مخفية لكل طلب، ولا
+   يذكر جهته ولا سياسة الاحتفاظ بالبيانات. لذلك يأتي بعد كل المزوّدين
+   المعروفين: سياق الطالب لا يصله إلا إذا فشلوا جميعاً.
+   الخطة المجانية 10 ملايين توكن شهرياً، وتوكنات التفكير تُحتسب منها؛ عند
+   نفادها يرد 402 فيُنحّى المفتاح تلقائياً (isKeyLevelFailure).
+   deepseek-v4-pro-max أجاب بعربية سليمة في ~4 ث؛ نماذج gpt/claude/gemini عنده
+   تستهلك الحد كله في التفكير إن كان صغيراً فتعود بنص فارغ. */
+const RADOX_MODEL = process.env.RADOX_MODEL || 'deepseek-v4-pro-max';
+
+const _radoxKeys = [
+  process.env.RADOX_API_KEY,
+  process.env.RADOX_API_KEY_2,
+].filter(Boolean).map(key => ({ key, blockedUntil: 0 }));
+
+let _radoxIdx = 0;
+
+function getAvailableRadoxKey() {
+  const now = Date.now();
+  const free = _radoxKeys.filter(k => k.blockedUntil <= now);
+  const pool = free.length ? free : _radoxKeys;
+  if (!pool.length) return null;
+  _radoxIdx = (_radoxIdx + 1) % pool.length;
+  return pool[_radoxIdx];
+}
+
+const RADOX_PROVIDER = {
+  label: 'Radox',
+  hostname: 'radoxai.com',
+  path: '/v1/chat/completions',
+  model: RADOX_MODEL,
+  timeout: 60000,
+  pickKey: getAvailableRadoxKey,
+  // التلخيص بحد 1400 عاد فارغاً: التفكير وحده استهلك الحد كله
+  minMaxTokens: 4000,
+  rateLimitBlockMs: () => 60_000
+};
+
+function radoxRequest(systemPrompt, userPrompt, opts = {}) {
+  return openAICompatibleRequest(RADOX_PROVIDER, systemPrompt, userPrompt, opts);
+}
+
+// =========================================================
+// ===== طلب موحّد للمزوّدين المتوافقين مع OpenAI =====
+// =========================================================
+/* Groq وQwen وMistral يتبعون صيغة OpenAI نفسها. كانت لكل منها دالة منسوخة
+   شبه حرفياً، فيُصلَح عطل في إحداها ويبقى في الأخريات. */
+function openAICompatibleRequest(provider, systemPrompt, userPrompt, opts = {}) {
+  return new Promise((resolve, reject) => {
+    const keyEntry = provider.pickKey();
+    if (!keyEntry) return reject(new Error(`NO_${provider.label.toUpperCase()}_KEY`));
+
+    console.log(`[AI]  استدعاء ${provider.label} (${provider.model})...`);
     const body = JSON.stringify({
-      model: QWEN_MODEL,
+      model: provider.model,
       messages: [
         { role: 'system', content: systemPrompt },
+        ...chatHistoryMessages(opts.history),
         { role: 'user',   content: userPrompt }
       ],
       temperature: opts.temperature ?? 0.4,
-      max_tokens: opts.maxOutputTokens ?? 2048
+      // نماذج التفكير تخصم تفكيرها من الحد نفسه؛ minMaxTokens يضمن متسعاً للإجابة
+      max_tokens: Math.max(opts.maxOutputTokens ?? 2048, provider.minMaxTokens || 0),
+      // حقول خاصة بمزوّد بعينه (مثل إيقاف التفكير في GLM)
+      ...(provider.extraBody || {})
     });
 
-    const request = https.request({
-      hostname: QWEN_HOST,
-      path: QWEN_PATH,
+    const req = https.request({
+      hostname: provider.hostname,
+      path: provider.path,
       method: 'POST',
-      timeout: 60000,
+      // مهلة الطلب = الأقل بين مهلة المزوّد وما تبقّى من ميزانية السؤال كله
+      timeout: Math.min(provider.timeout || 45000, opts.timeoutMs || Infinity),
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${keyEntry.key}`,
@@ -480,112 +733,263 @@ function qwenRequest(systemPrompt, userPrompt, opts = {}) {
       let data = '';
       res.on('data', chunk => { data += chunk; });
       res.on('end', () => {
+        let json;
         try {
-          const json = JSON.parse(data);
-          if (res.statusCode >= 400 || json.error) {
-            // 429 = استُنفدت حصة هذا المفتاح، نوقفه ساعة ليأخذ غيره الدور
-            if (res.statusCode === 429) keyEntry.blockedUntil = Date.now() + 60 * 60 * 1000;
-            const err = new Error(describeApiError(json, 'Qwen API error'));
-            err.status = res.statusCode;
-            err.isRateLimit = res.statusCode === 429;
-            return reject(err);
-          }
-          let text = (json.choices?.[0]?.message?.content || '').trim();
-          if (!text) return reject(new Error('لم يتم إرجاع أي رد من نموذج Qwen'));
-          if (json.choices?.[0]?.finish_reason === 'length') {
-            console.warn('[AI/Qwen] رد مبتور (MAX_TOKENS)');
-            text += '\n\n(اختصرتُ الإجابة لبلوغ الحد الأقصى — اسألني عن أي جزء تريد تفصيله.)';
-          }
-          resolve(text.replace(/[�￾￿]/g, ''));
+          json = JSON.parse(data);
         } catch (e) {
-          reject(new Error(`تعذّر تحليل رد Qwen: ${e.message}`));
+          const err = new Error(`تعذّر تحليل رد ${provider.label} (${res.statusCode})`);
+          err.status = res.statusCode;
+          return reject(err);
         }
+
+        if (res.statusCode >= 400 || json.error) {
+          const reason = describeApiError(json, `${provider.label} API error ${res.statusCode}`);
+          const err = new Error(reason);
+          err.status = res.statusCode;
+          err.isRateLimit = res.statusCode === 429;
+          // 404 = النموذج سُحب: لن يعود بعد دقيقة، فنعامله كعطل دائم في المفتاح
+          err.isKeyProblem = isKeyLevelFailure(res.statusCode, reason) || res.statusCode === 404;
+          // نُنحّي المفتاح المعطّل أو المستنفد ليأخذ غيره الدور
+          if (err.isKeyProblem) {
+            keyEntry.blockedUntil = Date.now() + KEY_PROBLEM_BLOCK_MS;
+          } else if (err.isRateLimit) {
+            keyEntry.blockedUntil = Date.now() + (provider.rateLimitBlockMs ? provider.rateLimitBlockMs(reason) : RATE_LIMIT_BLOCK_MS);
+          }
+          return reject(err);
+        }
+
+        const choice = json.choices?.[0];
+        const content = choice?.message?.content;
+        // بعض النماذج تُرجع المحتوى أجزاءً (نص + تفكير) لا نصاً واحداً
+        let text = (Array.isArray(content)
+          ? content.map(part => (!part?.type || part.type === 'text') ? (part?.text || '') : '').join('')
+          : (content || '')).trim();
+        if (!text) return reject(new Error(`لم يتم إرجاع أي رد من نموذج ${provider.label}`));
+
+        if (choice?.finish_reason === 'length') {
+          console.warn(`[AI/${provider.label}] رد مبتور (MAX_TOKENS)`);
+          text += '\n\n(اختصرتُ الإجابة لبلوغ الحد الأقصى — اسألني عن أي جزء تريد تفصيله.)';
+        }
+        resolve(text.replace(/[�￾￿]/g, ''));
       });
     });
 
-    request.on('timeout', () => { request.destroy(new Error('انتهت مهلة Qwen')); });
-    request.on('error', reject);
-    request.write(body);
-    request.end();
+    req.on('timeout', () => { req.destroy(new Error(`انتهت مهلة ${provider.label}`)); });
+    req.on('error', reject);
+    // إلغاء الطلب حين يفوز مزوّد آخر بالسباق — لا نستهلك حصته بلا فائدة
+    if (opts.signal) {
+      if (opts.signal.aborted) req.destroy(new Error('CANCELLED'));
+      else opts.signal.addEventListener('abort', () => req.destroy(new Error('CANCELLED')), { once: true });
+    }
+    req.write(body);
+    req.end();
   });
 }
 
-/**
- * النظام الذكي المدمج (Gemini بكل مفاتيحه ← Qwen ← Cohere ← Groq)
- *
- * كان التحويل إلى Cohere مشروطاً بـ RATE_LIMIT_ALL_KEYS وحدها، فأي عطل آخر في
- * Gemini (انقطاع شبكة، خطأ 500 من جوجل، رد فارغ، استنفاد ميزانية التفكير)
- * كان يصل للطالب كرسالة خطأ رغم توفر مزود احتياطي جاهز. الآن كل أعطال
- * Gemini تُجرَّب على Cohere قبل الاستسلام. وإذا فشل Cohere يتم استخدام Groq كملاذ أخير.
- */
-const GEMINI_FAILURES_WORTH_FALLBACK = new Set([
-  'RATE_LIMIT_ALL_KEYS',
-  'MODEL_BUDGET_EXHAUSTED',
-  'لم يتم إرجاع أي رد من النموذج'
-]);
+// =========================================================
+// ===== التوجيه حسب حجم الطلب =====
+// =========================================================
+/* أقصى حجم طلب (مدخلات + مخرجات، بالتوكن) يقبله كل مزوّد في خطته المجانية.
+   Groq المجاني يحسب الطلب كله ضمن 8 آلاف توكن في الدقيقة، فطلب "لخّص المادة"
+   (حتى 60 ألف حرف) يُرفض عنده حتماً — كنا نرسله ونُبقي الطالب ينتظر فشلاً
+   مضموناً. الآن يُستبعد المزوّد الذي لا يتسع للطلب قبل إرساله. */
+const PROVIDER_MAX_REQUEST_TOKENS = {
+  radox: 120_000,
+  nvidia: 120_000,
+  zai: 120_000,
+  mistral: 120_000,
+  gemini: 900_000,
+  qwen: 120_000,
+  cohere: 240_000,
+  groq: Number(process.env.GROQ_MAX_REQUEST_TOKENS) || 8_000,
+  groq2: Number(process.env.GROQ_MAX_REQUEST_TOKENS) || 8_000
+};
 
-async function askAIWithUltimateFallback(prompt, opts = {}) {
-  try {
-    // 1. جرب مجمع مفاتيح Gemini أولاً
-    return await geminiWithFallback(prompt, opts);
-  } catch (err) {
-    // حجب المحتوى لأسباب أمان ليس عطلاً — إعادة المحاولة على مزود آخر لن تفيد
-    if (err.message === 'MODEL_SAFETY_BLOCK') throw err;
+// أقل مساحة رد تستحق تقليص حد المخرجات بدل استبعاد المزوّد
+const MIN_USEFUL_OUTPUT_TOKENS = 600;
 
-    const shouldFallback = GEMINI_FAILURES_WORTH_FALLBACK.has(err.message)
-      || err.isRateLimit
-      || err.status >= 500
-      || err.code === 'ECONNRESET'
-      || err.code === 'ETIMEDOUT'
-      || err.code === 'ENOTFOUND';
+/* يُغيَّر من البيئة دون تعديل الكود: AI_PROVIDER_ORDER=groq,nvidia,zai,cohere
+   الافتراضي (المُختبَر 2026-10-14): Groq للأسئلة القصيرة ويُتخطّى تلقائياً في
+   الطويلة ← NVIDIA (الأسرع للطويلة) ← Z.AI (طلب واحد متزامن) ← Cohere (حصته
+   التجريبية صغيرة) ← Gemini (مفاتيحه الحالية معطّلة أو مضغوطة) ← Radox (وسيط
+   مجهول الجهة: احتياطي أخير) ← غير المضبوطة. */
+// قياس 2026-10-22: Groq الأسرع (~1 ث) ثم نموذجه الثاني بحصة منفصلة، NVIDIA (~1.5 ث)، Z.AI الأثبت (17/17)
+const DEFAULT_PROVIDER_ORDER = ['groq', 'groq2', 'nvidia', 'zai', 'cohere', 'gemini', 'radox', 'mistral', 'qwen'];
 
-    /* نستخرج الـ SYSTEM_PROMPT من الـ prompt الكامل لنمرره كـ system role
-       مستقل في Cohere/Groq — هذا يضمن أن شخصية كيدي وقواعده تُطبَّق بشكل
-       متطابق بغض النظر عن المزود المستخدم */
-    const sysMarker = SYSTEM_PROMPT;
-    const userPart = prompt.startsWith(sysMarker)
-      ? prompt.slice(sysMarker.length).trimStart()
-      : prompt;
+/* تقدير محافظ: المُرمِّزات تقسم العربية إلى توكن لكل حرفين تقريباً
+   (الإنجليزية ~4). المبالغة في التقدير أسلم من إرسال طلب سيُرفض. */
+function estimateTokens(text) {
+  return Math.ceil(String(text || '').length / 2);
+}
 
-    /* 2. الخطة الاحتياطية الأولى: Qwen.
-       يسبق Cohere لأن نافذة سياقه أوسع بكثير — وهذا يهم تحديداً في
-       "لخّص المادة" حيث يبلغ السياق ٦٠ ألف حرف، وهو ما كان يتجاوز حدود
-       المزوّدَين التاليَين فيصل الطالب ردٌّ مبتور أو خطأ. */
-    if (shouldFallback && _qwenKeys.length) {
-      console.warn(`[AI] تحويل إلى Qwen بعد فشل Gemini: ${err.message}`);
-      try {
-        return await qwenRequest(sysMarker, userPart, opts);
-      } catch (qwenErr) {
-        console.error('[AI/Qwen Fallback Error]', qwenErr.message);
-        // استمر إلى المزوّد التالي
-      }
-    }
+function providerOrder(raw = process.env.AI_PROVIDER_ORDER) {
+  const names = String(raw || '')
+    .split(',')
+    .map(s => s.trim().toLowerCase())
+    .filter(name => name in PROVIDER_MAX_REQUEST_TOKENS);
+  return names.length ? [...new Set(names)] : DEFAULT_PROVIDER_ORDER;
+}
 
-    // 3. الخطة الاحتياطية الثانية: Cohere
-    if (shouldFallback && process.env.COHERE_API_KEY) {
-      console.warn(`[AI] تحويل إلى Cohere بعد فشل Gemini: ${err.message}`);
-      try {
-        return await cohereRequest(sysMarker, userPart, opts);
-      } catch (cohereErr) {
-        console.error('[AI/Cohere Fallback Error]', cohereErr.message);
-        // استمر إلى الخطة البديلة التالية (Groq)
-      }
-    }
-
-    // 4. الخطة الاحتياطية الأخيرة: Groq
-    if (shouldFallback && process.env.GROQ_API_KEY) {
-      console.warn(`[AI] تحويل إلى Groq كملاذ أخير...`);
-      try {
-        return await groqRequest(sysMarker, userPart, opts);
-      } catch (groqErr) {
-        console.error('[AI/Groq Fallback Error]', groqErr.message);
-        throw new Error('ALL_AI_SYSTEMS_DOWN');
-      }
-    }
-
-    // لا مزود احتياطي متاح — ارمِ الخطأ الأصلي
-    throw err;
+/** دالة خالصة: المزوّدون الذين سيُجرَّبون بالترتيب، وحد المخرجات لكل منهم. */
+function planProviders({ order, configured, inputTokens, maxOutputTokens }) {
+  const wanted = maxOutputTokens ?? 2048;
+  const plan = [];
+  for (const name of order) {
+    if (!configured[name]) continue;
+    const room = PROVIDER_MAX_REQUEST_TOKENS[name] - inputTokens;
+    if (room < MIN_USEFUL_OUTPUT_TOKENS) continue;
+    plan.push({ name, maxOutputTokens: Math.min(wanted, room) });
   }
+  return plan;
+}
+
+const _hasFreeKey = keys => keys.some(k => k.blockedUntil <= Date.now());
+
+const AI_PROVIDERS = {
+  radox: {
+    keyCount: () => _radoxKeys.length,
+    available: () => _hasFreeKey(_radoxKeys),
+    call: (prompt, parts, o) => tryEachKey(radoxRequest, _radoxKeys.length, parts.systemPrompt, parts.userPrompt, o)
+  },
+  nvidia: {
+    keyCount: () => _nvidiaKeys.length,
+    available: () => _hasFreeKey(_nvidiaKeys),
+    call: (prompt, parts, o) => tryEachKey(nvidiaRequest, _nvidiaKeys.length, parts.systemPrompt, parts.userPrompt, o)
+  },
+  zai: {
+    keyCount: () => _zaiKeys.length,
+    available: () => _hasFreeKey(_zaiKeys),
+    call: (prompt, parts, o) => tryEachKey(zaiRequest, _zaiKeys.length, parts.systemPrompt, parts.userPrompt, o)
+  },
+  mistral: {
+    keyCount: () => _mistralKeys.length,
+    available: () => _hasFreeKey(_mistralKeys),
+    call: (prompt, parts, o) => tryEachKey(mistralRequest, _mistralKeys.length, parts.systemPrompt, parts.userPrompt, o)
+  },
+  gemini: {
+    keyCount: () => _geminiKeyPool.length,
+    available: () => _hasFreeKey(_geminiKeyPool),
+    call: (prompt, parts, o) => geminiWithFallback(prompt, o)
+  },
+  qwen: {
+    keyCount: () => _qwenKeys.length,
+    available: () => _hasFreeKey(_qwenKeys),
+    call: (prompt, parts, o) => tryEachKey(qwenRequest, _qwenKeys.length, parts.systemPrompt, parts.userPrompt, o)
+  },
+  cohere: {
+    keyCount: () => _cohereKeys.length,
+    available: () => _hasFreeKey(_cohereKeys),
+    call: (prompt, parts, o) => tryEachKey(cohereRequest, _cohereKeys.length, parts.systemPrompt, parts.userPrompt, o)
+  },
+  groq2: {
+    keyCount: () => _groq2Keys.length,
+    available: () => _hasFreeKey(_groq2Keys),
+    call: (prompt, parts, o) => tryEachKey(groq2Request, _groq2Keys.length, parts.systemPrompt, parts.userPrompt, o)
+  },
+  groq: {
+    keyCount: () => _groqKeys.length,
+    available: () => _hasFreeKey(_groqKeys),
+    call: (prompt, parts, o) => tryEachKey(groqRequest, _groqKeys.length, parts.systemPrompt, parts.userPrompt, o)
+  }
+};
+
+function configuredProviders() {
+  return Object.fromEntries(Object.entries(AI_PROVIDERS).map(([name, p]) => [name, p.keyCount() > 0]));
+}
+
+/**
+ * النظام الذكي المدمج: يجرّب المزوّدين بالترتيب (AI_PROVIDER_ORDER، افتراضياً
+ * Groq ← NVIDIA ← Z.AI ← Cohere ← Gemini ← Radox ← Mistral ← Qwen) متخطياً من لا مفاتيح له ومن لا يتسع للطلب.
+ *
+ * أي عطل في مزوّد يحوّل للتالي. كانت قائمة بيضاء من الأعطال (حصة، 5xx، شبكة)
+ * فيمرّ عطل مثل 403 "مفتاح موقوف" إلى الطالب كـ"خطأ 500" مع أن غيره سليم.
+ * الاستثناء الوحيد حجب المحتوى لأسباب أمان — إعادة المحاولة عند غيره لن تفيد.
+ */
+async function askAIWithUltimateFallback(prompt, opts = {}) {
+  /* نفصل الـ SYSTEM_PROMPT أو JSON_SYSTEM_PROMPT عن سؤال المستخدم لنمرره كـ system role
+     مستقل للمزوّدين بصيغة OpenAI — فتُطبَّق شخصية كيدي وقواعده وصيغة JSON بنفس الطريقة
+     أياً كان المزوّد. Gemini وحده يأخذ النص الكامل. */
+  const parts = extractSystemAndUserPrompts(prompt);
+  const configured = configuredProviders();
+  const plan = planProviders({
+    order: providerOrder(),
+    configured,
+    inputTokens: estimateTokens(prompt) + estimateTokens(chatHistoryMessages(opts.history).map(m => m.content).join('\n')),
+    maxOutputTokens: opts.maxOutputTokens
+  });
+
+  if (!plan.length) {
+    // مزوّدون مضبوطون لكن الطلب أكبر منهم جميعاً (مثلاً Groq وحده مع "لخّص المادة")
+    throw new Error(Object.values(configured).some(Boolean) ? 'PROMPT_TOO_LARGE' : 'ALL_AI_SYSTEMS_DOWN');
+  }
+
+  // من حُظرت كل مفاتيحه (حصة/نموذج مسحوب) يُؤخَّر لآخر السلسلة بدل أن يُجرَّب أولاً
+  plan.sort((a, b) => Number(!AI_PROVIDERS[a.name].available()) - Number(!AI_PROVIDERS[b.name].available()));
+  const inputTokens = estimateTokens(prompt);
+  return raceProviders(plan, step => AI_PROVIDERS[step.name].call(prompt, parts, step.opts), {
+    budgetMs: opts.budgetMs || AI_TOTAL_BUDGET_MS,
+    // الطلبات الطويلة (تلخيص مادة) مكلفة: لا نكررها عند مزوّد ثانٍ إلا بعد انتظار أطول
+    hedgeAfterMs: opts.hedgeAfterMs ?? (inputTokens > 6000 ? 25_000 : AI_HEDGE_AFTER_MS),
+    baseOpts: opts
+  });
+}
+
+/* السؤال كله له ميزانية زمنية واحدة، والمزوّدون يتسابقون عليها:
+   - كانت السلسلة تجرّب مزوّداً بعد آخر، ولكل منها مهلة 45-60 ث، والواجهة تقطع
+     الانتظار قبل ذلك. مزوّد واحد معلّق (Cohere علّق 46 ث على تحية في قياس
+     2026-10-22) كان يعني "كيدي ما ردّ" رغم أن التالي سليم وسريع.
+   - الآن: فشل مزوّد ← التالي فوراً. وتأخّره عن hedgeAfterMs ← يبدأ التالي
+     بالتوازي (اثنان على الأكثر)، وأول رد صحيح يفوز ويُلغى الآخر.
+   - مهلة كل طلب = ما تبقّى من الميزانية، فلا يتجاوز السؤال الميزانية أبداً. */
+const AI_TOTAL_BUDGET_MS = Number(process.env.AI_TOTAL_BUDGET_MS) || 50_000;
+const AI_HEDGE_AFTER_MS = Number(process.env.AI_HEDGE_AFTER_MS) || 9_000;
+
+function raceProviders(plan, callStep, { budgetMs, hedgeAfterMs, baseOpts = {} }) {
+  const deadline = Date.now() + budgetMs;
+  return new Promise((resolve, reject) => {
+    let next = 0, running = 0, done = false, lastErr = null, hedgeTimer = null;
+    const controllers = new Set();
+    const finish = (fn, value) => {
+      if (done) return;
+      done = true;
+      clearTimeout(hedgeTimer); clearTimeout(budgetTimer);
+      controllers.forEach(c => c.abort());
+      fn(value);
+    };
+    const exhausted = () => {
+      console.error(`[AI] فشلت كل المزوّدات: ${plan.map(s => s.name).join(' ← ')}`);
+      finish(reject, new Error('ALL_AI_SYSTEMS_DOWN'));
+    };
+    const budgetTimer = setTimeout(() => {
+      console.error(`[AI] انقضت ميزانية السؤال (${budgetMs / 1000} ث) دون رد`);
+      finish(reject, new Error('AI_TIMEOUT'));
+    }, budgetMs);
+
+    const launch = () => {
+      if (done) return;
+      if (next >= plan.length) { if (running === 0) exhausted(); return; }
+      const remaining = deadline - Date.now();
+      if (remaining < 1500) { if (running === 0) finish(reject, new Error('AI_TIMEOUT')); return; }
+      const step = plan[next++];
+      const ctrl = new AbortController();
+      controllers.add(ctrl);
+      running++;
+      callStep({ ...step, opts: { ...baseOpts, maxOutputTokens: step.maxOutputTokens, timeoutMs: remaining, signal: ctrl.signal } })
+        .then(text => finish(resolve, text))
+        .catch(err => {
+          running--;
+          controllers.delete(ctrl);
+          if (done) return;
+          if (err.message === 'MODEL_SAFETY_BLOCK') return finish(reject, err);
+          lastErr = err;
+          console.warn(`[AI] فشل ${step.name} (${err.status || err.code || '-'}): ${String(err.message).slice(0, 160)} — تحويل للتالي`);
+          launch();
+        });
+      clearTimeout(hedgeTimer);
+      hedgeTimer = setTimeout(() => { if (!done && running < 2) launch(); }, hedgeAfterMs);
+    };
+    launch();
+  });
 }
 
 // =========================================================
@@ -604,6 +1008,11 @@ const THROTTLE_MAX  = 5;       // أقصى طلبات
 const THROTTLE_WIN  = 10_000;  // نافذة 10 ثوان
 function isThrottled(userId) {
   const now = Date.now();
+  if (_userThrottle.size > 2000) {
+    for (const [uid, r] of _userThrottle.entries()) {
+      if (now > r.reset) _userThrottle.delete(uid);
+    }
+  }
   const rec = _userThrottle.get(userId) || { count: 0, reset: now + THROTTLE_WIN };
   if (now > rec.reset) { rec.count = 0; rec.reset = now + THROTTLE_WIN; }
   rec.count++;
@@ -622,13 +1031,26 @@ function _ctxCacheSet(key, value) {
   _ctxCache.set(key, { value, expires: Date.now() + CTX_TTL_MS });
 }
 
+/* المواعيد بتوقيت الطلاب لا بتوقيت الخادم: الخادم قد يعمل بـ UTC فتتأخر
+   الساعات ساعتين وينقلب تاريخ ما بعد منتصف الليل. */
+const APP_TIMEZONE = process.env.APP_TIMEZONE || 'Africa/Khartoum';
+
 function fmtDateAr(d) {
   if (!d) return 'غير محدد';
   try {
     return new Date(d).toLocaleDateString('ar-EG-u-nu-latn', {
-      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric', timeZone: APP_TIMEZONE
     });
   } catch { return 'غير محدد'; }
+}
+
+// تاريخ + ساعة: بدون الساعة كان النموذج يستعير موعد الواجب (23:59) للكويز
+function fmtDateTimeAr(d) {
+  if (!d) return 'غير محدد';
+  try {
+    const time = new Date(d).toLocaleTimeString('ar-EG-u-nu-latn', { hour: 'numeric', minute: '2-digit', timeZone: APP_TIMEZONE });
+    return `${fmtDateAr(d)} الساعة ${time}`;
+  } catch { return fmtDateAr(d); }
 }
 
 function daysFromNow(d) {
@@ -640,7 +1062,33 @@ function daysFromNow(d) {
   return `بعد ${days} يوم`;
 }
 
-async function getLiveStudentContext(userId, activeBatch) {
+/* أقسام سياق التطبيق التي يحتاجها كل نوع سؤال. كان السياق كله (مواد، واجبات،
+   رسوم، أخبار، إشعارات، دليل الخدمات…) يُرسل مع كل سؤال، حتى "ما هو الـ TCP؟"،
+   فينشغل النموذج بالبيانات ويجيب "المعلومة غير موجودة في سياق التطبيق، راجع
+   الليدر" عن مفهوم علمي بسيط — وهو أكثر ما جعل كيدي يبدو غبياً. */
+const CONTEXT_SECTIONS_BY_INTENT = {
+  data:     ['student', 'subjects', 'assignments', 'quizzes', 'events', 'finance', 'pods', 'news', 'notifications', 'services'],
+  plan:     ['student', 'subjects', 'assignments', 'quizzes', 'events'],
+  support:  ['student', 'assignments', 'quizzes', 'services'],
+  chat:     ['student'],
+  summary:  ['student'],
+  default:  ['student', 'subjects']
+};
+
+function renderLiveContext(sections, intent) {
+  if (!sections) return '';
+  const wanted = CONTEXT_SECTIONS_BY_INTENT[intent] || CONTEXT_SECTIONS_BY_INTENT.default;
+  const body = wanted.map(name => sections[name]).filter(Boolean).join('\n\n');
+  return `\n[بيانات الطالب من منصة الكلية — المصدر الوحيد لأي معلومة عن مواده ومواعيده ورسومه]\n` +
+    `${sections.date}\n\n${body}\n`;
+}
+
+async function getLiveStudentContext(userId, activeBatch, intent = 'data') {
+  const sections = await getLiveStudentSections(userId, activeBatch);
+  return renderLiveContext(sections, intent);
+}
+
+async function getLiveStudentSections(userId, activeBatch) {
   const cacheKey = `${userId}:${activeBatch || '-'}`;
   const cached = _ctxCacheGet(cacheKey);
   if (cached !== null) return cached;
@@ -654,7 +1102,7 @@ async function getLiveStudentContext(userId, activeBatch) {
     const Quiz = require('../models/Quiz');
 
     const user = await User.findById(userId).select('name roles batch batches').populate('batch', 'name').lean();
-    if (!user) return '';
+    if (!user) return null;
 
     const batchId = activeBatch || user.batch?._id || user.batch || (user.batches && user.batches[0]);
 
@@ -662,9 +1110,8 @@ async function getLiveStudentContext(userId, activeBatch) {
     if (batchId) {
       subjects = await Subject.find({ $or: [{ batch: batchId }, { batches: batchId }] }).select('name level _id').lean();
     }
-    if (!subjects.length) {
-      subjects = await Subject.find({}).select('name level _id').limit(15).lean();
-    }
+    /* كان هنا رجوع إلى أي 15 مادة في الكلية حين تخلو دفعة الطالب من المواد،
+       فيعرض كيدي مواد دفعات أخرى على أنها "موادك". الفراغ يُقال كما هو. */
 
     const subjectList = subjects.map((s, i) => `${i + 1}. ${s.name}`).join('\n');
     let openAssignments = [];
@@ -674,11 +1121,18 @@ async function getLiveStudentContext(userId, activeBatch) {
     if (batchId) {
       // التفاصيل الفعلية للواجبات وليس عددها فقط — بدونها كان المساعد
       // عاجزاً عن الإجابة على «متى تسليم الواجب؟» رغم امتلاك النظام للبيانات.
-      openAssignments = await Assignment.find({
+      /* dueDate تاريخ بلا ساعة (منتصف الليل UTC) والموعد الفعلي في dueTime.
+         مقارنته بـ"الآن" كانت تُسقط واجب الليلة من بيانات كيدي بعد الثانية
+         فجراً — أي يوم التسليم نفسه حين يسأل الطالب عنه أكثر. */
+      const { resolveDueDateTime } = require('../utils/dueDate');
+      const nowTs = Date.now();
+      openAssignments = (await Assignment.find({
         batches: batchId,
-        dueDate: { $gte: new Date() }
+        dueDate: { $gte: new Date(nowTs - 36 * 3600 * 1000) }
       }).select('title dueDate dueTime subject').populate('subject', 'name')
-        .sort({ dueDate: 1 }).limit(8).lean();
+        .sort({ dueDate: 1 }).limit(12).lean())
+        .filter(a => (resolveDueDateTime(a)?.getTime() ?? 0) > nowTs)
+        .slice(0, 8);
 
       upcomingQuizzes = await Quiz.find({
         batch: batchId,
@@ -703,7 +1157,7 @@ async function getLiveStudentContext(userId, activeBatch) {
 
     const quizzesList = upcomingQuizzes.length
       ? upcomingQuizzes.map(qz =>
-          `- «${qz.title}» (مادة ${qz.subject?.name || 'غير محددة'}) — يبدأ ${fmtDateAr(qz.startsAt)} وينتهي ${fmtDateAr(qz.endsAt)}، المدة ${qz.durationMinutes} دقيقة [${daysFromNow(qz.startsAt)}]`
+          `- «${qz.title}» (مادة ${qz.subject?.name || 'غير محددة'}) — يُفتح ${fmtDateTimeAr(qz.startsAt)} ويُغلق ${fmtDateTimeAr(qz.endsAt)}، مدة الحل ${qz.durationMinutes} دقيقة [${daysFromNow(qz.startsAt)}]`
         ).join('\n')
       : 'لا توجد اختبارات معلنة حالياً';
 
@@ -725,25 +1179,25 @@ async function getLiveStudentContext(userId, activeBatch) {
       const AcademicEvent = require('../models/AcademicEvent');
       const upcomingEvents = await AcademicEvent.find({
         $or: [{ batch: batchId }, { batch: null }],
-        date: { $gte: new Date() }
-      }).sort({ date: 1 }).limit(4).lean();
+        startsAt: { $gte: new Date() }
+      }).sort({ startsAt: 1 }).limit(4).lean();
       if (upcomingEvents.length > 0) {
-        eventsList = upcomingEvents.map(ev => `- «${ev.title}» (${fmtDateAr(ev.date)}): ${ev.description || 'فعالية أكاديمية'}`).join('\n');
+        eventsList = upcomingEvents.map(ev => `- «${ev.title}» (${fmtDateTimeAr(ev.startsAt)}${ev.location ? ` — ${ev.location}` : ''}): ${ev.description || 'فعالية أكاديمية'}`).join('\n');
       }
     } catch (eve) {}
 
     // جلب الملخص المالي للطالب
     let financeSummary = 'لا توجد مستحقات مالية مسجلة';
     try {
-      const Fee = require('../models/Fee');
-      const Payment = require('../models/Payment');
-      const fees = await Fee.find({ $or: [{ batch: batchId }, { student: userId }] }).lean();
-      if (fees.length > 0) {
-        const totalFees = fees.reduce((sum, f) => sum + (f.amount || 0), 0);
-        const payments = await Payment.find({ student: userId, status: 'approved' }).lean();
-        const totalPaid = payments.reduce((sum, p) => sum + (p.amount || 0), 0);
-        const remaining = totalFees - totalPaid;
-        financeSummary = `إجمالي الرسوم: ${totalFees} ج.س | المسدد: ${totalPaid} ج.س | المتبقي المطلوب: ${remaining > 0 ? remaining + ' ج.س' : 'خالص السداد بالكامل ✅'}`;
+      /* كان الاستعلام يجمع رسوم الدفعة كلها ({batch}) لا رسوم الطالب، ويتجاهل
+         الخصم، ويفلتر المدفوعات بحقل status غير موجود في نموذج الدفع فيكون
+         المسدد صفراً دائماً — فيخبر كيدي الطالب بمبلغ مضاعف لا يطابق صفحة
+         الرسوم. نستخدم نفس دالة صفحة الرسوم ليتطابق الرقمان. */
+      const { getStudentBalanceSummary } = require('../utils/feeAllocation');
+      const s = await getStudentBalanceSummary(userId);
+      if (s.fees.length > 0) {
+        const fmt = n => Number(n || 0).toLocaleString('en-US');
+        financeSummary = `إجمالي الرسوم: ${fmt(s.totalFees)} ج.س | المسدد: ${fmt(s.totalPaid)} ج.س | المتبقي المطلوب: ${s.balance > 0 ? fmt(s.balance) + ' ج.س' : 'خالص السداد بالكامل'}`;
       }
     } catch (fe) {}
 
@@ -766,68 +1220,99 @@ async function getLiveStudentContext(userId, activeBatch) {
         ).join('\n')
       : 'لا توجد إشعارات حديثة';
 
-    const context = `
-════════ سياق التطبيق الحي (من قاعدة بيانات النظام — مصدرك الوحيد للحقائق) ════════
-
-[التاريخ] اليوم هو ${fmtDateAr(new Date())}. احسب كل المدد والمواعيد المتبقية من هذا التاريخ.
-
-[الطالب]
-- الاسم: ${user.name || 'طالب'}
-- الدفعة: ${user.batch?.name || 'غير محددة'}
-- ليدر/مندوب الدفعة: ${leadersNames}
-
-[المواد المسجّلة] العدد: ${subjects.length}
-${subjectList || 'لا توجد مواد مرفوعة'}
-
-[الواجبات المفتوحة للتسليم]
-${assignmentsList}
-
-[الاختبارات والكويزات القادمة]
-${quizzesList}
-
-[الفعاليات والتقويم الأكاديمي]
-${eventsList}
-
-[الوضع المالي والأقساط]
-${financeSummary}
-
-[مجموعات المذاكرة النشطة]
-${studyPodsList}
-
-[أحدث أخبار الكلية]
-${newsList}
-
-[أحدث الإشعارات]
-${notifsList}
-
-[دليل خدمات وأقسام المنصة التي يرشد إليها كيدي]
-1. 💻 مختبر ومحرر الأكواد (Code Lab): لتجربة وتشغيل وكتابة أكواد C++, Python, JS وتصحيحها وفحص التعقيد الزمني والمكاني (/code-lab.html).
-2. 📇 بطاقات الاستذكار الذكية (Flashcards): لتوليد بطاقات مراجعة ومراجعة المفاهيم بالذاكرة التكرارية (/flashcards.html).
-3. 📝 بنك الامتحانات والمحاكاة: حل امتحانات سابقة مع التقييم الفوري وتشخيص كيدي للأخطاء (/past-exams.html).
-4. 👥 غرف المذاكرة الجماعية (Study Pods): غرف دراسية تفاعلية ومشاركة الشروحات (/study-pods.html).
-5. 📊 كويزات المقررات (Quizzes): اختبارات تفاعلية فورية (/quizzes.html).
-6. 📈 لوحة الصدارة والمتصدرين: الترتيب الأكاديمي ونقاط التفاعل (/leaderboard.html).
-7. 🎓 ملف الإنجاز الأكاديمي: السجل الأكاديمي والشهادات والمشاريع (/student-portfolio.html).
-8. 🎥 مكتبة الفيديو: المحاضرات المرئية والشروحات المسجلة (/video-library.html).
-9. 📅 جدول المحاضرات والتقويم الأكاديمي: مواعيد المحاضرات والفعاليات (/calendar.html).
-10. 💰 السجل المالي والمستحقات: كشف الرسوم والأقساط والإيصالات (/financials.html).
-11. 📋 استطلاعات الرأي وتقييم المقررات (/course-surveys.html).
-12. 📝 الملاحظات المحفوظة: حفظ وتخزين ملخصات كيدي للرجوع إليها لاحقاً.
-
-[معلومات النظام] الموقع: https://elnasrcsit.website · المطور: المهندس ضياء الدين (0112046348 | diaakardmash@gmail.com)
-════════════════════════════════════════════════════════════════════════════════
-`;
-    _ctxCacheSet(cacheKey, context);
-    return context;
+    /* أقسام مستقلة تُختار حسب نوع السؤال (renderLiveContext). أُزيلت الرموز
+       التعبيرية من دليل الخدمات (تفضيل المستخدم: لا emoji) وبيانات المطوّر
+       (موجودة في موجّه النظام لمن يسأل عنها فقط). */
+    const sections = {
+      date: `[التاريخ] اليوم ${fmtDateAr(new Date())}. احسب منه كل المدد المتبقية.`,
+      student: `[الطالب] ${user.name || 'طالب'} — ${user.batch?.name || 'الدفعة غير محددة'} — ليدر/مندوب الدفعة: ${leadersNames}`,
+      subjects: `[المواد المسجّلة (${subjects.length})]\n${subjectList || 'لا توجد مواد مرفوعة'}`,
+      assignments: `[الواجبات المفتوحة للتسليم]\n${assignmentsList}`,
+      quizzes: `[الاختبارات والكويزات القادمة]\n${quizzesList}`,
+      events: `[الفعاليات والتقويم الأكاديمي]\n${eventsList}`,
+      finance: `[الوضع المالي]\n${financeSummary}`,
+      pods: `[مجموعات المذاكرة النشطة]\n${studyPodsList}`,
+      news: `[أحدث أخبار الكلية]\n${newsList}`,
+      notifications: `[أحدث الإشعارات]\n${notifsList}`,
+      services: `[صفحات المنصة التي يمكن إرشاد الطالب إليها]
+- مختبر الأكواد Code Lab (/code-lab.html): كتابة وتشغيل وتصحيح الأكواد
+- بطاقات الاستذكار Flashcards (/flashcards.html)
+- بنك الامتحانات السابقة (/past-exams.html)
+- غرف المذاكرة Study Pods (/study-pods.html)
+- الكويزات (/quizzes.html) · لوحة المتصدرين (/leaderboard.html)
+- مكتبة الفيديو (/video-library.html) · التقويم والجدول (/calendar.html)
+- الرسوم والمدفوعات (/financials.html) · تقييم المقررات (/course-surveys.html)`
+    };
+    _ctxCacheSet(cacheKey, sections);
+    return sections;
   } catch (e) {
     console.warn('[AI/context]', e.message);
-    return '';
+    return null;
   }
+}
+
+/* تنظيف نهائي لرد كيدي: النماذج لا تلتزم دائماً بـ "لا رموز تعبيرية ولا خطوط
+   فاصلة" (ظهر ❌ و --- في تصحيح الكويز رغم التعليمة). علامتا الصح والخطأ تصيران
+   كلمتين، وبقية الرموز تُحذف، وأسطر --- / *** تُزال لأنها تظهر كما هي على الشاشة.
+   الأكواد داخل ``` لا تُمس. */
+const EMOJI_RE = /[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}\u{FE0F}\u{200D}]/gu;
+
+/* بعض النماذج تكتب جدول Markdown رغم التعليمة (ظهر في تصحيح الكويز عند Groq
+   2026-10-24)، والجدول لا يُعرض في فقاعة المحادثة فيظهر خطوطاً و|. نحوّله
+   قائمة نقاط: لكل صف سطر "العمود: القيمة — العمود: القيمة". */
+function tablesToLists(text) {
+  const lines = text.split('\n');
+  const out = [];
+  for (let i = 0; i < lines.length; i++) {
+    const isRow = l => /^\s*\|.*\|\s*$/.test(l || '');
+    const isSep = l => /^\s*\|?\s*:?-{2,}:?\s*(\|\s*:?-{2,}:?\s*)*\|?\s*$/.test(l || '');
+    if (isRow(lines[i]) && isSep(lines[i + 1])) {
+      const cells = l => l.trim().replace(/^\||\|$/g, '').split('|').map(c => c.trim());
+      const head = cells(lines[i]);
+      i += 2;
+      while (i < lines.length && isRow(lines[i])) {
+        const row = cells(lines[i]);
+        out.push('- ' + row.map((v, k) => (head[k] ? `${head[k]}: ${v}` : v)).filter(Boolean).join(' — '));
+        i++;
+      }
+      i--;
+      continue;
+    }
+    out.push(lines[i]);
+  }
+  return out.join('\n');
+}
+
+function sanitizeAnswer(text) {
+  if (!text) return text;
+  return String(text)
+    .split(/(```[\s\S]*?```)/g)
+    .map((part, i) => {
+      if (i % 2 === 1) return part; // كتلة كود
+      return tablesToLists(part)
+        .replace(/[✅✔☑]️?/g, 'صح')
+        .replace(/[❌✖✗✘]️?/g, 'خطأ')
+        // الرمز كان بجوار الكلمة نفسها: "✅ صحيح" ← "صح صحيح"
+        .replace(/صح\s+(صحيح|صحيحة|صح)(?=[\s.,،:]|$)/g, '$1')
+        .replace(/خطأ\s+(خطأ|خاطئ|خاطئة)(?=[\s.,،:]|$)/g, '$1')
+        .replace(EMOJI_RE, '')
+        .replace(/^[ \t]*([-*_])\1{2,}[ \t]*$/gm, '')
+        .replace(/[ \t]+$/gm, '')
+        .replace(/\n{3,}/g, '\n\n');
+    })
+    .join('')
+    .trim();
 }
 
 function errMsg(err, fallback) {
   if (err?.message === 'RATE_LIMIT_ALL_KEYS' || err?.message === 'ALL_AI_SYSTEMS_DOWN') {
     return 'السيرفر يواجه ضغطاً كبيراً، يرجى المحاولة بعد دقيقة';
+  }
+  if (err?.message === 'AI_TIMEOUT') {
+    return 'كيدي اتأخر في الرد هذه المرة، أعد إرسال سؤالك';
+  }
+  if (err?.message === 'PROMPT_TOO_LARGE') {
+    return 'المحتوى أطول مما يستطيع المساعد معالجته حالياً، جرّب محاضرة واحدة بدل المادة كاملة';
   }
   return fallback;
 }
@@ -886,46 +1371,50 @@ router.get('/status', auth, (req, res) => {
       blockedForSeconds: k.blockedUntil > now ? Math.round((k.blockedUntil - now) / 1000) : 0,
       requestCount: k.requestCount
     })),
-    // سلسلة الاحتياط الكاملة بالترتيب — كان التقرير يذكر Cohere فقط ويتجاهل Groq
-    fallbackAvailable: !!(_qwenKeys.length || process.env.COHERE_API_KEY || process.env.GROQ_API_KEY),
-    fallbackChain: [
-      { provider: 'qwen',   model: QWEN_MODEL,   configured: _qwenKeys.length > 0,   keysConfigured: _qwenKeys.length, host: QWEN_HOST },
-      { provider: 'cohere', model: COHERE_MODEL, configured: _cohereKeys.length > 0, keysConfigured: _cohereKeys.length },
-      { provider: 'groq',   model: GROQ_MODEL,   configured: _groqKeys.length > 0, keysConfigured: _groqKeys.length }
-    ],
-    primary: { provider: 'gemini', model: GEMINI_MODEL, keysConfigured: _geminiKeyPool.length }
+    // ترتيب التجربة الفعلي (AI_PROVIDER_ORDER) وحالة كل مزوّد فيه
+    providerOrder: providerOrder(),
+    fallbackAvailable: Object.values(configuredProviders()).filter(Boolean).length > 1,
+    providers: providerOrder().map(name => ({
+      provider: name,
+      model: { radox: RADOX_MODEL, nvidia: NVIDIA_MODEL, zai: ZAI_MODEL, mistral: MISTRAL_MODEL, gemini: GEMINI_MODEL, qwen: QWEN_MODEL, cohere: COHERE_MODEL, groq: GROQ_MODEL, groq2: GROQ_MODEL_2 }[name],
+      configured: AI_PROVIDERS[name].keyCount() > 0,
+      keysConfigured: AI_PROVIDERS[name].keyCount(),
+      maxRequestTokens: PROVIDER_MAX_REQUEST_TOKENS[name]
+    }))
   });
 });
 
 const SYSTEM_PROMPT = `أنت "كيدي" (Kedy)، المستشار والمساعد الأكاديمي والتقني الذكي لطلاب كلية النصر التقنية — جامعة النصر التقنية.
 طوّرك المهندس ضياء الدين (0112046348 | diaakardmash@gmail.com). لا تذكر بيانات المطور إلا إذا سُئلت عنها صراحة.
 
-════  الهوية والتخصص الأكاديمي والتقني ════
-• أنت خبير أكاديمي ومرشد ذكي شامل في علوم الحاسوب وهندسة البرمجيات وتقنية المعلومات (هياكل البيانات، الخوارزميات، البرمجة OOP، قواعد البيانات، الذكاء الاصطناعي، شبكات الحاسوب، أمن المعلومات، نظم التشغيل، هندسة الويب وتطبيقات الهاتف).
-• تفهم بعمق البيئة الأكاديمية الجامعية السودانية (شيتات ومقررات الكلية، سلايدات المحاضرات، مناديب وليدرات الدفعات، الامتحانات والتقييمات، مشاريع التخرج، ومصطلحات الطلاب كـ "الزيت / الزتونة الأكاديمية").
-• تعرف جميع أقسام وخدمات منصة الكلية وتوجه الطالب إليها (محرر ومختبر الأكواد Code Lab، بطاقات الاستذكار Flashcards، بنك الامتحانات Past Exams، غرف المذاكرة Study Pods، الكويزات، وجدول الفعاليات).
-• أسلوبك: فائق الذكاء، مباشر، مشجع، دقيق علمياً وبرمجياً، ويشرح أصعب المفاهيم بأبسط الطرق الواقعية.
+مهمتك: أن يفهم الطالب ويتقدّم في دراسته — لا أن تبهره. طلاب الكلية يدرسون علوم الحاسوب وتقنية المعلومات (برمجة، هياكل بيانات وخوارزميات، قواعد بيانات، شبكات وأمن معلومات، نظم تشغيل، هندسة برمجيات، ذكاء اصطناعي، ويب وتطبيقات هاتف) في السودان.
 
-════  القاعدة الذهبية: حجم الرد يطابق طبيعة السؤال ════
-• أسئلة بيانات النظام والكلية (كم مادة، موعد الواجب، الاختبار القادم، الرسوم، إشعارات الدفعة، أين أجد ميزة): أجب مباشرة في جملة أو جملتين محددتين من واقع سياق التطبيق الحي، ودل الطالب على الصفحة المناسبة.
-• أسئلة المفاهيم والتعريفات السريعة: أجب في 2 إلى 4 أسطر بتركيز عالٍ مع المصطلح بالإنجليزية بين قوسين.
-• طلبات الشرح والتبسيط ("اشرح لي"، "وضح بالتفصيل"): استخدم الهيكل الأكاديمي المحكم.
-• حل المسائل والبرمجة ("احسب"، "اكتب كود"، "حل المسألة"): اذكر الخطوات الرياضية أو الكود النظيف مع تحليل التعقيد الزمني والمكاني (Time & Space Complexity O(n)).
-• أسئلة وتوقعات الامتحان والمراجعة ("متوقع شنو"، "راجع معي"): ركّز على المفاهيم الجوهرية والأسئلة الشائعة ونقاط الفخاخ في الامتحانات.
-• التحيات والدردشة العابرة: رد بسطر واحد لطيف ومختصر.
+## اللغة والأسلوب
+- اكتب بعربية واضحة بسيطة. إن كتب الطالب بالعامية السودانية فرد بعربية سهلة قريبة منه، ولا بأس بلمسة سودانية خفيفة ودودة. لا تكتب بالإنجليزية إلا إن طلبها.
+- المصطلح التقني بالإنجليزية بين قوسين أول مرة فقط، مثل: المفتاح الأساسي (Primary Key).
+- لا رموز تعبيرية (emoji) إطلاقاً. لا تكرر سؤال الطالب، ولا تبدأ بـ "سؤال رائع"، ولا تختم بفقرة عروض مساعدة.
+- الرد يُقرأ على شاشة هاتف: فقرات قصيرة، نقاط عند التعداد، عناوين فقط في الشروح الطويلة، والأكواد داخل \`\`\` مع اسم اللغة.
+- لا جداول Markdown ولا خطوط فاصلة (---): لا تظهر على شاشة المحادثة. للمقارنة أو التصحيح استخدم قائمة نقاط.
 
-════  الهيكل الأكاديمي للشروحات المعمقة ════
-عند طلب الشرح، استخدم هذا الترتيب المحكم (بدون رموز تعبيرية في العناوين):
-**الفكرة الجوهرية:** المفهوم الأساسي في سطرين بوضوح تام مع المصطلح بالإنجليزية (Technical Term).
-**تشبيه من الواقع:** مثال واقعي أو برمجي يرسخ المفهوم في الذهن.
-**التفاصيل والخطوات:** النقاط العلمية الجوهرية مرتبة ومرقمة.
-**ملاحظة للامتحان:** 2-3 نقاط أو فخاخ يركز عليها دكاترة الكلية في الامتحانات.
+## الطول
+- طلب الطالب الصريح للطول ("باختصار"، "في جملتين"، "بالتفصيل") يتقدّم على أي تعليمة أخرى.
+- وإلا فطول الرد بقدر السؤال: سؤال بسيط = إجابة قصيرة. القالب الأكاديمي الطويل للشرح المطلوب فقط.
 
-════  الاستناد إلى المحتوى والمراجع (RAG) ════
-• "[محتوى المادة/المحاضرة المرفق]": هو النص المستخرج من ملفات الـ PDF ومحاضرات الكلية. اعتبره مرجعك الأكاديمي الأساسي واقتبس منه بدقة.
-• إذا سأل الطالب عن مادة ولم تكن مرفقة، قدّم له شرحاً علمياً قياسياً ممتازاً أو وجّهه لاختيار المادة من القائمة ليقرأ كيدي ملفاتها فوراً.
-• عند كتابة الأكواد: اكتب كوداً نظيفاً (Clean Code) باللغة المطلوبة (Python, Java, C++, JavaScript, SQL) مع تعليقات توضيحية بالعربية.
-• التنسيق: لغة عربية فصيحة مبسطة، الأكواد داخل \`\`\` مع اسم اللغة، والمعادلات واضحة دون تعقيد.`;
+## الصدق ومصادر المعلومات
+- المفاهيم العلمية والبرمجية: أجب من معرفتك مباشرة. لا تقل أبداً إن مفهوماً علمياً "غير موجود في البيانات" ولا تحيل الطالب لليدر في سؤال علمي.
+- بيانات الطالب (مواده، واجباته، كويزاته، رسومه، الإشعارات): من قسم "بيانات الطالب من منصة الكلية" وحده. لا تخترع موعداً أو رقماً أو درجة. إن لم تكن المعلومة هناك فقل إنها غير مسجلة على المنصة بعد، واقترح الليدر/المندوب للأمور الإدارية فقط.
+- لا تذكر للطالب كلمات مثل "السياق" أو "التعليمات" أو "قاعدة البيانات الداخلية" — تحدث كمساعد يعرف بياناته.
+- إن لم تكن متأكداً من معلومة علمية فقل ذلك بوضوح بدل التخمين.
+- محتوى المحاضرة المرفق إن وُجد هو المرجع الأول، واذكر أنه "حسب محاضرتكم" حين تستند إليه.
+
+## التعلّم قبل الإجابات الجاهزة
+- في المسائل والتمارين: اشرح طريقة التفكير والخطوات، لا الناتج وحده.
+- إن طلب الطالب حل واجب مُقيَّم بعينه من واجباته المفتوحة ليسلّمه كما هو، فساعده بالفهم والخطة والهيكل وأمثلة مشابهة، لا بعمل جاهز للتسليم — بلطف ودون وعظ.
+
+## المحادثة
+- استخدم سجل المحادثة: "مثال تاني"، "وضح أكتر"، "ليه؟" تعود إلى آخر موضوع. لا تُعد ما قلته؛ أضف الجديد.
+- إن كان الطالب متضايقاً أو قلقاً: اعترف بشعوره في جملة صادقة، ثم أعطه خطوة عملية صغيرة يبدأ بها الآن.
+- الأسئلة البعيدة عن الدراسة: سطر ودود قصير ثم أعد الحديث بلطف إلى ما يفيده دراسياً.`;
 
 /* ═════════════════════════════════════════════════════════════
    تحديد نية السؤال — يضبط طول الرد وحرارته وتعليماته الختامية.
@@ -942,25 +1431,53 @@ const SYSTEM_PROMPT = `أنت "كيدي" (Kedy)، المستشار والمسا�
 const THINKING_HEADROOM = 1200;
 
 const INTENT_MODES = {
-  // دردشة قصيرة / تحية
-  chat:    { maxOutputTokens: THINKING_HEADROOM + 200,  temperature: 0.5,
-             directive: 'رد بسطر واحد ودود ومختصر.' },
-  // استعلام عن بيانات التطبيق: مواعيد، أعداد، أخبار، إشعارات
+  // تحية أو دردشة قصيرة
+  chat:    { maxOutputTokens: THINKING_HEADROOM + 200,  temperature: 0.6,
+             directive: 'رد بسطر أو سطرين ودودين باسم الطالب، ويمكنك أن تسأله بماذا يذاكر اليوم.' },
+  // استعلام عن بياناته على المنصة: مواعيد، أعداد، رسوم، إشعارات
   data:    { maxOutputTokens: THINKING_HEADROOM + 400,  temperature: 0.2,
-             directive: 'أجب مباشرة من سياق التطبيق الحي في جملة أو جملتين كاملتين. لا عناوين ولا تشبيهات ولا نصائح امتحان. إن لم تكن المعلومة في السياق فقل ذلك صراحة ووجّه الطالب لليدر الدفعة.' },
-  // تعريف مصطلح
+             directive: 'أجب مباشرة من بيانات الطالب في جملة إلى ثلاث جمل: الإجابة أولاً ثم التفصيل المفيد (الموعد، كم يوماً تبقّى). لا تعريفات عامة ولا عناوين. إن لم تكن المعلومة مسجلة فقل ذلك بوضوح.' },
+  // تعريف مصطلح أو سؤال مفهوم قصير
   define:  { maxOutputTokens: THINKING_HEADROOM + 800,  temperature: 0.3,
-             directive: 'عرّف المصطلح في 2-4 أسطر فقط، مع مثال واحد قصير إن لزم. لا تستخدم الهيكل الأكاديمي الكامل.' },
-  // حل مسألة رياضية/برمجية
+             directive: 'عرّف المفهوم من معرفتك في 2-4 أسطر واضحة، ثم مثال واحد قصير من عالم الحاسوب. بلا عناوين. (إن كان السؤال بعيداً عن الدراسة كالرياضة أو الفن: أجب بسطر ودود قصير فقط ثم اقترح بلطف شيئاً دراسياً، وتجاهل هذا الشكل.)' },
+  // حل مسألة
   solve:   { maxOutputTokens: THINKING_HEADROOM + 1800, temperature: 0.2,
-             directive: 'اعرض خطوات الحل مرقّمة بإيجاز ثم الناتج النهائي في سطر مستقل. بلا مقدمات ولا خاتمة.' },
+             directive: 'اشرح فكرة الحل في سطر، ثم الخطوات مرقّمة بإيجاز، ثم الناتج النهائي في سطر مستقل بخط عريض.' },
+  // كتابة كود أو تصحيح خطأ برمجي
+  code:    { maxOutputTokens: THINKING_HEADROOM + 2400, temperature: 0.2,
+             directive: 'إن طُلب كود: سطر عن الفكرة، ثم الكود كاملاً قابلاً للتشغيل بتعليقات عربية قصيرة، ثم التعقيد الزمني والمكاني في سطر. إن كان خطأً برمجياً: السبب الأرجح أولاً بلغة بسيطة، ثم كيف يتأكد منه، ثم الإصلاح بكود قصير، ثم سبب ثانٍ محتمل إن وُجد. إن كان الكود الضروري للتشخيص غير مرفق فاطلبه في سطر بعد ذكر الأسباب الشائعة. بلا تشبيهات.' },
   // أسئلة الامتحانات المتوقعة والمراجعة
   exam:    { maxOutputTokens: THINKING_HEADROOM + 2400, temperature: 0.4,
-             directive: 'استخرج الأسئلة المتوقعة والمفاهيم الجوهرية للاختبار مع إجاباتها باختصار ودقة.' },
-  // شرح مفهوم — الحالة الوحيدة التي تستحق الهيكل الكامل
+             directive: 'رتّب أهم المواضيع المتوقعة في الامتحان، ولكل موضوع سؤال نموذجي مع إجابة مختصرة، ثم "فخاخ شائعة" في نقطتين أو ثلاث.' },
+  // اختبار الطالب تفاعلياً
+  quiz:    { maxOutputTokens: THINKING_HEADROOM + 1400, temperature: 0.5,
+             directive: 'اختبر الطالب: اكتب 3 أسئلة اختيار من متعدد مرقّمة (أ، ب، ج، د) متدرجة من السهل للأصعب في الموضوع المطلوب. لا تكشف الإجابات. اختم بسطر: "أرسل إجاباتك (مثلاً: 1-ب، 2-أ، 3-ج) وسأصححها لك."' },
+  // خطة مذاكرة من مواعيده الحقيقية
+  plan:    { maxOutputTokens: THINKING_HEADROOM + 1000, temperature: 0.4,
+             directive: 'ابنِ خطة قصيرة من مواعيده الحقيقية: رتّب حسب الأقرب موعداً، 3-5 خطوات بوقت تقريبي لكل خطوة، وابدأ بالأهم الآن. إن لم تكن لديه مواعيد قريبة فاقترح مراجعة متوازنة لمواده.' },
+  // ضيق أو قلق أو إرهاق
+  support: { maxOutputTokens: THINKING_HEADROOM + 700,  temperature: 0.6,
+             directive: 'ابدأ بجملة صادقة تعترف بشعوره دون مبالغة، ثم خطة صغيرة من 2-3 خطوات عملية يبدأ بها الليلة مبنية على أقرب مواعيده، ثم جملة تشجيع قصيرة. لا تحيله لأحد.' },
+  // متابعة لما قبلها في المحادثة
+  followup:{ maxOutputTokens: THINKING_HEADROOM + 1600, temperature: 0.4,
+             directive: 'هذه متابعة لآخر رد لك في المحادثة. نفّذ المطلوب تحديداً: مثال جديد مختلف، أو تبسيط، أو تفصيل، أو تصحيح إجابات الكويز (لكل سؤال: صح/خطأ مع سطر تصحيح، ثم النتيجة من 3، ثم اعرض جولة أصعب). لا تُعد التعريف السابق.' },
+  // شرح مفهوم — القالب المنظم للطلب الصريح فقط
   explain: { maxOutputTokens: THINKING_HEADROOM + 2600, temperature: 0.4,
-             directive: 'استخدم الهيكل الأكاديمي، واحذف أي قسم لا يضيف قيمة حقيقية لهذا السؤال. لا تتجاوز 400 كلمة.' },
+             directive: 'اشرح بوضوح متدرج: الفكرة الأساسية في سطرين، ثم النقاط المهمة مرقّمة، ثم مثال واحد ملموس، ثم "للامتحان:" في نقطة أو نقطتين. احذف أي جزء لا يضيف قيمة. لا تتجاوز 350 كلمة.' },
 };
+
+const LENGTH_DIRECTIVES = {
+  brief: 'الطالب طلب الاختصار: التزم بذلك حرفياً (جملة إلى ثلاث جمل)، بلا عناوين ولا أمثلة إضافية.',
+  detailed: 'الطالب طلب التفصيل: توسّع حتى 600 كلمة مع عناوين قصيرة وأمثلة.'
+};
+
+/* رسالة /ask كاملة — دالة واحدة يستخدمها المسار وسكربت تقييم النماذج،
+   فما يُقاس في التقييم هو حرفياً ما يصل للنموذج في الإنتاج. */
+function buildAskPrompt({ q, liveContext = '', studyBlock = '', mode, lengthDirective = '' }) {
+  return `${SYSTEM_PROMPT}\n${liveContext}${studyBlock}\n` +
+    `[رسالة الطالب]\n${q}\n\n` +
+    `[طريقة هذا الرد]\n${mode.directive}${lengthDirective ? `\n${lengthDirective}` : ''}`;
+}
 
 function extractSystemAndUserPrompts(fullPrompt) {
   if (!fullPrompt) return { systemPrompt: '', userPrompt: '' };
@@ -1031,38 +1548,102 @@ function normalizeQuizItems(items) {
   );
 }
 
-function detectIntent(question, hasStudyContext) {
+/* ═══ تصنيف السؤال ═══
+   كان التصنيف يبحث عن أجزاء كلمات: "كم" تطابق "التحكم" و"الكمبيوتر"، و"حل "
+   تطابق "مراحل " — فيُصنَّف "ما هو التحكم في التدفق؟" سؤالاً عن بيانات الطالب
+   ويرد كيدي "المعلومة غير موجودة، راجع الليدر". الآن نطابق كلمات كاملة بعد
+   تطبيع العربية ونزع السوابق (و، ف، ب، ل، ال…). العلامة * في آخر المؤشر تعني
+   "تبدأ الكلمة بهذا"، والمؤشر متعدد الكلمات يُطابق كعبارة. */
+const AR_PREFIXES = ['وال', 'بال', 'فال', 'كال', 'لل', 'ال', 'و', 'ف', 'ب', 'ل'];
+
+function normForIntent(s) {
+  return normalizeAIText(s)
+    .replace(/ى/g, 'ي')
+    .replace(/ـ/g, '')
+    .replace(/[«»"'()\[\]{}،؛]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+function intentMatcher(question) {
+  const text = ` ${normForIntent(question)} `;
+  const tokens = text.trim().split(' ').filter(Boolean);
+  const variants = tokens.map(tok => {
+    const v = new Set([tok]);
+    for (const p of AR_PREFIXES) if (tok.startsWith(p) && tok.length - p.length >= 2) v.add(tok.slice(p.length));
+    return [...v];
+  });
+  const matchOne = raw => {
+    const prefix = raw.endsWith('*');
+    const cue = normForIntent(prefix ? raw.slice(0, -1) : raw);
+    if (!cue) return false;
+    if (cue.includes(' ')) return text.includes(` ${cue}`);
+    return variants.some(vs => vs.some(v => (prefix ? v.startsWith(cue) : v === cue)));
+  };
+  return { has: cues => cues.some(matchOne), tokens, text };
+}
+
+const INTENT_CUES = {
+  greet:   ['سلام', 'هاي', 'هلا', 'هلو', 'مرحبا', 'اهلا', 'صباح', 'مساء', 'شكرا', 'تسلم', 'تمام', 'اوك', 'ok', 'hi', 'hello', 'hey', 'thanks', 'كيفك', 'كيف حالك', 'ازيك', 'عامل كيف', 'الحمدلله'],
+  support: ['تعبان', 'تعبت', 'زهجان', 'زهجت', 'زهقت', 'مضغوط', 'ضغط نفسي', 'خايف', 'خائف', 'قلقان', 'محبط', 'احباط', 'يائس', 'فاشل', 'ما فاهم حاجه', 'مافاهم حاجه', 'ما فاهم شي', 'ما قادر', 'مكتئب', 'ضايق', 'متوتر'],
+  exam:    ['متوقع*', 'توقعات', 'مراجعه', 'راجع معي', 'ذاكر معي', 'حاجات الامتحان', 'يجي في الامتحان', 'تجي في الامتحان', 'للامتحان', 'اهم مواضيع', 'اهم المواضيع', 'اهم النقاط', 'اسئله الامتحان', 'اسئله امتحان'],
+  quiz:    ['اختبرني', 'امتحني', 'سالني', 'اسالني', 'اختبر معلوماتي', 'قيم مستواي', 'quiz me', 'test me', 'اعمل لي اسئله', 'اديني اسئله', 'اعطني اسئله', 'جيب لي اسئله'],
+  codeErr: ['error', 'exception', 'traceback', 'bug', 'typeerror', 'syntaxerror', 'referenceerror', 'nullpointerexception', 'segmentation', 'undefined', 'خطا في الكود', 'الكود ما', 'مشكله في الكود', 'صحح الكود', 'صحح لي الكود'],
+  codeObj: ['كود', 'code', 'برنامج', 'دالة', 'داله', 'function', 'script', 'سكربت'],
+  codeAct: ['اكتب*', 'اعمل', 'سوي', 'برمج*', 'نفذ', 'implement', 'write', 'صحح*'],
+  plan:    ['اذاكر', 'نذاكر', 'ابدا ب*', 'خطه مذاكره', 'خطه للمذاكره', 'جدول مذاكره', 'رتب لي', 'نظم لي', 'اولويات', 'اعمل شنو', 'شنو اسوي'],
+  dataDirect: ['موادي', 'واجباتي', 'رسومي', 'دفعتي', 'اشعاراتي', 'الليدر', 'ليدر', 'المندوب', 'مندوب', 'اخر الاخبار', 'اخر خبر', 'جدولي', 'حضوري', 'غيابي', 'درجاتي', 'نتيجتي'],
+  dataNoun: ['واجب*', 'تسليم', 'كويز*', 'اختبار*', 'امتحان*', 'ماده', 'مواد', 'رسوم', 'قسط', 'اقساط', 'متبقي', 'مستحقات', 'اشعار*', 'تنبيه*', 'خبر', 'اخبار', 'محاضره*', 'جدول', 'فعاليه*', 'حضور', 'غياب'],
+  dataAsk: ['كم', 'متى', 'متين', 'امتى', 'وين', 'منو', 'قريب', 'قادم', 'الجاي', 'بكره', 'اليوم', 'الاسبوع', 'باقي', 'عندي'],
+  solve:   ['احسب', 'اوجد', 'برهن', 'اثبت', 'كم يساوي', 'ناتج', 'حل المساله', 'حل السؤال', 'حل التمرين', 'حل المعادله', 'حل لي', 'استنتج قيمه'],
+  explain: ['اشرح*', 'شرح', 'وضح*', 'فهمني', 'فسر*', 'الفرق بين', 'ما الفرق', 'ليش', 'ليه', 'لماذا', 'كيف يعمل', 'كيف تعمل', 'كيف اعمل', 'كيف اكتب', 'قارن', 'مقارنه', 'مراحل', 'خطوات', 'انواع', 'مميزات', 'عيوب'],
+  define:  ['ما هو', 'ما هي', 'ماهو', 'ماهي', 'شنو', 'ايش', 'وش', 'تعريف', 'عرف', 'ماذا يعني', 'معنى', 'يعني شنو', 'يعني ايه'],
+  followup:['مثال', 'تاني', 'ثاني', 'اخر', 'كمان', 'زياده', 'اكتر', 'اكثر', 'بسط', 'ابسط', 'ما فهمت', 'مافهمت', 'ليه', 'ليش', 'طيب', 'كمل', 'واصل', 'وبعدين', 'يعني', 'صح', 'غلط'],
+  brief:   ['باختصار', 'مختصر', 'مختصره', 'بسرعه', 'في جمله', 'في جملتين', 'جمله واحده', 'جمله وحده', 'في سطر', 'في سطرين', 'سطر واحد', 'بايجاز', 'briefly'],
+  detailed:['بالتفصيل', 'مفصل', 'مفصله', 'تفصيلي', 'شرح كامل', 'شرح وافي', 'بعمق']
+};
+
+const CODE_SYNTAX_RE = /```|\b(def|class|function|const|let|var|import|printf|cout|cin|public static|SELECT|INSERT)\b|=>|\);|\{\s*$/m;
+
+/**
+ * يصنّف سؤال الطالب: { intent, brief, detailed }.
+ * hasHistory: توجد محادثة سابقة. lastAssistant: نص آخر رد لكيدي (لتصحيح الكويز).
+ */
+function analyzeQuestion(question, { hasStudyContext = false, hasHistory = false, lastAssistant = '' } = {}) {
   const q = (question || '').trim();
-  const lower = q.toLowerCase();
+  const m = intentMatcher(q);
+  const brief = m.has(INTENT_CUES.brief);
+  const detailed = !brief && m.has(INTENT_CUES.detailed);
+  const result = intent => ({ intent, brief, detailed });
 
-  // تحية أو شكر قصير
-  if (q.length <= 25 && /^(سلام|السلام|هاي|هلا|مرحبا|أهلا|اهلا|شكرا|شكراً|تمام|اوك|ok|hi|hello|thanks)/i.test(q)) {
-    return 'chat';
-  }
+  // رد على كويز سابق → تصحيح
+  if (hasHistory && /سأصححها لك|وسأصححها/.test(lastAssistant) && q.length <= 200) return result('followup');
 
-  // أسئلة وتوقعات الامتحانات والمراجعة
-  const examWords = ['المتوقع', 'متوقع', 'توقعات', 'مراجعة', 'ذاكر معي', 'حاجات الامتحان', 'ما يجي في الامتحان'];
-  const has = (arr) => arr.some(w => lower.includes(w.toLowerCase()));
-  if (has(examWords)) return 'exam';
+  if (q.length <= 35 && m.has(INTENT_CUES.greet) && !m.has(INTENT_CUES.explain) && !m.has(INTENT_CUES.define)) return result('chat');
+  if (m.has(INTENT_CUES.support)) return result('support');
+  if (m.has(INTENT_CUES.exam)) return result('exam');
+  if (m.has(INTENT_CUES.quiz)) return result('quiz');
+  if (m.has(INTENT_CUES.codeErr) || CODE_SYNTAX_RE.test(q) || (m.has(INTENT_CUES.codeObj) && m.has(INTENT_CUES.codeAct))) return result('code');
+  if (m.has(INTENT_CUES.plan)) return result('plan');
+  if (m.has(INTENT_CUES.dataDirect) || (m.has(INTENT_CUES.dataNoun) && m.has(INTENT_CUES.dataAsk) && !hasStudyContext)) return result('data');
+  if (m.has(INTENT_CUES.solve) || m.tokens[0] === 'حل') return result('solve');
 
-  // استعلام عن بيانات النظام
-  const dataWords = ['كم', 'متى', 'موعد', 'مواعيد', 'تاريخ', 'آخر خبر', 'اخر خبر', 'الأخبار', 'الاخبار',
-                     'إشعار', 'اشعار', 'التنبيهات', 'واجب', 'الواجبات', 'تسليم', 'اختبار', 'الاختبارات',
-                     'امتحان', 'الامتحانات', 'كوز', 'موادي', 'مواد', 'دفعتي', 'الليدر', 'المندوب', 'باقي'];
-  const explainWords = ['اشرح', 'إشرح', 'وضح', 'وضّح', 'فهمني', 'ما الفرق', 'الفرق بين', 'لماذا', 'ليش', 'كيف يعمل', 'مقارنة'];
-  const solveWords = ['احسب', 'أحسب', 'حل ', 'حلّ', 'أوجد', 'اوجد', 'برهن', 'اثبت', 'أثبت', 'استنتج قيمة', 'كم يساوي'];
-  const defineWords = ['ما هو', 'ما هي', 'شنو', 'تعريف', 'ماذا يعني', 'معنى', 'وش يعني'];
+  // متابعة قصيرة لموضوع سابق: "مثال تاني"، "ليه؟"، "وضح أكتر"
+  if (hasHistory && q.length <= 40 && m.has(INTENT_CUES.followup)) return result('followup');
 
-  if (has(solveWords)) return 'solve';
-  if (has(explainWords)) return 'explain';
-  // "كم مادة عندي" تسبق "ما هو" في الأولوية لأنها بيانات نظام
-  if (has(dataWords) && !hasStudyContext) return 'data';
-  if (has(defineWords)) return 'define';
-  if (has(dataWords)) return 'data';
+  if (m.has(INTENT_CUES.explain)) return result(brief ? 'define' : 'explain');
+  if (m.has(INTENT_CUES.define)) return result(detailed ? 'explain' : 'define');
+  if (m.has(INTENT_CUES.dataNoun) && !hasStudyContext && q.length < 40) return result('data');
+  if (hasHistory && q.length <= 25) return result('followup');
 
-  // سؤال قصير جداً بلا مؤشرات → لا تُطل
-  if (q.length < 40) return 'define';
-  return 'explain';
+  // سؤال قصير بلا مؤشرات → لا تُطل
+  if (q.length < 40) return result(detailed ? 'explain' : 'define');
+  return result(brief ? 'define' : 'explain');
+}
+
+// واجهة قديمة تُرجع اسم النية فقط (تستخدمها الاختبارات)
+function detectIntent(question, hasStudyContext, opts = {}) {
+  return analyzeQuestion(question, { hasStudyContext, ...opts }).intent;
 }
 
 // =========================================================
@@ -1172,11 +1753,11 @@ router.get('/subject-context/:id', auth, async (req, res) => {
 router.post('/summarize', aiGuard, async (req, res) => {
   try {
     const { text, subjectTitle, lectureTitle } = req.body;
-    const liveContext = await getLiveStudentContext(req.user.id, req.activeBatch);
+    const liveContext = await getLiveStudentContext(req.user.id, req.activeBatch, 'summary');
     const content = (text && text.trim().length >= 10) ? text.slice(0, 12000) : `الموضوع: ${lectureTitle || 'المحاضرة'} - المادة: ${subjectTitle || 'المادة الأكاديمية'}`;
     
     const prompt = `${SYSTEM_PROMPT}\n${liveContext}\n\n[المطلوب]\nلخّص المحتوى التالي تلخيصاً أكاديمياً مركّزاً بالعربية.\nالتزم بـ: عناوين قصيرة بخط عريض، نقاط مرقّمة، وجملة واحدة لكل نقطة.\nلا تتجاوز 400 كلمة، ولا تضف مقدمة أو خاتمة أو عروض مساعدة.\nإن كان المحتوى المرفق ضئيلاً أو مجرد عنوان، قل ذلك بصراحة بدل تأليف ملخص من عندك.\n\n[المحتوى]\n${content}`;
-    const summary = await askAIWithUltimateFallback(prompt, { maxOutputTokens: 1400, temperature: 0.3 });
+    const summary = sanitizeAnswer(await askAIWithUltimateFallback(prompt, { maxOutputTokens: 1400, temperature: 0.3 }));
     res.json({ success: true, summary });
   } catch (err) {
     console.error('[AI/summarize]', err.message);
@@ -1198,7 +1779,6 @@ router.post('/ask', aiGuard, async (req, res) => {
       return res.status(429).json({ success: false, message: 'ترسل بسرعة كبيرة، أرجو الانتظار ثواني ثم أعد المحاولة' });
     }
 
-    const liveContext = await getLiveStudentContext(req.user.id, req.activeBatch);
     try {
       const { recordActivity } = require('../services/kedySmartNotification.service');
       recordActivity(req.user.id);
@@ -1221,9 +1801,7 @@ router.post('/ask', aiGuard, async (req, res) => {
       if (userBatch) {
         subjects = await Subject.find({ $or: [{ batch: userBatch }, { batches: userBatch }] }).select('name level _id').lean();
       }
-      if (!subjects.length) {
-        subjects = await Subject.find({}).select('name level _id').limit(10).lean();
-      }
+      // لا رجوع إلى مواد الكلية كلها: الطالب يختار من مواد دفعته فقط
 
       if (subjects.length > 0) {
         return res.json({
@@ -1287,38 +1865,33 @@ router.post('/ask', aiGuard, async (req, res) => {
       }
     }
 
-    // نافذة أوسع (10 رسائل) مع قصّ كل رسالة، حتى لا يفقد المساعد خيط الحوار
-    // ولا ينتفخ الطلب. الرسائل الطويلة تُقصّ بدل أن تُحذف.
-    let historyText = '';
-    if (Array.isArray(history) && history.length > 0) {
-      const recent = history.slice(-10).filter(m => m && m.content);
-      if (recent.length) {
-        historyText = '\n\n[سجل المحادثة الجارية — للسياق فقط، لا تُعده على الطالب]\n' +
-          recent.map(m => {
-            const who = m.role === 'user' ? 'الطالب' : 'كيدي';
-            const body = String(m.content).replace(/\s+/g, ' ').slice(0, 600);
-            return `${who}: ${body}`;
-          }).join('\n') + '\n';
-      }
-    }
+    // سجل المحادثة يُرسل كأدوار حقيقية للمزوّد (chatHistoryMessages)، لا كنص ملصوق
+    const historyMessages = chatHistoryMessages(history);
+    const lastAssistant = [...historyMessages].reverse().find(m => m.role === 'assistant')?.content || '';
 
     const studyContext = (text && text.trim().length >= 10)
       ? text.slice(0, 10000)
       : (subjectTitle || lectureTitle ? `المادة: ${subjectTitle || ''} · المحاضرة: ${lectureTitle || ''}` : '');
 
     const hasStudyContext = !!(text && text.trim().length >= 10);
-    const mode = INTENT_MODES[detectIntent(q, hasStudyContext)] || INTENT_MODES.explain;
+    const analysis = analyzeQuestion(q, { hasStudyContext, hasHistory: historyMessages.length > 0, lastAssistant });
+    const mode = INTENT_MODES[analysis.intent] || INTENT_MODES.explain;
+    const lengthDirective = analysis.brief ? LENGTH_DIRECTIVES.brief : analysis.detailed ? LENGTH_DIRECTIVES.detailed : '';
+
+    // سياق المنصة بقدر ما يحتاجه نوع السؤال فقط (CONTEXT_SECTIONS_BY_INTENT)
+    const liveContext = await getLiveStudentContext(req.user.id, req.activeBatch, analysis.intent);
 
     const studyBlock = studyContext
-      ? `\n\n[محتوى المادة/المحاضرة المرفق]\n${studyContext}\n`
+      ? `\n[محتوى المادة/المحاضرة المرفق — المرجع الأول للإجابة]\n${studyContext}\n`
       : '';
 
-    const prompt =
-      `${SYSTEM_PROMPT}\n${liveContext}${historyText}${studyBlock}\n` +
-      `[سؤال الطالب]\n${q}\n\n` +
-      `[تعليمة هذا الرد تحديداً]\n${mode.directive}`;
+    const prompt = buildAskPrompt({ q, liveContext, studyBlock, mode, lengthDirective });
 
-    let answer = await askAIWithUltimateFallback(prompt, mode);
+    let answer = sanitizeAnswer(await askAIWithUltimateFallback(prompt, {
+      maxOutputTokens: mode.maxOutputTokens,
+      temperature: mode.temperature,
+      history: historyMessages
+    }));
     if (topicLocationNotice) {
       answer = topicLocationNotice + answer;
     }
@@ -1380,6 +1953,42 @@ router.post('/quiz-gen', aiGuard, async (req, res) => {
       durationMinutes = 15
     } = req.body;
 
+    /* صلاحية النشر تُفحص قبل التوليد: لا نستهلك حصة الذكاء الاصطناعي على طلب
+       سيُرفض، والرفض حتمي لا يتوقف على نجاح المزوّد. */
+    let targetBatch = null;
+    if (saveDirectly) {
+      const mongoose = require('mongoose');
+      const User = require('../models/User');
+      const Subject = require('../models/Subject');
+      const user = await User.findById(req.user.id).select('roles batches').lean();
+      // الليدر مستبعد كما في POST /api/quizzes: يؤدّي الاختبارات بنفسه
+      const isDeanLevel = ['dean', 'admin'].some(r => user?.roles?.includes(r));
+      const isDoctor = user?.roles?.includes('doctor');
+      if (!isDeanLevel && !isDoctor) {
+        return res.status(403).json({ success: false, message: 'نشر الاختبارات متاح لأساتذة المقررات والعمادة فقط' });
+      }
+      if (!subjectId || !mongoose.Types.ObjectId.isValid(subjectId)) {
+        return res.status(400).json({ success: false, message: 'اختر المادة لنشر الاختبار' });
+      }
+      const subject = await Subject.findById(subjectId).select('doctor batches').lean();
+      if (!subject) return res.status(404).json({ success: false, message: 'المادة غير موجودة' });
+      if (!isDeanLevel && String(subject.doctor) !== String(req.user.id)) {
+        return res.status(403).json({ success: false, message: 'غير مصرح لك بنشر اختبار لمادة لا تدرّسها' });
+      }
+      /* الدفعة إلزامية في نموذج الاختبار، والواجهة لا ترسلها في الجسم — فكان
+         الحفظ يفشل دائماً بخطأ تحقق. نأخذها من الجسم أو ترويسة الدفعة النشطة،
+         ونتحقق أنها من دفعات المادة (ومن دفعات الدكتور). */
+      const subjectBatches = (subject.batches || []).map(String);
+      targetBatch = batchId || req.headers['x-batch-id'] || null;
+      if (!targetBatch && subjectBatches.length === 1) targetBatch = subjectBatches[0];
+      if (!targetBatch || !mongoose.Types.ObjectId.isValid(targetBatch) || !subjectBatches.includes(String(targetBatch))) {
+        return res.status(400).json({ success: false, message: 'حدد دفعة تابعة لهذه المادة لنشر الاختبار' });
+      }
+      if (!isDeanLevel && !(user.batches || []).map(String).includes(String(targetBatch))) {
+        return res.status(403).json({ success: false, message: 'هذه الدفعة غير مخصصة لك' });
+      }
+    }
+
     const content = (text && text.trim().length >= 10)
       ? text.slice(0, 10000)
       : `الموضوع: ${lectureTitle || 'المحاضرة'} - المادة: ${subjectTitle || 'المادة الأكاديمية'}`;
@@ -1403,10 +2012,12 @@ ${typeInstruction}
 ${content}`;
 
     let questions = [];
+    let usedFallback = false;
     try {
       const rawAI = await askAIWithUltimateFallback(prompt, { maxOutputTokens: 2800, temperature: 0.4 });
       questions = parseJsonArray(rawAI);
     } catch (aiErr) {
+      usedFallback = true;
       console.warn('[AI/quiz-gen] Falling back to offline question generator:', aiErr.message);
       // توليد ذكي احتياطي عند انقطاع شبكة النماذج أو بيئة الاختبار
       const fallbackQuestions = isTrueFalse ? [
@@ -1440,39 +2051,39 @@ ${content}`;
     let savedQuiz = null;
     // إذا طلب الدكتور/العميد حفظ الاختبار فوراً في بنك الاختبارات
     if (saveDirectly) {
-      const User = require('../models/User');
-      const Quiz = require('../models/Quiz');
-      const user = await User.findById(req.user.id).select('roles').lean();
-      const isStaff = ['dean', 'doctor', 'leader', 'admin'].some(r => user?.roles?.includes(r));
-
-      if (isStaff && subjectId) {
-        const formattedQuestions = questions.map(q => ({
-          text: q.question,
-          options: q.options,
-          correctOption: q.correct,
-          points: 1
-        }));
-
-        const now = new Date();
-        const quizDoc = await Quiz.create({
-          title: quizTitle || `اختبار ذكي - ${subjectTitle || 'المادة'}`,
-          subject: subjectId,
-          batch: batchId || req.activeBatch || undefined,
-          startsAt: now,
-          endsAt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
-          durationMinutes: parseInt(durationMinutes, 10) || 15,
-          questions: formattedQuestions,
-          published: true,
-          createdBy: req.user.id
-        });
-        savedQuiz = quizDoc;
+      /* أسئلة الطوارئ عامة (TCP مثلاً) ولا علاقة لها بالمحتوى — كانت تُنشر
+         للطلاب كاختبار حقيقي عند تعطل مزوّد الذكاء الاصطناعي. لا ننشرها. */
+      if (usedFallback) {
+        return res.status(503).json({ success: false, message: 'تعذّر الاتصال بالمساعد الذكي الآن — لم يُنشر أي اختبار. حاول بعد قليل.' });
       }
+      const Quiz = require('../models/Quiz');
+      const formattedQuestions = questions.map(q => ({
+        text: q.question,
+        options: q.options,
+        correctOption: q.correct,
+        points: 1
+      }));
+      const duration = Math.min(600, Math.max(1, parseInt(durationMinutes, 10) || 15));
+
+      const now = new Date();
+      savedQuiz = await Quiz.create({
+        title: String(quizTitle || `اختبار ذكي - ${subjectTitle || 'المادة'}`).slice(0, 160),
+        subject: subjectId,
+        batch: targetBatch,
+        startsAt: now,
+        endsAt: new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000),
+        durationMinutes: duration,
+        questions: formattedQuestions,
+        published: true,
+        createdBy: req.user.id
+      });
     }
 
     res.json({
       success: true,
       questions,
       savedQuiz,
+      usedFallback,
       questionType: isTrueFalse ? 'true_false' : 'mcq'
     });
   } catch (err) {
@@ -1531,11 +2142,14 @@ ${code.slice(0, 5000)}
 });
 
 // تنفيذ وترجمة كود C++ عن طريق خادم الترجمة مع تشفير Base64 الآمن
-router.post('/run-cpp', async (req, res) => {
+router.post('/run-cpp', auth, aiLimiter, async (req, res) => {
   try {
     const { code = '', stdin = '' } = req.body;
-    if (!code || !code.trim()) {
+    if (!code || typeof code !== 'string' || !code.trim()) {
       return res.status(400).json({ success: false, message: 'الكود البرمجي مطلوب للتنفيذ' });
+    }
+    if (code.length > 50000 || (stdin && stdin.length > 10000)) {
+      return res.status(400).json({ success: false, message: 'تجاوز الكود أو المدخلات الحد الأقصى المسموح به' });
     }
 
     const b64Code = Buffer.from(code).toString('base64');
@@ -1660,5 +2274,22 @@ module.exports._internals = {
   normalizeAIText,
   canAccessAISubject,
   buildAISubjectFilter,
-  normalizeQuizItems
+  normalizeQuizItems,
+  analyzeQuestion,
+  sanitizeAnswer,
+  chatHistoryMessages,
+  renderLiveContext,
+  estimateTokens,
+  providerOrder,
+  planProviders,
+  isKeyLevelFailure,
+  PROVIDER_MAX_REQUEST_TOKENS,
+  // لتقييم النماذج (scripts/eval-kedy.js) — تستدعي الشبكة
+  buildAskPrompt,
+  LENGTH_DIRECTIVES,
+  AI_PROVIDERS,
+  configuredProviders,
+  askAIWithUltimateFallback,
+  getLiveStudentSections,
+  raceProviders
 };

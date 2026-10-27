@@ -18,6 +18,12 @@ const Notification = require("../models/Notification");
 // Apply batchMiddleware to all comment routes
 router.use(auth, batchMiddleware);
 
+// فيديو "كل الدفعات" (batches فارغة) يظهر في المكتبة — يجب أن يقبل التعليقات أيضاً
+const inActiveBatch = (videoId, batchId) => ({
+  _id: videoId,
+  $or: [{ batches: batchId }, { batches: { $size: 0 } }, { batches: { $exists: false } }]
+});
+
 // ============================================================
 //  1. ADD COMMENT (with optional timestamp)
 // ============================================================
@@ -31,7 +37,7 @@ router.post("/:videoId/comments", async (req, res) => {
     }
 
     // Verify video exists and belongs to active batch
-    const video = await Video.findOne({ _id: videoId, batches: req.activeBatch });
+    const video = await Video.findOne(inActiveBatch(videoId, req.activeBatch));
     if (!video) return notFound(res, "الفيديو غير موجود في هذه الدفعة");
 
     if (!text || !text.trim()) {
@@ -103,7 +109,7 @@ router.get("/:videoId/comments", async (req, res) => {
     }
 
     // Verify video belongs to active batch
-    const video = await Video.findOne({ _id: videoId, batches: req.activeBatch });
+    const video = await Video.findOne(inActiveBatch(videoId, req.activeBatch));
     if (!video) return notFound(res, "الفيديو غير موجود في هذه الدفعة");
 
     const sortBy = req.query.sort === "time" ? { timestamp: 1 } : { createdAt: -1 };
@@ -132,20 +138,23 @@ router.get("/:videoId/comments", async (req, res) => {
 // ============================================================
 router.delete("/comments/:id", async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return notFound(res, "التعليق غير موجود");
     const comment = await VideoComment.findById(req.params.id);
     if (!comment) {
       return notFound(res, "التعليق غير موجود");
     }
 
+    /* الإشراف ضمن النطاق: كان أي دكتور أو ليدر يحذف أي تعليق في الكلية.
+       الآن: صاحب التعليق، العميد/الأدمن، رافع الفيديو، أو طاقم دفعة الفيديو الحالية. */
     const isOwner = comment.author.toString() === req.user.id;
-    const isStaff = req.user.roles && (
-      req.user.roles.includes("doctor") ||
-      req.user.roles.includes("dean") ||
-      req.user.roles.includes("admin") ||
-      req.user.roles.includes("leader")
-    );
+    const isDeanLevel = req.user.roles.includes("dean") || req.user.roles.includes("admin");
+    let isScopedStaff = false;
+    if (!isOwner && !isDeanLevel && req.user.roles.some(r => r === "doctor" || r === "leader")) {
+      const video = await Video.findOne(inActiveBatch(comment.video, req.activeBatch)).select("uploadedBy").lean();
+      isScopedStaff = Boolean(video);
+    }
 
-    if (!isOwner && !isStaff) {
+    if (!isOwner && !isDeanLevel && !isScopedStaff) {
       return fail(res, "لا يمكنك حذف هذا التعليق", 403);
     }
 

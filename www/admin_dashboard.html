@@ -10,8 +10,9 @@
   <link rel="manifest" href="/manifest.json">
   <title>لوحة الإدارة | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=2026083019">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026083019">
+  <link rel="stylesheet" href="/css/style.css?v=2026102613">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026102613">
+  <link rel="stylesheet" href="/css/ui.css?v=2026102613">
 
 
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
@@ -24,326 +25,134 @@
     <img src="/assets/logo.png" class="header-logo" alt="شعار كلية النصر التقنية - جامعة النصر التقنية">
     <div class="header-title-group">
       <strong>كلية النصر التقنية</strong>
-      <small>لوحة التحكم الإدارية</small>
+      <small id="headerSubtitle">العميد</small>
     </div>
   </div>
+  <!-- البحث والجرس فقط: الخروج والوضع الليلي في "حسابي". الجرس للتنبيهات الواردة
+       (كان يفتح صفحة الإرسال بينما شارته تعدّ غير المقروء) -->
   <div class="header-actions">
-    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي" aria-label="تبديل الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
-    <button class="btn-icon" style="position:relative" onclick="location.href='/manage-notifications.html'" title="الإشعارات" aria-label="الإشعارات">
+    <button class="btn-icon" onclick="CBS.openSearch?.()" title="بحث سريع" id="headerSearchBtn" aria-label="بحث"><i class="ri-search-line"></i></button>
+    <button class="btn-icon hm-header-bell" onclick="location.href='/notifications.html'" title="الإشعارات" aria-label="الإشعارات">
       <i class="ri-notification-3-line"></i>
-      <span class="bnav-badge" id="notifBadge" style="display:none;top:-2px;right:-2px;position:absolute"></span>
+      <span class="bnav-badge" id="notifBadge" style="display:none"></span>
     </button>
-    <button class="btn-icon" onclick="CBS.logout()" title="خروج" aria-label="تسجيل الخروج"><i class="ri-logout-box-r-line"></i></button>
   </div>
 </header>
 
-
-
 <div class="page-content">
+  <main class="hm" id="home">
 
-  <!-- Welcome Banner -->
-  <div class="welcome-banner" style="background: linear-gradient(135deg,#dc2626,#b91c1c,#991b1b);">
-    <div class="welcome-banner-icon-wrap">
-      <i class="ri-shield-star-line welcome-banner-icon"></i>
+    <section class="hm-greet">
+      <p class="hm-date" id="hmDate"></p>
+      <h1 class="hm-title" id="hmTitle">مرحباً</h1>
+    </section>
+
+    <div class="hm-cols">
+      <div class="hm-col">
+        <section aria-labelledby="hmFocusTitle">
+          <div class="hm-sec-head"><h2 class="hm-sec-title" id="hmFocusTitle">بانتظار قرارك</h2></div>
+          <div class="hm-list" id="hmFocusList" aria-live="polite">
+            <div class="hm-skel" style="height:128px;border-radius:0"></div>
+          </div>
+        </section>
+
+        <nav class="hm-kpis" id="hmKpis" aria-label="مؤشرات الكلية"></nav>
+
+        <!-- الدفعات كبطاقات: ضغطة واحدة تفتح إدارتها (كانت قائمة منسدلة + بطاقتين + زر) -->
+        <section aria-labelledby="hmBatchesTitle">
+          <div class="hm-sec-head">
+            <h2 class="hm-sec-title" id="hmBatchesTitle">الدفعات</h2>
+            <a class="hm-link" href="/manage-batches.html">إدارة الدفعات <i class="ri-arrow-left-s-line"></i></a>
+          </div>
+          <div class="hm-batches" id="hmBatches">
+            <div class="hm-skel" style="flex:0 0 150px;height:76px"></div>
+            <div class="hm-skel" style="flex:0 0 150px;height:76px"></div>
+          </div>
+        </section>
+
+        <section aria-labelledby="hmActionsTitle">
+          <div class="hm-sec-head"><h2 class="hm-sec-title" id="hmActionsTitle">وصول سريع</h2></div>
+          <div class="hm-actions" id="hmActions"></div>
+        </section>
+      </div>
+
+      <div class="hm-col">
+        <section aria-labelledby="hmUpdatesTitle">
+          <div class="hm-sec-head">
+            <h2 class="hm-sec-title" id="hmUpdatesTitle">آخر التنبيهات</h2>
+            <a class="hm-link" href="/notifications.html">عرض الكل <i class="ri-arrow-left-s-line"></i></a>
+          </div>
+          <div class="hm-list" id="activitiesContainer">
+            <div class="hm-skel" style="height:128px;border-radius:0"></div>
+          </div>
+        </section>
+
+        <details class="card obs-widget-card" id="observabilityCard" style="display:none;">
+            <summary class="obs-summary"><i class="ri-pulse-line"></i> حالة الخادم (للمسؤول التقني)</summary>
+            <div class="cbs-study-plan-header">
+              <div>
+                <div class="cbs-study-plan-title"><i class="ri-pulse-line"></i> مراقبة أداء الخادم والموارد</div>
+                <div id="observabilitySummary" class="cbs-study-plan-summary">جاري تحميل مؤشرات الأداء...</div>
+                <div id="observabilityPills" class="obs-pill-container"></div>
+              </div>
+              <span id="observabilityStatus" class="cbs-risk-badge">—</span>
+            </div>
+        
+            <div class="obs-metrics-grid">
+              <div class="obs-metric-card">
+                <div class="obs-metric-icon ai"><i class="ri-brain-line"></i></div>
+                <div>
+                  <div class="obs-metric-num" id="obsKedy">-</div>
+                  <div class="obs-metric-label">طلبات Kedy AI</div>
+                </div>
+              </div>
+              <div class="obs-metric-card">
+                <div class="obs-metric-icon notif"><i class="ri-notification-3-line"></i></div>
+                <div>
+                  <div class="obs-metric-num" id="obsNotifications">-</div>
+                  <div class="obs-metric-label">طلبات الإشعارات</div>
+                </div>
+              </div>
+              <div class="obs-metric-card">
+                <div class="obs-metric-icon requests"><i class="ri-speed-line"></i></div>
+                <div>
+                  <div class="obs-metric-num" id="obsRequests">-</div>
+                  <div class="obs-metric-label">إجمالي الطلبات</div>
+                </div>
+              </div>
+              <div class="obs-metric-card">
+                <div class="obs-metric-icon errors">
+                  <i class="ri-shield-check-line" id="obsErrorsIcon"></i>
+                </div>
+                <div>
+                  <div class="obs-metric-num" id="obsErrors">-</div>
+                  <div class="obs-metric-label">أخطاء الخادم (5xx)</div>
+                </div>
+              </div>
+            </div>
+        
+            <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border-light, var(--border));">
+              <div style="font-weight:700;font-size:0.85rem;color:var(--text-main);display:flex;align-items:center;gap:6px;">
+                <i class="ri-route-line" style="color:var(--primary);"></i> أكثر المسارات استخداماً
+              </div>
+              <div id="obsRoutes" class="obs-routes-list"></div>
+            </div>
+          </details>
+      </div>
     </div>
-    <div class="welcome-banner-body">
-      <h2>لوحة التحكم الإدارية</h2>
-      <p>إدارة شاملة للمستخدمين والدفعات والمقررات</p>
+
+  </main>
+</div>
+
+<div class="overlay hm-sheet" id="hmSheet" role="dialog" aria-modal="true" aria-labelledby="hmSheetTitle" onclick="if(event.target===this)CBSHome.closeSheet()">
+  <div class="hm-sheet-panel">
+    <div class="hm-sheet-grip" aria-hidden="true"></div>
+    <div class="hm-sheet-head">
+      <h2 id="hmSheetTitle">كل الأدوات</h2>
+      <button type="button" class="hm-sheet-close" onclick="CBSHome.closeSheet()" aria-label="إغلاق"><i class="ri-close-line"></i></button>
     </div>
+    <div id="hmSheetBody"></div>
   </div>
-
-  <!-- Admin Stats -->
-  <div class="stats-bar">
-    <div class="stat-item">
-      <i class="ri-team-line"></i>
-      <div class="stat-item-body">
-        <div class="stat-num" id="statUsers">-</div>
-        <div class="stat-label">المستخدمين</div>
-      </div>
-    </div>
-    <div class="stat-item">
-      <i class="ri-book-line"></i>
-      <div class="stat-item-body">
-        <div class="stat-num" id="statSubjects">-</div>
-        <div class="stat-label">المقررات</div>
-      </div>
-    </div>
-    <div class="stat-item">
-      <i class="ri-group-line"></i>
-      <div class="stat-item-body">
-        <div class="stat-num" id="statBatches">-</div>
-        <div class="stat-label">الدفعات</div>
-      </div>
-    </div>
-    <div class="stat-item">
-      <i class="ri-money-dollar-circle-line"></i>
-      <div class="stat-item-body">
-        <div class="stat-num" id="statOverdue">-</div>
-        <div class="stat-label">متأخرات مالية</div>
-      </div>
-    </div>
-  </div>
-
-  <!-- إدارة المستخدمين والبيانات -->
-  <div class="section-divider">
-    <i class="ri-settings-3-line"></i>
-    <span>إدارة النظام</span>
-  </div>
-
-  <div class="dash-grid">
-    <div class="dash-card" onclick="location.href='/pending-registrations.html'" style="border: 1px solid rgba(245, 158, 11, 0.4); background: rgba(245, 158, 11, 0.08);">
-      <div class="dash-card-icon warning" style="background: rgba(245, 158, 11, 0.2); color: #f59e0b;"><i class="ri-user-received-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">طلبات التسجيل المعلقة</span>
-        <span class="subtitle">مراجعة وقبول الطلبات والواتساب</span>
-      </div>
-    </div>
-    <!-- مراجعة البلاغات: مسار إلزامي في App Store (بند 1.2) وGoogle Play،
-         ويطلب المراجع دليلاً على وجوده وعمله فعلياً. -->
-    <a href="/moderation.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;border: 1px solid rgba(239, 68, 68, 0.35); background: rgba(239, 68, 68, 0.06);">
-      <div class="dash-card-icon" style="background: rgba(239, 68, 68, 0.18); color: #ef4444;"><i class="ri-flag-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">مراجعة البلاغات</span>
-        <span class="subtitle">المحتوى المُبلَّغ عنه — مهلة 24 ساعة</span>
-      </div>
-    </a>
-    <a href="/manage-users.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-      <div class="dash-card-icon primary"><i class="ri-team-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">إدارة المستخدمين</span>
-        <span class="subtitle">إضافة وتعديل الحسابات المعتمدة</span>
-      </div>
-    </a>
-    <a href="/manage-batches.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-      <div class="dash-card-icon success"><i class="ri-group-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">إدارة الدفعات</span>
-        <span class="subtitle">تنظيم الدفعات الأكاديمية</span>
-      </div>
-    </a>
-    <a href="/manage-subjects.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-      <div class="dash-card-icon warning"><i class="ri-book-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">إدارة المقررات</span>
-        <span class="subtitle">إضافة وتحرير المواد</span>
-      </div>
-    </a>
-    <a href="/manage-lectures.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-      <div class="dash-card-icon danger"><i class="ri-video-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">إدارة المحاضرات</span>
-        <span class="subtitle">رفع ومتابعة المحاضرات</span>
-      </div>
-    </a>
-  </div>
-
-  <!-- العمليات -->
-  <div class="section-divider">
-    <i class="ri-dashboard-3-line"></i>
-    <span>العمليات الأكاديمية</span>
-  </div>
-
-  <div class="dash-grid">
-    <a href="/manage-attendance.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-      <div class="dash-card-icon success"><i class="ri-calendar-check-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">الحضور والغياب</span>
-        <span class="subtitle">تسجيل ومتابعة الحضور</span>
-      </div>
-    </a>
-    <a href="/assignments.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-      <div class="dash-card-icon warning"><i class="ri-file-list-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">إدارة الواجبات</span>
-        <span class="subtitle">إنشاء ومراجعة التكاليف</span>
-      </div>
-    </a>
-    <a href="/manage-submissions.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-      <div class="dash-card-icon primary"><i class="ri-stack-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">تسليمات الطلاب</span>
-        <span class="subtitle">مراجعة وتقييم التسليمات</span>
-      </div>
-    </a>
-    <a href="/manage-notifications.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-      <div class="dash-card-icon info"><i class="ri-megaphone-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">الإشعارات</span>
-        <span class="subtitle">إرسال التنبيهات والتعاميم</span>
-      </div>
-    </a>
-    <a href="/financials.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-      <div class="dash-card-icon primary"><i class="ri-money-dollar-circle-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">الرسوم المالية</span>
-        <span class="subtitle">إدارة المدفوعات والأقساط</span>
-      </div>
-    </a>
-    <a href="/reports.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-      <div class="dash-card-icon danger"><i class="ri-bar-chart-box-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">التقارير</span>
-        <span class="subtitle">إحصائيات وتحليلات شاملة</span>
-      </div>
-    </a>
-  </div>
-
-  <!-- إدارة الدفعة المحددة -->
-  <div class="section-divider">
-    <i class="ri-focus-3-line"></i>
-    <span>إدارة دفعة محددة</span>
-  </div>
-
-  <!-- قائمة اختيار الدفعة النشطة (يشير إليها نص البطاقة أدناه) -->
-  <div class="card" style="padding:16px 20px;margin-bottom:16px;">
-    <label class="form-label" for="batchSwitcherSelect" style="display:block;margin-bottom:8px;font-weight:700;">
-      <i class="ri-layout-grid-line"></i> الدفعة النشطة
-    </label>
-    <select class="form-control" id="batchSwitcherSelect" onchange="onBatchSwitch(this.value)">
-      <option value="">-- اختر الدفعة --</option>
-    </select>
-  </div>
-
-  <div class="dash-grid">
-    <div class="dash-card" id="batchDetailsCard" onclick="goToBatchDetails()" style="background: linear-gradient(135deg,#7c3aed,#4f46e5); color: white; border: none; box-shadow: 0 8px 20px -4px rgba(124,58,237,0.4);">
-      <div class="dash-card-icon" style="background: rgba(255,255,255,0.2); color: white;"><i class="ri-dashboard-3-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title" style="color:white; font-weight: bold;">إدارة الدفعة الأكاديمية</span>
-        <span class="subtitle" style="color:rgba(255,255,255,0.8);" id="activeBatchName">اختر دفعة من القائمة أعلاه</span>
-      </div>
-    </div>
-    <a href="/batch-selector.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-      <div class="dash-card-icon success"><i class="ri-refresh-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">تبديل الدفعة</span>
-        <span class="subtitle">اختر دفعة أكاديمية للإدارة</span>
-      </div>
-    </a>
-  </div>
-
-  <!-- أدوات الكلية -->
-  <div class="section-divider">
-    <i class="ri-book-read-line"></i>
-    <span>محتوى الكلية والطلاب</span>
-  </div>
-
-  <div class="dash-grid">
-    <a href="/video-library.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-      <div class="dash-card-icon danger"><i class="ri-play-circle-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">المكتبة المرئية</span>
-        <span class="subtitle">مشاهدة ومراجعة المحاضرات</span>
-      </div>
-    </a>
-    <a href="/calendar.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-      <div class="dash-card-icon success"><i class="ri-calendar-event-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">التقويم الأكاديمي</span>
-        <span class="subtitle">مواعيد وفعاليات الدفعات</span>
-      </div>
-    </a>
-    <a href="/quizzes.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-      <div class="dash-card-icon primary"><i class="ri-question-answer-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">الاختبارات الإلكترونية</span>
-        <span class="subtitle">تصفح نماذج الاختبارات</span>
-      </div>
-    </a>
-    <a href="/leaderboard.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-      <div class="dash-card-icon warning"><i class="ri-trophy-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">لوحة المتصدرين</span>
-        <span class="subtitle">أداء الطلاب والمنافسة</span>
-      </div>
-    </a>
-    <a href="/admin-content.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-      <div class="dash-card-icon" style="background:rgba(13,59,102,.12);color:#0d3b66"><i class="ri-layout-masonry-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">المحتوى العام</span>
-        <span class="subtitle">أخبار ومعرض صفحة الاستقبال</span>
-      </div>
-    </a>
-    <a href="/past-exams.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-      <div class="dash-card-icon warning"><i class="ri-archive-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">بنك الامتحانات والمحاكاة</span>
-        <span class="subtitle">إدارة نماذج الفاينل والميدتيرم</span>
-      </div>
-    </a>
-    <a href="/study-pods.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-      <div class="dash-card-icon success"><i class="ri-team-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">غرف المذاكرة وبومودورو</span>
-        <span class="subtitle">متابعة جلسات تركيز الدفعات</span>
-      </div>
-    </a>
-    <a href="/code-lab.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-      <div class="dash-card-icon primary"><i class="ri-code-box-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">مختبر البرمجة (Code Lab)</span>
-        <span class="subtitle">محرر ومترجم لغات البرمجة</span>
-      </div>
-    </a>
-    <div class="dash-card" onclick="openAppVersionModal()" style="cursor:pointer;">
-      <div class="dash-card-icon" style="background:rgba(2,132,199,0.15);color:#0284c7;"><i class="ri-rocket-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">إصدار التطبيق والتحديث الإجباري</span>
-        <span class="subtitle">تتبع الإصدارات وإلزام الطلاب بالتحديث</span>
-      </div>
-    </div>
-  </div>
-
-  <section class="card obs-widget-card" id="observabilityCard" style="display:none;">
-    <div class="cbs-study-plan-header">
-      <div>
-        <div class="cbs-study-plan-title"><i class="ri-pulse-line"></i> مراقبة أداء الخادم والموارد</div>
-        <div id="observabilitySummary" class="cbs-study-plan-summary">جاري تحميل مؤشرات الأداء...</div>
-        <div id="observabilityPills" class="obs-pill-container"></div>
-      </div>
-      <span id="observabilityStatus" class="cbs-risk-badge">—</span>
-    </div>
-
-    <div class="obs-metrics-grid">
-      <div class="obs-metric-card">
-        <div class="obs-metric-icon ai"><i class="ri-brain-line"></i></div>
-        <div>
-          <div class="obs-metric-num" id="obsKedy">-</div>
-          <div class="obs-metric-label">طلبات Kedy AI</div>
-        </div>
-      </div>
-      <div class="obs-metric-card">
-        <div class="obs-metric-icon notif"><i class="ri-notification-3-line"></i></div>
-        <div>
-          <div class="obs-metric-num" id="obsNotifications">-</div>
-          <div class="obs-metric-label">طلبات الإشعارات</div>
-        </div>
-      </div>
-      <div class="obs-metric-card">
-        <div class="obs-metric-icon requests"><i class="ri-speed-line"></i></div>
-        <div>
-          <div class="obs-metric-num" id="obsRequests">-</div>
-          <div class="obs-metric-label">إجمالي الطلبات</div>
-        </div>
-      </div>
-      <div class="obs-metric-card">
-        <div class="obs-metric-icon errors">
-          <i class="ri-shield-check-line" id="obsErrorsIcon"></i>
-        </div>
-        <div>
-          <div class="obs-metric-num" id="obsErrors">-</div>
-          <div class="obs-metric-label">أخطاء الخادم (5xx)</div>
-        </div>
-      </div>
-    </div>
-
-    <div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border-light, var(--border));">
-      <div style="font-weight:700;font-size:0.85rem;color:var(--text-main);display:flex;align-items:center;gap:6px;">
-        <i class="ri-route-line" style="color:var(--primary);"></i> أكثر المسارات استخداماً
-      </div>
-      <div id="obsRoutes" class="obs-routes-list"></div>
-    </div>
-  </section>
-
 </div>
 
 <div id="toast-container"></div>
@@ -360,11 +169,11 @@
         <div class="form-row" style="display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:12px;">
           <div class="form-group">
             <label for="cfgLatestVersion" style="display:block;margin-bottom:4px;font-size:0.85rem;font-weight:700;">أحدث إصدار (Version Name)</label>
-            <input type="text" id="cfgLatestVersion" required placeholder="2.1.0" class="form-control" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;">
+            <input type="text" id="cfgLatestVersion" required placeholder="2.3.0" class="form-control" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;">
           </div>
           <div class="form-group">
             <label for="cfgLatestVersionCode" style="display:block;margin-bottom:4px;font-size:0.85rem;font-weight:700;">رقم البناء (Version Code)</label>
-            <input type="number" id="cfgLatestVersionCode" required placeholder="28" class="form-control" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;">
+            <input type="number" id="cfgLatestVersionCode" required placeholder="30" class="form-control" style="width:100%;padding:8px 12px;border:1px solid var(--border);border-radius:8px;">
           </div>
         </div>
 
@@ -412,98 +221,96 @@
   حقوق النشر &copy; <span id="year"></span> جامعة النصر التقنية &nbsp;|&nbsp; تطوير: ضياء الدين إبراهيم
 </footer>
 
-<script src="/js/shared.js?v=2026083019"></script>
-<script src="/js/app.js?v=2026083019"></script>
-<script src="/js/socket-client.js?v=2026083019" defer></script>
+<script src="/js/shared.js?v=2026102613"></script>
+<script src="/js/app.js?v=2026102613"></script>
+<script src="/js/home.js?v=2026102613"></script>
+<script src="/js/socket-client.js?v=2026102613" defer></script>
 <script>
   CBS.init({ requireRoles: ['dean', 'admin'] });
 
-  /* ===== إدارة الدفعة النشطة =====
-     هذه الدوال كانت محذوفة بينما بقيت الأزرار التي تستدعيها، فكان الضغط على
-     بطاقة "إدارة الدفعة الأكاديمية" يرمي ReferenceError ولا يحدث شيء. */
-  let _allBatches = [];
+  /* ===== لوحة الكلية للعميد =====
+     تجيب "ما الذي ينتظر قراري؟" أولاً، ثم مؤشرات الكلية، ثم الدفعات.
+     المكوّنات في js/home.js والعقد في docs/design/home-screens.md */
+  const H = CBSHome;
+  const esc = H.esc;
+  const t = H.tools;
+  H.greet(CBS.getUser(), CBS.getPrimaryRole(CBS.getUser()));
 
-  async function loadBatchSwitcher() {
-    try {
-      const res  = await CBS.apiGet('/api/batches');
-      const data = await CBS.readJson(res, 'تعذر تحميل الدفعات');
-      _allBatches = data.batches || data.data || (Array.isArray(data) ? data : []);
-      const select = document.getElementById('batchSwitcherSelect');
-      if (!select) return;
-      const activeId = CBS.getBatchId();
-      select.innerHTML = '<option value="">-- اختر الدفعة --</option>';
-      _allBatches.forEach(b => {
-        const opt = document.createElement('option');
-        opt.value = b._id;
-        opt.textContent = b.name + (b.code ? ' (' + b.code + ')' : '');
-        if (b._id === activeId) opt.selected = true;
-        select.appendChild(opt);
-      });
-      updateActiveBatchDisplay();
-    } catch (e) {
-      console.warn('loadBatchSwitcher:', e.message);
-      CBS.showToast(e.message || 'تعذر تحميل الدفعات', 'danger');
+  // ما في الشريط السفلي (المستخدمون، الدفعات، الرسوم) لا يتكرر هنا
+  H.actions(
+    [t.mSubjects, t.reports, t.pending, t.mNotifs, t.content, t.moderation, t.calendar],
+    [['العمليات الأكاديمية', [t.mSubjects, t.mLectures, t.mAttendance, t.mAssign, t.mSubs, t.quizzes, t.reports]],
+     ['التواصل والمحتوى', [t.mNotifs, t.notifs, t.content, t.moderation, t.calendar]],
+     ['الطلاب والمنصة', [t.pending, t.users, t.batches, t.fees, t.leaderboard, t.version]],
+     ['مصادر التعلم', [t.videos, t.pastExams, t.pods, t.lab]]]);
+
+  function openBatch(id) {
+    try { localStorage.setItem('cbs_active_batch_id', id); } catch (e) {}
+  }
+
+  async function loadHome() {
+    H.kpis([
+      { val: '—', label: 'الطلاب', href: '/manage-users.html' },
+      { val: '—', label: 'متوسط الحضور', href: '/reports.html' },
+      { val: '—', label: 'بحاجة لمتابعة', href: '/reports.html' }
+    ]);
+    const [home, sum, overdue, batchesData, notifs] = await Promise.all([
+      H.get('/api/reports/home'),
+      H.get('/api/reports/summary'),
+      H.get('/api/financials/overdue-report'),
+      H.get('/api/batches'),
+      H.get('/api/notifications?limit=3')
+    ]);
+
+    // ===== بانتظار قرارك =====
+    const rows = [];
+    if (home?.pendingRegistrations) {
+      rows.push(H.row({ href: '/pending-registrations.html', icon: 'ri-user-add-line', tone: 'warning', title: 'طلبات تسجيل جديدة', meta: 'بانتظار القبول أو الرفض', chip: String(home.pendingRegistrations), chipTone: 'warning' }));
+      H.badges['/pending-registrations.html'] = home.pendingRegistrations;
     }
-  }
-
-  function updateActiveBatchDisplay() {
-    const activeBatchId = CBS.getBatchId();
-    const batch  = _allBatches.find(b => b._id === activeBatchId);
-    const nameEl = document.getElementById('activeBatchName');
-    if (!nameEl) return;
-    nameEl.textContent = batch
-      ? batch.name + (batch.code ? ' - ' + batch.code : '')
-      : 'اختر دفعة من القائمة أعلاه';
-  }
-
-  function onBatchSwitch(batchId) {
-    if (batchId) localStorage.setItem('cbs_active_batch_id', batchId);
-    else localStorage.removeItem('cbs_active_batch_id');
-    updateActiveBatchDisplay();
-  }
-
-  function goToBatchDetails() {
-    const batchId = CBS.getBatchId();
-    if (!batchId) {
-      CBS.showToast('يرجى اختيار دفعة من القائمة أعلاه أولاً', 'warning');
-      return;
+    if (home?.pendingReports?.count) {
+      const late = home.pendingReports.overdue;
+      rows.push(H.row({ href: '/moderation.html', icon: 'ri-flag-line', tone: 'danger', title: 'بلاغات محتوى', meta: late ? `${late} تجاوز مهلة 24 ساعة` : 'يجب البتّ خلال 24 ساعة', chip: String(home.pendingReports.count), chipTone: 'danger' }));
+      H.badges['/moderation.html'] = home.pendingReports.count;
     }
-    location.href = '/admin_batch_details.html?batch=' + encodeURIComponent(batchId);
-  }
+    const overdueCount = overdue?.totalOverdueStudents ?? 0;
+    if (overdueCount) {
+      rows.push(H.row({ href: '/financials.html', icon: 'ri-money-dollar-circle-line', tone: 'warning', title: 'متأخرات مالية', meta: 'طلاب تجاوزوا موعد السداد', chip: String(overdueCount), chipTone: 'warning' }));
+    }
+    document.getElementById('hmFocusList').innerHTML = rows.length
+      ? rows.join('')
+      : (home ? H.empty('لا شيء بانتظار قرارك', 'لا طلبات تسجيل ولا بلاغات ولا متأخرات مالية حالياً.', 'ri-checkbox-circle-line', 'success')
+              : H.empty('تعذّر تحميل المهام', 'تحقّق من الاتصال ثم اسحب الصفحة للأسفل للتحديث', 'ri-wifi-off-line', 'warning'));
+    H.actions(); // شارات الأعداد على الأيقونات
 
-  // ===== جلب إحصائيات لوحة الإدارة =====
-  async function loadStats() {
-    try {
-      const [usersRes, subjectsRes, batchesRes, overdueRes] = await Promise.allSettled([
-        CBS.apiGet('/api/users'),
-        CBS.apiGet('/api/subjects'),
-        CBS.apiGet('/api/batches'),
-        CBS.apiGet('/api/financials/overdue-report')
+    // ===== مؤشرات الكلية (كانت عدد المستخدمين والمقررات: أرقام لا تقود لقرار) =====
+    if (sum) {
+      const att = sum.healthStatus === 'no_data' ? null : sum.avgAttendance;
+      H.kpis([
+        { val: sum.totalStudents ?? 0, label: 'الطلاب', href: '/manage-users.html' },
+        { val: att == null ? '—' : att + '%', label: 'متوسط الحضور', href: '/reports.html', tone: H.attendanceTone(att) },
+        { val: sum.atRiskCount ?? 0, label: 'بحاجة لمتابعة', href: '/reports.html', tone: sum.atRiskCount ? 'danger' : '' }
       ]);
-      if (usersRes.status === 'fulfilled' && usersRes.value.ok) {
-        const data = await usersRes.value.json();
-        const users = data.users || data;
-        document.getElementById('statUsers').textContent = Array.isArray(users) ? users.length : (data.pagination?.total || '-');
-      }
-      if (subjectsRes.status === 'fulfilled' && subjectsRes.value.ok) {
-        const data = await subjectsRes.value.json();
-        const subjects = data.data?.subjects || data.subjects || data;
-        document.getElementById('statSubjects').textContent = Array.isArray(subjects) ? subjects.length : (data.data?.pagination?.total || '-');
-      }
-      if (batchesRes.status === 'fulfilled' && batchesRes.value.ok) {
-        const data = await batchesRes.value.json();
-        const batches = data.batches || data;
-        document.getElementById('statBatches').textContent = Array.isArray(batches) ? batches.length : '-';
-      }
-      if (overdueRes.status === 'fulfilled' && overdueRes.value.ok) {
-        const data = await overdueRes.value.json();
-        const overdueCount = data.data?.totalOverdueStudents ?? data.totalOverdueStudents ?? '-';
-        document.getElementById('statOverdue').textContent = overdueCount;
-      }
-    } catch {}
+    }
+
+    // ===== الدفعات =====
+    const batches = (batchesData?.batches || (Array.isArray(batchesData) ? batchesData : []))
+      .filter(b => b.status !== 'archived');
+    const active = CBS.getBatchId();
+    document.getElementById('hmBatches').innerHTML = batches.length
+      ? batches.map(b => `<a class="hm-batch" href="/admin_batch_details.html?batch=${encodeURIComponent(b._id)}" onclick="openBatch('${esc(b._id)}')" style="--batch-color:${/^#[0-9a-f]{3,8}$/i.test(b.themeColor || '') ? b.themeColor : 'var(--primary)'}">
+          <strong>${esc(b.name)}</strong>
+          <span>${b.code ? esc(b.code) : 'بلا رمز'}${b._id === active ? ' · الحالية' : ''}</span>
+        </a>`).join('')
+      : `<a class="hm-batch" href="/manage-batches.html"><strong>لا دفعات بعد</strong><span>أنشئ أول دفعة</span></a>`;
+
+    H.updates(notifs?.notifications || (Array.isArray(notifs) ? notifs : []));
   }
+  loadHome();
+  setInterval(() => { if (!document.hidden) loadHome(); }, 60000);
 
   async function loadObservability() {
+    if (!CBS.hasRole('admin')) return; // العميد لا يحتاج مؤشرات الذاكرة والمسارات
     try {
       const res = await CBS.apiGet('/api/admin/observability');
       const payload = await CBS.readJson(res, 'تعذر تحميل مؤشرات المراقبة');
@@ -574,8 +381,8 @@
         data = payloadFallback.data || {};
       }
 
-      document.getElementById('cfgLatestVersion').value = data.latestVersion || '2.1.0';
-      document.getElementById('cfgLatestVersionCode').value = data.latestVersionCode || 28;
+      document.getElementById('cfgLatestVersion').value = data.latestVersion || '2.3.0';
+      document.getElementById('cfgLatestVersionCode').value = data.latestVersionCode || 30;
       document.getElementById('cfgMinSupportedVersion').value = data.minSupportedVersion || '2.1.0';
       document.getElementById('cfgMinSupportedVersionCode').value = data.minSupportedVersionCode || 28;
       document.getElementById('cfgForceUpdate').checked = !!data.forceUpdate || !!data.isMandatory;
@@ -620,11 +427,7 @@
     }
   }
 
-  // تشغيل كل شيء
-  loadBatchSwitcher();
-  loadStats();
   loadObservability();
-  setInterval(loadStats, 60000);
   setInterval(loadObservability, 60000);
 
   document.getElementById('year').textContent = new Date().getFullYear();

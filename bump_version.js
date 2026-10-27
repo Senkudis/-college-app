@@ -73,6 +73,16 @@ if (fs.existsSync(indexPath)) {
   if (h !== before) { fs.writeFileSync(indexPath, h, 'utf8'); changed.push('www/index.html'); }
 }
 
+/* 3ب. ثابتا الإصدار في app.js (احتياط فحص التحديث إن تعذّر App.getInfo) */
+const appJsPath = path.join(__dirname, 'www/js/app.js');
+if (fs.existsSync(appJsPath)) {
+  let s = fs.readFileSync(appJsPath, 'utf8');
+  const before = s;
+  s = s.replace(/VERSION: '\d+\.\d+\.\d+',/, `VERSION: '${VERSION}',`);
+  if (VERSION_CODE) s = s.replace(/BUILD_CODE: \d+,/, `BUILD_CODE: ${VERSION_CODE},`);
+  if (s !== before) { fs.writeFileSync(appJsPath, s, 'utf8'); changed.push('www/js/app.js (VERSION/BUILD_CODE)'); }
+}
+
 /* 4. اسم ذاكرة الـService Worker — تغييره يُبطل الذاكرة القديمة */
 const swPath = path.join(__dirname, 'www/sw.js');
 if (fs.existsSync(swPath)) {

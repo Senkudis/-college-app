@@ -9,8 +9,8 @@
   <meta name="description" content="صفحة تقديم طلب تسجيل طالب جديد - النظام الجامعي المتكامل">
   <link href="/vendor/fonts/cairo.css" rel="stylesheet">
   <link rel="stylesheet" href="/vendor/remixicon/remixicon.css">
-  <script charset="UTF-8" src="/js/shared.js?v=2026083019"></script>
-<script charset="UTF-8" src="/js/app.js?v=2026083019"></script>
+  <script charset="UTF-8" src="/js/shared.js?v=2026102613"></script>
+<script charset="UTF-8" src="/js/app.js?v=2026102613"></script>
 
   <style>
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
@@ -52,7 +52,7 @@
       margin-top: 2px;
     }
 
-    \.reg-card { position: relative; z-index: 1; 
+    .reg-card { position: relative; z-index: 1; 
       border: 1px solid rgba(255, 255, 255, 0.1);
       border-radius: 24px;
       padding: 28px 24px;
@@ -119,6 +119,34 @@
       background: #0f172a;
       color: #fff;
     }
+    .form-input.has-toggle { padding-left: 44px; }
+    .pass-toggle {
+      position: absolute;
+      left: 6px;
+      width: 34px;
+      height: 34px;
+      display: grid;
+      place-items: center;
+      background: none;
+      border: none;
+      border-radius: 10px;
+      color: #94a3b8;
+      font-size: 1.1rem;
+      cursor: pointer;
+    }
+    .pass-toggle:hover, .pass-toggle:focus-visible { color: #fff; background: rgba(255, 255, 255, 0.08); outline: none; }
+    .input-wrap .pass-toggle i { position: static; color: inherit; }
+    .field-warn {
+      display: none;
+      align-items: flex-start;
+      gap: 6px;
+      margin-top: 6px;
+      font-size: 0.78rem;
+      line-height: 1.5;
+      color: #fcd34d;
+    }
+    .field-warn.show { display: flex; }
+
     .form-input:focus, .form-select:focus {
       border-color: #38bdf8;
       background: rgba(255, 255, 255, 0.1);
@@ -178,13 +206,17 @@
     .back-link:hover { color: #fff; }
   
     body { background: #051527; }
-    .bg-orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.25; animation: orbFloat 8s ease-in-out infinite; z-index: 0; pointer-events: none; }
+    /* الدوائر الزخرفية كانت absolute فتمدّ عرض الصفحة (441px على هاتف 375)
+       وينزلق النموذج جانبياً عند التركيز على حقل وتُقصّ العناوين. fixed يجعلها
+       خلفية للشاشة لا جزءاً من عرض المستند. */
+    .bg-orb { position: fixed; border-radius: 50%; filter: blur(80px); opacity: 0.25; animation: orbFloat 8s ease-in-out infinite; z-index: 0; pointer-events: none; }
     .bg-orb-1 { width: 400px; height: 400px; background: #2563eb; top: -100px; right: -80px; animation-delay: 0s; }
     .bg-orb-2 { width: 300px; height: 300px; background: #06b6d4; bottom: -80px; left: -60px; animation-delay: -4s; }
     .bg-orb-3 { width: 200px; height: 200px; background: #7c3aed; top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -2s; }
     @keyframes orbFloat { 0%, 100% { transform: scale(1) translate(0, 0); } 33% { transform: scale(1.1) translate(20px, -20px); } 66% { transform: scale(0.95) translate(-15px, 15px); } }
 </style>
   <link rel="stylesheet" href="/css/login.css">
+  <link rel="stylesheet" href="/css/auth.css?v=2026102613">
 </head>
 
 <body>
@@ -233,6 +265,27 @@
         </div>
 
         <div class="form-group">
+          <label class="form-label" for="regPassword">كلمة المرور (6 أحرف على الأقل)</label>
+          <div class="input-wrap">
+            <i class="ri-lock-password-line"></i>
+            <input type="password" id="regPassword" class="form-input has-toggle" minlength="6" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false" required dir="ltr" aria-describedby="passWarn">
+            <button type="button" class="pass-toggle" id="passToggle" aria-label="إظهار كلمة المرور" aria-pressed="false"><i class="ri-eye-off-line"></i></button>
+          </div>
+          <div class="field-warn" id="passWarn" role="status">
+            <i class="ri-keyboard-line"></i>
+            <span>كلمة المرور فيها حروف عربية. تأكد أن لوحة المفاتيح على اللغة التي ستستخدمها عند تسجيل الدخول.</span>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label" for="regPassword2">تأكيد كلمة المرور</label>
+          <div class="input-wrap">
+            <i class="ri-lock-password-line"></i>
+            <input type="password" id="regPassword2" class="form-input" minlength="6" autocomplete="new-password" autocapitalize="off" autocorrect="off" spellcheck="false" required dir="ltr">
+          </div>
+        </div>
+
+        <div class="form-group">
           <label class="form-label" for="inviteCode">كود الدعوة السري الخاص بدفعتك (Invite Code)</label>
           <div class="input-wrap">
             <i class="ri-key-2-line"></i>
@@ -258,12 +311,35 @@
   <script>
     const apiBaseUrl = (typeof API_BASE !== 'undefined' && API_BASE) ? API_BASE : window.location.origin;
 
+    /* حقل كلمة المرور نقاط فقط: الطالب لا يرى أن لوحة المفاتيح كانت عربية
+       فيسجّل بحروف عربية ثم يدخل بالإنجليزية ويُرفض. الإظهار والتنبيه يكشفان ذلك.
+       (الأرقام العربية ١٢٣ يوحّدها الخادم مع 123 تلقائياً، لذا التنبيه للحروف فقط) */
+    const ARABIC_LETTERS = /[ء-يٱ-ۓ]/;
+    const passInput = document.getElementById('regPassword');
+    const passInput2 = document.getElementById('regPassword2');
+    const passToggle = document.getElementById('passToggle');
+    const passWarn = document.getElementById('passWarn');
+
+    passToggle.addEventListener('click', () => {
+      const show = passInput.type === 'password';
+      passInput.type = passInput2.type = show ? 'text' : 'password';
+      passToggle.setAttribute('aria-pressed', String(show));
+      passToggle.setAttribute('aria-label', show ? 'إخفاء كلمة المرور' : 'إظهار كلمة المرور');
+      passToggle.innerHTML = `<i class="${show ? 'ri-eye-line' : 'ri-eye-off-line'}"></i>`;
+    });
+    passInput.addEventListener('input', () => {
+      passWarn.classList.toggle('show', ARABIC_LETTERS.test(passInput.value));
+    });
+
     async function submitRegistration() {
       const name = document.getElementById('name').value.trim();
       const email = document.getElementById('email').value.trim();
       const phone = document.getElementById('phone').value.trim();
       const inviteCode = document.getElementById('inviteCode').value.trim();
-      const password = '123456';
+      /* كانت كلمة المرور ثابتة "123456" لكل الطلاب: بعد قبول الطلب يستطيع أي
+         شخص يعرف البريد الدخول قبل صاحبه وتعيين كلمته هو. الطالب يختارها الآن. */
+      const password = document.getElementById('regPassword').value;
+      const password2 = document.getElementById('regPassword2').value;
 
       const errEl = document.getElementById('alertError');
       const succEl = document.getElementById('alertSuccess');
@@ -274,6 +350,16 @@
 
       if (!inviteCode) {
         errEl.textContent = 'يرجى إدخال كود الدعوة الخاص بدفعتك';
+        errEl.style.display = 'flex';
+        return;
+      }
+      if (password.length < 6) {
+        errEl.textContent = 'كلمة المرور يجب أن تكون 6 أحرف على الأقل';
+        errEl.style.display = 'flex';
+        return;
+      }
+      if (password !== password2) {
+        errEl.textContent = 'كلمتا المرور غير متطابقتين';
         errEl.style.display = 'flex';
         return;
       }
@@ -292,10 +378,12 @@
 
         if (res.ok && data.success) {
           document.getElementById('regForm').reset();
-          succEl.innerHTML = '<i class="ri-checkbox-circle-fill"></i> ' + (data.message || 'تم إرسال طلبك بنجاح! سيتم مراجعته وقبوله من قبل إدارة الكلية.');
+          succEl.innerHTML = '<i class="ri-checkbox-circle-fill"></i> ';
+          succEl.append(data.message || 'تم إرسال طلبك بنجاح! سيتم مراجعته وقبوله من قبل إدارة الكلية.');
           succEl.style.display = 'flex';
         } else {
-          errEl.innerHTML = '<i class="ri-error-warning-fill"></i> ' + (data.message || 'فشل إرسال طلب التسجيل');
+          errEl.innerHTML = '<i class="ri-error-warning-fill"></i> ';
+          errEl.append(data.message || 'فشل إرسال طلب التسجيل');
           errEl.style.display = 'flex';
         }
       } catch (err) {

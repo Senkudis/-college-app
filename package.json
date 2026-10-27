@@ -1,13 +1,13 @@
 {
   "name": "college_lms_backend",
-  "version": "2.2.0",
+  "version": "2.6.0",
   "description": "نظام إدارة أكاديمي - كلية النصر التقنية",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
     "dev": "node --watch server.js",
     "check": "node scripts/check-ui.js",
-    "test": "npm run check && node --test routes/api.test.js routes/advanced-features.test.js routes/ai.test.js routes/kedy-smart-notifications.test.js routes/moderation.test.js",
+    "test": "npm run check && node --test routes/*.test.js",
     "test:all": "npm run check && node --test routes/*.test.js",
     "test:e2e": "playwright test",
     "backup": "node scripts/backup.js",
@@ -23,6 +23,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
+    "@capacitor/app": "^8.1.2",
     "@google/generative-ai": "^0.24.1",
     "@simplewebauthn/server": "^13.3.2",
     "bcryptjs": "3.0.3",

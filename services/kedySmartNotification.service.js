@@ -74,7 +74,7 @@ async function recordActivity(userId) {
  */
 async function sendSmartNudge(student, { title, message, url = '/dashboard.html', actionType = 'general' }, io = null) {
   try {
-    const notif = await Notification.create({
+    const notif = new Notification({
       title,
       message,
       type: 'normal',
@@ -82,6 +82,8 @@ async function sendSmartNudge(student, { title, message, url = '/dashboard.html'
       recipients: [student._id],
       createdBy: null
     });
+    if (notif.$locals) notif.$locals.skipPush = true; // نرسل أدناه نسخة أغنى (رابط الإجراء ونوعه)
+    await notif.save();
 
     // 1. إرسال فوري عبر Socket.io
     if (io) {

@@ -6,13 +6,14 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>إدارة الدفعات | كلية النصر التقنية</title>
-  <link rel="stylesheet" href="/css/style.css?v=2026083019">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026083019">
+  <link rel="stylesheet" href="/css/style.css?v=2026102613">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026102613">
+  <link rel="stylesheet" href="/css/ui.css?v=2026102613">
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
   <style>
     .batches-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
       gap: 14px;
     }
 
@@ -137,7 +138,7 @@
   <div class="page-content">
 
     <!-- Welcome Banner -->
-    <div class="welcome-banner" style="background: linear-gradient(135deg,#2563eb,#1d4ed8,#1e40af);">
+    <div class="welcome-banner" style="--page-accent:#2563eb">
       <div class="welcome-banner-icon-wrap">
         <i class="ri-group-line welcome-banner-icon"></i>
       </div>
@@ -146,22 +147,9 @@
         <p>إدارة وتتبع الدفعات الأكاديمية</p>
       </div>
     </div>
-    <div class="page-header">
-      <div class="page-header-left">
-        <div class="page-icon" style="background:var(--primary); color:white;"><i class="ri-group-line"></i></div>
-        <div>
-          <div class="page-title">إدارة الدفعات الأكاديمية</div>
-          <div class="page-subtitle">إنشاء وتعديل وإدارة جميع الدفعات بالكلية</div>
-        </div>
-      </div>
-      <div style="display: flex; gap: 8px; flex-wrap: wrap;">
-        <button class="btn btn-secondary" onclick="openCopySubjectsModal()" style="border: 1px solid var(--border);">
-          <i class="ri-file-copy-2-line"></i> استيراد المقررات بين الدفعات
-        </button>
-        <button class="btn btn-primary" onclick="openAddModal()">
-          <i class="ri-add-line"></i> إضافة دفعة جديدة
-        </button>
-      </div>
+    <div class="ui-toolbar" id="deanBatchActions">
+      <button type="button" class="ui-primary" onclick="openAddModal()"><i class="ri-add-line"></i> دفعة جديدة</button>
+      <button type="button" class="ui-act primary" onclick="openCopySubjectsModal()" style="min-height:44px"><i class="ri-file-copy-2-line"></i> استيراد المقررات</button>
     </div>
 
     <div id="alertMsg" class="alert"></div>
@@ -170,7 +158,7 @@
       <div class="spinner"></div>
     </div>
 
-    <div class="batches-grid" id="batchesGrid"></div>
+    <div class="hm-list" id="batchesGrid"></div>
   </div>
 
   <!-- Modal -->
@@ -283,12 +271,18 @@
 
   <div id="toast-container"></div>
 
-  <script src="/js/shared.js?v=2026083019"></script>
-<script src="/js/app.js?v=2026083019"></script>
-  <script src="/js/socket-client.js?v=2026083019" defer></script>
+  <script src="/js/shared.js?v=2026102613"></script>
+<script src="/js/app.js?v=2026102613"></script>
+  <script src="/js/socket-client.js?v=2026102613" defer></script>
   <script>
     CBS.init({ requireRoles: ['dean', 'leader', 'admin'] });
     const user = CBS.getUser();
+    // الليدر يعدّل اسم دفعته ولونها وكود الدعوة فقط؛ الإنشاء والحالة والرمز للعمادة
+    const isDeanLevelUser = CBS.hasRole('dean') || CBS.hasRole('admin');
+    document.addEventListener('DOMContentLoaded', () => {
+      const actions = document.getElementById('deanBatchActions');
+      if (actions && !isDeanLevelUser) actions.hidden = true; // [hidden] مضمون في style.css
+    });
 
     const PALETTE = [
       '#6366f1', // Indigo
@@ -341,26 +335,32 @@
     function renderBatches() {
       const grid = document.getElementById('batchesGrid');
       if (batches.length === 0) {
-        grid.innerHTML = `<div style="grid-column:1/-1; text-align:center; padding:40px; color:var(--text-muted);">لا توجد دفعات مسجلة حالياً</div>`;
+        grid.innerHTML = `<div class="hm-row hm-empty"><span class="hm-ic" data-tone="info"><i class="ri-group-line"></i></span><div class="hm-row-body"><div class="hm-row-title">لا دفعات بعد</div><div class="hm-row-meta">أنشئ أول دفعة من زر «دفعة جديدة»</div></div></div>`;
         return;
       }
 
-      grid.innerHTML = batches.map(b => `
-      <div class="batch-item" style="--item-color: ${b.themeColor}">
-        <div class="batch-title">${CBS.escapeHTML(b.name)}</div>
-        <div class="batch-code"><i class="ri-barcode-box-line"></i> الرمز: ${CBS.escapeHTML(b.code)}</div>
-        <div class="batch-code" style="color: #38bdf8; font-size: 0.78rem; margin-top: 2px;"><i class="ri-key-2-line"></i> كود الدعوة: <b>${CBS.escapeHTML(b.inviteCode || b.code)}</b></div>
-        
-        <div class="batch-status ${b.status === 'active' ? 'status-active' : 'status-archived'}" style="margin-top: 6px;">
-          <i class="ri-checkbox-circle-fill"></i> ${b.status === 'active' ? 'نشط' : 'مؤرشف'}
-        </div>
-        
-        <div class="batch-acts">
-          <button class="btn btn-secondary" onclick="openEditModal('${b._id}')" aria-label="تعديل"><i class="ri-pencil-line"></i> تعديل</button>
-          <a href="/dashboard.html?batch=${b._id}" class="btn" style="background:var(--bg-main);" onclick="CBS.toast('جاري فتح لوحة تحكم الدفعة...')">لوحة التحكم</a>
-        </div>
-      </div>
-    `).join('');
+      /* صف لكل دفعة: الضغط يفتح إدارتها، وكود الدعوة قابل للنسخ مباشرة لأنه
+         أكثر ما يُطلب (يرسله العميد للطلاب الجدد) */
+      grid.innerHTML = batches.map(b => {
+        const color = /^#[0-9a-f]{3,8}$/i.test(b.themeColor || '') ? b.themeColor : 'var(--primary)';
+        const invite = b.inviteCode || b.code;
+        return `<div class="hm-row ui-row">
+          <a class="ui-row-main" href="/admin_batch_details.html?batch=${encodeURIComponent(b._id)}" onclick="try{localStorage.setItem('cbs_active_batch_id','${b._id}')}catch(e){}">
+            <span class="hm-ic" style="color:${color};background:var(--bg-hover)"><i class="ri-group-line"></i></span>
+            <div class="hm-row-body"><div class="hm-row-title">${CBS.escapeHTML(b.name)}</div>
+              <div class="hm-row-meta">${CBS.escapeHTML(b.code)} · كود الدعوة <b dir="ltr">${CBS.escapeHTML(invite)}</b></div></div>
+          </a>
+          <span class="hm-row-end">
+            <span class="hm-chip" data-tone="${b.status === 'active' ? 'success' : ''}">${b.status === 'active' ? 'نشطة' : 'مؤرشفة'}</span>
+            <button type="button" class="ui-icon-btn" data-code="${CBS.escapeHTML(invite)}" onclick="copyInvite(this.dataset.code)" title="نسخ كود الدعوة" aria-label="نسخ كود الدعوة"><i class="ri-file-copy-line"></i></button>
+            <button type="button" class="ui-icon-btn" onclick="openEditModal('${b._id}')" title="تعديل" aria-label="تعديل"><i class="ri-pencil-line"></i></button>
+          </span>
+        </div>`;
+      }).join('');
+    }
+
+    function copyInvite(code) {
+      navigator.clipboard?.writeText(code).then(() => CBS.toast('تم نسخ كود الدعوة', code, 'success')).catch(() => CBS.toast('كود الدعوة', code, 'info'));
     }
 
     function openAddModal() {
@@ -395,6 +395,8 @@
       renderColorPicker(batch.themeColor);
 
       CBS.hideAlert('modalAlert');
+      document.getElementById('batchStatus').disabled = !isDeanLevelUser;
+      document.getElementById('batchCode').readOnly = !isDeanLevelUser;
       CBS.openModal('batchModal');
     }
 

@@ -7,24 +7,32 @@
   <title>إدارة تفاصيل الدفعة | لوحة التحكم الإدارية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet">
   <link href="/vendor/fonts/cairo.css" rel="stylesheet">
-  <link href="/css/style.css?v=2026083019" rel="stylesheet">
+  <link href="/css/style.css?v=2026102613" rel="stylesheet">
+  <link href="/css/mobile.css?v=2026102613" rel="stylesheet">
+  <link href="/css/ui.css?v=2026102613" rel="stylesheet">
   <style>
     .batch-header {
-      background: linear-gradient(135deg, #4f46e5, #7c3aed);
-      color: white;
-      border-radius: 18px;
-      padding: 28px 24px;
-      margin-bottom: 24px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      color: var(--text-main);
+      border-radius: var(--radius-lg);
+      padding: 16px 18px;
+      margin-bottom: 18px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      box-shadow: 0 10px 25px -5px rgba(124, 58, 237, 0.3);
     }
-    .batch-header-info h2 { font-size: 1.5rem; font-weight: 800; margin-bottom: 6px; }
-    .batch-header-info p { font-size: 0.9rem; opacity: 0.9; }
+    .batch-header { flex-wrap: wrap; gap: 14px; }
+    .batch-header-info { min-width: 0; flex: 1 1 200px; }
+    .batch-header .btn { flex-shrink: 0; white-space: nowrap; }
+    .batch-header-info h2 { font-size: 1.2rem; font-weight: 800; margin: 0 0 2px; overflow-wrap: anywhere; }
+    @media (max-width: 600px) {
+      .batch-header { padding: 14px; }
+    }
+    .batch-header-info p { font-size: 0.85rem; margin: 0; color: var(--text-muted); }
     .action-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
       gap: 16px;
       margin-top: 20px;
     }
@@ -60,119 +68,88 @@
     .action-icon.danger { background: rgba(239, 68, 68, 0.12); color: #ef4444; }
     .action-icon.purple { background: rgba(139, 92, 246, 0.12); color: #8b5cf6; }
     .action-details h3 { font-size: 1.05rem; font-weight: 700; margin-bottom: 4px; }
-    .action-details p { font-size: 0.82rem; color: var(--muted, #64748b); }
-  </style>
+    .action-details p { font-size: 0.82rem; color: var(--text-muted); }
+      .bd-row { cursor: pointer; }
+    .bd-row:active { background: var(--bg-hover); }
+</style>
 </head>
 <body>
 
-<header class="app-header">
-  <div class="header-content">
-    <button class="app-back-btn" onclick="location.href='/admin_dashboard.html'" aria-label="رجوع">
-      <i class="ri-arrow-right-line"></i>
-    </button>
-    <div class="page-title">
-      <h1>إدارة الدفعة الأكاديمية</h1>
-      <span class="page-subtitle">مركز عمليات وتفاصيل الدفعة المختارة</span>
+<!-- الترويسة الموحّدة: كانت ترويسة خاصة بلا أنماط (h1 بحجم المتصفح مقصوص على الهاتف) -->
+<header class="main-header">
+  <div class="header-brand">
+    <img src="/assets/logo.png" class="header-logo" alt="شعار كلية النصر التقنية">
+    <div class="header-title-group">
+      <strong>كلية النصر التقنية</strong>
+      <small>إدارة الدفعة الأكاديمية</small>
     </div>
+  </div>
+  <div class="header-actions">
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي" aria-label="تبديل الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
   </div>
 </header>
 
 <main class="page-content">
-  <div class="batch-header">
-    <div class="batch-header-info">
-      <h2 id="batchTitleDisplay">جاري التحميل...</h2>
-      <p id="batchSubtitleDisplay">رمز الدفعة والمعلومات الأساسية</p>
-    </div>
-    <button class="btn" onclick="location.href='/batch-selector.html'" style="background:rgba(255,255,255,0.2); border:1px solid rgba(255,255,255,0.35); color:white; backdrop-filter:blur(8px);">
-      <i class="ri-refresh-line"></i> تغيير الدفعة
-    </button>
+  <div class="welcome-banner"><div class="welcome-banner-body">
+    <h2 id="batchTitleDisplay">جاري التحميل...</h2>
+    <p id="batchSubtitleDisplay">رمز الدفعة والمعلومات الأساسية</p>
+  </div></div>
+  <div class="ui-toolbar" style="justify-content:flex-end">
+    <a class="ui-act" href="/batch-selector.html?force=1"><i class="ri-arrow-left-right-line"></i> تغيير الدفعة</a>
   </div>
 
   <!-- الإحصائيات السريعة للدفعة -->
-  <div class="stats-bar">
-    <div class="stat-item">
-      <i class="ri-team-line"></i>
-      <div class="stat-item-body">
-        <div class="stat-num" id="batchStudentCount">-</div>
-        <div class="stat-label">عدد الطلاب</div>
-      </div>
-    </div>
-    <div class="stat-item">
-      <i class="ri-book-read-line"></i>
-      <div class="stat-item-body">
-        <div class="stat-num" id="batchSubjectCount">-</div>
-        <div class="stat-label">المقررات الدراسية</div>
-      </div>
-    </div>
-    <div class="stat-item">
-      <i class="ri-calendar-check-line"></i>
-      <div class="stat-item-body">
-        <div class="stat-num" id="batchAttendanceRate">-</div>
-        <div class="stat-label">نسبة الحضور العامة</div>
-      </div>
-    </div>
-  </div>
+  <nav class="hm-kpis" style="margin-bottom:20px" aria-label="مؤشرات الدفعة">
+    <a class="hm-kpi" href="#" onclick="openBatchModule('/manage-users.html');return false"><span class="hm-kpi-val" id="batchStudentCount">-</span><span class="hm-kpi-label">الطلاب</span></a>
+    <a class="hm-kpi" href="#" onclick="openBatchModule('/manage-subjects.html');return false"><span class="hm-kpi-val" id="batchSubjectCount">-</span><span class="hm-kpi-label">المقررات</span></a>
+    <a class="hm-kpi" href="#" onclick="openBatchModule('/reports.html');return false"><span class="hm-kpi-val" id="batchAttendanceRate">-</span><span class="hm-kpi-label">الحضور</span></a>
+  </nav>
 
   <div class="section-divider">
-    <i class="ri-dashboard-3-line"></i>
-    <span>مهام وإدارات الدفعة</span>
+    <span>إدارة الدفعة</span>
   </div>
 
-  <div class="action-grid">
-    <div class="action-card" onclick="openBatchModule('/manage-attendance.html')">
-      <div class="action-icon success"><i class="ri-calendar-check-line"></i></div>
-      <div class="action-details">
-        <h3>سجل الحضور والغياب</h3>
-        <p>متابعة رصد الحضور والتقارير للدفعة</p>
-      </div>
+  <div class="hm-list">
+    <div class="hm-row bd-row" role="link" tabindex="0" onclick="openBatchModule('/manage-attendance.html')" onkeydown="if(event.key==='Enter')this.click()">
+      <span class="hm-ic"><i class="ri-calendar-check-line"></i></span>
+      <div class="hm-row-body"><div class="hm-row-title">سجل الحضور والغياب</div><div class="hm-row-meta">متابعة رصد الحضور والتقارير للدفعة</div></div>
+      <span class="hm-row-end"><i class="ri-arrow-left-s-line" aria-hidden="true"></i></span>
     </div>
 
-    <div class="action-card" onclick="openBatchModule('/assignments.html')">
-      <div class="action-icon warning"><i class="ri-file-list-line"></i></div>
-      <div class="action-details">
-        <h3>الواجبات والتكاليف</h3>
-        <p>إنشاء ومتابعة الواجبات المخصصة للدفعة</p>
-      </div>
+    <div class="hm-row bd-row" role="link" tabindex="0" onclick="openBatchModule('/assignments.html')" onkeydown="if(event.key==='Enter')this.click()">
+      <span class="hm-ic"><i class="ri-file-list-line"></i></span>
+      <div class="hm-row-body"><div class="hm-row-title">الواجبات والتكاليف</div><div class="hm-row-meta">إنشاء ومتابعة الواجبات المخصصة للدفعة</div></div>
+      <span class="hm-row-end"><i class="ri-arrow-left-s-line" aria-hidden="true"></i></span>
     </div>
 
-    <div class="action-card" onclick="openBatchModule('/manage-submissions.html')">
-      <div class="action-icon primary"><i class="ri-stack-line"></i></div>
-      <div class="action-details">
-        <h3>تسليمات الطلاب</h3>
-        <p>مراجعة وتقييم الواجبات المسلمة</p>
-      </div>
+    <div class="hm-row bd-row" role="link" tabindex="0" onclick="openBatchModule('/manage-submissions.html')" onkeydown="if(event.key==='Enter')this.click()">
+      <span class="hm-ic"><i class="ri-stack-line"></i></span>
+      <div class="hm-row-body"><div class="hm-row-title">تسليمات الطلاب</div><div class="hm-row-meta">مراجعة وتقييم الواجبات المسلمة</div></div>
+      <span class="hm-row-end"><i class="ri-arrow-left-s-line" aria-hidden="true"></i></span>
     </div>
 
-    <div class="action-card" onclick="openBatchModule('/calendar.html')">
-      <div class="action-icon purple"><i class="ri-calendar-event-line"></i></div>
-      <div class="action-details">
-        <h3>الجدول والفعاليات الأكاديمية</h3>
-        <p>إدارة امتحانات وفعاليات الدفعة</p>
-      </div>
+    <div class="hm-row bd-row" role="link" tabindex="0" onclick="openBatchModule('/calendar.html')" onkeydown="if(event.key==='Enter')this.click()">
+      <span class="hm-ic"><i class="ri-calendar-event-line"></i></span>
+      <div class="hm-row-body"><div class="hm-row-title">الجدول والفعاليات الأكاديمية</div><div class="hm-row-meta">إدارة امتحانات وفعاليات الدفعة</div></div>
+      <span class="hm-row-end"><i class="ri-arrow-left-s-line" aria-hidden="true"></i></span>
     </div>
 
-    <div class="action-card" onclick="openBatchModule('/financials.html')">
-      <div class="action-icon danger"><i class="ri-money-dollar-circle-line"></i></div>
-      <div class="action-details">
-        <h3>المستحقات والرسوم المالية</h3>
-        <p>متابعة رسوم وأرصدة طلاب الدفعة</p>
-      </div>
+    <div class="hm-row bd-row" role="link" tabindex="0" onclick="openBatchModule('/financials.html')" onkeydown="if(event.key==='Enter')this.click()">
+      <span class="hm-ic"><i class="ri-money-dollar-circle-line"></i></span>
+      <div class="hm-row-body"><div class="hm-row-title">المستحقات والرسوم المالية</div><div class="hm-row-meta">متابعة رسوم وأرصدة طلاب الدفعة</div></div>
+      <span class="hm-row-end"><i class="ri-arrow-left-s-line" aria-hidden="true"></i></span>
     </div>
 
-    <div class="action-card" onclick="openBatchModule('/manage-notifications.html')">
-      <div class="action-icon primary"><i class="ri-megaphone-line"></i></div>
-      <div class="action-details">
-        <h3>إشعارات وتعاميم الدفعة</h3>
-        <p>إرسال تنبيهات مخصصة لطلاب الدفعة</p>
-      </div>
+    <div class="hm-row bd-row" role="link" tabindex="0" onclick="openBatchModule('/manage-notifications.html')" onkeydown="if(event.key==='Enter')this.click()">
+      <span class="hm-ic"><i class="ri-megaphone-line"></i></span>
+      <div class="hm-row-body"><div class="hm-row-title">إشعارات وتعاميم الدفعة</div><div class="hm-row-meta">إرسال تنبيهات مخصصة لطلاب الدفعة</div></div>
+      <span class="hm-row-end"><i class="ri-arrow-left-s-line" aria-hidden="true"></i></span>
     </div>
     
-    <div class="action-card" onclick="openCopySubjectsModal()">
-      <div class="action-icon" style="background: rgba(14, 165, 233, 0.12); color: #0ea5e9;"><i class="ri-file-copy-2-line"></i></div>
-      <div class="action-details">
-        <h3>استيراد المقررات</h3>
-        <p>نقل أو نسخ مقررات من دفعة سابقة إلى هذه الدفعة</p>
-      </div>
+    <div class="hm-row bd-row" role="link" tabindex="0" onclick="openCopySubjectsModal()" onkeydown="if(event.key==='Enter')this.click()">
+      <span class="hm-ic"><i class="ri-file-copy-2-line"></i></span>
+      <div class="hm-row-body"><div class="hm-row-title">استيراد المقررات</div><div class="hm-row-meta">نقل أو نسخ مقررات من دفعة سابقة إلى هذه الدفعة</div></div>
+      <span class="hm-row-end"><i class="ri-arrow-left-s-line" aria-hidden="true"></i></span>
     </div>
   </div>
 </main>
@@ -217,12 +194,12 @@
   </div>
 </div>
 
-<script charset="UTF-8" src="/js/shared.js?v=2026083019"></script>
-<script charset="UTF-8" src="/js/app.js?v=2026083019"></script>
+<script charset="UTF-8" src="/js/shared.js?v=2026102613"></script>
+<script charset="UTF-8" src="/js/app.js?v=2026102613"></script>
 <script>
   (function () {
-    // التحقق من المصادقة — تعيد CBS.requireAuth()ٌ توجيه المستخدم لصفحة تسجيل الدخول عند الحاجة
-    if (!CBS.requireAuth()) return;
+    // صفحة العمادة: كانت تتحقق من تسجيل الدخول فقط فيفتحها الطالب بقائمة مهام العميد كاملة
+    if (!CBS.init({ requireRoles: ['dean', 'admin'] })) return;
 
   const currentBatchId = CBS.getBatchId();
 
@@ -239,7 +216,8 @@
         const data = await res.json();
         const batch = data.batch || data;
         document.getElementById('batchTitleDisplay').textContent = batch.name || 'دفعة أكاديمية';
-        document.getElementById('batchSubtitleDisplay').textContent = 'الرمز: ' + (batch.code || 'بدون') + ' · السنة الأكاديمية: ' + (batch.academicYear || '-');
+        // لا يوجد حقل سنة أكاديمية في نموذج الدفعة — كان يظهر '-' دائماً
+        document.getElementById('batchSubtitleDisplay').textContent = 'الرمز: ' + (batch.code || 'بدون') + ' · ' + (batch.status === 'archived' ? 'مؤرشفة' : 'نشطة');
       }
     } catch (e) {
       console.warn('Failed to load batch info', e);
@@ -253,8 +231,12 @@
 
       if (attRes.status === 'fulfilled' && attRes.value.ok) {
         const attData = await attRes.value.json();
-        document.getElementById('batchStudentCount').textContent = attData.data?.totalStudents ?? '-';
-        document.getElementById('batchAttendanceRate').textContent = (attData.data?.averageAttendanceRate != null ? attData.data.averageAttendanceRate + '%' : '-');
+        /* التقرير يُرجع الحقول في الجذر لا تحت data، ولا يحسب متوسطاً للدفعة —
+           فكان العدد والنسبة '-' دائماً. نحسب المتوسط من نسب الطلاب المرصودين. */
+        const rep = attData.data || attData;
+        document.getElementById('batchStudentCount').textContent = rep.totalStudents ?? '-';
+        const rates = (rep.students || []).map(s => s.attendanceRate).filter(r => typeof r === 'number');
+        document.getElementById('batchAttendanceRate').textContent = rates.length ? Math.round(rates.reduce((a, b) => a + b, 0) / rates.length) + '%' : 'لا رصد بعد';
       }
       if (subRes.status === 'fulfilled' && subRes.value.ok) {
         const subData = await subRes.value.json();
@@ -271,6 +253,9 @@
     }
     location.href = url + '?batch=' + encodeURIComponent(currentBatchId);
   }
+  // الدالة داخل الغلاف (IIFE) ولم تُكشف: كان كل زر في الصفحة يرمي ReferenceError
+  // فيظهر "حدث خطأ برمجي غير متوقع" ولا يفتح شيء
+  window.openBatchModule = openBatchModule;
 
   // ميزة استيراد المقررات
   async function openCopySubjectsModal() {

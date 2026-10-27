@@ -13,6 +13,27 @@ const { uploadLimiter } = require("../middleware/rateLimiter");
 const { clearCache } = require("../middleware/cache.middleware");
 const { success, fail, notFound, serverError } = require("../utils/response");
 
+// الروابط تُعرض كـ <a href> — نقبل http/https فقط (لا javascript: ولا data:)
+function cleanVideoUrl(raw) {
+  const value = String(raw || "").trim();
+  if (!value) return { ok: true, value: null };
+  try {
+    const url = new URL(value);
+    if (!["http:", "https:"].includes(url.protocol)) return { ok: false };
+    return { ok: true, value };
+  } catch {
+    return { ok: false };
+  }
+}
+
+// ملف رُفع ثم رُفض الطلب لا يجب أن يبقى يتيماً على القرص
+function discardUpload(req) {
+  if (req.file?.path) fs.promises.unlink(req.file.path).catch(() => {});
+}
+
+// النص المستخرج من PDF قد يبلغ مئات الكيلوبايت لكل محاضرة — يخص المساعد الذكي لا القوائم
+const LIST_FIELDS = "-extractedText";
+
 async function getAccessibleSubjectFilter(user) {
   if (user.roles.includes("dean") || user.roles.includes("admin")) return {};
   if (user.roles.includes("doctor")) return { doctor: user.id };
@@ -23,26 +44,39 @@ async function getAccessibleSubjectFilter(user) {
   return { _id: null };
 }
 
+/* من يدير (يعدّل/يحذف) محاضرة — قاعدة واحدة يستخدمها التعديل والحذف والعرض.
+   كانت القاعدة "من رفعها فقط"، فالليدر لا يحذف محاضرة رفعها الدكتور أو ليدر
+   سابق في مواد دفعته (حتى الملف المكرر أو الخاطئ)، والدكتور لا يحذف ما رفعه
+   الليدر في مادته — بينما يُسمح للليدر بإعادة ترتيبها كلها.
+   - العميد/المسؤول: الكل
+   - رافع المحاضرة: محاضرته
+   - الدكتور: كل محاضرات المواد التي يدرّسها
+   - الليدر: كل محاضرات مواد دفعته */
+const { getManageScope, canManageSubjectContent } = require("../utils/contentPermissions");
+
+// subject: كائن المادة (doctor, batches) أو null
+function canManageLecture(scope, lecture, subject) {
+  return canManageSubjectContent(scope, { ownerId: lecture.uploadedBy, subject });
+}
+
 // رفع محاضرة (يجب أن يكون العميد أو الدكتور أو الليدر)
 router.post("/", auth, role("dean", "doctor", "leader", "admin"), uploadLimiter, upload.single("file"), async (req, res) => {
   try {
     const title = String(req.body.title || "").trim();
     const subjectId = req.body.subject;
     if (!title || !subjectId || !mongoose.Types.ObjectId.isValid(subjectId)) {
+      discardUpload(req);
       return fail(res, "عنوان المحاضرة والمقرر الصحيح مطلوبان", 400);
     }
 
     const subject = await Subject.findById(subjectId).select("doctor batches");
-    if (!subject) return notFound(res, "المقرر غير موجود");
+    if (!subject) { discardUpload(req); return notFound(res, "المقرر غير موجود"); }
 
-    const videoUrl = String(req.body.videoUrl || "").trim();
-    if (videoUrl) {
-      try {
-        const url = new URL(videoUrl);
-        if (!['http:', 'https:'].includes(url.protocol)) throw new Error('invalid protocol');
-      } catch {
-        return fail(res, "رابط الفيديو غير صالح", 400);
-      }
+    const video = cleanVideoUrl(req.body.videoUrl);
+    if (!video.ok) { discardUpload(req); return fail(res, "رابط الفيديو غير صالح", 400); }
+    const videoUrl = video.value;
+    if (!req.file && !videoUrl) {
+      return fail(res, "أرفق ملف المحاضرة أو رابط فيديو", 400);
     }
 
     const isDean = req.user.roles.includes("dean") || req.user.roles.includes("admin");
@@ -63,7 +97,7 @@ router.post("/", auth, role("dean", "doctor", "leader", "admin"), uploadLimiter,
         subject.batches.some(batch => batch && batch.toString() === leader.batch.toString())
       );
     }
-    if (!permitted) return fail(res, "غير مصرح لك بالرفع لهذا المقرر", 403);
+    if (!permitted) { discardUpload(req); return fail(res, "غير مصرح لك بالرفع لهذا المقرر", 403); }
 
     let extractedText = '';
     let fileHash = undefined;
@@ -100,8 +134,11 @@ router.post("/", auth, role("dean", "doctor", "leader", "admin"), uploadLimiter,
       uploadedBy: req.user.id
     });
     clearCache('/api/lectures');
-    return success(res, lecture);
+    const out = lecture.toObject();
+    delete out.extractedText;
+    return success(res, out);
   } catch (err) {
+    discardUpload(req);
     console.error("Lecture upload error:", err);
     return serverError(res, err, "رفع المحاضرة");
   }
@@ -156,9 +193,9 @@ router.put("/:id", auth, role("dean", "doctor", "leader", "admin"), async (req, 
     const lecture = await Lecture.findById(id);
     if (!lecture) return notFound(res, "المحاضرة غير موجودة");
 
-    const isDeanOrAdmin = req.user.roles.includes("dean") || req.user.roles.includes("admin");
-    if (!isDeanOrAdmin && lecture.uploadedBy?.toString() !== req.user.id) {
-      return fail(res, "يمكنك تعديل المحاضرات التي رفعتها فقط", 403);
+    const subject = await Subject.findById(lecture.subject).select("doctor batches").lean();
+    if (!canManageLecture(await getManageScope(req.user), lecture, subject)) {
+      return fail(res, "لا تملك صلاحية تعديل هذه المحاضرة", 403);
     }
 
     const { title, videoUrl, order } = req.body;
@@ -168,7 +205,9 @@ router.put("/:id", auth, role("dean", "doctor", "leader", "admin"), async (req, 
       lecture.title = cleanTitle;
     }
     if (videoUrl !== undefined) {
-      lecture.videoUrl = String(videoUrl || "").trim() || null;
+      const video = cleanVideoUrl(videoUrl);
+      if (!video.ok) return fail(res, "رابط الفيديو غير صالح", 400);
+      lecture.videoUrl = video.value;
     }
     if (order !== undefined && !isNaN(Number(order))) {
       lecture.order = Number(order);
@@ -205,9 +244,19 @@ router.get("/", auth, async (req, res) => {
     /* الترتيب حسب المادة أولاً: حقل order رقم داخل المادة الواحدة، فترتيب
        عالمي عبر المواد كان يُشابك محاضرات المواد ببعضها بلا معنى. */
     const lectures = await Lecture.find(filter)
-      .populate("subject", "name")
-      .sort({ subject: 1, order: 1, createdAt: 1 });
-    res.json(lectures);
+      .select(LIST_FIELDS)
+      .populate("subject", "name doctor batches")
+      .sort({ subject: 1, order: 1, createdAt: 1 })
+      .lean();
+
+    /* canManage لكل محاضرة من نفس قاعدة الخادم: الواجهة كانت تحسبها بنفسها
+       ("من رفعها فقط") فتختفي أزرار الحذف عن الليدر والدكتور. */
+    const scope = await getManageScope(req.user);
+    res.json(lectures.map(l => {
+      const canManage = canManageLecture(scope, l, l.subject);
+      const { doctor, batches, ...subjectPublic } = l.subject || {};
+      return { ...l, subject: l.subject ? subjectPublic : l.subject, canManage };
+    }));
   } catch (err) {
     serverError(res, err, "جلب المحاضرات");
   }
@@ -216,11 +265,13 @@ router.get("/", auth, async (req, res) => {
 // حذف محاضرة
 router.delete("/:id", auth, role("dean", "doctor", "leader", "admin"), async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return fail(res, "معرّف غير صالح", 400);
     const lecture = await Lecture.findById(req.params.id);
     if (!lecture) return notFound(res, 'المحاضرة غير موجودة');
 
-    if (!req.user.roles.includes("dean") && !req.user.roles.includes("admin") && lecture.uploadedBy?.toString() !== req.user.id) {
-      return fail(res, "يمكنك حذف المحاضرات التي رفعتها فقط", 403);
+    const subject = await Subject.findById(lecture.subject).select("doctor batches").lean();
+    if (!canManageLecture(await getManageScope(req.user), lecture, subject)) {
+      return fail(res, "لا تملك صلاحية حذف هذه المحاضرة", 403);
     }
 
     // حذف الملف المرتبط من القرص
@@ -253,7 +304,7 @@ router.get("/by-subject/:subjectId", auth, async (req, res) => {
       return res.status(403).json({ success: false, message: "غير مصرح لك بعرض محاضرات هذا المقرر" });
     }
 
-    const lectures = await Lecture.find({ subject: subjectId }).sort({ order: 1, createdAt: 1 });
+    const lectures = await Lecture.find({ subject: subjectId }).select(LIST_FIELDS).sort({ order: 1, createdAt: 1 });
     
     res.json(lectures);
   } catch (err) {

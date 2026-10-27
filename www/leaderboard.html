@@ -10,44 +10,28 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Al-Nasr CBS">
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
-  <link rel="stylesheet" href="/css/style.css?v=2026083019">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026083019">
+  <link rel="stylesheet" href="/css/style.css?v=2026102613">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026102613">
+  <link rel="stylesheet" href="/css/ui.css?v=2026102613">
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
   <style>
+    /* سطح هادئ: المنصة الذهبية تحته هي ما يجب أن يلفت النظر */
     .leaderboard-banner {
-      /* التدرّج الفاتح (#f59e0b) كان يعطي نصاً أبيض بتباين 2.15 — يرسب في
-         المعايير ويصعب قراءته تحت الشمس. نُعمّقه مع بقاء الهوية الذهبية. */
-      background: linear-gradient(135deg, #b45309, #92400e, #78350f);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: var(--radius-lg);
-      padding: 28px;
-      color: #fff;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 24px;
-      box-shadow: var(--shadow-lg);
-      position: relative;
-      overflow: hidden;
+      padding: 16px 18px;
+      color: var(--text-main);
+      margin-bottom: 18px;
     }
-    .leaderboard-banner::after {
-      content: '\f22f';
-      font-family: 'remixicon';
-      font-style: normal;
-      font-size: 8rem;
-      position: absolute;
-      left: -20px;
-      bottom: -30px;
-      opacity: 0.15;
-    }
+    .leaderboard-banner h2 { font-size: 1.2rem; font-weight: 800; margin: 0 0 2px; }
+    .leaderboard-banner p { font-size: 0.88rem; margin: 0; color: var(--text-muted); }
     .top-podium {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
       gap: 10px;
       margin-bottom: 18px;
       align-items: flex-end;
-    }
-    @media (max-width: 600px) {
-      .top-podium { grid-template-columns: 1fr; }
     }
     .podium-card {
       background: var(--bg-card);
@@ -76,8 +60,14 @@
     .rank-1 { background: #fbbf24; color: #000; }
     .rank-2 { background: #94a3b8; color: #fff; }
     .rank-3 { background: #d97706; color: #fff; }
-    .podium-name { font-weight: 700; font-size: 0.85rem; color: var(--text-main); margin-bottom: 4px; }
-    .podium-points { font-weight: 700; color: #f59e0b; font-size: 0.95rem; }
+    .podium-name { font-weight: 700; font-size: 0.85rem; color: var(--text-main); margin-bottom: 4px; overflow-wrap: anywhere; }
+    .podium-points { font-weight: 700; color: var(--warning-text); font-size: 0.95rem; }
+    /* يجب أن يأتي بعد قاعدة .podium-1 الأساسية: كان قبلها فتغلبه scale(1.05)
+       وتبقى البطاقة بعرض الشاشة مكبّرة 5% فتخرج عن الحافة وتسبب تمريراً أفقياً */
+    @media (max-width: 600px) {
+      .top-podium { grid-template-columns: 1fr; }
+      .podium-1, .podium-1:hover { transform: none; }
+    }
 
     .ranking-list {
       display: flex;
@@ -105,7 +95,7 @@
     .user-info .batch { font-size: 0.8rem; color: var(--text-muted); }
     .points-badge {
       background: rgba(245, 158, 11, 0.15);
-      color: #d97706;
+      color: var(--warning-text);
       padding: 6px 14px;
       border-radius: 20px;
       font-weight: 800;
@@ -113,13 +103,21 @@
       align-items: center;
       gap: 6px;
     }
-  </style>
+      /* المنصّة: ثلاثة أعمدة متجاورة بدل ثلاث بطاقات كبيرة فوق بعضها */
+    .top-podium { display: grid !important; grid-template-columns: repeat(3, minmax(0, 1fr)) !important; gap: 8px !important; margin-bottom: 14px !important; align-items: end; }
+    .top-podium > * { margin: 0 !important; padding: 12px 6px !important; min-width: 0; box-shadow: none !important; }
+    .top-podium > *:nth-child(1) { order: 2; padding-top: 18px !important; }
+    .top-podium > *:nth-child(2) { order: 1; }
+    .top-podium > *:nth-child(3) { order: 3; }
+    .top-podium * { overflow-wrap: anywhere; }
+    .top-podium [class*="batch"], .top-podium small { display: none !important; }
+</style>
 </head>
 <body>
 
 <header class="main-header">
   <div class="header-brand">
-    <button class="btn-icon" onclick="CBS.goHome()" title="رجوع" aria-label="رجوع"><i class="ri-arrow-right-line"></i></button>
+    <img src="/assets/logo.png" class="header-logo" alt="شعار كلية النصر التقنية - جامعة النصر التقنية">
     <div class="header-title-group">
       <strong>كلية النصر التقنية</strong>
       <small>لوحة الشرف والمتصدرين</small>
@@ -132,20 +130,12 @@
 </header>
 
 <div class="page-content">
-  <div class="leaderboard-banner">
-    <div>
-      <h2 style="font-size:1.6rem;font-weight:900;margin-bottom:8px">لوحة المتصدرين ونقاط التميز</h2>
-      <p style="opacity:0.9;font-size:0.95rem">يتم احتساب النقاط تلقائياً بناءً على الالتزام بالحضور، تسليم الواجبات، وحل الاختبارات</p>
-    </div>
-  </div>
 
-  </div>
-
-  <div style="margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;">
+  <div style="margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 8px;">
     <h3 style="font-size:1.2rem;font-weight:800;color:var(--text-main);display:flex;align-items:center;gap:8px">
       <i class="ri-list-ordered-2" style="color:var(--primary)"></i> ترتيب الطلاب
     </h3>
-    <select id="filterBatch" class="form-control" style="width: auto; padding: 4px 12px; font-size: 0.9rem; border-radius: 20px;" onchange="loadLeaderboard()">
+    <select id="filterBatch" class="form-control" style="width: auto; max-width: min(100%, 240px); padding: 4px 12px 4px 36px; font-size: 0.9rem; border-radius: 20px;" onchange="loadLeaderboard()">
       <option value="">كل الدفعات</option>
     </select>
   </div>
@@ -168,8 +158,8 @@
 </footer>
 
 <div id="toast-container"></div>
-<script src="/js/shared.js?v=2026083019"></script>
-<script src="/js/app.js?v=2026083019"></script>
+<script src="/js/shared.js?v=2026102613"></script>
+<script src="/js/app.js?v=2026102613"></script>
 <script>
   CBS.init();
   document.getElementById('year').textContent = new Date().getFullYear();

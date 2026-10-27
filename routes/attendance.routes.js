@@ -54,14 +54,20 @@ router.get("/export", auth, role("dean", "doctor", "leader", "admin"), async (re
 
     let csv = '\uFEFFالاسم,البريد الإلكتروني,المادة,التاريخ,الحالة\n';
 
+    function sanitizeCsvCell(val) {
+      let str = String(val || '').replace(/"/g, '""');
+      if (/^[=+\-@\t\r]/.test(str)) str = "'" + str;
+      return `"${str}"`;
+    }
+
     records.forEach(rec => {
       const subjName = rec.subject?.name || 'مادة';
-      const dateStr = rec.date ? new Date(rec.date).toLocaleDateString('ar-SD') : '';
+      const dateStr = rec.date ? new Date(rec.date).toLocaleDateString('ar-EG-u-nu-latn') : '';
       (rec.students || []).forEach(s => {
         const studentName = s.student?.name || 'طالب';
         const studentEmail = s.student?.email || '';
         const statusStr = s.status === 'present' ? 'حاضر' : s.status === 'late' ? 'متأخر' : 'غائب';
-        csv += `"${studentName}","${studentEmail}","${subjName}","${dateStr}","${statusStr}"\n`;
+        csv += `${sanitizeCsvCell(studentName)},${sanitizeCsvCell(studentEmail)},${sanitizeCsvCell(subjName)},${sanitizeCsvCell(dateStr)},${sanitizeCsvCell(statusStr)}\n`;
       });
     });
 
@@ -109,15 +115,52 @@ router.post("/", auth, role("dean", "doctor", "leader", "admin"), verifySubjectA
   if (!subject || !date || !Array.isArray(students)) {
     return fail(res, "المادة والتاريخ وقائمة الطلاب مطلوبة", 400);
   }
+  /* التاريخ نص YYYY-MM-DD هو مفتاح الحصة: "2026-10-5" و"2026-10-05" كانا
+     يُنشئان حصتين لليوم نفسه فتُحسب الحصة مرتين في نسب الغياب. */
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(String(date)) || Number.isNaN(new Date(date).getTime())) {
+    return fail(res, "صيغة التاريخ يجب أن تكون YYYY-MM-DD", 400);
+  }
+  const todayStr = new Date(Date.now() + 14 * 3600 * 1000).toISOString().slice(0, 10);
+  if (date > todayStr) {
+    return fail(res, "لا يمكن رصد الحضور لتاريخ مستقبلي", 400);
+  }
   try {
+    /* findOneAndUpdate لا يشغّل مدققات المخطط افتراضياً — أي حالة كانت تُحفظ.
+       ونقصر القائمة على طلاب دفعات المادة (بلا تكرار) كي لا يُرصد غريب عنها. */
+    const subjectBatches = (req.subject?.batches || []).map(String);
+    const allowedStudents = new Set((await User.find({
+      roles: { $in: ["student", "leader"] },
+      ...(subjectBatches.length ? { batch: { $in: subjectBatches } } : {})
+    }).select("_id").lean()).map(u => String(u._id)));
+
+    const seen = new Set();
+    const cleanStudents = [];
+    for (const entry of students) {
+      const sid = String(entry?.student || entry?.studentId || "");
+      if (!mongoose.Types.ObjectId.isValid(sid) || seen.has(sid) || !allowedStudents.has(sid)) continue;
+      if (!["present", "absent"].includes(entry.status)) {
+        return fail(res, "حالة الحضور يجب أن تكون حاضر أو غائب", 400);
+      }
+      seen.add(sid);
+      cleanStudents.push({ student: sid, status: entry.status });
+    }
+    if (!cleanStudents.length) {
+      return fail(res, "لا يوجد طلاب صالحون في قائمة الحضور لهذه المادة", 400);
+    }
+
     /* المفتاح صار (المادة، التاريخ) ليطابق الفهرس الفريد الجديد: الرصد
        الثاني لنفس الحصة يحدّث السجل القائم بدل أن يُنشئ سجلاً موازياً،
        ونحتفظ بآخر من عدّله. */
+    // الرصد السابق لنفس الحصة: تعديله لا يعيد تحذير من كان غائباً أصلاً
+    const previous = await Attendance.findOne({ subject, date }).select("students").lean();
+    req.previouslyAbsent = new Set((previous?.students || []).filter(s => s.status === "absent").map(s => String(s.student)));
+
     const attendance = await Attendance.findOneAndUpdate(
       { subject, date },
-      { students, recordedBy: req.user.id },
-      { upsert: true, returnDocument: 'after' }
+      { students: cleanStudents, recordedBy: req.user.id },
+      { upsert: true, returnDocument: 'after', runValidators: true }
     );
+    req.body.students = cleanStudents;
     res.json(attendance);
   } catch (err) {
     return serverError(res, err, "تسجيل الحضور");
@@ -130,9 +173,10 @@ router.post("/", auth, role("dean", "doctor", "leader", "admin"), verifySubjectA
   try {
     // ====== إشعارات الغياب — بعد إرسال الاستجابة مباشرة للتجنب التأخير ======
     // الطلاب الغائبون في هذا التسجيل
-    const absentStudentIds = (students || [])
+    const absentStudentIds = (req.body.students || [])
       .filter(s => s && s.status === 'absent')
-      .map(s => (s.student || s.studentId || s).toString());
+      .map(s => (s.student || s.studentId || s).toString())
+      .filter(id => !req.previouslyAbsent?.has(id));
 
     if (absentStudentIds.length > 0) {
       const io = req.app?.get('io');
@@ -144,7 +188,7 @@ router.post("/", auth, role("dean", "doctor", "leader", "admin"), verifySubjectA
           for (const rec of allRecords) {
             const entry = rec.students?.find(s => s.student && s.student.toString() === studentId);
             total++;
-            if (entry && entry.status === 'present') present++;
+            if (entry && (entry.status === 'present' || entry.status === 'late')) present++;
           }
           if (total === 0) continue;
           const rate = Math.round((present / total) * 100);
@@ -154,7 +198,7 @@ router.post("/", auth, role("dean", "doctor", "leader", "admin"), verifySubjectA
           if (rate < 75) {
             const isWarning = rate < 60; // خطر حرج أقل من 60%
             const notif = await Notification.create({
-              title: isWarning ? ' تحذير: نسبة غياب حرجة' : ' تنبيه: نسبة حضور منخفضة',
+              title: isWarning ? 'تحذير: نسبة غياب حرجة' : 'تنبيه: نسبة حضور منخفضة',
               message: `نسبة حضورك الحالية هي ${rate}% (غياب ${absenceRate}%). الحد الأدنى المطلوب 75%. يرجى الالتزام بتسجيل الحضور.`,
               type: isWarning ? 'normal' : 'normal',
               target: 'custom',

@@ -60,4 +60,8 @@ test-results/
 match.txt
 styles_dump.txt
 *.zip
+mcp-servers-catalog.md
 
+
+# ناتج scripts/eval-kedy.js (ردود نماذج على بيانات تجريبية)
+eval-kedy-results.json

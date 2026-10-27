@@ -6,8 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>إدارة الحضور | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=2026083019">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026083019">
+  <link rel="stylesheet" href="/css/style.css?v=2026102613">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026102613">
+  <link rel="stylesheet" href="/css/ui.css?v=2026102613">
   <style>
     .setup-card {
       background: var(--bg-card);
@@ -77,7 +78,26 @@
       .att-btns { width: 100%; }
       .att-btn  { flex: 1; text-align: center; }
     }
-  </style>
+      /* ===== إعادة التصميم ===== */
+    .ma-fields { display: grid; grid-template-columns: 1.4fr 1fr; gap: 10px; }
+    .ma-field { display: flex; flex-direction: column; gap: 5px; min-width: 0; }
+    .ma-field span { font-size: 0.8rem; font-weight: 700; color: var(--text-muted); }
+    .ma-field select, .ma-field input { width: 100%; min-height: 46px; padding: 0 10px; border-radius: 12px; border: 1px solid var(--border); background: var(--bg-input); color: var(--text-main); font: inherit; font-size: 0.88rem; }
+    .ma-summary { display: flex; align-items: center; gap: 8px; margin-bottom: 10px; }
+    .ma-of { font-size: 0.82rem; color: var(--text-muted); font-weight: 700; }
+    .ma-bulk { display: flex; gap: 8px; margin-bottom: 10px; }
+    .ma-row { cursor: pointer; padding-block: 10px; }
+    .ma-av { width: 38px; height: 38px; flex-shrink: 0; border-radius: 50%; display: grid; place-items: center; font-weight: 800; color: var(--text-muted); background: var(--bg-hover); }
+    .ma-row.present .ma-av { color: var(--success-text); background: var(--success-bg); }
+    .ma-seg { display: flex; padding: 3px; gap: 2px; border-radius: 10px; background: var(--bg-hover); flex-shrink: 0; }
+    .ma-seg .att-btn { min-height: 34px !important; min-width: 0 !important; padding: 0 10px !important; border: 0 !important; border-radius: 8px !important; font-size: 0.78rem !important; font-weight: 700; color: var(--text-muted); background: transparent !important; cursor: pointer; }
+    .ma-seg .att-btn.present.active { color: #fff; background: var(--success) !important; }
+    .ma-seg .att-btn.absent.active { color: #fff; background: var(--danger-solid) !important; }
+    .ma-savebar { display: none; position: sticky; bottom: calc(var(--bnav-offset) + var(--bnav-height) + 8px); z-index: 5; gap: 8px; align-items: center; margin-top: 14px; padding: 10px; border-radius: 16px; background: var(--hm-surface); border: 1px solid var(--border); box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12); }
+    @media (min-width: 901px) { .ma-savebar { bottom: 16px; } }
+    /* أثناء رصد الكشف يغطي زر كيدي زر التصدير في شريط الحفظ */
+    body:has(#saveBar[style*="flex"]) .kedy-global-fab, body:has(#saveBar[style*="flex"]) .kf-tip { visibility: hidden; }
+</style>
 
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
   <meta name="mobile-web-app-capable" content="yes">
@@ -102,7 +122,7 @@
 <div class="page-content">
 
     <!-- Welcome Banner -->
-    <div class="welcome-banner" style="background: linear-gradient(135deg,#10b981,#059669,#047857);">
+    <div class="welcome-banner" style="--page-accent:#047857">
       <div class="welcome-banner-icon-wrap">
         <i class="ri-calendar-check-line welcome-banner-icon"></i>
       </div>
@@ -111,55 +131,37 @@
         <p>إدارة حضور وغياب الطلاب في المحاضرات</p>
       </div>
     </div>
-  <div class="page-header">
-    <div class="page-header-left">
-      <div class="page-icon"><i class="ri-calendar-check-line"></i></div>
-      <div>
-        <div class="page-title">إدارة الحضور والغياب</div>
-        <div class="page-subtitle">اختر المقرر لتسجيل الحضور</div>
-      </div>
-    </div>
-    <a href="/attendance-history.html" class="btn btn-secondary">
-      <i class="ri-history-line"></i> سجل الحضور
-    </a>
+  <div class="ui-toolbar" style="justify-content:flex-end">
+    <a href="/attendance-history.html" class="ui-act"><i class="ri-history-line"></i> سجل الحضور</a>
   </div>
 
-  <div class="setup-card">
-    <div class="form-group">
-      <label class="form-label" for="subjectSelect">المقرر الدراسي</label>
-      <div class="input-wrapper">
-        <i class="input-icon ri-book-open-line"></i>
-        <select class="form-control" id="subjectSelect">
-          <option value="">اختر المقرر</option>
-        </select>
-      </div>
+  <!-- المقرر والتاريخ في بطاقة واحدة مضغوطة -->
+  <div class="ui-card ma-setup">
+    <div class="ma-fields">
+      <label class="ma-field"><span>المقرر</span><select id="subjectSelect"><option value="">اختر المقرر</option></select></label>
+      <label class="ma-field"><span>التاريخ</span><input type="date" id="attDate"></label>
     </div>
-    <div class="form-group">
-      <label class="form-label" for="attDate">تاريخ المحاضرة</label>
-      <div class="input-wrapper">
-        <i class="input-icon ri-calendar-line"></i>
-        <input class="form-control" type="date" id="attDate">
-      </div>
-    </div>
-    <button class="btn btn-primary" onclick="loadStudents()">
-      <i class="ri-play-circle-line"></i> بدء التحضير
-    </button>
+    <button type="button" class="ui-primary" style="width:100%;margin-top:12px" onclick="loadStudents()"><i class="ri-play-circle-line"></i> بدء التحضير</button>
   </div>
 
   <div id="alertMsg" class="alert"></div>
 
-  <div id="searchAttContainer" style="display:none; margin-bottom: 16px; position: relative;">
-    <i class="ri-search-line" style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted);"></i>
-    <input type="text" id="searchAttInput" class="form-control" placeholder="ابحث عن طالب بالاسم أو الإيميل..." style="padding-right: 40px; width: 100%; border-radius: 20px; border: 1px solid var(--border); background: var(--bg-card); color: var(--text-main);" oninput="searchAttendance(this.value)">
+  <!-- بعد التحميل: ملخص حي + تحديد جماعي + بحث -->
+  <div id="searchAttContainer" style="display:none;margin-top:18px">
+    <div class="ma-summary" id="attSummary"></div>
+    <div class="ma-bulk">
+      <button type="button" class="ui-chip" onclick="markAll('present')"><i class="ri-checkbox-multiple-line"></i> الكل حاضر</button>
+      <button type="button" class="ui-chip" onclick="markAll('absent')"><i class="ri-close-circle-line"></i> الكل غائب</button>
+    </div>
+    <div class="ui-search" style="margin-bottom:10px"><i class="ri-search-line"></i>
+      <input type="search" id="searchAttInput" placeholder="ابحث عن طالب" aria-label="ابحث عن طالب" oninput="searchAttendance(this.value)"></div>
   </div>
 
-  <div class="attendance-list" id="attList" style="display:none;"></div>
+  <div class="hm-list" id="attList" style="display:none;"></div>
 
-  <div class="save-bar" id="saveBar">
-    <button class="btn btn-primary" style="padding:14px 40px; font-size:1rem;" onclick="saveAttendance()">
-      <i class="ri-save-line"></i> حفظ كشف الحضور
-    </button>
-    <button class="btn btn-secondary" onclick="exportAttendanceExcel()"><i class="ri-file-excel-2-line"></i> تصدير Excel</button>
+  <div class="ma-savebar" id="saveBar">
+    <button type="button" class="ui-primary" style="flex:1" onclick="saveAttendance()"><i class="ri-save-line"></i> حفظ الكشف</button>
+    <button type="button" class="ui-act" style="min-height:44px" onclick="exportAttendanceExcel()" title="تصدير Excel" aria-label="تصدير Excel"><i class="ri-file-excel-2-line"></i> Excel</button>
   </div>
 </div>
 
@@ -169,9 +171,9 @@
   جميع الحقوق محفوظة © <span id="year"></span> النظام الجامعي المتكامل
 </footer>
 
-<script src="/js/shared.js?v=2026083019"></script>
-<script src="/js/app.js?v=2026083019"></script>
-<script src="/js/socket-client.js?v=2026083019" defer></script>
+<script src="/js/shared.js?v=2026102613"></script>
+<script src="/js/app.js?v=2026102613"></script>
+<script src="/js/socket-client.js?v=2026102613" defer></script>
 <script>
   CBS.init({ requireRoles: ['dean', 'doctor', 'leader', 'admin'] });
 
@@ -185,14 +187,14 @@
       const _resData = await CBS.readJson(res);
       const list = _resData.data?.subjects || _resData.subjects || _resData.data || _resData;
       const sel  = document.getElementById('subjectSelect');
+      /* مقررات الدفعة النشطة فقط: كانت تظهر مواد الدكتور في كل دفعاته فيُرصد
+         حضور مادة على طلاب دفعة لا تدرسها */
+      const activeBatch = CBS.getBatchId?.() || CBS.getUser()?.batch || '';
+      const inBatch = s => !activeBatch || (s.batches || []).some(b => String(b?._id || b) === String(activeBatch));
+      const visible = (Array.isArray(list) ? list : []).filter(inBatch);
       sel.innerHTML = '<option value="">اختر المقرر</option>' +
-        list.map(s => {
-          let batchName = '';
-          if (s.batches && s.batches.length > 0) {
-            batchName = ' (' + s.batches.map(b => b.name).join(' و ') + ')';
-          }
-          return `<option value="${s._id}">${CBS.escapeHTML(s.name)}${CBS.escapeHTML(batchName)}</option>`;
-        }).join('');
+        visible.map(s => `<option value="${CBS.escapeHTML(s._id)}">${CBS.escapeHTML(s.name)}</option>`).join('');
+      if (!visible.length) sel.innerHTML = '<option value="">لا توجد مقررات في هذه الدفعة</option>';
     } catch { CBS.toast('خطأ في تحميل المقررات', '', 'error'); }
   }
 
@@ -225,39 +227,45 @@
       CBS.showEmpty('attList', 'لا يوجد طلاب مسجلين في هذا المقرر', 'ri-group-line');
       return;
     }
+    // صف لكل طالب: الضغط على الصف يبدّل الحالة، والمفتاح الثنائي يوضحها
     list.innerHTML = students.map(s => {
       const st = attStatus[s._id] || 'absent';
-      const batchCode = (s.batch && s.batch.code) ? ` <span class="batch-code" style="font-size:0.75rem; background:var(--border); padding:2px 8px; border-radius:12px; margin-right:8px;">${CBS.escapeHTML(s.batch.code)}</span>` : '';
-      return `
-        <div class="student-row ${st}" id="row-${s._id}">
-          <div>
-            <div class="student-name" style="display:flex; align-items:center;">${CBS.escapeHTML(s.name)}${batchCode}</div>
-            <div class="student-email">${CBS.escapeHTML(s.email || '')}</div>
-          </div>
-          <div class="att-btns">
-            <button class="att-btn present ${st === 'present' ? 'active' : ''}"
-                    onclick="setStatus('${s._id}','present')">حاضر</button>
-            <button class="att-btn absent  ${st === 'absent'  ? 'active' : ''}"
-                    onclick="setStatus('${s._id}','absent')">غائب</button>
-          </div>
+      return `<div class="hm-row ma-row ${st}" id="row-${s._id}" onclick="toggleStatus('${s._id}')">
+          <span class="ma-av">${CBS.escapeHTML((s.name || '؟').trim().charAt(0))}</span>
+          <div class="hm-row-body"><div class="hm-row-title">${CBS.escapeHTML(s.name)}${s.batch?.code ? ` <span class="hm-chip">${CBS.escapeHTML(s.batch.code)}</span>` : ''}</div>
+            <div class="hm-row-meta">${CBS.escapeHTML(s.email || '')}</div></div>
+          <span class="ma-seg" onclick="event.stopPropagation()">
+            <button type="button" class="att-btn present ${st === 'present' ? 'active' : ''}" onclick="setStatus('${s._id}','present')">حاضر</button>
+            <button type="button" class="att-btn absent ${st === 'absent' ? 'active' : ''}" onclick="setStatus('${s._id}','absent')">غائب</button>
+          </span>
         </div>`;
     }).join('');
+    updateSummary();
+  }
+
+  function updateSummary() {
+    const present = students.filter(s => attStatus[s._id] === 'present').length;
+    document.getElementById('attSummary').innerHTML =
+      `<span class="hm-chip" data-tone="success">حاضر ${present}</span><span class="hm-chip" data-tone="danger">غائب ${students.length - present}</span><span class="ma-of">من ${students.length}</span>`;
   }
 
   function setStatus(id, status) {
     attStatus[id] = status;
     const row = document.getElementById(`row-${id}`);
-    row.className = `student-row ${status}`;
-    row.querySelectorAll('.att-btn').forEach(b => b.classList.remove('active'));
-    row.querySelector(`.att-btn.${status}`).classList.add('active');
+    if (row) {
+      row.classList.remove('present', 'absent');
+      row.classList.add(status);
+      row.querySelectorAll('.att-btn').forEach(b => b.classList.toggle('active', b.classList.contains(status)));
+    }
+    updateSummary();
   }
+  function toggleStatus(id) { setStatus(id, attStatus[id] === 'present' ? 'absent' : 'present'); }
+  function markAll(status) { students.forEach(s => setStatus(s._id, status)); CBS.vibrate?.(15); }
 
   function searchAttendance(query) {
     const q = query.toLowerCase().trim();
-    const rows = document.querySelectorAll('#attList .student-row');
-    rows.forEach(row => {
-      const text = row.innerText.toLowerCase();
-      row.style.display = text.includes(q) ? 'flex' : 'none';
+    document.querySelectorAll('#attList .ma-row').forEach(row => {
+      row.style.display = row.innerText.toLowerCase().includes(q) ? '' : 'none';
     });
   }
 
@@ -298,6 +306,7 @@
     attStatus = {};
     document.getElementById('attList').style.display = 'none';
     document.getElementById('saveBar').style.display = 'none';
+    document.getElementById('searchAttContainer').style.display = 'none';
   }
 
   function exportAttendanceExcel() {

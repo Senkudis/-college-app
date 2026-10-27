@@ -10,57 +10,9 @@
   <link rel="manifest" href="/manifest.json">
   <title>الواجبات | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=2026083019">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026083019">
-  <style>
-    .filter-tab { padding:5px 14px; border-radius:20px; border:1.5px solid var(--border); background:transparent; color:var(--text-muted); cursor:pointer; font-size:0.8rem; font-family:inherit; transition:all 0.2s; }
-    .filter-tab.active, .filter-tab:hover { background:var(--primary); color:#fff; border-color:var(--primary); }
-
-    /* â”€â”€ Assignment Items (timeline style) â”€â”€ */
-    .asgn-item {
-      background: var(--bg-card);
-      border-radius: 12px;
-      border: 1px solid var(--border);
-      border-right: 3px solid transparent;
-      padding: 12px 14px;
-      margin-bottom: 8px;
-      cursor: pointer;
-      display: flex;
-      align-items: flex-start;
-      gap: 12px;
-      transition: transform 0.15s, box-shadow 0.15s, border-color 0.15s;
-      position: relative;
-    }
-    .asgn-item:hover { transform:translateY(-1px); box-shadow:0 4px 14px rgba(0,0,0,0.08); }
-    .asgn-item:active { transform:scale(0.99); }
-
-    .asgn-item.status-active   { border-right-color: #f59e0b; }
-    .asgn-item.status-completed, .asgn-item.status-graded { border-right-color: #10b981; }
-    .asgn-item.status-expired  { border-right-color: #ef4444; }
-
-    .asgn-icon {
-      width: 36px; height: 36px;
-      border-radius: 10px;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1rem;
-      flex-shrink: 0;
-    }
-    .asgn-icon.ic-active   { background:rgba(245,158,11,.12); color:#d97706; }
-    .asgn-icon.ic-completed, .asgn-icon.ic-graded { background:rgba(16,185,129,.12); color:#10b981; }
-    .asgn-icon.ic-expired  { background:rgba(239,68,68,.12); color:#ef4444; }
-    .asgn-icon.ic-default  { background:var(--bg-main); color:var(--text-muted); }
-
-    .asgn-body { flex:1; min-width:0; }
-    .asgn-title { font-size:0.88rem; font-weight:700; color:var(--text-main); margin-bottom:3px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-    .asgn-subject { font-size:0.75rem; color:var(--text-muted); margin-bottom:5px; }
-    .asgn-meta { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-    .asgn-date { font-size:0.72rem; color:var(--text-light); display:flex; align-items:center; gap:3px; }
-    .asgn-badge { font-size:0.68rem; font-weight:700; padding:2px 8px; border-radius:20px; }
-    .asgn-badge.b-active   { background:rgba(245,158,11,.12); color:#d97706; }
-    .asgn-badge.b-completed, .asgn-badge.b-graded { background:rgba(16,185,129,.12); color:#10b981; }
-    .asgn-badge.b-expired  { background:rgba(239,68,68,.12); color:#ef4444; }
-    .asgn-badge.b-default  { background:var(--bg-main); color:var(--text-muted); }
-  </style>
+  <link rel="stylesheet" href="/css/style.css?v=2026102613">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026102613">
+  <link rel="stylesheet" href="/css/ui.css?v=2026102613">
 
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -84,7 +36,7 @@
 <div class="page-content">
 
   <!-- Welcome Banner -->
-  <div class="welcome-banner" style="background: linear-gradient(135deg,#f59e0b,#d97706,#b45309);">
+  <div class="welcome-banner" style="--page-accent:#b45309">
     <div class="welcome-banner-icon-wrap">
       <i class="ri-task-line welcome-banner-icon"></i>
     </div>
@@ -94,57 +46,20 @@
     </div>
   </div>
 
-  <!-- Stats -->
-  <div class="stats-bar">
-    <div class="stat-item">
-      <i class="ri-file-list-3-line" style="color:var(--warning)"></i>
-      <div class="stat-item-body">
-        <div class="stat-num" id="statTotal">-</div>
-        <div class="stat-label">إجمالي</div>
-      </div>
-    </div>
-    <div class="stat-item">
-      <i class="ri-checkbox-circle-line" style="color:var(--success)"></i>
-      <div class="stat-item-body">
-        <div class="stat-num" id="statDone">-</div>
-        <div class="stat-label">مكتمل</div>
-      </div>
-    </div>
-    <div class="stat-item">
-      <i class="ri-time-line" style="color:var(--danger)"></i>
-      <div class="stat-item-body">
-        <div class="stat-num" id="statPending">-</div>
-        <div class="stat-label">متبقي</div>
-      </div>
-    </div>
+  <!-- إضافة واجب للكادر فقط -->
+  <div id="addAssignmentWrap" class="ui-toolbar" style="display:none">
+    <button type="button" class="ui-primary" onclick="CBS.openModal('assignmentModal')"><i class="ri-add-line"></i> واجب جديد</button>
   </div>
 
-  <!-- Assignments List -->
-  <div class="section-divider">
-    <i class="ri-file-list-3-line"></i>
-    <span>قائمة الواجبات</span>
+  <div class="ui-chips" role="tablist" aria-label="تصفية الواجبات">
+    <button type="button" class="ui-chip" data-f="active" onclick="filterAssignments('active')">مطلوبة <span class="n" id="cActive"></span></button>
+    <button type="button" class="ui-chip" data-f="completed" onclick="filterAssignments('completed')">مسلّمة <span class="n" id="cDone"></span></button>
+    <button type="button" class="ui-chip" data-f="expired" onclick="filterAssignments('expired')">فائتة <span class="n" id="cExpired"></span></button>
+    <button type="button" class="ui-chip" data-f="all" onclick="filterAssignments('all')">الكل <span class="n" id="cAll"></span></button>
   </div>
 
-  <!-- زر الإضافة يظهر للكادر فقط -->
-  <div id="addAssignmentWrap" style="display:none;margin-bottom:16px;">
-    <button class="btn btn-primary" onclick="CBS.openModal('assignmentModal')">
-      <i class="ri-add-line"></i> إضافة واجب جديد
-    </button>
-  </div>
-
-  <!-- Filter Tabs -->
-  <div style="display:flex;gap:8px;margin-bottom:16px;flex-wrap:wrap;">
-    <button class="filter-tab active" onclick="filterAssignments('all', this)">الكل</button>
-    <button class="filter-tab" onclick="filterAssignments('active', this)">نشط</button>
-    <button class="filter-tab" onclick="filterAssignments('completed', this)">تم التسليم</button>
-    <button class="filter-tab" onclick="filterAssignments('expired', this)">منتهي</button>
-  </div>
-
-  <div id="assignmentsList">
-    <div class="loading-state">
-      <div class="uib-loader dark"><div class="half"></div><div class="half"></div></div>
-      <p>جاري تحميل الواجبات...</p>
-    </div>
+  <div class="hm-list" id="assignmentsList">
+    <div class="hm-skel" style="height:192px;border-radius:0"></div>
   </div>
 
 </div>
@@ -207,9 +122,9 @@
   حقوق النشر &copy; <span id="year"></span> جامعة النصر التقنية &nbsp;|&nbsp; تطوير: ضياء الدين إبراهيم
 </footer>
 
-<script src="/js/shared.js?v=2026083019"></script>
-<script src="/js/app.js?v=2026083019"></script>
-<script src="/js/socket-client.js?v=2026083019" defer></script>
+<script src="/js/shared.js?v=2026102613"></script>
+<script src="/js/app.js?v=2026102613"></script>
+<script src="/js/socket-client.js?v=2026102613" defer></script>
 <script>
   CBS.init();
 
@@ -250,48 +165,45 @@
     return 'active';
   }
 
+  /* صف لكل واجب: الحالة باللون في الشريحة فقط، والمطلوب أولاً بالأقرب موعداً */
+  const rank = { active: 0, expired: 1, completed: 2, graded: 2 };
   function renderAssignments(list) {
     const container = document.getElementById('assignmentsList');
     if (!list.length) {
-      container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:2rem">لا توجد واجبات في هذه الفئة</p>';
+      container.innerHTML = `<div class="hm-row hm-empty"><span class="hm-ic" data-tone="success"><i class="ri-checkbox-circle-line"></i></span><div class="hm-row-body"><div class="hm-row-title">لا واجبات هنا</div><div class="hm-row-meta">جرّب تصفية أخرى من الأعلى</div></div></div>`;
       return;
     }
-    container.innerHTML = list.map(function(a) {
-      const st = statusMap[assignmentStatus(a)];
-      const deadline = a.dueDate ? new Date(a.dueDate).toLocaleDateString('ar-SD', {day:'numeric',month:'short',year:'numeric'}) : '-';
-      return `<div class="asgn-item status-${st.cls}" onclick="location.href='/submit-assignment.html?id=${a._id}'">
-        <div class="asgn-icon ic-${st.cls}"><i class="${st.icon}"></i></div>
-        <div class="asgn-body">
-          <div class="asgn-title">${CBS.escapeHTML(a.title || a.name || 'واجب')}</div>
-          <div class="asgn-subject">${CBS.escapeHTML((a.subject && a.subject.name) || a.subjectName || '')}</div>
-          <div class="asgn-meta">
-            <span class="asgn-date"><i class="ri-calendar-line"></i> ${deadline}</span>
-            <span class="asgn-badge b-${st.cls}">${st.label}</span>
-          </div>
-        </div>
-      </div>`;
+    const sorted = list.slice().sort((a, b) => {
+      const ra = rank[assignmentStatus(a)], rb = rank[assignmentStatus(b)];
+      if (ra !== rb) return ra - rb;
+      const da = dueMoment(a) || 0, db = dueMoment(b) || 0;
+      return ra === 0 ? da - db : db - da;
+    });
+    container.innerHTML = sorted.map(function(a) {
+      const s = assignmentStatus(a);
+      const due = dueMoment(a);
+      const chip = s === 'active' ? CBS.dueLabel(due) : { text: statusMap[s].label, tone: s === 'expired' ? 'danger' : 'success' };
+      const date = due ? due.toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short' }) : '';
+      const meta = [(a.subject && a.subject.name) || a.subjectName || '', date ? 'التسليم ' + date : ''].filter(Boolean).join(' · ');
+      return `<a class="hm-row" href="/submit-assignment.html?id=${encodeURIComponent(a._id)}">
+        <span class="hm-ic"${s === 'expired' ? ' data-tone="danger"' : (s === 'active' ? '' : ' data-tone="success"')}><i class="${statusMap[s].icon}"></i></span>
+        <div class="hm-row-body"><div class="hm-row-title">${CBS.escapeHTML(a.title || a.name || 'واجب')}</div><div class="hm-row-meta">${CBS.escapeHTML(meta)}</div></div>
+        <span class="hm-row-end">${chip.text ? `<span class="hm-chip"${chip.tone ? ` data-tone="${chip.tone}"` : ''}>${chip.text}</span>` : ''}<i class="ri-arrow-left-s-line" aria-hidden="true"></i></span>
+      </a>`;
     }).join('');
   }
 
-  function filterAssignments(type, btn) {
-    document.querySelectorAll('.filter-tab').forEach(function(b) { b.classList.remove('active'); });
-    if (btn) btn.classList.add('active');
+  function filterAssignments(type) {
+    document.querySelectorAll('.ui-chip[data-f]').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.f === type)));
     const safeList = Array.isArray(allAssignments) ? allAssignments : [];
-    if (type === 'all') {
-      renderAssignments(safeList);
-    } else if (type === 'completed') {
-      renderAssignments(safeList.filter(function(a) {
-        const s = assignmentStatus(a);
-        return s === 'completed' || s === 'graded';
-      }));
-    } else {
-      renderAssignments(safeList.filter(function(a) { return assignmentStatus(a) === type; }));
-    }
+    if (type === 'all') renderAssignments(safeList);
+    else if (type === 'completed') renderAssignments(safeList.filter(a => ['completed', 'graded'].includes(assignmentStatus(a))));
+    else renderAssignments(safeList.filter(a => assignmentStatus(a) === type));
   }
 
   (async () => {
     const container = document.getElementById('assignmentsList');
-    CBS.showLoading('assignmentsList', 'جاري التحميل...', 'skeleton-list');
+    
     try {
       const res = await CBS.apiGet('/api/assignments');
       if (!res.ok) throw new Error();
@@ -312,23 +224,19 @@
         }
       } catch {}
 
-      document.getElementById('statTotal').textContent = allAssignments.length;
-      const done = allAssignments.filter(function(a) {
-        const s = assignmentStatus(a);
-        return s === 'completed' || s === 'graded';
-      }).length;
-      document.getElementById('statDone').textContent = done;
-      document.getElementById('statPending').textContent = allAssignments.length - done;
+      const count = st => allAssignments.filter(a => st.includes(assignmentStatus(a))).length;
+      const nActive = count(['active']), nDone = count(['completed', 'graded']), nExpired = count(['expired']);
+      [['cActive', nActive], ['cDone', nDone], ['cExpired', nExpired], ['cAll', allAssignments.length]].forEach(([id, n]) => { document.getElementById(id).textContent = n; });
 
       if (!allAssignments.length) {
-        container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:2rem">لا توجد واجبات حالياً</p>';
+        container.innerHTML = `<div class="hm-row hm-empty"><span class="hm-ic" data-tone="info"><i class="ri-task-line"></i></span><div class="hm-row-body"><div class="hm-row-title">لا واجبات بعد</div><div class="hm-row-meta">ستظهر هنا الواجبات التي يضيفها أساتذتك</div></div></div>`;
         return;
       }
-
-      renderAssignments(allAssignments);
+      // نبدأ بما يحتاج فعلاً منه؛ إن لم يكن شيء مطلوب نعرض الكل
+      filterAssignments(nActive ? 'active' : 'all');
     } catch(err) {
       console.warn('Assignments load error:', err);
-      container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:2rem">تعذر تحميل الواجبات</p>';
+      container.innerHTML = `<div class="hm-row hm-empty"><span class="hm-ic" data-tone="warning"><i class="ri-wifi-off-line"></i></span><div class="hm-row-body"><div class="hm-row-title">تعذّر تحميل الواجبات</div><div class="hm-row-meta">تحقّق من الاتصال ثم اسحب الصفحة للأسفل للتحديث</div></div></div>`;
     }
   })();
 
@@ -382,7 +290,7 @@
     if (batchId) headers['x-batch-id'] = batchId;
 
     try {
-      const res = await fetch('/api/assignments', { method: 'POST', headers, body: form });
+      const res = await fetch(API_BASE + '/api/assignments', { method: 'POST', headers, body: form });
       const data = await res.json().catch(() => ({}));
       if (res.ok) {
         CBS.toast('تم حفظ الواجب بنجاح', '', 'success');

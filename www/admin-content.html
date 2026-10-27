@@ -10,11 +10,12 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Al-Nasr CBS">
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
-  <link rel="stylesheet" href="/css/style.css?v=2026083019">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026083019">
+  <link rel="stylesheet" href="/css/style.css?v=2026102613">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026102613">
+  <link rel="stylesheet" href="/css/ui.css?v=2026102613">
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet">
   <style>
-    /* â”€â”€ Tabs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* ── Tabs ─────────────────────────────── */
     .tab-bar {
       display: flex; gap: 6px;
       background: var(--bg-secondary);
@@ -36,7 +37,7 @@
       box-shadow: var(--shadow-sm);
     }
 
-    /* â”€â”€ Table â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* ── Table ────────────────────────────── */
     .data-table { width: 100%; border-collapse: collapse; font-size: 0.82rem; }
     .data-table thead th {
       padding: 10px 12px; text-align: right;
@@ -53,14 +54,14 @@
     .data-table .td-title { font-weight: 700; max-width: 200px; }
     .data-table .td-title small { font-weight: 400; color: var(--text-muted); display: block; font-size: 0.72rem; }
 
-    /* â”€â”€ Status badge â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* ── Status badge ─────────────────────── */
     .badge-pub  { background: #dcfce7; color: #15803d; padding: 2px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; }
     .badge-draft{ background: #fef9c3; color: #854d0e; padding: 2px 10px; border-radius: 20px; font-size: 0.72rem; font-weight: 700; }
 
-    /* â”€â”€ Gallery Grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
+    /* ── Gallery Grid ─────────────────────── */
     .gallery-mgr-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(min(130px, 100%), 1fr));
       gap: 10px;
     }
     .gallery-mgr-item {
@@ -98,7 +99,7 @@
     }
     .gallery-mgr-item.hidden-img { opacity: .5; }
 
-    /* â”€â”€ Modal (Using Global Classes from style.css) â”€â”€ */
+    /* ── Modal (Using Global Classes from style.css) ── */
     /* Only form-specific styles left */
     .form-group { margin-bottom: 14px; }
     .form-group label { display: block; font-size: 0.78rem; font-weight: 700; color: var(--text-muted); margin-bottom: 5px; }
@@ -115,24 +116,30 @@
     .form-check { display: flex; align-items: center; gap: 8px; }
     .form-check input { width: 16px; height: 16px; cursor: pointer; }
     .form-check label { font-size: 0.83rem; font-weight: 600; color: var(--text-main); cursor: pointer; }
-  </style>
+      .tab-bar { display: flex !important; gap: 4px !important; padding: 4px !important; margin-bottom: 14px !important; border-radius: 12px !important; background: var(--bg-hover) !important; border: 0 !important; }
+    .tab-bar .tab-btn { flex: 1; min-height: 38px !important; padding: 0 10px !important; border: 0 !important; border-radius: 9px !important; font-size: 0.84rem !important; color: var(--text-muted) !important; background: transparent !important; box-shadow: none !important; }
+    .tab-bar .tab-btn.active { color: var(--text-main) !important; background: var(--hm-surface) !important; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12) !important; }
+</style>
 </head>
 <body>
 
 <header class="main-header">
-  <div class="header-right">
-    <button class="btn-icon" onclick="CBS.goBack()" title="رجوع" aria-label="رجوع"><i class="ri-arrow-right-line"></i></button>
-    <div class="header-title"><i class="ri-layout-masonry-line"></i> إدارة المحتوى العام</div>
+  <div class="header-brand">
+    <img src="/assets/logo.png" class="header-logo" alt="شعار كلية النصر التقنية - جامعة النصر التقنية">
+    <div class="header-title-group">
+      <strong>كلية النصر التقنية</strong>
+      <small>إدارة المحتوى العام</small>
+    </div>
   </div>
-  <div class="header-left">
-    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي" aria-label="تبديل الوضع الليلي"><i class="ri-moon-line"></i></button>
+  <div class="header-actions">
+    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي" aria-label="تبديل الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
   </div>
 </header>
 
 <div class="page-content">
 
   <!-- Welcome Banner -->
-  <div class="welcome-banner" style="background:linear-gradient(135deg,#0d3b66,#1a5a99);">
+  <div class="welcome-banner">
     <div class="welcome-banner-icon-wrap"><i class="ri-layout-masonry-line welcome-banner-icon"></i></div>
     <div class="welcome-banner-body">
       <h2>المحتوى العام للجامعة</h2>
@@ -150,7 +157,7 @@
     </button>
   </div>
 
-  <!-- â”€â”€â”€ NEWS PANEL â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ -->
+  <!-- ─── NEWS PANEL ─────────────────────────────────── -->
   <div id="panelNews">
     <div style="display:flex;justify-content:flex-end;margin-bottom:12px;">
       <button class="btn btn-primary btn-sm" onclick="openNewsModal()">
@@ -284,12 +291,15 @@
   </div>
 </div>
 
-<script src="/js/shared.js?v=2026083019"></script>
-<script src="/js/app.js?v=2026083019"></script>
-<script src="/js/socket-client.js?v=2026083019" defer></script>
-<style>@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}</style>
+<script src="/js/shared.js?v=2026102613"></script>
+<script src="/js/app.js?v=2026102613"></script>
+<script src="/js/socket-client.js?v=2026102613" defer></script>
+<style>@keyframes spin{from{transform:rotate(0)}to{transform:rotate(360deg)}}    .tab-bar { display: flex !important; gap: 4px !important; padding: 4px !important; margin-bottom: 14px !important; border-radius: 12px !important; background: var(--bg-hover) !important; border: 0 !important; }
+    .tab-bar .tab-btn { flex: 1; min-height: 38px !important; padding: 0 10px !important; border: 0 !important; border-radius: 9px !important; font-size: 0.84rem !important; color: var(--text-muted) !important; background: transparent !important; box-shadow: none !important; }
+    .tab-bar .tab-btn.active { color: var(--text-main) !important; background: var(--hm-surface) !important; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12) !important; }
+</style>
 <script>
-  CBS.init();
+  CBS.init({ requireRoles: ['dean', 'admin'] }); // كانت تطلب الأخبار أولاً ثم تُعيد غير العميد إلى صفحة البداية
   document.getElementById('year').textContent = new Date().getFullYear();
 
   // ── Auth: أدمن أو عميد فقط ──────────────────────────
@@ -299,7 +309,7 @@
     setTimeout(() => window.location.replace('/index.html'), 1500);
   }
 
-  // â”€â”€ Tabs â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Tabs ─────────────────────────────────────────────
   let activeTab = 'news';
   function switchTab(tab) {
     activeTab = tab;
@@ -311,9 +321,9 @@
     else loadNews();
   }
 
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ════════════════════════════════════════════════════
   //  NEWS
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ════════════════════════════════════════════════════
   async function loadNews() {
     try {
       const res  = await CBS.apiGet('/api/admin/public/news');
@@ -479,9 +489,9 @@
     } catch(e) { CBS.toast('خطأ في الحذف', '', 'error'); }
   }
 
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ════════════════════════════════════════════════════
   //  GALLERY
-  // â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
+  // ════════════════════════════════════════════════════
   async function loadGallery() {
     try {
       const res  = await CBS.apiGet('/api/admin/public/gallery');
@@ -587,11 +597,11 @@
     } catch(e) { CBS.toast('خطأ في الحذف', '', 'error'); }
   }
 
-  // â”€â”€ Helpers â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Helpers ─────────────────────────────────────────
   function escH(s) { return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
-  function fmtDate(iso) { return iso ? new Date(iso).toLocaleDateString('ar-EG',{year:'numeric',month:'short',day:'numeric'}) : 'â€”'; }
+  function fmtDate(iso) { return iso ? new Date(iso).toLocaleDateString('ar-EG-u-nu-latn',{year:'numeric',month:'short',day:'numeric'}) : '—'; }
 
-  // â”€â”€ Init â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // ── Init ─────────────────────────────────────────────
   loadNews();
 </script>
 </body>

@@ -4,6 +4,8 @@ const User = require("../models/User");
 const Notification = require("../models/Notification");
 const auth = require("../middleware/auth.middleware");
 const role = require("../middleware/role.middleware");
+const mongoose = require("mongoose");
+const isDeanLevel = (user) => user.roles.includes("dean") || user.roles.includes("admin");
 
 // ==========================================
 // 0. GET PUBLIC BATCHES LIST (For Registration)
@@ -29,15 +31,10 @@ router.get("/", auth, role("student", "dean", "leader", "doctor", "admin"), asyn
     // If doctor, check their assigned batches (or batches linked to their subjects)
     if (req.user.roles.includes("doctor") && !req.user.roles.includes("dean") && !req.user.roles.includes("admin")) {
       const user = await User.findById(req.user.id).select("batches").lean();
-      const Subject = require("../models/Subject");
-      const doctorSubjects = await Subject.find({ doctor: req.user.id }).select("batches").lean();
       
+      /* الدفعات المسندة فقط — هي ما يقبله batch.middleware. إضافة دفعات المواد
+         كانت تعرض دفعة يُرفض الدخول إليها بـ403 فور اختيارها. */
       (user?.batches || []).forEach(b => { if (b) batchIds.add(b.toString()); });
-      doctorSubjects.forEach(s => {
-        if (Array.isArray(s.batches)) {
-          s.batches.forEach(b => { if (b) batchIds.add(b.toString()); });
-        }
-      });
 
       if (batchIds.size > 0) {
         query._id = { $in: Array.from(batchIds) };
@@ -49,8 +46,9 @@ router.get("/", auth, role("student", "dean", "leader", "doctor", "admin"), asyn
     
     if (req.query.status) {
       if (req.query.status === "active") {
-        query.status = { $in: ["active", "draft", null, undefined] };
-      } else {
+        // "نشطة" = كل ما ليس مؤرشفاً (يشمل السجلات القديمة بلا حقل حالة)
+        query.status = { $ne: "archived" };
+      } else if (["active", "archived"].includes(req.query.status)) {
         query.status = req.query.status;
       }
     }
@@ -74,6 +72,9 @@ router.get("/", auth, role("student", "dean", "leader", "doctor", "admin"), asyn
 // ==========================================
 router.get("/:id", auth, async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ success: false, message: "معرف الدفعة غير صالح" });
+    }
     const roleList = req.user.roles || [];
     const studentLike = (roleList.includes('student') || roleList.includes('leader')) && !roleList.includes('dean') && !roleList.includes('admin') && !roleList.includes('doctor');
     if (studentLike && (!req.user.batch || String(req.user.batch) !== String(req.params.id))) {
@@ -187,19 +188,23 @@ router.get("/:id", auth, async (req, res) => {
 // ==========================================
 // 3. CREATE BATCH (Dean / Leader Only)
 // ==========================================
-router.post("/", auth, role("dean", "leader", "admin"), async (req, res) => {
+// إنشاء الدفعات للعمادة: الليدر يمثّل دفعة قائمة ولا يُنشئ دفعات جديدة
+router.post("/", auth, role("dean", "admin"), async (req, res) => {
   try {
     const { name, code, themeColor, inviteCode } = req.body;
-    
+    if (!name || !String(name).trim() || !code || !String(code).trim()) {
+      return res.status(400).json({ success: false, message: "اسم الدفعة ورمزها مطلوبان" });
+    }
+
     // Check if code already exists
-    const exists = await Batch.findOne({ code: code.toUpperCase() });
+    const exists = await Batch.findOne({ code: String(code).trim().toUpperCase() });
     if (exists) {
       return res.status(400).json({ success: false, message: "رمز الدفعة موجود مسبقاً" });
     }
 
     const newBatch = new Batch({
-      name,
-      code: code.toUpperCase(),
+      name: String(name).trim(),
+      code: String(code).trim().toUpperCase(),
       themeColor: themeColor || "#6366f1",
       inviteCode: inviteCode ? inviteCode.trim() : null,
       createdBy: req.user.id
@@ -214,7 +219,9 @@ router.post("/", auth, role("dean", "leader", "admin"), async (req, res) => {
         await Notification.create({
           title: `دفعة جديدة: ${name}`,
           message: `تم إنشاء دفعة جديدة باسم "${name}" (${code.toUpperCase()})`,
-          type: 'info',
+          // 'info' ليس ضمن أنواع الإشعار فيفشل الحفظ بصمت ولا يصل العمداء شيء
+          type: 'normal',
+          target: 'custom',
           recipients: deans.map(d => d._id),
           createdBy: req.user.id
         });
@@ -234,12 +241,36 @@ router.put("/:id", auth, role("dean", "leader", "admin"), async (req, res) => {
   try {
     const { name, code, themeColor, status, inviteCode } = req.body;
     
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ success: false, message: "معرف الدفعة غير صالح" });
+    }
     const batch = await Batch.findById(req.params.id);
     if (!batch) return res.status(404).json({ success: false, message: "الدفعة غير موجودة" });
 
-    if (name) batch.name = name;
-    if (inviteCode !== undefined) batch.inviteCode = inviteCode ? inviteCode.trim() : null;
-    if (code) batch.code = code.toUpperCase();
+    /* الليدر كان يعدّل أي دفعة في الكلية — بما فيها أرشفتها أو تغيير رمزها.
+       يقتصر على دفعته، ولا يغيّر الحالة أو الرمز (قرارات العمادة). */
+    if (!isDeanLevel(req.user)) {
+      if (!req.user.batch || String(req.user.batch) !== String(batch._id)) {
+        return res.status(403).json({ success: false, message: "يمكنك تعديل دفعتك فقط" });
+      }
+      const statusChanged = status !== undefined && status !== batch.status;
+      const codeChanged = code !== undefined && String(code).trim().toUpperCase() !== batch.code;
+      if (statusChanged || codeChanged) {
+        return res.status(403).json({ success: false, message: "تغيير حالة الدفعة أو رمزها من صلاحيات العمادة" });
+      }
+    }
+
+    if (code && String(code).trim().toUpperCase() !== batch.code) {
+      const taken = await Batch.findOne({ code: String(code).trim().toUpperCase(), _id: { $ne: batch._id } }).select("_id").lean();
+      if (taken) return res.status(400).json({ success: false, message: "رمز الدفعة موجود مسبقاً" });
+    }
+    if (status && !["active", "archived"].includes(status)) {
+      return res.status(400).json({ success: false, message: "حالة الدفعة غير صالحة" });
+    }
+
+    if (name) batch.name = String(name).trim();
+    if (inviteCode !== undefined) batch.inviteCode = inviteCode ? String(inviteCode).trim() : null;
+    if (code) batch.code = String(code).trim().toUpperCase();
     if (themeColor) batch.themeColor = themeColor;
     if (status) batch.status = status;
 

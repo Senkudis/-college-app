@@ -31,16 +31,68 @@ const VIDEOS_DIR     = path.join(__dirname, "..", "uploads", "videos");
 // Ensure directories exist
 [CHUNKS_DIR, VIDEOS_DIR].forEach(dir => fs.mkdirSync(dir, { recursive: true }));
 
+const User = require("../models/User");
+const Subject = require("../models/Subject");
+const isDeanLevel = (user) => user.roles.includes("dean") || user.roles.includes("admin");
+
+/* نطاق الفيديو: دفعاته، والمصفوفة الفارغة تعني "كل الدفعات". القائمة كانت تعرض
+   فيديوهات "كل الدفعات" بينما صفحة الفيديو تبحث في دفعة المستخدم فقط فتُرجع 404. */
+const batchScopeFilter = (batchId) => ({
+  $or: [{ batches: batchId }, { batches: { $size: 0 } }, { batches: { $exists: false } }]
+});
+
+/* البث والتنزيل كانا متاحين لأي مستخدم مسجّل يعرف المعرّف، أياً كانت دفعته. */
+async function canViewVideo(user, video) {
+  if (isDeanLevel(user)) return true;
+  if (String(video.uploadedBy?._id || video.uploadedBy) === String(user.id)) return true;
+  const vb = (video.batches || []).map(String);
+  if (!vb.length) return true;
+  if (user.roles.includes("student") || user.roles.includes("leader")) {
+    return Boolean(user.batch && vb.includes(String(user.batch)));
+  }
+  if (user.roles.includes("doctor")) {
+    const me = await User.findById(user.id).select("batches").lean();
+    if ((me?.batches || []).some(b => vb.includes(String(b)))) return true;
+    return Boolean(await Subject.exists({ _id: video.subject, doctor: user.id }));
+  }
+  return false;
+}
+
+/* Range آمن: "bytes=-500" (لاحقة) كان يعطي start=NaN فيرمي createReadStream،
+   ونهاية بعد حجم الملف كانت تُرسل Content-Length خاطئاً. */
+function parseRange(header, size) {
+  const m = /^bytes=(\d*)-(\d*)$/.exec(String(header || "").trim());
+  if (!m || (m[1] === "" && m[2] === "")) return null;
+  let start, end;
+  if (m[1] === "") {
+    const suffix = parseInt(m[2], 10);
+    start = Math.max(0, size - suffix);
+    end = size - 1;
+  } else {
+    start = parseInt(m[1], 10);
+    end = m[2] === "" ? size - 1 : Math.min(parseInt(m[2], 10), size - 1);
+  }
+  if (Number.isNaN(start) || Number.isNaN(end) || start > end || start >= size) return { invalid: true };
+  return { start, end };
+}
+
 // Multer for single chunk uploads (stored temporarily)
 const chunkStorage = multer.diskStorage({
   destination: (req, file, cb) => {
-    const uploadDir = path.join(CHUNKS_DIR, req.params.uploadId);
+    const rawId = req.params.uploadId || '';
+    if (!/^[a-f0-9]{24,32}$/i.test(rawId)) {
+      return cb(new Error("معرف رفع غير صالح"), null);
+    }
+    const uploadDir = path.join(CHUNKS_DIR, rawId);
     fs.mkdirSync(uploadDir, { recursive: true });
     cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
-    const chunkIndex = parseInt(req.body.chunkIndex || "0");
-    cb(null, `chunk-${chunkIndex}`);
+    const rawIdx = req.body?.chunkIndex ?? req.headers?.['x-chunk-index'] ?? req.query?.chunkIndex;
+    const chunkIndex = parseInt(rawIdx);
+    // الرقم لم يصل بعد (يُرسل بعد الملف): اسم مؤقت فريد بدل chunk-0 الذي كان
+    // يكتب فوق الجزء الأول؛ المعالج يعيد التسمية بعد اكتمال الطلب
+    cb(null, isNaN(chunkIndex) ? `tmp-${Date.now()}-${crypto.randomBytes(4).toString("hex")}` : `chunk-${chunkIndex}`);
   }
 });
 
@@ -71,6 +123,29 @@ router.post("/init-upload", auth, role("dean", "doctor", "leader", "admin"), asy
       return res.status(400).json({ success: false, message: "صيغة الملف غير مسموح بها. الرجاء رفع فيديو فقط." });
     }
 
+    if (!mongoose.Types.ObjectId.isValid(subject)) {
+      return res.status(400).json({ success: false, message: "معرف المادة غير صالح" });
+    }
+    /* نطاق الرفع: كان أي دكتور/ليدر يرفع لأي مادة وأي دفعة. الدكتور لمواده
+       ودفعاته فقط، والليدر لمواد دفعته ودفعته وحدها. */
+    const subjectDoc = await Subject.findById(subject).select("doctor batches").lean();
+    if (!subjectDoc) return res.status(404).json({ success: false, message: "المادة غير موجودة" });
+    let targetBatches = Array.isArray(batches) ? batches.filter(b => mongoose.Types.ObjectId.isValid(b)) : [];
+    if (!isDeanLevel(req.user)) {
+      if (req.user.roles.includes("doctor") && String(subjectDoc.doctor) === String(req.user.id)) {
+        const me = await User.findById(req.user.id).select("batches").lean();
+        const mine = new Set((me?.batches || []).map(String));
+        if (targetBatches.some(b => !mine.has(String(b)))) {
+          return res.status(403).json({ success: false, message: "لا يمكنك نشر الفيديو لدفعة غير مخصصة لك" });
+        }
+      } else if (req.user.roles.includes("leader") && req.user.batch
+                 && (subjectDoc.batches || []).some(b => String(b) === String(req.user.batch))) {
+        targetBatches = [req.user.batch];
+      } else {
+        return res.status(403).json({ success: false, message: "غير مصرح لك بالرفع لهذه المادة" });
+      }
+    }
+
     // Generate unique upload ID
     const uploadId = crypto.randomBytes(16).toString("hex");
 
@@ -78,7 +153,7 @@ router.post("/init-upload", auth, role("dean", "doctor", "leader", "admin"), asy
       title: title.trim(),
       description: (description || "").trim(),
       subject,
-      batches: batches || [], // empty array = all batches
+      batches: targetBatches, // empty array = all batches
       uploadedBy: req.user.id,
       uploadId,
       originalFilename: fileName || "video.mp4",
@@ -122,6 +197,13 @@ router.post("/upload-chunk/:uploadId", auth, role("dean", "doctor", "leader", "a
 
     if (video.status !== "uploading") {
       return res.status(400).json({ success: false, message: "الرفع اكتمل أو قيد المعالجة" });
+    }
+
+    /* multer يسمّي الملف أثناء استقباله؛ النسخ القديمة من التطبيق ترسل chunkIndex
+       بعد الملف فيُحفظ كل جزء باسم chunk-0 فوق سابقه ويفشل الدمج ("القطعة 1
+       مفقودة"). هنا وقد اكتمل الطلب نصحّح الاسم من الرقم الفعلي. */
+    if (req.file && req.file.filename !== `chunk-${chunkIndex}`) {
+      fs.renameSync(req.file.path, path.join(path.dirname(req.file.path), `chunk-${chunkIndex}`));
     }
 
     // Track uploaded chunk (avoid duplicates)
@@ -225,6 +307,7 @@ router.post("/finalize/:uploadId", auth, role("dean", "doctor", "leader", "admin
 
     // Update video with original file info
     video.status = "processing";
+    if (!video.variants) video.variants = {}; // سجلات قديمة/محاكاة بلا الحقل المتداخل
     video.variants.original = {
       path: originalPath,
       size: originalStats.size,
@@ -318,7 +401,14 @@ router.post("/finalize/:uploadId", auth, role("dean", "doctor", "leader", "admin
 // ============================================================
 router.get("/", auth, batchMiddleware, async (req, res) => {
   try {
-    const filter = { status: { $in: ["ready", "processing"] }, batches: req.activeBatch };
+    const filter = {
+      status: { $in: ["ready", "processing"] },
+      $or: [
+        { batches: req.activeBatch },
+        { batches: { $size: 0 } },
+        { batches: { $exists: false } }
+      ]
+    };
     
     // Only show uploading/failed to the uploader
     if (req.query.mine === "true") {
@@ -354,7 +444,7 @@ router.get("/by-subject/:subjectId", auth, batchMiddleware, async (req, res) => 
       return res.json({ success: true, videos: [] });
     }
 
-    const videos = await Video.find({ subject: subjectId, status: "ready", batches: req.activeBatch })
+    const videos = await Video.find({ subject: subjectId, status: "ready", ...batchScopeFilter(req.activeBatch) })
       .populate("uploadedBy", "name")
       .sort({ createdAt: -1 })
       .select("-uploadedChunks -variants.original.path -variants.low.path -variants.audioOnly.path");
@@ -417,7 +507,7 @@ router.get("/:id", auth, batchMiddleware, async (req, res) => {
       return res.status(400).json({ success: false, message: "معرف الفيديو غير صالح" });
     }
 
-    const video = await Video.findOne({ _id: req.params.id, batches: req.activeBatch })
+    const video = await Video.findOne({ _id: req.params.id, ...batchScopeFilter(req.activeBatch) })
       .populate("subject", "name")
       .populate("uploadedBy", "name");
 
@@ -425,8 +515,7 @@ router.get("/:id", auth, batchMiddleware, async (req, res) => {
       return res.status(404).json({ success: false, message: "الفيديو غير موجود" });
     }
 
-    // زيادة المشاهدات وتسجيل النشاط
-    Video.findByIdAndUpdate(video._id, { $inc: { views: 1 } }).exec();
+    // المشاهدة تُعدّ من POST /:id/view وحده — العدّ هنا أيضاً كان يضاعف كل مشاهدة
     logActivity(req.user.id, "VIDEO_VIEWED", { videoId: video._id, title: video.title });
 
     // Build public response (hide internal paths)
@@ -439,13 +528,14 @@ router.get("/:id", auth, batchMiddleware, async (req, res) => {
       status: video.status,
       duration: video.duration,
       createdAt: video.createdAt,
-      hasOriginal: !!video.variants.original.path,
-      hasLowRes: !!video.variants.low.path,
-      hasAudio: !!video.variants.audioOnly.path,
+      // مستندات قديمة أو مرفوعة جزئياً قد تخلو من variants — لا نُسقط الصفحة كلها بسببها
+      hasOriginal: !!video.variants?.original?.path,
+      hasLowRes: !!video.variants?.low?.path,
+      hasAudio: !!video.variants?.audioOnly?.path,
       hasThumbnail: !!video.thumbnailPath,
-      originalSize: video.variants.original.size,
-      lowSize: video.variants.low.size,
-      audioSize: video.variants.audioOnly.size,
+      originalSize: video.variants?.original?.size || 0,
+      lowSize: video.variants?.low?.size || 0,
+      audioSize: video.variants?.audioOnly?.size || 0,
       chapters: video.chapters || [],
       views: video.views || 0,
       commentsCount: video.commentsCount || 0
@@ -453,6 +543,7 @@ router.get("/:id", auth, batchMiddleware, async (req, res) => {
 
     res.json({ success: true, data: { video: data } });
   } catch (err) {
+    console.error("[video:get]", err);
     res.status(500).json({ success: false, message: "فشل تحميل بيانات الفيديو" });
   }
 });
@@ -463,8 +554,9 @@ router.get("/:id", auth, batchMiddleware, async (req, res) => {
 // ============================================================
 router.get("/:id/stream/:variant", auth, async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(404).end();
     const video = await Video.findById(req.params.id);
-    if (!video || (video.status !== "ready" && video.status !== "processing")) {
+    if (!video || (video.status !== "ready" && video.status !== "processing") || !(await canViewVideo(req.user, video))) {
       return res.status(404).json({ success: false, message: "الفيديو غير متاح" });
     }
 
@@ -492,11 +584,13 @@ router.get("/:id/stream/:variant", auth, async (req, res) => {
     const fileSize = stat.size;
 
     // Range header for seeking (HTTP 206 Partial Content)
-    const range = req.headers.range;
+    const range = req.headers.range ? parseRange(req.headers.range, fileSize) : null;
+    if (range?.invalid) {
+      res.writeHead(416, { "Content-Range": `bytes */${fileSize}` });
+      return res.end();
+    }
     if (range) {
-      const parts = range.replace(/bytes=/, "").split("-");
-      const start = parseInt(parts[0], 10);
-      const end   = parts[1] ? parseInt(parts[1], 10) : fileSize - 1;
+      const { start, end } = range;
       const chunkSize = end - start + 1;
 
       const stream = fs.createReadStream(filePath, { start, end });
@@ -527,8 +621,9 @@ router.get("/:id/stream/:variant", auth, async (req, res) => {
 // ============================================================
 router.get("/:id/download/:variant", auth, async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.status(404).end();
     const video = await Video.findById(req.params.id);
-    if (!video || video.status !== "ready") {
+    if (!video || video.status !== "ready" || !(await canViewVideo(req.user, video))) {
       return res.status(404).json({ success: false, message: "الفيديو غير متاح" });
     }
 
@@ -567,7 +662,7 @@ router.get("/:id/download/:variant", auth, async (req, res) => {
 // ============================================================
 router.get("/:id/thumbnail", async (req, res) => {
   try {
-    const video = await Video.findById(req.params.id);
+    const video = mongoose.Types.ObjectId.isValid(req.params.id) ? await Video.findById(req.params.id) : null;
     if (!video || !video.thumbnailPath || !fs.existsSync(video.thumbnailPath)) {
       // Return a placeholder SVG
       res.set("Content-Type", "image/svg+xml");
@@ -591,6 +686,13 @@ router.delete("/:id", auth, role("dean", "doctor", "leader", "admin"), async (re
     const video = await Video.findById(req.params.id);
     if (!video) {
       return res.status(404).json({ success: false, message: "الفيديو غير موجود" });
+    }
+
+    // نفس قاعدة المحاضرات: العميد، من رفعه، دكتور المادة، ليدر دفعتها
+    const { getManageScope, canManageSubjectContent } = require("../utils/contentPermissions");
+    const subject = video.subject ? await Subject.findById(video.subject).select("doctor batches").lean() : null;
+    if (!canManageSubjectContent(await getManageScope(req.user), { ownerId: video.uploadedBy, subject, extraBatches: video.batches })) {
+      return res.status(403).json({ success: false, message: "غير مصرح لك بحذف هذا الفيديو" });
     }
 
     // Delete files from disk
@@ -635,6 +737,12 @@ router.put("/:id", auth, role("dean", "doctor", "leader", "admin"), async (req, 
       return res.status(404).json({ success: false, message: "الفيديو غير موجود" });
     }
 
+    const isOwner = video.uploadedBy && video.uploadedBy.toString() === req.user.id;
+    const isDeanLevel = req.user.roles.includes("dean") || req.user.roles.includes("admin");
+    if (!isOwner && !isDeanLevel) {
+      return res.status(403).json({ success: false, message: "غير مصرح لك بتعديل هذا الفيديو" });
+    }
+
     const { title, description } = req.body;
     if (title) video.title = title.trim();
     if (description !== undefined) video.description = description.trim();
@@ -655,6 +763,12 @@ router.put("/:id/chapters", auth, role("dean", "doctor", "leader", "admin"), asy
     const video = await Video.findById(req.params.id);
     if (!video) {
       return res.status(404).json({ success: false, message: "الفيديو غير موجود" });
+    }
+
+    const isOwner = video.uploadedBy && video.uploadedBy.toString() === req.user.id;
+    const isDeanLevel = req.user.roles.includes("dean") || req.user.roles.includes("admin");
+    if (!isOwner && !isDeanLevel) {
+      return res.status(403).json({ success: false, message: "غير مصرح لك بتعديل فصول هذا الفيديو" });
     }
 
     const { chapters } = req.body; // [{title, time}, ...]
@@ -681,6 +795,7 @@ router.put("/:id/chapters", auth, role("dean", "doctor", "leader", "admin"), asy
 // ============================================================
 router.post("/:id/view", auth, async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) return res.json({ success: false });
     await Video.findByIdAndUpdate(req.params.id, { $inc: { views: 1 } });
     res.json({ success: true });
   } catch (err) {

@@ -77,9 +77,11 @@ async function handleLogin(e) {
   // Disable button and show loading
   loginBtn.disabled = true;
   loadingState.classList.remove('hidden');
-
   try {
-    const baseUrl = (typeof API_BASE !== 'undefined' && API_BASE !== 'undefined') ? API_BASE : '';
+    const isCapacitorNative = !!(window.Capacitor?.isNativePlatform?.());
+    const baseUrl = (typeof API_BASE !== 'undefined' && API_BASE && API_BASE !== 'undefined') 
+      ? API_BASE 
+      : (isCapacitorNative ? 'https://elnasrcsit.website' : '');
     const response = await fetch(baseUrl + '/api/auth/login', {
       method: 'POST',
       headers: {
@@ -110,11 +112,10 @@ async function handleLogin(e) {
 
     // Redirect based on user role
     setTimeout(() => {
-      const user = data.user;
-      if (user.role === 'admin') {
+      const user = data.user || {};
+      const roles = user.roles || (user.role ? [user.role] : []);
+      if (roles.includes('admin') || roles.includes('dean')) {
         window.location.href = '/admin_dashboard.html';
-      } else if (user.role === 'instructor') {
-        window.location.href = '/dashboard.html';
       } else {
         window.location.href = '/dashboard.html';
       }

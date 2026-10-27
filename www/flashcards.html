@@ -6,8 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>بطاقات الاستذكار الذكية | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=2026083019">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026083019">
+  <link rel="stylesheet" href="/css/style.css?v=2026102613">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026102613">
+  <link rel="stylesheet" href="/css/ui.css?v=2026102613">
   <style>
     .flashcard-scene {
       perspective: 1200px;
@@ -151,12 +152,12 @@
 
 <main class="page-container" style="max-width:860px; margin:0 auto; padding:20px 16px 80px;">
   <!-- Header -->
-  <div class="welcome-banner" style="margin-bottom:20px;">
+  <div class="welcome-banner">
     <div class="welcome-banner-body">
       <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px;">
         <div>
           <h1 style="font-size:1.35rem; font-weight:800; margin:0 0 6px; color:var(--text-main);">
-            <i class="ri-stack-line" style="color:var(--primary);"></i> بطاقات الاستذكار التكراري (Spaced Repetition)
+            <i class="ri-stack-line" style="color:var(--primary);"></i> بطاقات الاستذكار
           </h1>
           <p style="margin:0; font-size:0.88rem; color:var(--text-muted);">
             تثبيت المفاهيم والمصطلحات في الذاكرة طويلة المدى وفق الخوارزمية العلمية.
@@ -276,8 +277,8 @@
 
 <div id="toast-container"></div>
 
-<script src="/js/shared.js?v=2026083019"></script>
-<script src="/js/app.js?v=2026083019"></script>
+<script src="/js/shared.js?v=2026102613"></script>
+<script src="/js/app.js?v=2026102613"></script>
 <script>
   CBS.init({ requireAuth: true });
   const user = CBS.getUser();
@@ -295,6 +296,13 @@
       if (data.success && subjects.length > 0) {
         sel.innerHTML = '<option value="">-- اختر مادة للدراسة --</option>' +
           subjects.map(s => `<option value="${s._id}">${CBS.escapeHTML(s.name)}</option>`).join('');
+        
+        const urlParams = new URLSearchParams(window.location.search);
+        const preselected = urlParams.get('subject');
+        if (preselected && Array.from(sel.options).some(o => o.value === preselected)) {
+          sel.value = preselected;
+          onSubjectChange();
+        }
       } else {
         sel.innerHTML = '<option value="">لا توجد مواد متاحة</option>';
       }

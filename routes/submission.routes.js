@@ -7,25 +7,18 @@ const User = require("../models/User");
 const auth = require("../middleware/auth.middleware");
 const role = require("../middleware/role.middleware");
 const upload = require("../config/multer");
+const { removeUploadedFile } = require("../config/multer");
+const path = require("path");
+// ملف التسليم المستبدل أو الملغى كان يبقى على القرص إلى الأبد
+const removeSubmissionFile = name => { if (name) removeUploadedFile(path.join("uploads", "submissions", path.basename(name))); };
+// multer يحفظ الملف قبل فحوص المسار؛ إن رُفض الطلب (متأخر، مكرر…) نحذفه
+const dropFileIfRejected = (req, res, next) => { res.on("finish", () => { if (res.statusCode >= 400 && req.file) removeSubmissionFile(req.file.filename); }); next(); };
 const { uploadLimiter } = require("../middleware/rateLimiter");
 const mongoose = require("mongoose");
 const { success, fail, notFound, serverError } = require("../utils/response");
 const { logActivity } = require("../utils/activityLogger");
 
-/* موعد التسليم بالتوقيت المحلي للكلية لا بـ UTC.
-   setUTCHours كان يعامل "23:59" كتوقيت عالمي بينما الدكتور يقصد التوقيت
-   المحلي والواجهة تعرضه محلياً — فالسودان UTC+2 يمنح الطلاب ساعتين
-   إضافيتين بصمت، والرقم المعروض لا يطابق الرقم المطبَّق. */
-const COLLEGE_UTC_OFFSET_HOURS = Number(process.env.COLLEGE_UTC_OFFSET || 2);
-
-function resolveDueDateTime(assignment) {
-  if (!assignment?.dueDate) return null;
-  const due = new Date(assignment.dueDate);
-  const [hours, minutes] = String(assignment.dueTime || "23:59").split(":").map(Number);
-  if (Number.isNaN(hours) || Number.isNaN(minutes)) return due;
-  due.setUTCHours(hours - COLLEGE_UTC_OFFSET_HOURS, minutes, 0, 0);
-  return due;
-}
+const { resolveDueDateTime } = require("../utils/dueDate");
 
 async function canManageAssignment(user, assignment) {
   if (user.roles.includes("dean") || user.roles.includes("admin")) return true;
@@ -48,10 +41,29 @@ async function canManageAssignment(user, assignment) {
   return scopedBatches.some(batchId => assignedBatches.has(batchId));
 }
 
+// نطاق التكليف = دفعاته، وإن لم تُحدَّد فدفعات المادة
+async function assignmentBatchScope(assignment) {
+  if (Array.isArray(assignment.batches) && assignment.batches.length) {
+    return assignment.batches.map(b => String(b?._id || b));
+  }
+  const subjectId = assignment?.subject?._id || assignment?.subject;
+  const subject = assignment?.subject?.batches
+    ? assignment.subject
+    : await Subject.findById(subjectId).select("batches").lean();
+  return (subject?.batches || []).map(b => String(b?._id || b));
+}
+
+async function studentInAssignmentScope(userId, assignment) {
+  const student = await User.findById(userId).select("batch").lean();
+  if (!student?.batch) return false;
+  const scope = await assignmentBatchScope(assignment);
+  return scope.includes(String(student.batch));
+}
+
 // ============ مسارات الطلاب ============
 
 // تسليم واجب جديد (الطلاب والليدر)
-router.post("/submit", auth, role("student", "leader"), uploadLimiter, upload.single("file"), async (req, res) => {
+router.post("/submit", auth, role("student", "leader"), uploadLimiter, upload.single("file"), dropFileIfRejected, async (req, res) => {
   try {
     if (!req.file) {
       return fail(res, "يجب رفع ملف التسليم");
@@ -70,14 +82,10 @@ router.post("/submit", auth, role("student", "leader"), uploadLimiter, upload.si
       return notFound(res, "التكليف غير موجود");
     }
 
-    // التحقق من أن الطالب في دفعة مسموح لها بالتكليف
-    const student = await User.findById(req.user.id).select("batch");
-    if (student.batch && assignment.batches && assignment.batches.length > 0) {
-      const studentBatchId = student.batch.toString();
-      const assignmentBatches = assignment.batches.map(b => b.toString());
-      if (!assignmentBatches.includes(studentBatchId)) {
-        return fail(res, "هذا التكليف غير متاح لدفعتك", 403);
-      }
+    // التحقق من أن الطالب في دفعة مسموح لها بالتكليف — طالب بلا دفعة كان
+    // يتخطى الفحص كله ويسلّم لأي تكليف في الكلية
+    if (!(await studentInAssignmentScope(req.user.id, assignment))) {
+      return fail(res, "هذا التكليف غير متاح لدفعتك", 403);
     }
 
     // التحقق من موعد التسليم (بـ UTC)
@@ -143,14 +151,19 @@ router.post("/submit", auth, role("student", "leader"), uploadLimiter, upload.si
       const Notification = require("../models/Notification");
       const assignmentTitle = assignment.title || "التكليف";
       const studentName = req.user.name || "طالب";
-      await Notification.create({
-        title: "تسليم واجب جديد",
-        message: `قام ${studentName} بتسليم واجب "${assignmentTitle}"`,
-        type: "normal",
-        target: "doctors",
-        batches: assignment.batches || [],
-        createdBy: req.user.id
-      });
+      /* كان target:"doctors" + دفعات التكليف يُرسل الإشعار لكل دكاترة الدفعة
+         عن مواد لا يدرّسونها. المعني هو دكتور المادة وحده. */
+      const subjectDoctor = assignment.subject?.doctor;
+      if (subjectDoctor) {
+        await Notification.create({
+          title: "تسليم واجب جديد",
+          message: `قام ${studentName} بتسليم واجب "${assignmentTitle}"`,
+          type: "normal",
+          target: "doctors",
+          recipients: [subjectDoctor],
+          createdBy: req.user.id
+        });
+      }
     } catch (notifErr) {
       console.error("Failed to trigger submission notification:", notifErr.message);
     }
@@ -190,6 +203,7 @@ router.delete("/:id/undo", auth, role("student", "leader"), async (req, res) => 
     }
 
     await StudentSubmission.findByIdAndDelete(req.params.id);
+    removeSubmissionFile(submission.file);
     success(res, null, "تم إلغاء التسليم بنجاح، يمكنك رفع ملف جديد");
   } catch (err) {
     serverError(res, err, "إلغاء التسليم");
@@ -197,7 +211,7 @@ router.delete("/:id/undo", auth, role("student", "leader"), async (req, res) => 
 });
 
 // إعادة تسليم بعد التقييم (الطلاب والليدر) — فقط إذا لم يكن مقبولاً بالكامل
-router.post("/:id/resubmit", auth, role("student", "leader"), uploadLimiter, upload.single("file"), async (req, res) => {
+router.post("/:id/resubmit", auth, role("student", "leader"), uploadLimiter, upload.single("file"), dropFileIfRejected, async (req, res) => {
   try {
     const submission = await StudentSubmission.findById(req.params.id)
       .populate("assignment");
@@ -248,13 +262,8 @@ router.post("/:id/resubmit", auth, role("student", "leader"), uploadLimiter, upl
     }
 
     // التحقق من أن الطالب لا يزال في الدفعة المسموح بها
-    const student = await User.findById(req.user.id).select("batch");
-    if (student.batch && assignment.batches && assignment.batches.length > 0) {
-      const studentBatchId = student.batch.toString();
-      const assignmentBatches = assignment.batches.map(b => b.toString());
-      if (!assignmentBatches.includes(studentBatchId)) {
-        return fail(res, "هذا التكليف لم يعد متاحاً لدفعتك", 403);
-      }
+    if (!(await studentInAssignmentScope(req.user.id, assignment))) {
+      return fail(res, "هذا التكليف لم يعد متاحاً لدفعتك", 403);
     }
 
     // تحديد نوع الملف
@@ -263,6 +272,7 @@ router.post("/:id/resubmit", auth, role("student", "leader"), uploadLimiter, upl
     else if (req.file.mimetype === "application/pdf") fileType = "pdf";
 
     // تحديث التسليم
+    const previousFile = submission.file;
     submission.file = req.file.filename;
     submission.fileType = fileType;
     submission.notes = req.body.notes || submission.notes;
@@ -275,6 +285,7 @@ router.post("/:id/resubmit", auth, role("student", "leader"), uploadLimiter, upl
     submission.reviewDate = undefined;
 
     await submission.save();
+    if (previousFile !== submission.file) removeSubmissionFile(previousFile);
     await submission.populate("assignment student");
 
     success(res, { submission }, "تم إعادة التسليم بنجاح");
@@ -406,10 +417,9 @@ router.get("/assignment/:assignmentId/not-submitted", auth, role("dean", "doctor
     const submittedStudentIds = submissions.map(s => s.student.toString());
 
     // جلب جميع الطلاب وتصفية من لم يسلموا
-    let query = { roles: { $in: ["student", "leader"] } };
-    if (assignment.batches && assignment.batches.length > 0) {
-      query.batch = { $in: assignment.batches };
-    }
+    // بلا نطاق دفعات كان الاستعلام يُرجع كل طلاب الكلية كـ"لم يسلّموا"
+    const scope = await assignmentBatchScope(assignment);
+    const query = { roles: { $in: ["student", "leader"] }, batch: { $in: scope } };
 
     const allStudents = await User.find(query, "name email batch").populate("batch", "name code");
     const notSubmittedStudents = allStudents.filter(

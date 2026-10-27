@@ -107,7 +107,28 @@ async function getStudentBalanceSummary(studentId) {
   };
 }
 
+/**
+ * يطبّق رصيد الطالب الدائن (ما دفعه زيادة على رسومه السابقة) على رسومه المفتوحة.
+ * الفائض عند الدفع كان يبقى معلّقاً: الرصيد الإجمالي صحيح، لكن أي رسم يُضاف
+ * لاحقاً يظهر "غير مدفوع" ويدخل تقرير المتأخرات رغم أن الطالب سدّده سلفاً.
+ * يُستدعى بعد إنشاء رسوم جديدة.
+ */
+async function applyStudentCredit(studentId, session = null) {
+  const Payment = require("../models/Payment");
+  const feesQ = Fee.find({ student: studentId }).select("paidAmount").lean();
+  const paysQ = Payment.find({ student: studentId }).select("amount").lean();
+  if (session) { feesQ.session(session); paysQ.session(session); }
+  const [fees, payments] = await Promise.all([feesQ, paysQ]);
+  const totalPaid = payments.reduce((s, p) => s + (p.amount || 0), 0);
+  const allocated = fees.reduce((s, f) => s + (f.paidAmount || 0), 0);
+  const credit = totalPaid - allocated;
+  if (credit <= 0) return { applied: 0 };
+  const { remainingPayment } = await allocatePaymentToFees(studentId, credit, session);
+  return { applied: credit - remainingPayment };
+}
+
 module.exports = {
   allocatePaymentToFees,
+  applyStudentCredit,
   getStudentBalanceSummary
 };

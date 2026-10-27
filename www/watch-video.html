@@ -6,8 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>مشاهدة المحاضرة | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=2026083019">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026083019">
+  <link rel="stylesheet" href="/css/style.css?v=2026102613">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026102613">
+  <link rel="stylesheet" href="/css/ui.css?v=2026102613">
   <style>
     .watch-layout { display: grid; grid-template-columns: 1fr; gap: 24px; }
 
@@ -52,6 +53,7 @@
       background: rgba(255,255,255,0.15); color: white;
       border: none; padding: 4px 8px; border-radius: 6px;
       font-size: 0.8rem; cursor: pointer;
+      flex-shrink: 0; min-width: 58px; /* كانت تنضغط إلى 16px على الهاتف فلا تُقرأ السرعة */
     }
     .speed-select option { color: #000; }
 
@@ -300,9 +302,9 @@
 <div id="toast-container"></div>
 <footer class="main-footer">حقوق النشر &copy; <span id="year"></span> جامعة النصر التقنية</footer>
 
-<script src="/js/shared.js?v=2026083019"></script>
-<script src="/js/app.js?v=2026083019"></script>
-<script src="/js/socket-client.js?v=2026083019" defer></script>
+<script src="/js/shared.js?v=2026102613"></script>
+<script src="/js/app.js?v=2026102613"></script>
+<script src="/js/socket-client.js?v=2026102613" defer></script>
 <script>
   CBS.init();
   const user = CBS.getUser();
@@ -786,7 +788,7 @@
     if (!personalNotes.length) { CBS.toast('لا توجد ملاحظات لتصديرها', '', 'error'); return; }
     let md = `#  ملخص وملاحظات محاضرة: ${videoData?.title || 'المحاضرة'}\n\n`;
     md += `**المقرر:** ${videoData?.subject?.name || 'مقرر دراسي'}\n`;
-    md += `**تاريخ التصدير:** ${new Date().toLocaleDateString('ar-EG')}\n\n---\n\n`;
+    md += `**تاريخ التصدير:** ${new Date().toLocaleDateString('ar-EG-u-nu-latn')}\n\n---\n\n`;
 
     personalNotes.forEach(n => {
       md += `###  ${n.title || 'ملاحظة'}\n${n.content}\n\n`;

@@ -4,85 +4,9 @@ const User = require("../models/User");
 const auth = require("../middleware/auth.middleware");
 const role = require("../middleware/role.middleware");
 const { success, fail, notFound, serverError } = require("../utils/response");
-const webpush = require("../utils/webpushService");
-const fcmService = require("../utils/fcmService");
 
-// يحل المستهدفين بأجهزة أندرويد (FCM) ويرسل لهم إشعارات دفع حقيقية
-async function fcmPushToTargets(notification) {
-  try {
-    const pluralToSingular = { students: "student", doctors: "doctor", leaders: "leader" };
-    let userQuery;
-    if (notification.recipients?.length) {
-      userQuery = { _id: { $in: notification.recipients } };
-    } else {
-      const and = [];
-      if (notification.target && notification.target !== "all") {
-        const singular = pluralToSingular[notification.target];
-        if (singular) and.push({ roles: singular });
-      }
-      if (notification.batches?.length) {
-        and.push({ $or: [{ batch: { $in: notification.batches } }, { batches: { $in: notification.batches } }] });
-      }
-      userQuery = and.length ? { $and: and } : {};
-    }
-    userQuery.fcmTokens = { $exists: true, $not: { $size: 0 } };
-
-    const users = await User.find(userQuery).select("_id fcmTokens").lean();
-    let allTokens = [];
-    users.forEach(u => {
-      if (Array.isArray(u.fcmTokens)) {
-        allTokens.push(...u.fcmTokens.filter(Boolean));
-      }
-    });
-
-    if (!allTokens.length) return;
-
-    const failedTokens = await fcmService.sendToMultiple(allTokens, {
-      title: notification.title,
-      body: notification.message,
-      isEmergency: notification.type === "emergency",
-      data: { notificationId: String(notification._id) }
-    });
-
-    if (Array.isArray(failedTokens) && failedTokens.length > 0) {
-      await User.updateMany(
-        { fcmTokens: { $in: failedTokens } },
-        { $pull: { fcmTokens: { $in: failedTokens } } }
-      );
-    }
-  } catch (err) {
-    console.error("FCM Push dispatch error:", err.message);
-  }
-}
-
-// يحل المستخدمين المستهدفين (أصحاب اشتراكات Web Push) ويرسل لهم — fire-and-forget
-async function pushToTargets(notification) {
-  if (!webpush.isEnabled()) return;
-  const pluralToSingular = { students: "student", doctors: "doctor", leaders: "leader" };
-  let userQuery;
-  if (notification.recipients?.length) {
-    userQuery = { _id: { $in: notification.recipients } };
-  } else {
-    const and = [];
-    if (notification.target && notification.target !== "all") {
-      const singular = pluralToSingular[notification.target];
-      if (singular) and.push({ roles: singular });
-    }
-    if (notification.batches?.length) {
-      and.push({ $or: [{ batch: { $in: notification.batches } }, { batches: { $in: notification.batches } }] });
-    }
-    userQuery = and.length ? { $and: and } : {};
-  }
-  userQuery.webPushSubscriptions = { $exists: true, $not: { $size: 0 } };
-
-  const users = await User.find(userQuery).select("_id webPushSubscriptions").lean();
-  await webpush.sendToUsers(users, {
-    title: notification.title,
-    body: notification.message,
-    isEmergency: notification.type === "emergency",
-    data: { url: "/notifications.html" }
-  });
-}
+/* إرسال إشعار الهاتف (FCM + Web Push) يتم في خطّاف الحفظ بنموذج الإشعار
+   (utils/pushDispatch) فيشمل الإشعارات التلقائية أيضاً لا اليدوية وحدها. */
 
 // إنشاء تنبيه (عميد أو دكتور أو ليدر فقط - الطلاب لا يمكنهم)
 router.post("/", auth, role("dean", "doctor", "leader", "admin"), async (req, res) => {
@@ -186,10 +110,6 @@ router.post("/", auth, role("dean", "doctor", "leader", "admin"), async (req, re
       }
     }
 
-    // إشعارات FCM للأجهزة و Web Push للمتصفح/آيفون (لا تعطّل الرد لو فشلت)
-    fcmPushToTargets(notification).catch(err => console.error("FCM Push dispatch:", err.message));
-    pushToTargets(notification).catch(err => console.error("WebPush dispatch:", err.message));
-
     success(res, { notification: populatedNotification }, "تم إنشاء الإشعار بنجاح");
   } catch (err) {
     serverError(res, err, "إنشاء الإشعار");
@@ -218,8 +138,11 @@ router.get("/manage", auth, role("dean", "doctor", "leader", "admin"), async (re
       }
     }
 
+    // بلا حد كان العميد/الأدمن يُحمّل كل إشعارات الكلية منذ التأسيس في كل فتح للصفحة
+    const limit = Math.min(500, Math.max(1, parseInt(req.query.limit) || 200));
     const notifications = await Notification.find(query)
       .sort({ createdAt: -1 })
+      .limit(limit)
       .populate("createdBy", "name")
       .lean();
 
@@ -243,7 +166,9 @@ router.get("/", auth, async (req, res) => {
 
     const [notifications, total] = await Promise.all([
       Notification.find(query)
-        .sort({ type: -1, createdAt: -1 })
+        /* كان { type: -1 } أولاً: "normal" > "emergency" أبجدياً، فتنزل الإشعارات
+           الطارئة تحت كل العادية — عكس المقصود تماماً. الأحدث أولاً. */
+        .sort({ createdAt: -1 })
         .skip(skip)
         .limit(limit)
         .populate({
@@ -301,8 +226,10 @@ router.get("/new", auth, async (req, res) => {
       ...Notification.buildVisibilityQuery(req.user.id, req.user.roles, user?.batch, user?.batches || [])
     };
 
+    // lastCheck=0 (أول فتح أو مسح التخزين) كان يُرجع كل الإشعارات المرئية دفعة واحدة
     const notifications = await Notification.find(query)
       .sort({ createdAt: -1 })
+      .limit(20)
       .populate({
         path: "createdBy",
         select: "name roles email profileImage",
@@ -420,8 +347,10 @@ router.delete("/:id", auth, role("dean", "doctor", "leader", "admin"), async (re
       return notFound(res, "التنبيه");
     }
 
-    // فقط منشئ الإشعار أو العميد يمكنه حذفه
-    if (!req.user.roles.includes("dean") && !req.user.roles.includes("admin") && notification.createdBy.toString() !== req.user.id) {
+    // فقط منشئ الإشعار أو العميد/المسؤول يمكنه حذفه
+    const isStaff = req.user.roles.includes("dean") || req.user.roles.includes("admin");
+    const isCreator = notification.createdBy && notification.createdBy.toString() === req.user.id;
+    if (!isStaff && !isCreator) {
       return fail(res, "ليس لديك صلاحية لحذف هذا التنبيه", 403);
     }
 
@@ -454,7 +383,10 @@ function getRoleNameInArabic(role) {
 // دالة مساعدة: تنظيف الإشعارات القديمة (يمكن تفعيلها بواسطة Cron Job)
 router.post("/cleanup-old", auth, role("dean"), async (req, res) => {
   try {
-    const days = req.body.days || 30; // حذف الإشعارات الأقدم من 30 يوم افتراضياً
+    const days = Number(req.body.days ?? 30); // حذف الإشعارات الأقدم من 30 يوم افتراضياً
+    if (!Number.isInteger(days) || days < 7 || days > 3650) {
+      return fail(res, "عدد الأيام يجب أن يكون رقماً صحيحاً بين 7 و3650");
+    }
     
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);

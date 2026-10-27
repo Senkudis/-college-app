@@ -48,7 +48,7 @@ def process():
 '''
     orbs_css = '''
     body { background: #051527; }
-    .bg-orb { position: absolute; border-radius: 50%; filter: blur(80px); opacity: 0.25; animation: orbFloat 8s ease-in-out infinite; z-index: 0; pointer-events: none; }
+    .bg-orb { position: fixed; border-radius: 50%; filter: blur(80px); opacity: 0.25; animation: orbFloat 8s ease-in-out infinite; z-index: 0; pointer-events: none; }
     .bg-orb-1 { width: 400px; height: 400px; background: #2563eb; top: -100px; right: -80px; animation-delay: 0s; }
     .bg-orb-2 { width: 300px; height: 300px; background: #06b6d4; bottom: -80px; left: -60px; animation-delay: -4s; }
     .bg-orb-3 { width: 200px; height: 200px; background: #7c3aed; top: 50%; left: 50%; transform: translate(-50%, -50%); animation-delay: -2s; }

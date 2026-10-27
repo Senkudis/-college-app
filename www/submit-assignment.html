@@ -6,8 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>تسليم التكليفات | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=2026083019">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026083019">
+  <link rel="stylesheet" href="/css/style.css?v=2026102613">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026102613">
+  <link rel="stylesheet" href="/css/ui.css?v=2026102613">
   <style>
     .tabs-bar {
       display: flex; gap: 6px;
@@ -33,6 +34,7 @@
     }
     .assign-card:hover { box-shadow: var(--shadow-md); }
     .assign-card.submitted { border-right-color: var(--success); }
+    .assign-card.focused { box-shadow: 0 0 0 2px var(--primary), var(--shadow-md); }
     .assign-card.late      { border-right-color: var(--danger); }
 
     .assign-head  { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 10px; }
@@ -62,7 +64,17 @@
     .sub-card.reviewed { border-right-color: var(--primary); }
     .grade-big { font-size: 2rem; font-weight: 800; color: var(--primary); margin: 8px 0; }
     .feedback-box { background: var(--bg-hover); border-radius: var(--radius-md); padding: 12px; font-size: 0.88rem; margin-top: 10px; }
-  </style>
+      .sa-card.focused { border-color: var(--primary); box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.15); }
+    .sa-desc { margin: 8px 0 0; font-size: 0.84rem; line-height: 1.6; color: var(--text-muted); }
+    .sa-left { display: inline-flex; align-items: center; gap: 5px; margin-top: 10px; font-size: 0.8rem; font-weight: 700; color: var(--text-muted); }
+    .sa-left[data-tone="danger"] { color: var(--danger-text); } .sa-left[data-tone="warning"] { color: var(--warning-text); }
+    .sa-grade { flex-shrink: 0; font-size: 1.6rem; font-weight: 800; line-height: 1; color: var(--success-text); font-variant-numeric: tabular-nums; }
+    .sa-grade small { font-size: 0.8rem; color: var(--text-muted); font-weight: 700; }
+    .sa-feedback { display: flex; flex-direction: column; gap: 4px; margin-top: 12px; padding: 10px 12px; border-radius: 12px; background: var(--bg-hover); font-size: 0.84rem; line-height: 1.6; }
+    .sa-feedback span { white-space: pre-wrap; color: var(--text-main); }
+    .sa-submit { min-height: 40px; }
+    #mainList .ui-card + .ui-card { margin-top: 10px; }
+</style>
 
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
   <meta name="mobile-web-app-capable" content="yes">
@@ -87,7 +99,7 @@
 <div class="page-content">
 
     <!-- Welcome Banner -->
-    <div class="welcome-banner" style="background: linear-gradient(135deg,#f59e0b,#d97706,#b45309);">
+    <div class="welcome-banner" style="--page-accent:#b45309">
       <div class="welcome-banner-icon-wrap">
         <i class="ri-upload-2-line welcome-banner-icon"></i>
       </div>
@@ -96,19 +108,9 @@
         <p>رفع الأبحاث والمشاريع الدراسية</p>
       </div>
     </div>
-  <div class="page-header">
-    <div class="page-header-left">
-      <div class="page-icon"><i class="ri-upload-cloud-2-line"></i></div>
-      <div>
-        <div class="page-title">التكليفات المطلوبة</div>
-        <div class="page-subtitle">راجع المطلوب وقم بتسليم أعمالك</div>
-      </div>
-    </div>
-  </div>
-
-  <div class="tabs-bar">
-    <button class="tab-item active" onclick="switchTab('pending', this)"><i class="ri-time-line"></i> مطلوب التسليم</button>
-    <button class="tab-item" onclick="switchTab('submitted', this)"><i class="ri-checkbox-circle-line"></i> تم التسليم</button>
+  <div class="ui-seg" role="tablist" aria-label="حالة التكليفات">
+    <button type="button" class="tab-item active" onclick="switchTab('pending', this)"><i class="ri-time-line"></i> مطلوب التسليم</button>
+    <button type="button" class="tab-item" onclick="switchTab('submitted', this)"><i class="ri-checkbox-circle-line"></i> تم التسليم</button>
   </div>
 
   <div id="alertMsg" class="alert"></div>
@@ -170,14 +172,18 @@
   جميع الحقوق محفوظة © <span id="year"></span> النظام الجامعي المتكامل
 </footer>
 
-<script src="/js/shared.js?v=2026083019"></script>
-<script src="/js/app.js?v=2026083019"></script>
-<script src="/js/socket-client.js?v=2026083019" defer></script>
+<script src="/js/shared.js?v=2026102613"></script>
+<script src="/js/app.js?v=2026102613"></script>
+<script src="/js/socket-client.js?v=2026102613" defer></script>
 <script>
   CBS.init();
   const user = CBS.getUser();
   let currentTab = 'pending', currentAssignId = null, submittedSet = new Set();
   const typeLabel = { exercise:'تمرين', research:'بحث', project:'مشروع' };
+  /* الردود بصيغة { data: { assignments|submissions: [...] } }: كانت تُفرد كمصفوفات
+     فيرمي التحميل خطأً دائماً — أي أن صفحة التسليم لم تعرض أي تكليف قط */
+  const listFrom = (json, key) => Array.isArray(json) ? json : (json?.data?.[key] || json?.[key] || []);
+  const focusId = new URLSearchParams(location.search).get('id');
 
   function switchTab(tab, el) {
     currentTab = tab;
@@ -195,52 +201,54 @@
         CBS.apiGet('/api/assignments/type/project'),
         CBS.apiGet('/api/submissions/my-submissions')
       ]);
-      const all  = [...await ex.json(), ...await re.json(), ...await pr.json()];
-      const mine = await myRes.json();
-      submittedSet = new Set(mine.map(s => s.assignment._id));
+      const all  = [
+        ...listFrom(await ex.json(), 'assignments'),
+        ...listFrom(await re.json(), 'assignments'),
+        ...listFrom(await pr.json(), 'assignments')
+      ];
+      const mine = listFrom(await myRes.json(), 'submissions');
+      submittedSet = new Set(mine.filter(s => s.assignment).map(s => s.assignment._id || s.assignment));
 
       if (!all.length) { CBS.showEmpty('mainList','لا توجد تكليفات مطلوبة حالياً','ri-inbox-line'); return; }
 
-      document.getElementById('mainList').innerHTML = `<div class="assign-list">${all.map(a => {
+      // المطلوب أولاً بالأقرب موعداً، ثم الفائت، ثم المسلَّم
+      const dueOf = a => { const d = a.dueDate ? new Date(a.dueDate) : null; const tm = /^(\d{1,2}):(\d{2})$/.exec(a.dueTime || ''); if (d && tm) d.setHours(+tm[1], +tm[2], 0, 0); return d; };
+      const rank = a => submittedSet.has(a._id) ? 2 : (dueOf(a) && new Date() > dueOf(a) ? 1 : 0);
+      all.sort((a, b) => rank(a) - rank(b) || ((dueOf(a) || 0) - (dueOf(b) || 0)));
+      document.getElementById('mainList').innerHTML = all.map(a => {
         const isSubmitted = submittedSet.has(a._id);
-        const due = a.dueDate ? new Date(a.dueDate) : null;
-        if (due && a.dueTime) { const [h,m] = a.dueTime.split(':'); due.setHours(+h,+m,0,0); }
+        const due = dueOf(a);
         const isLate = due && new Date() > due;
-        const remaining = due ? due - new Date() : null;
-        const days  = remaining ? Math.floor(remaining/864e5) : 0;
-        const hours = remaining ? Math.floor((remaining%864e5)/36e5) : 0;
-        const mins  = remaining ? Math.floor((remaining%36e5)/6e4) : 0;
-
-        let timeHtml = '';
-        if (due) {
-          if (isLate) timeHtml = `<div class="time-box late"><i class="ri-error-warning-line"></i> متأخر منذ: ${CBS.formatDateTime(due)}</div>`;
-          else if (days < 1) timeHtml = `<div class="time-box warn"><i class="ri-alarm-line"></i> متبقي: ${hours} ساعة و ${mins} دقيقة</div>`;
-          else timeHtml = `<div class="time-box ok"><i class="ri-time-line"></i> متبقي: ${days} أيام و ${hours} ساعة | الموعد: ${CBS.formatDateTime(due)}</div>`;
+        const chip = isSubmitted ? { text: 'تم التسليم', tone: 'success' } : (isLate ? { text: 'فات الموعد', tone: 'danger' } : (due ? CBS.dueLabel(due) : { text: '', tone: '' }));
+        const left = due && !isSubmitted && !isLate ? (() => { const ms = due - new Date(), d = Math.floor(ms / 864e5), h = Math.floor(ms % 864e5 / 36e5); const H = n => CBS.arCount(n, ['ساعة واحدة', 'ساعتان', 'ساعات', 'ساعة']); return d ? `متبقٍّ ${CBS.arCount(d, ['يوم واحد', 'يومان', 'أيام', 'يوماً'])}${h ? ' و' + H(h) : ''}` : `متبقٍّ ${h ? H(h) + ' و' : ''}${CBS.arCount(Math.floor(ms % 36e5 / 6e4), ['دقيقة واحدة', 'دقيقتان', 'دقائق', 'دقيقة'])}`; })() : '';
+        return `<article class="ui-card sa-card" data-id="${a._id}">
+          <div class="ui-card-head"><div style="flex:1;min-width:0"><div class="ui-card-title">${CBS.escapeHTML(a.title)}</div></div>
+            ${chip.text ? `<span class="hm-chip"${chip.tone ? ` data-tone="${chip.tone}"` : ''}>${chip.text}</span>` : ''}</div>
+          <div class="ui-card-meta">
+            <span><i class="ri-bookmark-line"></i> ${typeLabel[a.type] || a.type}</span>
+            <span><i class="ri-book-open-line"></i> ${CBS.escapeHTML(a.subject?.name || 'مقرر غير محدد')}</span>
+            <span><i class="ri-user-line"></i> ${CBS.escapeHTML(CBS.doctorName(a.addedBy?.name) || '')}</span>
+            ${due ? `<span><i class="ri-calendar-line"></i> ${CBS.formatDateTime(due)}</span>` : ''}
+          </div>
+          ${a.description ? `<p class="sa-desc">${CBS.escapeHTML(a.description)}</p>` : ''}
+          ${left ? `<div class="sa-left"${chip.tone ? ` data-tone="${chip.tone}"` : ''}><i class="ri-time-line"></i> ${left}</div>` : ''}
+          <div class="ui-card-foot">
+            <a href="${API_BASE}/uploads/assignments/${encodeURIComponent(a.file)}" data-title="${CBS.escapeHTML(a.title)}" target="_blank" rel="noopener noreferrer" class="ui-act"><i class="ri-file-download-line"></i> ملف التكليف</a>
+            ${!isSubmitted && !isLate ? `<button type="button" class="ui-primary sa-submit" data-id="${a._id}" data-title="${CBS.escapeHTML(a.title)}" data-type="${a.type}" onclick="openSubmit(this.dataset.id, this.dataset.title, this.dataset.type)"><i class="ri-upload-cloud-line"></i> تسليم الحل</button>` : ''}
+          </div>
+        </article>`;
+      }).join('');
+      // جئنا من صفحة الواجبات بمعرّف محدد: نُبرز التكليف ونفتح التسليم مباشرة إن أمكن
+      if (focusId) {
+        const card = document.querySelector(`.sa-card[data-id="${CSS.escape(focusId)}"]`);
+        if (card) {
+          card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          card.classList.add('focused');
+          card.querySelector('.sa-submit')?.click();
+        } else if (mine.some(s => String(s.assignment?._id || s.assignment) === focusId)) {
+          switchTab('submitted', document.querySelector('.tab-item:nth-child(2)'));
         }
-
-        return `
-          <div class="assign-card ${isSubmitted?'submitted':(isLate?'late':'')}">
-            <div class="assign-head">
-              <div>
-                <div class="assign-title">${CBS.escapeHTML(a.title)} <span class="badge badge-primary">${typeLabel[a.type]||a.type}</span>
-                  ${isSubmitted?'<span class="badge badge-success">تم التسليم</span>':(isLate?'<span class="badge badge-danger">متأخر</span>':'')}
-                </div>
-              </div>
-            </div>
-            <div class="assign-meta">
-              <span><i class="ri-book-open-line"></i>${CBS.escapeHTML(a.subject?.name||'مقرر غير محدد')}</span>
-              <span><i class="ri-user-line"></i>${CBS.escapeHTML(a.addedBy?.name||'غير معروف')}</span>
-            </div>
-            ${a.description?`<div style="font-size:0.84rem;color:var(--text-muted);margin-bottom:10px;">${CBS.escapeHTML(a.description)}</div>`:''}
-            ${timeHtml}
-            <div class="assign-actions">
-              <a href="${API_BASE}/uploads/assignments/${encodeURIComponent(a.file)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="font-size:0.83rem;padding:7px 14px;text-decoration:none;">
-                <i class="ri-download-cloud-line"></i> تحميل المرفق
-              </a>
-              ${!isSubmitted && !isLate ? `<button class="btn btn-primary" style="font-size:0.83rem;padding:7px 14px;" onclick="openSubmit('${a._id}','${CBS.escapeHTML(a.title)}','${a.type}')"><i class="ri-upload-cloud-line"></i> تسليم الحل</button>` : ''}
-            </div>
-          </div>`;
-      }).join('')}</div>`;
+      }
     } catch(e) { CBS.showAlert('alertMsg', 'خطأ في التحميل', 'danger'); }
   }
 
@@ -249,31 +257,24 @@
     try {
       const res  = await CBS.apiGet('/api/submissions/my-submissions');
       const _resData = await CBS.readJson(res);
-      const list = _resData.data?.subjects || _resData.subjects || _resData.data || _resData;
+      const list = listFrom(_resData, 'submissions');
       if (!list.length) { CBS.showEmpty('mainList','لم تقم بتسليم أي تكليفات بعد','ri-inbox-line'); return; }
-      document.getElementById('mainList').innerHTML = list.map(s => {
-        const statusMap = { pending:'badge-warning', reviewed:'badge-primary', graded:'badge-success' };
-        const statusTxt = { pending:'قيد المراجعة', reviewed:'تمت المراجعة', graded:'مقيّم' };
-        let undoBtn = '';
-        if(s.status === 'pending') {
-           undoBtn = `<button class="btn btn-secondary" style="font-size:0.8rem;padding:6px 12px;color:var(--danger);border-color:var(--danger);background:transparent;margin-right:8px;" onclick="undoSubmission('${s._id}')" aria-label="حذف"><i class="ri-delete-back-2-line"></i> تراجع</button>`;
-        }
-        return `
-          <div class="sub-card ${s.status}">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:12px;">
-              <div>
-                <div style="font-weight:700;font-size:1rem;">${CBS.escapeHTML(s.assignment?.title || '')} <span class="badge badge-primary">${typeLabel[s.submissionType]}</span> <span class="badge ${statusMap[s.status]}">${statusTxt[s.status]}</span></div>
-                <div style="font-size:0.8rem;color:var(--text-muted);margin-top:4px;">${CBS.formatDateTime(s.submissionDate)} | ${s.isLate?'<span style="color:var(--danger);">تسليم متأخر</span>':'في الموعد'}</div>
-              </div>
-              <div style="display:flex;align-items:center;flex-shrink:0;">
-                <a href="${API_BASE}${CBS.privateFileUrl('submissions', s.file)}" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" style="font-size:0.8rem;padding:6px 12px;text-decoration:none;"><i class="ri-download-line"></i></a>
-                ${undoBtn}
-              </div>
+      const statusTone = { pending: 'warning', reviewed: 'primary', graded: 'success' };
+      const statusTxt = { pending: 'قيد المراجعة', reviewed: 'تمت المراجعة', graded: 'مقيّم' };
+      document.getElementById('mainList').innerHTML = list.map(s => `
+          <article class="ui-card">
+            <div class="ui-card-head">
+              <div style="flex:1;min-width:0"><div class="ui-card-title">${CBS.escapeHTML(s.assignment?.title || '')}</div>
+                <div class="ui-card-meta"><span>${typeLabel[s.submissionType] || ''}</span><span>${CBS.formatDateTime(s.submissionDate)}</span>
+                  <span style="color:${s.isLate ? 'var(--danger-text)' : 'inherit'}">${s.isLate ? 'تسليم متأخر' : 'في الموعد'}</span></div></div>
+              ${s.grade != null ? `<div class="sa-grade">${s.grade}<small>/100</small></div>` : `<span class="hm-chip" data-tone="${statusTone[s.status]}">${statusTxt[s.status]}</span>`}
             </div>
-            ${s.grade != null ? `<div class="grade-big">${s.grade}<span style="font-size:1rem;color:var(--text-muted);">/100</span></div>` : ''}
-            ${s.feedback ? `<div class="feedback-box"><strong>ملاحظات المشرف:</strong><br>${s.feedback}</div>` : ''}
-          </div>`;
-      }).join('');
+            ${s.feedback ? `<div class="sa-feedback"><strong>ملاحظات المشرف</strong><span>${CBS.escapeHTML(s.feedback)}</span></div>` : ''}
+            <div class="ui-card-foot">
+              <a href="${API_BASE}${CBS.privateFileUrl('submissions', s.file)}" target="_blank" rel="noopener noreferrer" class="ui-act"><i class="ri-file-line"></i> ملفي</a>
+              ${s.status === 'pending' ? `<button type="button" class="ui-act danger" onclick="undoSubmission('${s._id}')"><i class="ri-arrow-go-back-line"></i> تراجع عن التسليم</button>` : ''}
+            </div>
+          </article>`).join('');
     } catch(e) { CBS.showAlert('alertMsg', 'خطأ في التحميل', 'danger'); }
   }
 
@@ -296,7 +297,8 @@
   function openSubmit(id, title, type) {
     currentAssignId = id;
     document.getElementById('modalTitle').textContent = `تسليم: ${title}`;
-    document.getElementById('modalDetails').innerHTML = `<strong>التكليف:</strong> ${title}<br><strong>النوع:</strong> ${typeLabel[type]}`;
+    // title يصل من سمة onclick بعد فكّ ترميزها — يجب تهريبه قبل innerHTML
+    document.getElementById('modalDetails').innerHTML = `<strong>التكليف:</strong> ${CBS.escapeHTML(title)}<br><strong>النوع:</strong> ${CBS.escapeHTML(typeLabel[type] || type)}`;
     document.getElementById('subType').value = type;
     document.getElementById('subFile').value = '';
     document.getElementById('subNotes').value = '';

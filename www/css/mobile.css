@@ -1,5 +1,5 @@
 /* ===================================================
-   mobile.css â€” Mobile-First Premium Optimizations
+   mobile.css — Mobile-First Premium Optimizations
    جامعة النصر التقنية | IT College App
    =================================================== */
 
@@ -28,29 +28,45 @@ html { -webkit-text-size-adjust: 100%; }
     padding-bottom: 84px; /* bottom nav clearance */
   }
 
-  /* ===== Header â€” compact ===== */
+  /* ===== Header — compact ===== */
   .main-header {
     padding: 10px 14px;
     padding-top: calc(10px + env(safe-area-inset-top, 0px));
     min-height: 52px;
   }
 
-  .header-brand { gap: 10px; }
+  /* الأزرار لها الأولوية في العرض، والعنوان يأخذ ما تبقى: كان العنوان يُعصر
+     إلى ~38px فيُكسر "كلية النصر التقنية" على ثلاثة أسطر في الهواتف الصغيرة */
+  .header-brand { gap: 10px; min-width: 0; flex: 1 1 auto; }
+  .header-title-group { min-width: 0; }
 
   .header-logo {
     width: 32px;
     height: 32px;
     border-radius: 8px;
+    flex-shrink: 0;
   }
 
   .header-title-group strong {
     font-size: 0.92rem;
     letter-spacing: -0.3px;
+    line-height: 1.25;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-wrap: balance;
   }
 
-  .header-title-group small { font-size: 0.72rem; }
+  .header-title-group small {
+    font-size: 0.72rem;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
 
-  .header-actions { gap: 6px; }
+  .header-actions { gap: 6px; flex-shrink: 0; }
 
   .btn-icon {
     width: 34px;
@@ -59,34 +75,34 @@ html { -webkit-text-size-adjust: 100%; }
     border-radius: 10px;
   }
 
-  /* ===== Welcome Banner â€” compact ===== */
+  /* ===== Welcome Banner — compact ===== */
   .welcome-banner {
-    padding: 18px 16px;
+    padding: 14px;
     gap: 12px;
-    margin-bottom: 16px;
+    margin-bottom: 14px;
     border-radius: var(--radius-lg);
     flex-direction: row;    /* side-by-side on mobile too */
     text-align: right;
   }
 
   .welcome-banner-icon-wrap {
-    width: 48px;
-    height: 48px;
-    font-size: 1.5rem;
+    width: 40px;
+    height: 40px;
+    border-radius: 11px;
+    font-size: 1.25rem;
     flex-shrink: 0;
   }
 
   .welcome-banner-body h2 {
-    font-size: 1.15rem;
+    font-size: 1.05rem;
     margin-bottom: 2px;
   }
 
   .welcome-banner-body p {
     font-size: 0.8rem;
-    opacity: 0.85;
   }
 
-  /* ===== Stats Bar â€” 2Ã—2 grid, compact ===== */
+  /* ===== Stats Bar — 2×2 grid, compact ===== */
   .stats-bar {
     grid-template-columns: repeat(2, 1fr);
     gap: 8px;
@@ -173,7 +189,7 @@ html { -webkit-text-size-adjust: 100%; }
     border-radius: var(--radius-md);
   }
 
-  /* ===== Buttons â€” compact ===== */
+  /* ===== Buttons — compact ===== */
   .btn {
     padding: 11px 18px;
     font-size: 0.88rem;
@@ -201,7 +217,7 @@ html { -webkit-text-size-adjust: 100%; }
     font-size: 0.82rem;
   }
 
-  /* ===== Notification Cards â€” compact ===== */
+  /* ===== Notification Cards — compact ===== */
   .notif-card {
     padding: 13px 14px;
     border-radius: var(--radius-md);
@@ -211,7 +227,7 @@ html { -webkit-text-size-adjust: 100%; }
   .notif-title { font-size: 0.88rem; }
   .notif-body { font-size: 0.8rem; }
 
-  /* ===== Modals â€” mobile sheet style ===== */
+  /* ===== Modals — mobile sheet style ===== */
   .modal-overlay {
     align-items: flex-end; /* bottom sheet on mobile */
   }
@@ -245,7 +261,7 @@ html { -webkit-text-size-adjust: 100%; }
   .modal-footer { padding: 14px 18px; gap: 8px; }
   .modal-title { font-size: 1rem; }
 
-  /* ===== Form Elements â€” compact ===== */
+  /* ===== Form Elements — compact ===== */
   .form-group { margin-bottom: 14px; }
   .form-label { font-size: 0.85rem; margin-bottom: 6px; }
 
@@ -255,8 +271,11 @@ html { -webkit-text-size-adjust: 100%; }
     border-radius: var(--radius-md);
   }
 
-  .input-wrapper .form-control { padding-inline-end: 42px; }
-  .input-icon { inset-inline-end: 12px; font-size: 1rem; }
+  /* كانت inset-inline-end (= left في RTL) تُضاف إلى right:16px من style.css،
+     فتمتد الأيقونة بعرض الحقل كله فوقه وتبتلع اللمس في كل نماذج الهاتف
+     (إضافة دفعة، مادة، محاضرة، إشعار…). جهة واحدة فقط: يمين الحقل. */
+  .input-wrapper .form-control { padding-right: 40px; }
+  .input-icon { right: 13px; left: auto; inset-inline-end: auto; font-size: 1rem; }
 
   /* ===== Form group native inputs ===== */
   .form-group input,
@@ -266,7 +285,7 @@ html { -webkit-text-size-adjust: 100%; }
     border-radius: var(--radius-md);
   }
 
-  /* ===== Badges â€” compact ===== */
+  /* ===== Badges — compact ===== */
   .badge {
     padding: 3px 9px;
     font-size: 0.7rem;
@@ -275,7 +294,9 @@ html { -webkit-text-size-adjust: 100%; }
   /* ===== Bottom Nav (Handled by style.css Floating Island) ===== */
 
   .bnav-item {
-    font-size: 0.6rem;
+    /* كان 0.6rem (9.6px) — صغير جداً للعربية. يتدرج مع عرض الشاشة:
+       ~11px على 375px، ولا يقل عن ~10px على 320px حيث تضيق الخانات الست */
+    font-size: clamp(0.62rem, 2.9vw, 0.72rem);
     padding: 4px 4px;
     gap: 2px;
     border-radius: 8px;
@@ -376,7 +397,7 @@ html { -webkit-text-size-adjust: 100%; }
     position: fixed;
     left: 50% !important;
     right: auto !important;
-    bottom: calc(90px + env(safe-area-inset-bottom, 0px)) !important;
+    bottom: calc(var(--fab-bottom, 106px) + 58px + env(safe-area-inset-bottom, 0px)) !important;
     transform: translateX(-50%) !important;
     width: min(340px, calc(100vw - 32px)) !important;
     max-width: 340px;
@@ -477,26 +498,8 @@ html { -webkit-text-size-adjust: 100%; }
 .btn.loading .btn-spinner { display: block; }
 .btn.loading > *:not(.btn-spinner) { opacity: 0.6; }
 
-/* Fade-in stagger for list items */
-.dash-card,
-.notif-card,
-.stat-item {
-  animation: itemFadeUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) both;
-}
-
-.dash-card:nth-child(1) { animation-delay: 0ms; }
-.dash-card:nth-child(2) { animation-delay: 50ms; }
-.dash-card:nth-child(3) { animation-delay: 100ms; }
-.dash-card:nth-child(4) { animation-delay: 150ms; }
-.dash-card:nth-child(5) { animation-delay: 200ms; }
-.dash-card:nth-child(6) { animation-delay: 250ms; }
-.dash-card:nth-child(n+7) { animation-delay: 300ms; }
-
-.stat-item:nth-child(1) { animation-delay: 60ms; }
-.stat-item:nth-child(2) { animation-delay: 110ms; }
-.stat-item:nth-child(3) { animation-delay: 160ms; }
-.stat-item:nth-child(4) { animation-delay: 210ms; }
-
+/* الظهور المتدرّج للبطاقات انتقل إلى نظام الحركة الموحّد في style.css (cbsRise بـ backwards):
+   هذه النسخة بـ both كانت تُبقي transform على كل بطاقة بعد ظهورها. */
 @keyframes itemFadeUp {
   from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -619,6 +622,12 @@ html {
     padding-inline-start: max(14px, env(safe-area-inset-left, 0px));
     padding-inline-end: max(14px, env(safe-area-inset-right, 0px));
   }
+}
+
+/* هواتف صغيرة (320–360px): أربعة أزرار بعرض 44px لا تترك للعنوان مكاناً */
+@media (max-width: 360px) {
+  .header-actions { gap: 2px; }
+  .header-brand { gap: 8px; }
 }
 
 /* ===== Task 3.1: Minimum Touch Targets ===== */

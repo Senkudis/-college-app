@@ -240,7 +240,7 @@
     /* â”€â”€ Features (Why Us?) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .features-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
       gap: 25px;
     }
     .feature-card {
@@ -282,7 +282,7 @@
     /* â”€â”€ Colleges Grid â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .colleges-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(min(250px, 100%), 1fr));
       gap: 20px;
     }
     .college-card {
@@ -326,7 +326,7 @@
     /* â”€â”€ News / Announcements â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ */
     .news-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(min(300px, 100%), 1fr));
       gap: 25px;
     }
     .news-card {
@@ -547,7 +547,7 @@
     }
     .gallery-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
       gap: 20px;
     }
     .gallery-card {
@@ -1111,7 +1111,7 @@
     </div>
   </footer>
 
-  <script src="/js/shared.js?v=2026083019"></script>
+  <script src="/js/shared.js?v=2026102613"></script>
   <script>
     // Scroll reveal animation
     const reveals = document.querySelectorAll('.reveal');

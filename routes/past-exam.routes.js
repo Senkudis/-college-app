@@ -8,6 +8,25 @@ const path = require('path');
 const Subject = require('../models/Subject');
 const auth = require('../middleware/auth.middleware');
 const { success, fail, notFound, serverError } = require('../utils/response');
+const { getManageScope, canManageSubjectContent } = require('../utils/contentPermissions');
+
+/* الفحص قبل multer: كان الملف يُكتب على القرص أولاً ثم يُرفض الطالب،
+   فيبقى ملفه يتيماً في uploads مع كل محاولة. */
+function staffOnly(req, res, next) {
+  const roles = req.user?.roles || [];
+  if (!roles.some(r => ['dean', 'doctor', 'leader', 'admin'].includes(r))) {
+    return fail(res, 'غير مصرح لك بإدارة نماذج الامتحانات السابقة', 403);
+  }
+  next();
+}
+
+/* الدكتور يضيف لمواده والليدر لمواد دفعته فقط — نفس قاعدة محتوى المواد */
+async function canUseSubject(user, subjectId) {
+  if (!mongoose.Types.ObjectId.isValid(subjectId)) return false;
+  const subject = await Subject.findById(subjectId).select('doctor batches').lean();
+  if (!subject) return false;
+  return canManageSubjectContent(await getManageScope(user), { ownerId: null, subject });
+}
 
 // جلب نماذج الامتحانات السابقة مع التصفية
 router.get('/', auth, async (req, res) => {
@@ -42,6 +61,10 @@ router.get('/:id', auth, async (req, res) => {
       .lean();
 
     if (!exam) return notFound(res, 'الامتحان غير موجود');
+    // الإجابات والشروحات تصل بعد التسليم من /simulate — إرسالها هنا يكشفها قبل المحاولة
+    if (!canManageExam(req.user, exam)) {
+      exam.questions = (exam.questions || []).map(({ correctOption, explanation, ...q }) => q);
+    }
     return success(res, { exam });
   } catch (err) {
     return serverError(res, err);
@@ -69,7 +92,7 @@ function canManageExam(user, exam) {
 }
 
 // إضافة نموذج امتحان سابق (عميد، دكتور، ليدر)
-router.post('/', auth, upload.single('pdfFile'), async (req, res) => {
+router.post('/', auth, staffOnly, upload.single('pdfFile'), async (req, res) => {
   try {
     const userRoles = req.user?.roles || [];
     if (!userRoles.some(r => ['dean', 'doctor', 'leader', 'admin'].includes(r))) {
@@ -81,6 +104,10 @@ router.post('/', auth, upload.single('pdfFile'), async (req, res) => {
     const pdfFile = req.file ? req.file.filename : (req.body.pdfFile || null);
     if (!title || !subject || !year) {
       return fail(res, 'العنوان والمادة والسنة الأكاديمية حقول مطلوبة');
+    }
+    if (!(await canUseSubject(req.user, subject))) {
+      if (req.file) removeUploadedFile(path.join('uploads', 'past-exams', req.file.filename));
+      return fail(res, 'لا يمكنك إضافة نماذج لهذه المادة', 403);
     }
 
     const exam = await PastExam.create({
@@ -101,7 +128,7 @@ router.post('/', auth, upload.single('pdfFile'), async (req, res) => {
 });
 
 // تعديل نموذج امتحان سابق (مع إمكانية استبدال الملف)
-router.put('/:id', auth, upload.single('pdfFile'), async (req, res) => {
+router.put('/:id', auth, staffOnly, upload.single('pdfFile'), async (req, res) => {
   try {
     const exam = await PastExam.findById(req.params.id);
     if (!exam) return notFound(res, 'الامتحان غير موجود');
@@ -111,7 +138,13 @@ router.put('/:id', auth, upload.single('pdfFile'), async (req, res) => {
 
     const { title, subject, year, semester, examType, questions } = req.body;
     if (title !== undefined) exam.title = title;
-    if (subject !== undefined) exam.subject = subject;
+    if (subject !== undefined && String(subject) !== String(exam.subject)) {
+      if (!(await canUseSubject(req.user, subject))) {
+        if (req.file) removeUploadedFile(path.join('uploads', 'past-exams', req.file.filename));
+        return fail(res, 'لا يمكنك نقل النموذج لهذه المادة', 403);
+      }
+      exam.subject = subject;
+    }
     if (year !== undefined) exam.year = year;
     if (semester !== undefined) exam.semester = parseInt(semester, 10) || 1;
     if (examType !== undefined) exam.examType = examType;
@@ -176,13 +209,35 @@ router.post('/:id/simulate', auth, async (req, res) => {
     const percentage = totalPoints > 0 ? Math.round((earnedPoints / totalPoints) * 100) : 0;
     const passed = percentage >= 50;
 
-    let aiDiagnosis = '';
-    if (percentage >= 85) {
-      aiDiagnosis = 'أداء ممتاز واستيعاب متكامل لمفاهيم الامتحان ومفردات المقرر.';
-    } else if (percentage >= 60) {
-      aiDiagnosis = 'مستوى جيد، ولكن يُنصح بمراجعة الأسئلة التي بها التباس في شيتات المحاضرات التابعة للمقرر.';
-    } else {
-      aiDiagnosis = 'تحتاج إلى تكثيف المراجعة والتركيز على المفاهيم الجوهرية والأسئلة الشائعة قبل دخول الامتحان الفعلي.';
+    /* كان "تشخيص كيدي" نصاً ثابتاً من ثلاث جمل بحسب النسبة — يُعرض للطالب
+       كأنه تحليل ذكي لأخطائه وهو ليس كذلك. الآن يحلل كيدي الأسئلة التي أخطأ
+       فيها فعلاً؛ وإن تعذّر (لا أخطاء، أو تعطّل المزوّدون) نعرض ملاحظة عامة
+       موسومة بمصدرها كي لا تُقدَّم على أنها من كيدي. */
+    let aiDiagnosis = percentage >= 85
+      ? 'أداء ممتاز واستيعاب متكامل لمفاهيم الامتحان.'
+      : percentage >= 60
+        ? 'مستوى جيد، راجع الأسئلة التي أخطأت فيها في محاضرات المقرر.'
+        : 'تحتاج إلى تكثيف المراجعة والتركيز على المفاهيم الأساسية قبل الامتحان الفعلي.';
+    let diagnosisSource = 'rules';
+    const wrong = review.filter(r => !r.isCorrect);
+    if (wrong.length && process.env.NODE_ENV !== 'test') {
+      try {
+        const ai = require('./ai.routes')._internals;
+        const lines = wrong.slice(0, 8).map(r => {
+          const q = questions[r.questionIndex] || {};
+          const opts = q.options || [];
+          const picked = r.selectedOption >= 0 ? (opts[r.selectedOption] ?? '—') : 'لم يُجب';
+          return `- ${q.text}\n  اختار: ${picked} | الصحيح: ${opts[q.correctOption] ?? '—'}`;
+        }).join('\n');
+        const prompt = ai.buildAskPrompt({
+          q: `حلّلت امتحان «${exam.title}» (مادة ${exam.subject?.name || '-'}) وحصلت على ${percentage}%. هذه الأسئلة التي أخطأت فيها:\n${lines}`,
+          mode: { directive: 'شخّص أخطاءه في 3-5 أسطر: ما المفهوم المشترك الذي يبدو أنه لم يفهمه، ولماذا كان اختياره خاطئاً باختصار، ثم خطوتان محددتان للمراجعة قبل الامتحان. بلا عناوين ولا تكرار للأسئلة.' }
+        });
+        const text = await ai.askAIWithUltimateFallback(prompt, { maxOutputTokens: 1400, temperature: 0.3, budgetMs: 20_000 });
+        if (text && text.trim()) { aiDiagnosis = ai.sanitizeAnswer(text).replace(/\*\*|^#+\s*/gm, ''); diagnosisSource = 'ai'; } // يُعرض نصاً عادياً
+      } catch (e) {
+        console.warn('[past-exam/simulate] تعذّر تشخيص كيدي:', e.message);
+      }
     }
 
     return success(res, {
@@ -193,6 +248,7 @@ router.post('/:id/simulate', auth, async (req, res) => {
       correctCount,
       totalQuestions: questions.length,
       aiDiagnosis,
+      diagnosisSource,
       review
     }, 'تم تصحيح المحاكاة بنجاح');
   } catch (err) {

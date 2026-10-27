@@ -9,6 +9,21 @@ const { uploadLimiter } = require("../middleware/rateLimiter");
 const mongoose = require("mongoose");
 const { success, fail, notFound, serverError } = require("../utils/response");
 
+const isDeanLevel = (user) => user.roles.includes("dean") || user.roles.includes("admin");
+
+function parseBatchList(batches) {
+  const list = Array.isArray(batches) ? batches : String(batches).split(',');
+  return list.map(b => String(b).trim()).filter(b => mongoose.Types.ObjectId.isValid(b));
+}
+
+function formatDueAr(assignment) {
+  const d = assignment.dueDate ? new Date(assignment.dueDate) : null;
+  if (!d || Number.isNaN(d.getTime())) return "غير محدد";
+  // أرقام لاتينية كبقية التطبيق؛ dueDate يُحفظ تاريخاً بلا ساعة (UTC منتصف الليل) فنبقي UTC
+  const date = d.toLocaleDateString("ar-EG-u-nu-latn", { weekday: "long", day: "numeric", month: "long", timeZone: "UTC" });
+  return `${date} — الساعة ${assignment.dueTime || "23:59"}`;
+}
+
 async function canAccessAssignment(user, assignment) {
   if (user.roles.includes("dean") || user.roles.includes("admin")) return true;
 
@@ -40,6 +55,17 @@ async function canAccessAssignment(user, assignment) {
   }
 
   return false;
+}
+
+/* تعديل/حذف تكليف: العميد، أو من أضافه، أو دكتور المادة (canAccessAssignment
+   يضمن أنها مادته وضمن دفعاته). كان دكتور المادة لا يستطيع إدارة تكليف رفعه
+   الليدر في مادته. الليدر لا يحذف تكليفات غيره عمداً: عمل مُقيَّم مرتبط
+   بتسليمات الطلاب، وحذفه بالخطأ أخطر من حذف محاضرة. */
+async function canManageAssignment(user, assignment) {
+  if (!(await canAccessAssignment(user, assignment))) return false;
+  return isDeanLevel(user)
+    || String(assignment.addedBy) === String(user.id)
+    || user.roles.includes("doctor");
 }
 
 // إضافة تكليف جديد (عميد، دكتور، ليدر)
@@ -78,8 +104,17 @@ router.post("/", auth, role("dean", "doctor", "leader", "admin"), uploadLimiter,
       if (!assignmentBatches.length) {
         return fail(res, "لا توجد دفعة مشتركة مخصصة لك مع هذه المادة", 403);
       }
+    } else if (!isDeanLevel(req.user)) {
+      /* الليدر يدير دفعته فقط: كان يمرّر batches حرّة فيُنشئ تكليفاً لأي دفعة
+         في الكلية، ولأي مادة حتى لو لم تُدرَّس لدفعته. */
+      const leaderBatch = req.user.batch && String(req.user.batch);
+      const subjectBatches = (subjectDoc.batches || []).map(String);
+      if (!leaderBatch || (subjectBatches.length && !subjectBatches.includes(leaderBatch))) {
+        return fail(res, "هذه المادة ليست ضمن دفعتك", 403);
+      }
+      assignmentBatches = [req.user.batch];
     } else if (batches) {
-      assignmentBatches = Array.isArray(batches) ? batches : batches.split(',').map(s => s.trim());
+      assignmentBatches = parseBatchList(batches);
     } else {
       assignmentBatches = subjectDoc.batches || [];
     }
@@ -101,7 +136,7 @@ router.post("/", auth, role("dean", "doctor", "leader", "admin"), uploadLimiter,
       const Notification = require("../models/Notification");
       await Notification.create({
         title: `تكليف جديد: ${assignment.title}`,
-        message: `تم إضافة واجب جديد لمادة ${subjectDoc.name}. تاريخ التسليم النهائي: ${assignment.dueDate}`,
+        message: `تم إضافة واجب جديد لمادة ${subjectDoc.name}. آخر موعد للتسليم: ${formatDueAr(assignment)}`,
         type: "normal",
         target: "students",
         batches: assignment.batches,
@@ -226,12 +261,7 @@ router.put("/:id", auth, role("dean", "doctor", "leader", "admin"), upload.singl
     const assignment = await Assignment.findById(req.params.id);
     if (!assignment) return notFound(res, "التكليف غير موجود");
 
-    // التحقق من الصلاحية: العميد/المسؤول دائماً، وغيرهما فقط لتكليفه هو وضمن نطاقه
-    const canManage = (await canAccessAssignment(req.user, assignment)) && (
-      req.user.roles.includes("dean") || req.user.roles.includes("admin")
-      || assignment.addedBy.toString() === req.user.id
-    );
-    if (!canManage) {
+    if (!(await canManageAssignment(req.user, assignment))) {
       return fail(res, "ليس لديك صلاحية لتحديث هذا التكليف", 403);
     }
 
@@ -240,14 +270,32 @@ router.put("/:id", auth, role("dean", "doctor", "leader", "admin"), upload.singl
     if (title) assignment.title = title.trim();
     if (description !== undefined) assignment.description = (description || "").trim();
     if (type) assignment.type = type;
-    if (subject) {
-      const subj = await Subject.findById(subject);
+    /* نقل التكليف لمادة أو دفعات أخرى كان متاحاً لأي دكتور/ليدر يملك التكليف —
+       فيخرج به من نطاقه إلى مواد ودفعات لا يديرها. للدكتور: مواده فقط،
+       والدفعات تُقصّ على المخصّصة له. للليدر: لا تغيير في المادة أو الدفعة. */
+    if (subject && String(subject) !== String(assignment.subject)) {
+      const subj = await Subject.findById(subject).select("doctor").lean();
       if (!subj) return fail(res, "المادة المحددة غير موجودة");
+      if (!isDeanLevel(req.user)) {
+        const ownsSubject = req.user.roles.includes("doctor") && String(subj.doctor) === String(req.user.id);
+        if (!ownsSubject) return fail(res, "لا يمكنك نقل التكليف إلى هذه المادة", 403);
+      }
       assignment.subject = subject;
     }
     if (dueDate) assignment.dueDate = dueDate;
     if (dueTime) assignment.dueTime = dueTime;
-    if (batches) assignment.batches = Array.isArray(batches) ? batches : batches.split(',').map(s => s.trim());
+    if (batches) {
+      const requested = parseBatchList(batches);
+      if (isDeanLevel(req.user)) {
+        assignment.batches = requested;
+      } else if (req.user.roles.includes("doctor")) {
+        const doctor = await User.findById(req.user.id).select("batches").lean();
+        const allowed = new Set((doctor?.batches || []).map(String));
+        const scoped = requested.filter(b => allowed.has(String(b)));
+        if (!scoped.length) return fail(res, "الدفعات المحددة غير مخصصة لك", 403);
+        assignment.batches = scoped;
+      }
+    }
 
     if (req.file) assignment.file = req.file.filename;
 
@@ -266,11 +314,7 @@ router.delete("/:id", auth, role("dean", "doctor", "leader", "admin"), async (re
     const assignment = await Assignment.findById(req.params.id);
     if (!assignment) return notFound(res, "التكليف غير موجود");
 
-    const canManage = (await canAccessAssignment(req.user, assignment)) && (
-      req.user.roles.includes("dean") || req.user.roles.includes("admin")
-      || assignment.addedBy.toString() === req.user.id
-    );
-    if (!canManage) {
+    if (!(await canManageAssignment(req.user, assignment))) {
       return fail(res, "ليس لديك صلاحية لحذف هذا التكليف", 403);
     }
 
@@ -288,9 +332,12 @@ router.get("/", auth, async (req, res) => {
     
     // إذا كان طالب أو ليدر، فلترة حسب دفعته
     if (req.user.roles.includes("student") || req.user.roles.includes("leader")) {
-      const student = await User.findById(req.user.id).select("batch");
-      if (student?.batch) {
-        filter.batches = student.batch;
+      const student = await User.findById(req.user.id).select("batch batches");
+      const myBatch = student?.batch || (student?.batches && student.batches[0]);
+      if (myBatch) {
+        filter.batches = myBatch;
+      } else {
+        filter._id = null; // لا يملك دفعة مسجلة، لا نعرض تكليفات كليات أو دفعات أخرى
       }
     } else if (req.user.roles.includes("doctor") && !req.user.roles.includes("dean") && !req.user.roles.includes("admin")) {
       const Subject = require("../models/Subject");

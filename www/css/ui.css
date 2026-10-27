@@ -1,0 +1,265 @@
+/* =====================================================================
+   ui.css — الطبقة الأخيرة لنظام التصميم، تُحمَّل بعد mobile.css في كل صفحة.
+   style.css وmobile.css تراكمت فيهما تعريفات متعاقبة لنفس العنصر (‎.card
+   ثلاث مرات، النوافذ أربع مرات)، وmobile.css يُحمَّل بعد style.css فيلغي
+   أي إضافة في نهايته. هنا مصدر واحد للشكل النهائي للمكوّنات المشتركة.
+   العقد: docs/design/home-screens.md (قسم الصفحات الداخلية).
+   قاعدة: لا !important على الخلفيات — البطاقات الملوّنة عمداً بـ style مضمّن
+   (بطاقة الحساب المالي، بطاقة الهوية) يجب أن تبقى كما هي.
+   ===================================================================== */
+
+/* الخاصية hidden تغلب أي display مكتوب في الأصناف (ui-toolbar وأخواتها flex) */
+[hidden] { display: none !important; }
+
+/* ── 1. الشريط العلوي للصفحات الداخلية (CBS._normalizeShell يضع body.app-inner) ──
+   رجوع · عنوان الصفحة · إجراءاتها. الشعار واسم الكلية للرئيسية وشاشة الدخول. */
+body.app-inner .main-header .header-logo { display: none; }
+body.app-inner .main-header .header-title-group small { display: none; }
+body.app-inner .main-header .header-title-group strong {
+  display: block; font-size: 1.05rem; font-weight: 800; line-height: 1.3; letter-spacing: 0;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis; -webkit-line-clamp: unset;
+  color: var(--text-main);
+}
+body.app-inner .main-header .header-brand { gap: 6px; }
+.main-header .app-back-btn {
+  display: grid; place-items: center; flex-shrink: 0; width: 40px; height: 40px; padding: 0;
+  border: 0; border-radius: 12px; font-size: 1.25rem; color: var(--text-main); background: transparent; cursor: pointer;
+}
+.main-header .app-back-btn:active { background: var(--bg-hover); }
+.main-header .header-actions .btn-icon { width: 40px; height: 40px; border-radius: 12px; font-size: 1.1rem; }
+
+/* ── 2. سطر السياق: كانت بطاقة العنوان (أيقونة + عنوان مكرر + وصف) ── */
+.welcome-banner.page-lead {
+  display: block; min-height: 0; margin: 0 0 16px; padding: 0 2px;
+  background: none; border: 0; box-shadow: none; text-align: start;
+}
+.welcome-banner.page-lead::before, .welcome-banner.page-lead::after { display: none; }
+.welcome-banner.page-lead .welcome-banner-icon-wrap,
+.welcome-banner.page-lead .welcome-banner-body h2 { display: none; }
+.welcome-banner.page-lead .welcome-banner-body p,
+.welcome-banner.page-lead > p { margin: 0; font-size: 0.85rem; line-height: 1.6; color: var(--text-muted); }
+/* الأوصاف الثابتة ("تصفح ومتابعة جميع...") لا تساعد في إنجاز شيء — تبقى فقط
+   حين تحمل عدّاداً حياً (عنصر بـ id تحدّثه الصفحة، مثل "6 محاضرات") */
+.welcome-banner.page-lead:not(:has(p[id])) { display: none; }
+
+/* ── 3. محوّل الدفعة: شريحة صغيرة بدل بطاقة كاملة العرض ── */
+.inline-batch-wrap { display: flex; margin: 0 0 12px; }
+.inline-batch-btn {
+  width: auto; min-height: 34px; gap: 8px; padding: 5px 8px 5px 12px; border-radius: 999px;
+  background: var(--hm-surface); box-shadow: none;
+}
+.inline-batch-btn:hover { box-shadow: none; }
+.inline-batch-info { gap: 7px; }
+.inline-batch-dot { width: 8px; height: 8px; box-shadow: none; }
+.inline-batch-label { display: none; }
+.inline-batch-name { margin: 0; font-size: 0.8rem; font-weight: 700; }
+.inline-batch-action { padding: 0; gap: 0; font-size: 0; background: none; }
+.inline-batch-action i { font-size: 1.05rem; }
+
+/* ── 4. الأسطح: لون مصمت، حافة رفيعة، بلا ظل ولا قفز عند المرور ── */
+.page-content .card,
+.item-card, .assign-card, .sub-card, .quiz-card, .notif-card, .grid-card, .form-card, .panel {
+  background-color: var(--hm-surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  box-shadow: none;
+  -webkit-backdrop-filter: none; backdrop-filter: none;
+}
+.page-content .card:hover,
+.item-card:hover, .assign-card:hover, .sub-card:hover, .quiz-card:hover, .notif-card:hover, .grid-card:hover {
+  transform: none; box-shadow: none; border-color: var(--border);
+}
+[data-theme="dark"] .item-card:hover, [data-theme="dark"] .assign-card:hover, [data-theme="dark"] .sub-card:hover,
+[data-theme="dark"] .quiz-card:hover, [data-theme="dark"] .notif-card:hover, [data-theme="dark"] .grid-card:hover {
+  box-shadow: none; border-color: var(--border);
+}
+html:not([data-theme=dark]) .panel, html:not([data-theme=dark]) .form-card,
+html:not([data-theme=dark]) .stat-item, html:not([data-theme=dark]) .table-section {
+  box-shadow: none !important;
+}
+
+/* ── 5. عناوين الأقسام: نص فقط، بلا مربع أيقونة ولا خط ممتد ── */
+.section-divider {
+  display: flex; align-items: center; gap: 8px; margin: 24px 2px 10px;
+  font-size: 1rem; font-weight: 800; color: var(--text-main);
+}
+.section-divider::after { display: none; }
+.section-divider i { display: none; }
+
+/* ── 6. الإجراءات الخطرة داخل القوائم: نصّية محددة الحواف لا ممتلئة ──
+   الأحمر الممتلئ يبقى لزر التأكيد داخل النافذة فقط (النوافذ خارج .page-content). */
+.page-content .card .btn-danger,
+.page-content [class*="-card"] .btn-danger,
+.page-content .list-item .btn-danger {
+  background: transparent !important;
+  color: var(--danger-text) !important;
+  border: 1px solid rgba(225, 29, 72, 0.28) !important;
+  box-shadow: none !important;
+}
+.page-content .card .btn-danger:active,
+.page-content [class*="-card"] .btn-danger:active { background: var(--danger-bg) !important; }
+
+/* ── 7. الحقول ── */
+.form-control, .search-input, .filter-select, .form-group input, .form-group select, .form-group textarea {
+  min-height: 46px; border-radius: 12px; font-size: 0.92rem;
+}
+textarea.form-control, .form-group textarea { min-height: 96px; }
+.form-label, .form-group > label { font-size: 0.85rem; font-weight: 700; color: var(--text-main); }
+.form-control:focus, .search-input:focus, .filter-select:focus,
+.form-group input:focus, .form-group select:focus, .form-group textarea:focus {
+  border-color: var(--primary); box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.15); outline: none;
+}
+
+/* ── 8. النوافذ: لوحة سفلية على الهاتف بمقبض وتذييل ثابت ── */
+@media (max-width: 768px) {
+  .modal-box { border-radius: 22px 22px 0 0; display: flex; flex-direction: column; max-height: 90vh; max-height: 90dvh; }
+  .modal-box > .modal-body { overflow-y: auto; overscroll-behavior: contain; }
+  .modal-box::before { width: 40px; background: rgba(100, 116, 139, 0.35); }
+  .modal-footer { position: sticky; bottom: 0; background: var(--bg-modal); padding-bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
+}
+
+/* ── 8ب. جداول الرسوم على الهاتف ──
+   financials.html يضع ‎.table { min-width: 700px }‎ لسطح المكتب، فبقي الجدول بعرضه
+   حين تحوّلت صفوفه إلى بطاقات: خلية بعرض 674px تبدأ عند x=-349 فتظهر عناوين
+   الحقول وحدها والقيم خارج الشاشة (سجل أرصدة الطلاب للعميد كان فارغاً). */
+@media (max-width: 768px) {
+  .financials-wrap .table, .financials-wrap .table tbody { display: block; width: 100%; min-width: 0; }
+  .financials-wrap .table-wrapper { overflow: visible; }
+  .financials-wrap .table tbody td { gap: 12px; text-align: end; }
+  .financials-wrap .table tbody td > * { min-width: 0; }
+}
+
+/* تبويبات لوحة الرسوم للعميد: بمظهر الشرائح الموحّد وتمرير أفقي (كان الرابع مقصوصاً) */
+.financials-wrap .admin-tabs {
+  flex-wrap: nowrap; overflow-x: auto; scrollbar-width: none; gap: 8px; padding: 0 14px 2px; margin: 0 -14px 16px;
+  background: none; border: 0; box-shadow: none;
+}
+.financials-wrap .admin-tabs::-webkit-scrollbar { display: none; }
+.financials-wrap .admin-tab-btn {
+  flex-shrink: 0; min-height: 38px !important; padding: 0 14px !important; border-radius: 999px !important; white-space: nowrap;
+  font-size: 0.84rem !important; color: var(--text-muted); background: var(--hm-surface) !important; border: 1px solid var(--border) !important; box-shadow: none !important;
+}
+.financials-wrap .admin-tab-btn.active { color: #fff; background: var(--text-main) !important; border-color: var(--text-main) !important; }
+[data-theme="dark"] .financials-wrap .admin-tab-btn.active { color: #0f172a; background: #f1f5f9 !important; }
+
+/* ── 9. الحالات الفارغة ── */
+.empty-state { color: var(--text-muted); text-align: center; }
+.empty-state i { display: block; margin-bottom: 8px; font-size: 2.4rem; color: var(--text-light); }
+.empty-state h3, .empty-state h4 { margin: 4px 0; font-size: 1rem; font-weight: 800; color: var(--text-main); }
+
+/* ── 10. التذييل ونطاق القراءة ──
+   حقوق النشر في نهاية كل صفحة داخلية ضجيج على الهاتف؛ يبقى في الرئيسية. */
+@media (max-width: 900px) {
+  body.app-inner .main-footer { display: none; }
+}
+@media (min-width: 1100px) {
+  body.app-inner .page-content { max-width: 1040px; margin-inline: auto; }
+}
+
+/* ── 11. شرائح الفلترة/التبويب: مظهر موحّد (الأصناف موجودة في الصفحات) ── */
+.filter-tabs, .tabs-row { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; padding-bottom: 2px; }
+.filter-tabs::-webkit-scrollbar, .tabs-row::-webkit-scrollbar { display: none; }
+
+/* =====================================================================
+   12. مكوّنات الصفحات الداخلية (ui-*) — تُستخدم مع hm-list/hm-row/hm-kpis
+   ===================================================================== */
+.ui-stack { display: flex; flex-direction: column; gap: 20px; }
+.ui-count { margin: 0 2px 10px; font-size: 0.82rem; font-weight: 700; color: var(--text-muted); }
+
+/* شريط الأدوات: بحث + إجراء أساسي واحد */
+.ui-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.ui-toolbar > .ui-search { flex: 1; min-width: 0; }
+.ui-search { position: relative; }
+.ui-search > i { position: absolute; top: 50%; inset-inline-start: 14px; transform: translateY(-50%); font-size: 1.05rem; color: var(--text-light); pointer-events: none; }
+.ui-search input {
+  width: 100%; min-height: 44px; padding: 0 42px 0 14px; border-radius: 12px; font: inherit; font-size: 0.9rem;
+  color: var(--text-main); background: var(--hm-surface); border: 1px solid var(--border);
+}
+.ui-search input:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 3px rgba(var(--primary-rgb), 0.15); }
+.ui-primary {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex-shrink: 0; min-height: 44px;
+  padding: 0 16px; border-radius: 12px; border: 0; text-decoration: none; white-space: nowrap; cursor: pointer;
+  font-family: inherit; font-size: 0.88rem; font-weight: 800; color: #fff; background: var(--primary);
+}
+button.ui-primary { padding: 0 16px !important; border-radius: 12px !important; }
+.ui-primary.icon-only { width: 44px; padding: 0 !important; font-size: 1.25rem; }
+
+/* شرائح فلترة أفقية (بديل تبويبات الأزرار المتجاورة) */
+.ui-chips { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 -14px 12px; padding: 0 14px 2px; }
+.ui-chips::-webkit-scrollbar { display: none; }
+.ui-chip {
+  display: inline-flex; align-items: center; gap: 6px; flex-shrink: 0; min-height: 36px; padding: 0 14px; border-radius: 999px;
+  font-family: inherit; font-size: 0.82rem; font-weight: 700; white-space: nowrap; cursor: pointer;
+  color: var(--text-muted); background: var(--hm-surface); border: 1px solid var(--border);
+}
+button.ui-chip { min-height: 36px !important; min-width: 0 !important; padding: 0 14px !important; border-radius: 999px !important; font-size: 0.82rem !important; }
+.ui-chip.active, .ui-chip[aria-pressed="true"] { color: #fff; background: var(--text-main); border-color: var(--text-main); }
+[data-theme="dark"] .ui-chip.active, [data-theme="dark"] .ui-chip[aria-pressed="true"] { color: #0f172a; background: #f1f5f9; border-color: #f1f5f9; }
+.ui-chip .n { font-size: 0.72rem; opacity: 0.75; font-variant-numeric: tabular-nums; }
+
+/* مفتاح تبديل بين طريقتي عرض (قائمة/جدول) */
+.ui-seg { display: flex; gap: 4px; padding: 4px; margin-bottom: 12px; border-radius: 12px; background: var(--bg-hover); }
+.ui-seg button {
+  flex: 1; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 0; cursor: pointer;
+  min-height: 38px !important; padding: 0 10px !important; border-radius: 9px !important; font-family: inherit;
+  font-size: 0.84rem !important; font-weight: 700; color: var(--text-muted); background: transparent !important;
+}
+.ui-seg button.active { color: var(--text-main); background: var(--hm-surface) !important; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.12); }
+
+/* تنقّل بين الشهور: سهمان حول اسم الشهر + "اليوم" */
+.ui-month { display: flex; align-items: center; gap: 6px; margin-bottom: 12px; }
+.ui-month .ui-month-title { flex: 1; text-align: center; font-size: 1.05rem; font-weight: 800; color: var(--text-main); }
+
+/* أزرار إجراءات الصف: صغيرة، نصّية، والحذف أيقونة حمراء خافتة */
+.ui-row-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.ui-act {
+  display: inline-flex; align-items: center; justify-content: center; gap: 5px; min-height: 36px; padding: 0 12px;
+  border-radius: 10px; border: 1px solid var(--border); background: transparent; color: var(--text-main);
+  font-family: inherit; font-size: 0.8rem; font-weight: 700; text-decoration: none; cursor: pointer; white-space: nowrap;
+}
+button.ui-act { min-height: 36px !important; min-width: 0 !important; padding: 0 12px !important; border-radius: 10px !important; font-size: 0.8rem !important; background: transparent !important; }
+.ui-act.primary { color: var(--primary-text); border-color: rgba(var(--primary-rgb), 0.3); }
+.ui-act.danger { color: var(--danger-text); border-color: rgba(225, 29, 72, 0.25); }
+.ui-act.icon { width: 36px; padding: 0 !important; font-size: 1.05rem; }
+.ui-act:active { background: var(--bg-hover) !important; }
+
+/* صف مقسوم: منطقة فتح رئيسية (زر) + أيقونات إجراءات ثانوية في طرفه.
+   لا يجوز زر داخل زر/رابط، فالصف نفسه div والفتح زر بعرض الصف. */
+.hm-row.ui-row { padding-block: 0; gap: 4px; }
+.ui-row-main {
+  flex: 1; min-width: 0; display: flex; align-items: center; gap: 12px; min-height: 64px; padding: 10px 0;
+  background: none; border: 0; color: inherit; text-align: start; font: inherit; cursor: pointer; text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+}
+button.ui-row-main {
+  padding: 10px 0 !important; min-height: 64px !important; min-width: 0 !important; border-radius: 0 !important;
+  background: none !important; font-weight: inherit !important; font-size: inherit !important;
+}
+.hm-row.ui-row:has(.ui-row-main:active) { background: var(--bg-hover); }
+/* صفوف بأيقونات إجراءات: العنوان يلتف لسطرين بدل أن يُقص (أسماء الدفعات الطويلة) */
+.hm-row.ui-row .hm-row-title { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.ui-icon-btn {
+  display: grid; place-items: center; width: 40px; height: 40px; flex-shrink: 0; border-radius: 12px; border: 0;
+  background: transparent; color: var(--text-muted); font-size: 1.15rem; cursor: pointer; text-decoration: none;
+}
+button.ui-icon-btn { width: 40px !important; height: 40px !important; min-width: 40px !important; min-height: 40px !important; padding: 0 !important; border-radius: 12px !important; background: transparent !important; }
+.ui-icon-btn:active { background: var(--bg-hover) !important; }
+.ui-icon-btn.done { color: var(--success-text); }
+.ui-icon-btn.danger { color: var(--danger-text); }
+
+/* قسم قابل للطي حين يكون فارغاً: سطر واحد "لا يوجد بعد" بدل صندوق فارغ */
+.ui-section { margin-bottom: 24px; }
+.ui-section.is-empty { margin-bottom: 8px; }
+.ui-section.is-empty .hm-list, .ui-section.is-empty .ui-section-tools { display: none; }
+.ui-section.is-empty .hm-sec-title { color: var(--text-muted); font-size: 0.92rem; }
+.ui-section.is-empty .hm-sec-title::after { content: '· لا يوجد بعد'; font-size: 0.8rem; font-weight: 600; }
+.ui-section .hm-sec-title .n { font-size: 0.78rem; font-weight: 700; color: var(--text-muted); }
+
+/* بطاقة عنصر: عنوان + تفاصيل + إجراءات في تذييل (للقوائم التي تحتاج أكثر من صف) */
+.ui-card { background: var(--hm-surface); border: 1px solid var(--border); border-radius: 16px; padding: 14px; }
+.ui-card + .ui-card { margin-top: 10px; }
+.ui-card-head { display: flex; align-items: flex-start; gap: 12px; }
+.ui-card-title { font-size: 0.95rem; font-weight: 800; color: var(--text-main); line-height: 1.45; }
+.ui-card-meta { display: flex; flex-wrap: wrap; gap: 4px 12px; margin-top: 4px; font-size: 0.78rem; color: var(--text-muted); }
+.ui-card-meta span { display: inline-flex; align-items: center; gap: 4px; }
+.ui-card-foot { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border); }

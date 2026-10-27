@@ -6,82 +6,21 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>مكتبة الفيديو | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=2026083019">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026083019">
+  <link rel="stylesheet" href="/css/style.css?v=2026102613">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026102613">
+  <link rel="stylesheet" href="/css/ui.css?v=2026102613">
   <style>
-    .library-hero {
-      background: linear-gradient(135deg, #0f172a, #1e293b);
-      border-radius: var(--radius-xl);
-      padding: 28px 32px;
-      color: white;
-      margin-bottom: 28px;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-      gap: 16px;
-    }
-    .library-hero h1 { font-size: 1.5rem; font-weight: 800; margin: 0; }
-    .library-hero p { opacity: 0.7; margin: 4px 0 0; font-size: 0.9rem; }
-
-    .videos-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 12px;
-    }
-    .video-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-xl);
-      overflow: hidden;
-      box-shadow: var(--shadow-sm);
-      transition: var(--transition);
-      cursor: pointer;
-    }
-    .video-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); border-color: var(--primary); }
-    .video-card-thumb {
-      aspect-ratio: 16/9;
-      background: #0f172a;
-      position: relative;
-      overflow: hidden;
-    }
-    .video-card-thumb img {
-      width: 100%; height: 100%; object-fit: cover;
-    }
-    .video-card-duration {
-      position: absolute; bottom: 8px; left: 8px;
-      background: rgba(0,0,0,0.8); color: white;
-      padding: 2px 8px; border-radius: 4px;
-      font-size: 0.75rem; font-weight: 700;
-    }
-    .video-card-status {
-      position: absolute; top: 8px; right: 8px;
-      padding: 3px 10px; border-radius: 12px;
-      font-size: 0.7rem; font-weight: 700;
-    }
-    .video-card-status.processing { background: #f59e0b; color: #000; }
-    .video-card-status.ready { display: none; }
-    .video-card-body { padding: 12px; }
-    .video-card-title { font-weight: 700; font-size: 0.86rem; margin-bottom: 5px; color: var(--text-main); }
-    .video-card-meta { font-size: 0.74rem; color: var(--text-muted); display: flex; gap: 10px; flex-wrap: wrap; }
-
-    .filter-bar {
-      display: flex; gap: 8px; margin-bottom: 14px; flex-wrap: wrap;
-    }
-    .filter-bar .search-wrapper { flex: 1; min-width: 160px; }
-    .filter-bar select {
-      padding: 7px 12px; border: 1.5px solid var(--border);
-      border-radius: var(--radius-md); background: var(--bg-card);
-      color: var(--text-main); font-family: 'Cairo', sans-serif;
-      font-size: 0.82rem;
-    }
-
-    @media (max-width: 768px) {
-      .videos-grid { grid-template-columns: repeat(2, 1fr); gap: 8px; }
-    }
-    @media (max-width: 420px) {
-      .videos-grid { grid-template-columns: 1fr; }
-    }
+    /* صف لكل فيديو بصورة مصغّرة صغيرة: بطاقات 16:9 كانت تعرض ثلاثة فيديوهات في الشاشة */
+    .vl-thumb { position: relative; flex-shrink: 0; width: 112px; aspect-ratio: 16/9; border-radius: 10px; overflow: hidden; background: #1e293b; }
+    .vl-thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .vl-thumb .vl-play { position: absolute; inset: 0; display: grid; place-items: center; color: #fff; font-size: 1.5rem; background: rgba(15, 23, 42, 0.25); }
+    .vl-thumb .vl-dur { position: absolute; bottom: 4px; left: 4px; padding: 1px 5px; border-radius: 4px; font-size: 0.66rem; font-weight: 700; color: #fff; background: rgba(0, 0, 0, 0.75); direction: ltr; }
+    .vl-row { align-items: center; }
+    .vl-row .hm-row-title { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+    .hm-list .vl-row + .vl-row::before { inset-inline-start: 138px; }
+    .vl-tools { display: flex; gap: 8px; margin-bottom: 10px; }
+    .vl-tools .ui-search { flex: 1; min-width: 0; }
+    .vl-tools select { min-height: 44px; padding: 0 10px; border-radius: 12px; border: 1px solid var(--border); background: var(--hm-surface); color: var(--text-main); font: inherit; font-size: 0.84rem; }
   </style>
 
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
@@ -107,7 +46,7 @@
 <div class="page-content">
 
     <!-- Welcome Banner -->
-    <div class="welcome-banner" style="background: linear-gradient(135deg,#ef4444,#dc2626,#b91c1c);">
+    <div class="welcome-banner" style="--page-accent:#dc2626">
       <div class="welcome-banner-icon-wrap">
         <i class="ri-play-circle-line welcome-banner-icon"></i>
       </div>
@@ -116,41 +55,35 @@
         <p>محتوى المحاضرات المرئية للطلاب</p>
       </div>
     </div>
-  <!-- Action button for uploaders -->
-  <div style="display:flex;justify-content:flex-end;margin-bottom:10px;">
-    <a href="/creator-studio.html" class="btn btn-primary btn-sm" id="uploadLink" style="display:none;">
-      <i class="ri-upload-cloud-2-line"></i> رفع فيديو
-    </a>
+  <div class="ui-toolbar" id="uploadBar" hidden>
+    <a href="/creator-studio.html" class="ui-primary" id="uploadLink"><i class="ri-upload-cloud-2-line"></i> رفع فيديو</a>
   </div>
 
-  <div class="filter-bar">
-    <div class="search-wrapper">
-      <i class="ri-search-line"></i>
-      <input type="text" class="search-input" id="searchBox" placeholder="ابحث عن فيديو...">
-    </div>
-    <select id="subjectFilter">
-      <option value="">جميع المقررات</option>
-    </select>
-    <select id="sortSelect">
-      <option value="new">الأحدث أولاً</option>
-      <option value="old">الأقدم أولاً</option>
+  <div class="vl-tools">
+    <div class="ui-search"><i class="ri-search-line"></i><input type="search" id="searchBox" placeholder="ابحث عن فيديو" aria-label="ابحث عن فيديو"></div>
+    <select id="sortSelect" aria-label="الترتيب">
+      <option value="new">الأحدث</option>
+      <option value="old">الأقدم</option>
     </select>
   </div>
+  <!-- المقررات كشرائح بدل قائمة منسدلة ثانية -->
+  <div class="ui-chips" id="subjectChips" aria-label="تصفية حسب المقرر"></div>
+  <input type="hidden" id="subjectFilter" value="">
 
-  <div class="videos-grid" id="videosGrid"></div>
+  <div class="hm-list" id="videosGrid"></div>
 </div>
 
 <div id="toast-container"></div>
 <footer class="main-footer">جميع الحقوق محفوظة &copy; <span id="year"></span> النظام الجامعي المتكامل</footer>
 
-<script src="/js/shared.js?v=2026083019"></script>
-<script src="/js/app.js?v=2026083019"></script>
-<script src="/js/socket-client.js?v=2026083019" defer></script>
+<script src="/js/shared.js?v=2026102613"></script>
+<script src="/js/app.js?v=2026102613"></script>
+<script src="/js/socket-client.js?v=2026102613" defer></script>
 <script>
   CBS.init();
   const user = CBS.getUser();
   const isDoctorOrLeader = user.roles && (user.roles.includes('doctor') || user.roles.includes('dean') || user.roles.includes('leader'));
-  if (isDoctorOrLeader) document.getElementById('uploadLink').style.display = 'inline-flex';
+  if (isDoctorOrLeader) document.getElementById('uploadBar').hidden = false;
 
   let allVideos = [];
 
@@ -172,14 +105,20 @@
       const res = await CBS.apiGet('/api/subjects');
       const _resData = await CBS.readJson(res);
       const list = _resData.data?.subjects || _resData.subjects || _resData.data || _resData;
-      const sel = document.getElementById('subjectFilter');
-      sel.innerHTML = '<option value="">جميع المقررات</option>' +
-        list.map(s => `<option value="${s._id}">${CBS.escapeHTML(s.name)}</option>`).join('');
+      const chips = document.getElementById('subjectChips');
+      chips.innerHTML = `<button type="button" class="ui-chip active" data-s="">الكل</button>` +
+        list.map(s => `<button type="button" class="ui-chip" data-s="${CBS.escapeHTML(s._id)}">${CBS.escapeHTML(s.name)}</button>`).join('');
+      chips.addEventListener('click', e => {
+        const b = e.target.closest('.ui-chip'); if (!b) return;
+        chips.querySelectorAll('.ui-chip').forEach(c => c.classList.toggle('active', c === b));
+        document.getElementById('subjectFilter').value = b.dataset.s;
+        renderVideos();
+      });
     } catch(e) { console.error('[video-library/loadSubjects]', e); }
   }
 
   async function loadVideos() {
-    CBS.showLoading('videosGrid', 'جاري التحميل...', 'skeleton-grid');
+    CBS.showLoading('videosGrid', 'جاري التحميل...', 'skeleton-list');
     try {
       const res = await CBS.apiGet('/api/videos');
       const data = await CBS.readJson(res);
@@ -213,32 +152,25 @@
 
     document.getElementById('videosGrid').innerHTML = list.map(v => {
       const subName = typeof v.subject === 'object' ? (v.subject?.name || '') : '';
-      const uploader = typeof v.uploadedBy === 'object' ? (v.uploadedBy?.name || '') : '';
-      return `
-      <div class="video-card" onclick="location.href='/watch-video.html?id=${v._id}'">
-        <div class="video-card-thumb">
-          <img src="/api/videos/${v._id}/thumbnail" alt="${CBS.escapeHTML(v.title)}" loading="lazy">
-          ${v.duration ? `<span class="video-card-duration">${formatDuration(v.duration)}</span>` : ''}
-          <span class="video-card-status ${v.status}">${v.status === 'processing' ? 'قيد المعالجة' : ''}</span>
+      const meta = [subName, new Date(v.createdAt).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short' }), `${v.views || 0} مشاهدة`].filter(Boolean).join(' · ');
+      // API_BASE: داخل التطبيق كان المسار النسبي يذهب للحزمة المحلية فتظهر كل الصور سوداء
+      return `<a class="hm-row vl-row" href="/watch-video.html?id=${encodeURIComponent(v._id)}">
+        <span class="vl-thumb">
+          <img src="${API_BASE}/api/videos/${encodeURIComponent(v._id)}/thumbnail" alt="" loading="lazy">
+          <span class="vl-play"><i class="ri-play-fill"></i></span>
+          ${v.duration ? `<span class="vl-dur">${formatDuration(v.duration)}</span>` : ''}
+        </span>
+        <div class="hm-row-body">
+          <div class="hm-row-title">${CBS.escapeHTML(v.title)}</div>
+          <div class="hm-row-meta">${CBS.escapeHTML(meta)}</div>
+          ${v.status === 'processing' ? '<span class="hm-chip" data-tone="warning" style="display:inline-block;margin-top:4px">قيد المعالجة</span>' : ''}
         </div>
-        <div class="video-card-body">
-          <div class="video-card-title">${CBS.escapeHTML(v.title)}</div>
-          <div class="video-card-meta">
-            ${subName ? `<span><i class="ri-book-open-line"></i> ${CBS.escapeHTML(subName)}</span>` : ''}
-            ${uploader ? `<span><i class="ri-user-voice-line"></i> ${uploader}</span>` : ''}
-            <span><i class="ri-calendar-line"></i> ${CBS.formatDate(v.createdAt)}</span>
-          </div>
-          <div style="display:flex; gap:12px; font-size:0.8rem; color:var(--text-muted); font-weight:700; margin-top:8px; padding-top:8px; border-top:1px solid rgba(0,0,0,0.05);">
-            <span><i class="ri-eye-line"></i> ${v.views || 0}</span>
-            <span><i class="ri-chat-1-line"></i> ${v.commentsCount || 0}</span>
-          </div>
-        </div>
-      </div>`;
+        <span class="hm-row-end"><i class="ri-arrow-left-s-line" aria-hidden="true"></i></span>
+      </a>`;
     }).join('');
   }
 
   document.getElementById('searchBox').addEventListener('input', renderVideos);
-  document.getElementById('subjectFilter').addEventListener('change', renderVideos);
   document.getElementById('sortSelect').addEventListener('change', renderVideos);
 
   loadSubjects();

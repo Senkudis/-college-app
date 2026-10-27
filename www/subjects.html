@@ -5,31 +5,11 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>المقررات الدراسية | كلية النصر التقنية</title>
-  <link rel="stylesheet" href="/css/style.css?v=2026083019">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026083019">
+  <link rel="stylesheet" href="/css/style.css?v=2026102613">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026102613">
+  <link rel="stylesheet" href="/css/ui.css?v=2026102613">
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
-  <style>
-    .subjects-grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(220px,1fr)); gap:10px; }
-    @media(max-width:480px){ .subjects-grid{ grid-template-columns:1fr; gap:8px; } }
-    .subject-card { background:var(--bg-card); border-radius:14px; border:1px solid var(--border); box-shadow:var(--shadow-sm); overflow:hidden; cursor:pointer; transition:transform .18s ease,box-shadow .18s ease,border-color .18s ease; display:flex; flex-direction:column; }
-    .subject-card:hover { transform:translateY(-2px); box-shadow:0 6px 20px rgba(0,0,0,.10); border-color:var(--primary); }
-    .subject-card:active { transform:scale(0.98); }
-    .subject-stripe { height:3px; width:100%; }
-    .subject-card-inner { padding:14px 14px 12px; flex:1; display:flex; flex-direction:column; gap:8px; }
-    .subject-icon-wrap { width:38px; height:38px; border-radius:10px; display:flex; align-items:center; justify-content:center; font-size:1.15rem; flex-shrink:0; margin-bottom:2px; }
-    .subject-name { font-size:.88rem; font-weight:700; color:var(--text-main); line-height:1.35; }
-    .subject-level { display:inline-flex; align-items:center; gap:4px; padding:2px 8px; border-radius:20px; font-size:.68rem; font-weight:700; width:fit-content; }
-    .subject-footer { display:flex; align-items:center; justify-content:space-between; padding-top:8px; border-top:1px solid var(--border); margin-top:auto; }
-    .subject-doctor-name { font-size:.72rem; color:var(--text-muted); display:flex; align-items:center; gap:4px; }
-    .subject-go-btn { width:26px; height:26px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:.85rem; transition:transform .18s; }
-    .subject-card:hover .subject-go-btn { transform:translateX(-3px); }
-    .sc-0 .subject-stripe{background:linear-gradient(90deg,#3b82f6,#60a5fa)} .sc-0 .subject-icon-wrap{background:rgba(59,130,246,.1);color:#3b82f6} .sc-0 .subject-level{background:rgba(59,130,246,.1);color:#3b82f6} .sc-0 .subject-go-btn{background:rgba(59,130,246,.1);color:#3b82f6}
-    .sc-1 .subject-stripe{background:linear-gradient(90deg,#8b5cf6,#a78bfa)} .sc-1 .subject-icon-wrap{background:rgba(139,92,246,.1);color:#8b5cf6} .sc-1 .subject-level{background:rgba(139,92,246,.1);color:#8b5cf6} .sc-1 .subject-go-btn{background:rgba(139,92,246,.1);color:#8b5cf6}
-    .sc-2 .subject-stripe{background:linear-gradient(90deg,#10b981,#34d399)} .sc-2 .subject-icon-wrap{background:rgba(16,185,129,.1);color:#10b981} .sc-2 .subject-level{background:rgba(16,185,129,.1);color:#10b981} .sc-2 .subject-go-btn{background:rgba(16,185,129,.1);color:#10b981}
-    .sc-3 .subject-stripe{background:linear-gradient(90deg,#f59e0b,#fbbf24)} .sc-3 .subject-icon-wrap{background:rgba(245,158,11,.1);color:#d97706} .sc-3 .subject-level{background:rgba(245,158,11,.1);color:#d97706} .sc-3 .subject-go-btn{background:rgba(245,158,11,.1);color:#d97706}
-    .sc-4 .subject-stripe{background:linear-gradient(90deg,#ef4444,#f87171)} .sc-4 .subject-icon-wrap{background:rgba(239,68,68,.1);color:#ef4444} .sc-4 .subject-level{background:rgba(239,68,68,.1);color:#ef4444} .sc-4 .subject-go-btn{background:rgba(239,68,68,.1);color:#ef4444}
-    .sc-5 .subject-stripe{background:linear-gradient(90deg,#06b6d4,#22d3ee)} .sc-5 .subject-icon-wrap{background:rgba(6,182,212,.1);color:#06b6d4} .sc-5 .subject-level{background:rgba(6,182,212,.1);color:#06b6d4} .sc-5 .subject-go-btn{background:rgba(6,182,212,.1);color:#06b6d4}
-  </style>
+
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -46,45 +26,66 @@
   </div>
 </header>
 <div class="page-content">
-  <div class="welcome-banner" style="background:linear-gradient(135deg,#7c3aed,#6d28d9,#5b21b6);">
+  <div class="welcome-banner" style="--page-accent:#7c3aed">
     <div class="welcome-banner-icon-wrap"><i class="ri-book-2-line welcome-banner-icon"></i></div>
     <div class="welcome-banner-body"><h2>المقررات الدراسية</h2><p>عرض جميع مقرراتك الدراسية المتاحة</p></div>
   </div>
   <div id="alertError" class="alert alert-danger" role="alert"></div>
-  <div class="subjects-grid" id="subjectsGrid"></div>
+  <!-- البحث يظهر حين تكثر المقررات فقط -->
+  <div class="ui-search" id="subjectSearchWrap" hidden style="margin-bottom:12px">
+    <i class="ri-search-line"></i>
+    <input type="search" id="subjectSearch" placeholder="ابحث باسم المقرر أو الأستاذ" aria-label="بحث في المقررات">
+  </div>
+  <p class="ui-count" id="subjectCount" hidden></p>
+  <div class="hm-list" id="subjectsGrid"></div>
 </div>
 <div id="toast-container"></div>
 <footer class="main-footer">جميع الحقوق محفوظة &copy; <span id="year"></span> النظام الجامعي المتكامل</footer>
-<script src="/js/shared.js?v=2026083019"></script>
-<script src="/js/app.js?v=2026083019"></script>
-<script src="/js/socket-client.js?v=2026083019" defer></script>
+<script src="/js/shared.js?v=2026102613"></script>
+<script src="/js/app.js?v=2026102613"></script>
+<script src="/js/socket-client.js?v=2026102613" defer></script>
 <script>
   CBS.init();
+  /* قائمة مجمّعة بدل شبكة بطاقات ملوّنة: ستة ألوان دوّارة بلا معنى كانت تُوحي
+     بفروق غير موجودة بين المقررات. الأيقونة تحفظ التمييز البصري. */
   const subjectIcons=['ri-code-s-slash-line','ri-database-2-line','ri-cpu-line','ri-bar-chart-box-line','ri-shield-keyhole-line','ri-wifi-line','ri-git-branch-line','ri-terminal-box-line','ri-calculator-line','ri-globe-line','ri-server-line','ri-pencil-ruler-2-line'];
+  let allSubjects = [];
+  function renderSubjects(list) {
+    const host = document.getElementById('subjectsGrid');
+    if (!list.length) {
+      host.innerHTML = `<div class="hm-row hm-empty"><span class="hm-ic" data-tone="info"><i class="ri-search-line"></i></span><div class="hm-row-body"><div class="hm-row-title">لا نتائج</div><div class="hm-row-meta">جرّب اسماً آخر للمقرر أو الأستاذ</div></div></div>`;
+      return;
+    }
+    host.innerHTML = list.map(s => {
+      const i = allSubjects.indexOf(s);
+      const meta = [CBS.doctorName(s.doctor?.name), s.level ? `المستوى ${s.level}` : ''].filter(Boolean).join(' · ');
+      return `<a class="hm-row" href="/subject.html?id=${encodeURIComponent(s._id)}">
+        <span class="hm-ic"><i class="${subjectIcons[i % subjectIcons.length]}"></i></span>
+        <div class="hm-row-body"><div class="hm-row-title">${CBS.escapeHTML(s.name)}</div><div class="hm-row-meta">${CBS.escapeHTML(meta)}</div></div>
+        <span class="hm-row-end"><i class="ri-arrow-left-s-line" aria-hidden="true"></i></span>
+      </a>`;
+    }).join('');
+  }
   async function loadSubjects() {
-    CBS.showLoading('subjectsGrid','جاري تحميل المقررات...','skeleton-grid');
+    CBS.showLoading('subjectsGrid','جاري تحميل المقررات...','skeleton-list');
     try {
       const res=await CBS.apiGet('/api/subjects');
       if(!res.ok) throw new Error();
       const _d=await res.json();
       const data=_d.data?.subjects||_d.subjects||_d.data||_d;
       if(!Array.isArray(data)||!data.length){CBS.showEmpty('subjectsGrid','لا توجد مقررات مسجلة حالياً','ri-book-open-line');return;}
-      document.getElementById('subjectsGrid').innerHTML=data.map((s,i)=>`
-        <a href="/subject.html?id=${s._id}" class="subject-card sc-${i%6}" style="text-decoration:none;color:inherit;display:block;">
-          <div class="subject-stripe"></div>
-          <div class="subject-card-inner">
-            <div class="subject-icon-wrap"><i class="${subjectIcons[i%subjectIcons.length]}"></i></div>
-            <div class="subject-name">${CBS.escapeHTML(s.name)}</div>
-            <div class="subject-level"><i class="ri-graduation-cap-line"></i>${CBS.escapeHTML(s.level||'عام')}</div>
-            <div class="subject-footer">
-              <div class="subject-doctor-name"><i class="ri-user-voice-line"></i><span>د. ${CBS.escapeHTML(s.doctor?.name||'غير محدد')}</span></div>
-              <div class="subject-go-btn"><i class="ri-arrow-left-s-line"></i></div>
-            </div>
-          </div>
-        </a>`).join('');
+      allSubjects = data;
+      const count = document.getElementById('subjectCount');
+      count.hidden = false;
+      count.textContent = CBS.arCount(data.length, ['مقرر واحد', 'مقرران', 'مقررات', 'مقرراً']);
+      document.getElementById('subjectSearchWrap').hidden = data.length <= 6;
+      renderSubjects(data);
     } catch { CBS.showAlert('alertError','حدث خطأ أثناء الاتصال بالخادم، يرجى المحاولة لاحقاً'); }
   }
-  window.addEventListener('beforeunload',()=>sessionStorage.setItem('subjects_scroll',window.scrollY));
+  document.getElementById('subjectSearch').addEventListener('input', e => {
+    const q = e.target.value.trim().toLowerCase();
+    renderSubjects(q ? allSubjects.filter(s => `${s.name} ${s.doctor?.name || ''} ${s.code || ''}`.toLowerCase().includes(q)) : allSubjects);
+  });  window.addEventListener('beforeunload',()=>sessionStorage.setItem('subjects_scroll',window.scrollY));
   loadSubjects().then(()=>{const s=sessionStorage.getItem('subjects_scroll');if(s){requestAnimationFrame(()=>window.scrollTo(0,parseInt(s)));sessionStorage.removeItem('subjects_scroll');}});
 </script>
 <script>document.addEventListener('cbs:refresh',e=>{e.preventDefault();loadSubjects().finally(()=>e.detail.done());});</script>

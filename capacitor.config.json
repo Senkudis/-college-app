@@ -4,7 +4,7 @@
     "webDir":  "www",
     "ios":  {
                 "contentInset":  "always",
-                "limitsNavigationsToAppBoundDomains":  true,
+                "limitsNavigationsToAppBoundDomains":  false,
                 "_comment_scheme":  "capacitor:// هو المخطط الافتراضي على iOS ويطابق ما هو مسموح في APP_ORIGINS بالخادم",
                 "backgroundColor":  "#0d3b66"
             },

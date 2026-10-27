@@ -14,7 +14,7 @@ const createTransporter = () => {
     secure, // true لـ 465 SSL، false لـ 587 TLS
     auth: { user, pass },
     tls: {
-      rejectUnauthorized: false // يتفادى أخطاء الشهادة الذاتية على السيرفرات المستضافة
+      rejectUnauthorized: process.env.NODE_ENV === "production" && process.env.SMTP_ALLOW_SELFSIGNED !== "true"
     }
   });
 };

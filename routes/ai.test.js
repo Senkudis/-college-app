@@ -173,3 +173,124 @@ test('normalizeQuizItems: accepts correct schema and rejects answer-field mismat
   assert.strictEqual(items.length, 1);
   assert.strictEqual(items[0].correct, 2);
 });
+
+// ===== التوجيه حسب حجم الطلب =====
+const ALL_ON = { radox: true, nvidia: true, zai: true, mistral: true, gemini: true, qwen: true, cohere: true, groq: true, groq2: true };
+
+const DEFAULT_ORDER = ['groq', 'groq2', 'nvidia', 'zai', 'cohere', 'gemini', 'radox', 'mistral', 'qwen'];
+
+test('providerOrder: الترتيب الافتراضي يبدأ بـ Groq ثم NVIDIA، ويقبل ترتيباً مخصصاً ويتجاهل الأسماء المجهولة', () => {
+  assert.deepStrictEqual(_internals.providerOrder(''), DEFAULT_ORDER);
+  assert.deepStrictEqual(_internals.providerOrder(' Gemini, groq ,openai,groq'), ['gemini', 'groq']);
+  assert.deepStrictEqual(_internals.providerOrder('ZAI,cohere'), ['zai', 'cohere']);
+  assert.deepStrictEqual(_internals.providerOrder('nothing-valid'), DEFAULT_ORDER);
+});
+
+test('planProviders: سؤال قصير يمر على كل المزوّدين المضبوطة مفاتيحهم بالترتيب', () => {
+  const plan = _internals.planProviders({
+    order: _internals.providerOrder(''),
+    configured: { ...ALL_ON, qwen: false, mistral: false, radox: false },
+    inputTokens: 1500,
+    maxOutputTokens: 2000
+  });
+  assert.deepStrictEqual(plan.map(p => p.name), ['groq', 'groq2', 'nvidia', 'zai', 'cohere', 'gemini']);
+  assert.ok(plan.every(p => p.maxOutputTokens === 2000));
+});
+
+test('planProviders: "لخّص المادة" (60 ألف حرف) لا يُرسل إلى Groq المجاني', () => {
+  const inputTokens = _internals.estimateTokens('م'.repeat(60000));
+  const plan = _internals.planProviders({ order: _internals.providerOrder(''), configured: ALL_ON, inputTokens, maxOutputTokens: 1400 });
+  assert.ok(!plan.some(p => p.name === 'groq'), 'Groq must be skipped for a whole-subject summary');
+  assert.deepStrictEqual(plan.slice(0, 2).map(p => p.name), ['nvidia', 'zai'], 'long requests go to NVIDIA, then Z.AI');
+});
+
+test('planProviders: يقلّص حد المخرجات ليتسع الطلب بدل استبعاد المزوّد', () => {
+  const groqLimit = _internals.PROVIDER_MAX_REQUEST_TOKENS.groq;
+  const plan = _internals.planProviders({ order: ['groq'], configured: ALL_ON, inputTokens: groqLimit - 1000, maxOutputTokens: 3000 });
+  assert.deepStrictEqual(plan, [{ name: 'groq', maxOutputTokens: 1000 }]);
+  // مساحة رد أصغر من أن تفيد = استبعاد
+  assert.deepStrictEqual(_internals.planProviders({ order: ['groq'], configured: ALL_ON, inputTokens: groqLimit - 100, maxOutputTokens: 3000 }), []);
+});
+
+test('isKeyLevelFailure: يميّز المفتاح الموقوف أو بلا رصيد عن خطأ الطلب العادي', () => {
+  assert.ok(_internals.isKeyLevelFailure(403, "Consumer 'api_key:x' has been suspended."));
+  assert.ok(_internals.isKeyLevelFailure(402, 'Your prepayment credits are depleted.'));
+  assert.ok(_internals.isKeyLevelFailure(400, 'API key not valid. Please pass a valid API key.'));
+  assert.ok(!_internals.isKeyLevelFailure(400, 'Invalid JSON payload received.'));
+  assert.ok(!_internals.isKeyLevelFailure(500, 'Internal error'));
+});
+
+// ===== تصنيف الأسئلة: حالات كانت تُصنَّف خطأً فيبدو كيدي غبياً =====
+test('تصنيف: "كم" داخل كلمة (التحكم، الكمبيوتر) لا يجعل سؤال المفهوم سؤال بيانات', () => {
+  for (const q of ['ما هو التحكم في التدفق في الشبكات؟', 'شنو الكمبيوتر الكمومي؟', 'ما هي أنواع الاختبارات في هندسة البرمجيات']) {
+    assert.notStrictEqual(detectIntent(q, false), 'data', `لا يجب أن يكون data: ${q}`);
+  }
+});
+
+test('تصنيف: "مراحل" لا تُعامل كمسألة حسابية بسبب "حل" داخلها', () => {
+  assert.strictEqual(detectIntent('مراحل دورة حياة تطوير البرمجيات', false), 'explain');
+});
+
+test('تصنيف: الكود والأخطاء البرمجية لها وضع خاص', () => {
+  for (const q of ['اكتب لي كود bubble sort بالبايثون', "TypeError: Cannot read properties of undefined (reading 'map')", 'صحح لي الكود ده']) {
+    assert.strictEqual(detectIntent(q, false), 'code', q);
+  }
+});
+
+test('تصنيف: الاختبار التفاعلي، خطة المذاكرة، والدعم النفسي', () => {
+  assert.strictEqual(detectIntent('اختبرني في قواعد البيانات', false), 'quiz');
+  assert.strictEqual(detectIntent('شنو أذاكر الليلة؟', false), 'plan');
+  assert.strictEqual(detectIntent('انا تعبان من المذاكرة وما فاهم حاجة', false), 'support');
+  assert.strictEqual(detectIntent('هلا كيف حالك', false), 'chat');
+});
+
+test('تصنيف: طلب الاختصار أو التفصيل يُلتقط', () => {
+  assert.strictEqual(_internals.analyzeQuestion('ما الفرق بين TCP و UDP؟ في جملتين بس').brief, true);
+  assert.strictEqual(_internals.analyzeQuestion('اشرح الـ normalization بالتفصيل').detailed, true);
+});
+
+test('تصنيف: المتابعة القصيرة وتصحيح الكويز تعودان لآخر موضوع', () => {
+  const opts = { hasHistory: true };
+  assert.strictEqual(detectIntent('اديني مثال تاني', false, opts), 'followup');
+  assert.strictEqual(detectIntent('ليه؟', false, opts), 'followup');
+  assert.strictEqual(detectIntent('1-ب 2-أ 3-ج', false, { hasHistory: true, lastAssistant: 'أرسل إجاباتك (مثلاً: 1-ب، 2-أ، 3-ج) وسأصححها لك.' }), 'followup');
+  // بلا محادثة سابقة "مثال" ليست متابعة
+  assert.notStrictEqual(detectIntent('اديني مثال تاني', false), 'followup');
+});
+
+test('سياق المنصة: سؤال المفهوم لا يحمل الرسوم والإشعارات، وسؤال البيانات يحملها', () => {
+  const sections = { date: '[التاريخ] اليوم', student: '[الطالب] س', subjects: '[المواد]', assignments: '[الواجبات]', finance: '[الوضع المالي]', notifications: '[الإشعارات]' };
+  const concept = _internals.renderLiveContext(sections, 'define');
+  assert.ok(concept.includes('[المواد]') && !concept.includes('[الوضع المالي]') && !concept.includes('[الإشعارات]'));
+  const data = _internals.renderLiveContext(sections, 'data');
+  assert.ok(data.includes('[الوضع المالي]') && data.includes('[الإشعارات]'));
+});
+
+test('سجل المحادثة: أدوار حقيقية، آخر 10 رسائل، ولا يبدأ برد المساعد', () => {
+  const history = [{ role: 'assistant', content: 'أهلاً' }];
+  for (let i = 0; i < 14; i++) history.push({ role: i % 2 ? 'assistant' : 'user', content: `رسالة ${i}` });
+  const msgs = _internals.chatHistoryMessages(history);
+  assert.ok(msgs.length <= 10);
+  assert.strictEqual(msgs[0].role, 'user');
+  assert.ok(msgs.every(m => m.role === 'user' || m.role === 'assistant'));
+});
+
+test('موجّه النظام: بلا رموز تعبيرية ويمنع الإحالة لليدر في الأسئلة العلمية', () => {
+  assert.ok(!/[\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}]/u.test(SYSTEM_PROMPT));
+  assert.match(SYSTEM_PROMPT, /لا تحيل الطالب لليدر في سؤال علمي/);
+});
+
+test('sanitizeAnswer: يحوّل علامتي الصح/الخطأ لكلمات ويحذف الرموز والخطوط الفاصلة دون لمس الأكواد', () => {
+  const out = _internals.sanitizeAnswer('النتيجة: ❌ خطأ\n---\nممتاز ✅ 🎉\n```js\nconst s = "---"; // ✅\n```');
+  assert.ok(!/[\u{1F300}-\u{1FAFF}❌✅]/u.test(out.replace(/```[\s\S]*```/, '')), out);
+  assert.ok(!/^---$/m.test(out.replace(/```[\s\S]*```/, '')));
+  assert.match(out, /ممتاز صح/);
+  assert.match(out, /const s = "---"; \/\/ ✅/, 'الكود يبقى كما هو');
+});
+test('sanitizeAnswer: Markdown tables become bullet lists, code blocks stay intact', () => {
+  const out = _internals.sanitizeAnswer('| سؤال | النتيجة |\n|---|---|\n| 1 | ✅ صحيح |\n| 2 | ❌ خطأ |\n\n```js\n| a | b |\n|---|---|\n```');
+  assert.ok(!/^\s*\|.*\|\s*$/m.test(out.split('```')[0]), 'no table rows outside code');
+  assert.match(out, /- سؤال: 1 — النتيجة: صحيح/);
+  assert.match(out, /- سؤال: 2 — النتيجة: خطأ/);
+  assert.ok(out.includes('```js\n| a | b |\n|---|---|\n```'), 'tables inside code fences are left alone');
+});

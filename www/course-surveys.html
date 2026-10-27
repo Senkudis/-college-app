@@ -6,8 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>استبيانات تقييم جودة المقررات | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=2026083019">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026083019">
+  <link rel="stylesheet" href="/css/style.css?v=2026102613">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026102613">
+  <link rel="stylesheet" href="/css/ui.css?v=2026102613">
   <style>
     .survey-card-pro {
       background: var(--bg-card);
@@ -83,21 +84,17 @@
 <body>
 
 
+<header class="main-header">
+  <div class="header-brand">
+    <img src="/assets/logo.png" class="header-logo" alt="">
+    <div class="header-title-group"><strong>تقييم المقررات</strong><small>تقييم المقررات</small></div>
+  </div>
+  <div class="header-actions"></div>
+</header>
+
 <main class="page-container" style="max-width:960px; margin:0 auto; padding:16px 16px 80px;">
-  <!-- Header Bar -->
-  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
-    <div style="display:flex; align-items:center; gap:8px;">
-      <a href="/dashboard.html" class="btn btn-icon btn-outline" style="width:36px; height:36px;"><i class="ri-arrow-right-line"></i></a>
-      <div>
-        <h1 style="font-size:1.25rem; font-weight:800; margin:0; color:var(--text-main);">
-          <i class="ri-survey-fill" style="color:var(--primary);"></i> استبيان تقييم جودة المقررات والتدريس
-        </h1>
-        <span style="font-size:0.78rem; color:var(--text-muted);">تقييم سري ومجهول الهوية لتحسين تجربة التعليم والمناهج</span>
-      </div>
-    </div>
-    <div id="analyticsToggleBtn" style="display:none;">
-      <button class="btn btn-outline" onclick="toggleViewMode()"><i class="ri-bar-chart-2-line"></i> لوحة التحليلات الأكاديمية</button>
-    </div>
+  <div class="ui-toolbar" id="analyticsToggleBtn" style="display:none;">
+    <button type="button" class="ui-act primary" style="min-height:44px" onclick="toggleViewMode()"><i class="ri-bar-chart-2-line"></i> لوحة التحليلات</button>
   </div>
 
   <!-- Student Survey View -->
@@ -113,7 +110,7 @@
             تشفير كامل وضمان سرية الهوية (Anonymous Evaluation)
           </div>
           <div style="font-size:0.82rem; color:var(--text-muted); line-height:1.5;">
-            تُشفر إجاباتك بتوقيع رقمي مجهول (SHA-256 Hash) لمنع تكرار التقييم مع استحالة معرفة هوية أو اسم الطالب من قبل أي أستاذ أو مسؤول.
+            لا يُحفظ اسمك أو حسابك مع التقييم — فقط بصمة مشفّرة بمفتاح سري على الخادم تمنع تكرار التقييم، ولا يطّلع الأستاذ إلا على المتوسطات والتعليقات.
           </div>
         </div>
       </div>
@@ -137,7 +134,7 @@
       </div>
       
       <!-- Metrics Overview -->
-      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(190px, 1fr)); gap:14px; margin-bottom:24px;">
+      <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(min(190px, 100%), 1fr)); gap:14px; margin-bottom:24px;">
         <div class="card" style="text-align:center; padding:18px; background:var(--bg-main); border-radius:var(--radius-lg);">
           <div style="font-size:2.2rem; font-weight:900; color:var(--primary); font-family:monospace;" id="statTotalEvals">0</div>
           <div style="font-size:0.82rem; font-weight:800; color:var(--text-muted);">إجمالي التقييمات المستلمة</div>
@@ -239,8 +236,8 @@
 
 <div id="toast-container"></div>
 
-<script src="/js/shared.js?v=2026083019"></script>
-<script src="/js/app.js?v=2026083019"></script>
+<script src="/js/shared.js?v=2026102613"></script>
+<script src="/js/app.js?v=2026102613"></script>
 <script>
   CBS.init({ requireAuth: true });
   const user = CBS.getUser();

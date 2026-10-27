@@ -8,34 +8,27 @@
   <link rel="manifest" href="/manifest.json">
   <title>الاختبارات الإلكترونية | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=2026083019">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026083019">
+  <link rel="stylesheet" href="/css/style.css?v=2026102613">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026102613">
+  <link rel="stylesheet" href="/css/ui.css?v=2026102613">
   <style>
-    .quiz-wrap { max-width: 1100px; margin: auto; padding: 28px 20px 105px; }
-    .quiz-hero { padding: 22px 24px; border-radius: 25px; color: #fff; background: linear-gradient(125deg,#4338ca,#4f46e5,#0891b2); box-shadow: 0 18px 42px #4338ca35; margin-bottom: 20px; }
-    .quiz-hero h1 { margin: 7px 0; font-size: clamp(1.5rem, 3vw, 2.1rem); font-weight: 900; }
-    .quiz-hero p { margin: 0; color: #e0e7ff; font-size: 0.95rem; }
-    .hero-actions { display: flex; gap: 10px; flex-wrap: wrap; margin-top: 18px; }
-    .btn-hero { border: 1px solid rgba(255,255,255,0.4); border-radius: 12px; background: rgba(255,255,255,0.2); color: white; font: inherit; font-weight: 700; padding: 10px 16px; cursor: pointer; display: inline-flex; align-items: center; gap: 8px; backdrop-filter: blur(6px); transition: background 0.2s; }
-    .btn-hero:hover { background: rgba(255,255,255,0.35); }
-    /* #f59e0b مع نص أبيض = تباين 2.15، غير مقروء. نُعمّقه كما في بانر المتصدرين. */
-    .btn-hero-ai { background: linear-gradient(135deg, #b45309, #92400e); border: none; box-shadow: 0 4px 14px rgba(180, 83, 9, 0.4); }
-    .btn-hero-ai:hover { background: linear-gradient(135deg, #92400e, #78350f); }
+    .quiz-wrap { max-width: 1040px; margin: auto; padding: 14px 14px 105px; }
+    .quiz-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr)); gap: 10px; }
+    .quiz-list .ui-card + .ui-card { margin-top: 0; }
+    .quiz-group { grid-column: 1 / -1; margin: 14px 2px 0; font-size: 1rem; font-weight: 800; color: var(--text-main); }
+    .quiz-group:first-child { margin-top: 0; }
+    .quiz-desc { margin: 6px 0 0; font-size: 0.84rem; line-height: 1.6; color: var(--text-muted); }
+    .quiz-score { font-size: 0.85rem; font-weight: 800; color: var(--text-main); }
+    .quiz-start { width: 100%; margin-top: 12px; }
+    .empty { grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 48px 16px; font-size: 0.95rem; }
 
-    .quiz-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr)); gap: 14px; }
-    .quiz-card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 18px; padding: 18px; box-shadow: var(--shadow-sm); display: flex; flex-direction: column; justify-content: space-between; }
-    .quiz-card h2 { font-size: 1.05rem; margin: 8px 0 6px; font-weight: 800; color: var(--text-primary); }
-    .quiz-card p { color: var(--text-muted); font-size: 0.84rem; min-height: 38px; line-height: 1.5; }
-    .meta { display: flex; gap: 8px; flex-wrap: wrap; color: var(--text-muted); font-size: 0.78rem; margin: 14px 0; }
-    .tag { background: var(--primary-light); color: var(--primary); border-radius: 99px; padding: 4px 10px; font-weight: 700; }
-    .action { width: 100%; border: 0; border-radius: 12px; padding: 12px; font: inherit; font-weight: 700; cursor: pointer; background: var(--primary); color: #fff; transition: var(--transition-fast); }
-    .action[disabled] { background: var(--bg-input); color: var(--text-muted); cursor: not-allowed; }
-    .empty { grid-column: 1/-1; text-align: center; color: var(--text-muted); padding: 48px; font-size: 1rem; }
-    
     .overlay { display: none; position: fixed; inset: 0; z-index: 9999; background: rgba(7, 20, 34, 0.65); backdrop-filter: blur(4px); padding: 18px; align-items: center; justify-content: center; }
     .overlay.show { display: flex; }
     .box { width: min(740px, 100%); max-height: 90vh; overflow-y: auto; background: var(--bg-card); border-radius: 22px; padding: 24px; box-shadow: var(--shadow-lg); border: 1px solid var(--border); }
     .box h2 { margin: 0 0 16px; font-size: 1.25rem; font-weight: 800; color: var(--text-primary); }
+    .review-hint { display: flex; gap: 8px; align-items: flex-start; margin: -6px 0 14px; padding: 10px 12px; border-radius: 12px; font-size: 0.85rem; line-height: 1.6; background: rgba(245, 158, 11, 0.12); color: #92400e; }
+    .review-hint[hidden] { display: none; }
+    [data-theme="dark"] .review-hint { color: #fcd34d; }
     .field { margin-bottom: 13px; }
     .field label { display: block; font-size: 0.84rem; font-weight: 700; margin-bottom: 6px; color: var(--text-main); }
     .field input, .field select, .field textarea { width: 100%; box-sizing: border-box; padding: 11px 14px; border: 1px solid var(--border); border-radius: 12px; background: var(--bg-input); color: var(--text-primary); font: inherit; }
@@ -55,13 +48,31 @@
     .take-question strong { display: block; margin-bottom: 10px; font-size: 0.95rem; }
     .choice { display: block; padding: 11px 14px; margin: 6px 0; border: 1.5px solid var(--border); border-radius: 12px; cursor: pointer; transition: var(--transition-fast); }
     .choice:has(input:checked) { border-color: var(--primary); background: var(--primary-light); }
+    .take-question legend { padding: 0; }
+    .results-summary { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 14px; }
+    .results-summary div { background: var(--bg-hover); border-radius: 12px; padding: 10px; text-align: center; }
+    .results-summary strong { display: block; font-size: 1.3rem; color: var(--primary); font-variant-numeric: tabular-nums; }
+    .results-summary small { color: var(--text-muted); font-size: 0.76rem; }
+    .results-table { width: 100%; border-collapse: collapse; font-size: 0.86rem; }
+    .results-table th, .results-table td { padding: 9px 6px; border-bottom: 1px solid var(--border); text-align: right; }
+    .results-table th { color: var(--text-muted); font-size: 0.78rem; }
+    .results-table td.num { font-variant-numeric: tabular-nums; font-weight: 700; }
+    /* مراجعة الطالب لإجاباته */
+    .review-q { border: 1px solid var(--border); border-inline-start: 4px solid var(--success-text); border-radius: 12px; padding: 12px; margin-bottom: 10px; }
+    .review-q.bad { border-inline-start-color: var(--danger-text); }
+    .review-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; margin-bottom: 8px; line-height: 1.6; }
+    .review-head strong { overflow-wrap: anywhere; }
+    .review-badge { flex-shrink: 0; font-size: 0.76rem; font-weight: 700; color: var(--success-text); white-space: nowrap; }
+    .review-q.bad .review-badge { color: var(--danger-text); }
+    .review-options { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; }
+    .review-options li { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 7px 10px; border-radius: 9px; background: var(--bg-hover); font-size: 0.86rem; overflow-wrap: anywhere; }
+    .review-options li.is-correct { background: rgba(16, 185, 129, 0.14); color: var(--success-text); font-weight: 700; }
+    .review-options li.is-wrong { background: rgba(239, 68, 68, 0.12); color: var(--danger-text); }
+    .review-options li.is-wrong .opt-text { text-decoration: line-through; }
+    .review-options em { font-style: normal; font-size: 0.72rem; margin-inline-start: auto; }
+    .opt-letter { display: inline-grid; place-items: center; min-width: 22px; height: 22px; border-radius: 6px; background: var(--bg-card); font-size: 0.75rem; font-weight: 800; }
     @media(max-width:600px){
-      .quiz-wrap { padding: 12px 12px 95px; }
-      .quiz-list { grid-template-columns: 1fr; }
       .two { grid-template-columns: 1fr; }
-      .quiz-hero { padding: 16px 18px; }
-      .hero-actions { width: 100%; }
-      .btn-hero { flex: 1; justify-content: center; }
     }
   </style>
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
@@ -75,25 +86,20 @@
     <img src="/assets/logo.png" class="header-logo" alt="شعار">
     <div class="header-title-group">
       <strong>الاختبارات الإلكترونية</strong>
-      <small>تقييم عادل وسريع</small>
+      <small>الاختبارات</small>
     </div>
   </div>
   <div class="header-actions">
     <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الداكن" aria-label="تبديل الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
-    <button class="btn-icon" onclick="location.href='/campus.html'" title="الرئيسية"><i class="ri-compass-3-line"></i></button>
   </div>
 </header>
 
 <main class="quiz-wrap">
-  <section class="quiz-hero">
-    <small><i class="ri-award-line"></i> مركز التقييم والاختبارات الذكية</small>
-    <h1>اختباراتك في مكان واحد</h1>
-    <p id="subtitle">اطلع على الاختبارات المتاحة وسلّم محاولتك بثقة.</p>
-    <div class="hero-actions" id="staffActions" hidden>
-      <button class="btn-hero" id="newQuiz"><i class="ri-add-line"></i> إنشاء اختبار يدوي</button>
-      <button class="btn-hero btn-hero-ai" id="aiQuizBtn"><i class="ri-magic-line"></i> توليد بالذكاء الاصطناعي </button>
-    </div>
-  </section>
+  <!-- للطاقم: إجراء أساسي واحد + توليد بالذكاء الاصطناعي كإجراء ثانوي -->
+  <div class="ui-toolbar" id="staffActions" hidden>
+    <button type="button" class="ui-primary" id="newQuiz"><i class="ri-add-line"></i> اختبار جديد</button>
+    <button type="button" class="ui-act primary" id="aiQuizBtn" style="min-height:44px"><i class="ri-sparkling-2-line"></i> توليد من محاضرة</button>
+  </div>
 
   <section class="quiz-list" id="list">
     <div class="empty">جاري تحميل الاختبارات…</div>
@@ -104,6 +110,7 @@
 <div class="overlay" id="quizModal">
   <div class="box">
     <h2>إنشاء اختبار إلكتروني</h2>
+    <p class="review-hint" id="reviewHint" hidden><i class="ri-error-warning-line"></i> هذه أسئلة مقترحة. راجع كل سؤال والإجابة المحددة كصحيحة، وعدّل ما يلزم قبل النشر.</p>
     <form id="quizForm">
       <div class="field"><label for="quizzes_title">العنوان</label><input id="quizzes_title" name="title" required maxlength="160" placeholder="مثال: اختبار الوحدة الأولى"></div>
       <div class="field"><label for="subjects">المادة</label><select name="subject" id="subjects" required></select></div>
@@ -126,9 +133,9 @@
 <!-- Modal: توليد بالذكاء الاصطناعي -->
 <div class="overlay" id="aiModal">
   <div class="box">
-    <h2><i class="ri-magic-line" style="color:var(--warning)"></i> توليد اختبار ذكي بالذكاء الاصطناعي</h2>
+    <h2>توليد أسئلة من محاضرة</h2>
     <p style="color:var(--text-muted);font-size:0.85rem;margin-top:-8px;margin-bottom:16px;">
-      يقوم كيدي بتحليل المحتوى واستخراج أسئلة دقيقة تختبر الفهم مع الخيارات والإجابات النموذجية.
+      الصق نص المحاضرة وسيقترح كيدي الأسئلة وإجاباتها. لن يُنشر شيء قبل أن تراجعها.
     </p>
     <form id="aiQuizForm">
       <div class="field">
@@ -168,7 +175,7 @@
       </div>
       <div class="buttons">
         <button class="btn primary" type="submit" id="aiSubmitBtn">
-          <i class="ri-sparkling-line"></i> توليد ونشر فوري للاختبار
+          <i class="ri-sparkling-2-line"></i> اقترح الأسئلة
         </button>
         <button class="btn ghost" type="button" data-close>إلغاء</button>
       </div>
@@ -189,7 +196,7 @@
       <div id="takeQuestions"></div>
       <div class="buttons">
         <button class="btn primary" type="submit"><i class="ri-send-plane-line"></i> تسليم الإجابات</button>
-        <button class="btn ghost" type="button" data-close>إلغاء</button>
+        <button class="btn ghost" type="button" data-close>إغلاق مؤقتاً</button>
       </div>
     </form>
   </div>
@@ -208,15 +215,28 @@
   </div>
 </div>
 
+<!-- Modal: نتائج الاختبار (للطاقم) -->
+<div class="overlay" id="resultsModal">
+  <div class="box">
+    <h2 id="resultsTitle">نتائج الاختبار</h2>
+    <div id="resultsSummary" class="results-summary"></div>
+    <div id="resultsBody"></div>
+    <div class="buttons">
+      <button class="btn ghost" type="button" data-close>إغلاق</button>
+    </div>
+  </div>
+</div>
+
 <div id="toast-container"></div>
-<script src="/js/shared.js?v=2026083019"></script>
-<script src="/js/app.js?v=2026083019"></script>
-<script src="/js/socket-client.js?v=2026083019" defer></script>
+<script src="/js/shared.js?v=2026102613"></script>
+<script src="/js/app.js?v=2026102613"></script>
+<script src="/js/socket-client.js?v=2026102613" defer></script>
 <script>
 let all=[],active=null,questions=[{text:'',options:['','','',''],correctOption:0,points:1}];
 const esc=v=>String(v||'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-const fmt=new Intl.DateTimeFormat('ar-SD',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'});
-const staff=()=>CBS.getUser().roles?.some(r=>['dean','doctor','leader','admin'].includes(r));
+const fmt=new Intl.DateTimeFormat('ar-EG-u-nu-latn',{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'});
+// الليدر يؤدّي الاختبارات كطالب؛ الخادم يمنعه من الإنشاء والنتائج
+const staff=()=>CBS.getUser().roles?.some(r=>['dean','doctor','admin'].includes(r));
 
 function state(q){
   const n=Date.now();
@@ -227,32 +247,102 @@ function state(q){
   return 'متاح الآن';
 }
 
-function draw(){
-  list.innerHTML=all.length?all.map(q=>{
-    const s=state(q),enabled=s==='متاح الآن';
-    let delBtn='';
-    if(staff() && (CBS.hasRole('admin')||CBS.hasRole('dean')||CBS.isMe(q.createdBy))){
-      delBtn=`<button class="action" style="background:var(--danger);margin-top:8px;" onclick="deleteQuiz('${q._id}')" aria-label="حذف"><i class="ri-delete-bin-line"></i> حذف الاختبار</button>`;
-    }
-    return `<article class="quiz-card">
-      <div>
-        <span class="tag">${esc(s)}</span>
-        <h2>${esc(q.title)}</h2>
-        <p>${esc(q.description||q.subject?.name||'اختبار إلكتروني')}</p>
-        <div class="meta">
-          <span><i class="ri-book-open-line"></i> ${esc(q.subject?.name||'')}</span>
-          <span><i class="ri-time-line"></i> ${q.durationMinutes} دقيقة</span>
-        </div>
-        <small class="text-muted" style="display:block;margin-bottom:12px;">${fmt.format(new Date(q.startsAt))} — ${fmt.format(new Date(q.endsAt))}</small>
-        ${q.attempt?`<p style="margin-bottom:12px;font-weight:700;color:var(--primary);">درجتك: ${q.attempt.score}/${q.attempt.maxScore}</p>`:''}
-      </div>
-      <div>
-        <button class="action" ${enabled?'':'disabled'} onclick="openTake('${q._id}')">${enabled?'<i class="ri-play-circle-line"></i> ابدأ الاختبار':'غير متاح'}</button>
-        ${delBtn}
-      </div>
-    </article>`
-  }).join(''):'<div class="empty">لا توجد اختبارات في هذه الدفعة بعد.</div>'
+/* مجموعات بحسب ما يمكن فعله: المتاح الآن أولاً بزر بدء واضح، ثم القادم، ثم المنتهي.
+   الحذف للطاقم أيقونة خافتة لا زر أحمر ممتلئ بجانب "النتائج". */
+const GROUPS=[['متاح الآن',['متاح الآن']],['قادمة',['قريباً','مسودة']],['منتهية',['تم التسليم','انتهى']]];
+const TONE={'متاح الآن':'success','قريباً':'primary','مسودة':'','تم التسليم':'success','انتهى':''};
+function quizCard(q){
+  const s=state(q),isStaff=staff();
+  const count=q.questionCount??q.questions?.length??0;
+  const meta=`<span><i class="ri-book-open-line"></i> ${esc(q.subject?.name||'')}</span>
+    <span><i class="ri-time-line"></i> ${Number(q.durationMinutes)||0} دقيقة</span>
+    <span><i class="ri-question-line"></i> ${count} سؤال</span>
+    <span><i class="ri-calendar-line"></i> ${fmt.format(new Date(q.startsAt))} — ${fmt.format(new Date(q.endsAt))}</span>`;
+  let foot='';
+  if(isStaff){
+    foot=`<div class="ui-card-foot"><button type="button" class="ui-act primary" onclick="openResults('${q._id}')"><i class="ri-bar-chart-2-line"></i> النتائج</button>
+      <button type="button" class="ui-act icon danger" onclick="deleteQuiz('${q._id}')" title="حذف الاختبار" aria-label="حذف الاختبار"><i class="ri-delete-bin-line"></i></button></div>`;
+  }else if(q.attempt){
+    // المراجعة بعد إغلاق الاختبار للجميع كي لا تتسرب الإجابات لمن يؤدّيه
+    const closed=Date.now()>new Date(q.endsAt);
+    foot=`<div class="ui-card-foot"><span class="quiz-score">درجتك ${Number(q.attempt.score)}/${Number(q.attempt.maxScore)}</span>
+      ${closed?`<button type="button" class="ui-act primary" onclick="openReview('${q._id}')"><i class="ri-file-search-line"></i> راجع إجاباتي</button>`
+             :`<span class="hm-chip">المراجعة بعد ${fmt.format(new Date(q.endsAt))}</span>`}</div>`;
+  }else if(s==='متاح الآن'){
+    foot=`<button type="button" class="ui-primary quiz-start" onclick="openTake('${q._id}')"><i class="ri-play-circle-line"></i> ابدأ الاختبار</button>`;
+  }
+  return `<article class="ui-card">
+    <div class="ui-card-head"><div style="flex:1;min-width:0"><div class="ui-card-title">${esc(q.title)}</div></div>
+      <span class="hm-chip"${TONE[s]?` data-tone="${TONE[s]}"`:''}>${esc(s)}</span></div>
+    ${q.description?`<p class="quiz-desc">${esc(q.description)}</p>`:''}
+    <div class="ui-card-meta">${meta}</div>
+    ${foot}
+  </article>`;
 }
+function draw(){
+  if(!all.length){list.innerHTML='<div class="empty">لا توجد اختبارات في هذه الدفعة بعد.</div>';return;}
+  list.innerHTML=GROUPS.map(([title,states])=>{
+    const items=all.filter(q=>states.includes(state(q)));
+    if(!items.length)return '';
+    return `<h2 class="quiz-group">${title} <span class="ui-chip-n" style="color:var(--text-muted);font-size:.8rem">${items.length}</span></h2>`+items.map(quizCard).join('');
+  }).join('');
+}
+
+window.openResults=async(id)=>{
+  const q=all.find(x=>x._id===id);
+  resultsTitle.textContent='نتائج: '+(q?.title||'الاختبار');
+  resultsSummary.innerHTML='';
+  resultsBody.innerHTML='<div class="empty">جاري التحميل…</div>';
+  resultsModal.classList.add('show');
+  try{
+    const r=await CBS.apiGet(`/api/quizzes/${id}/results`),d=await r.json();
+    if(!r.ok)throw Error(d.message);
+    const rows=d.data.attempts||[],max=d.data.quiz.maxScore||0;
+    if(!rows.length){resultsBody.innerHTML='<div class="empty">لم يسلّم أي طالب بعد.</div>';return;}
+    const pct=a=>a.maxScore?Math.round(a.score/a.maxScore*100):0;
+    const avg=Math.round(rows.reduce((s,a)=>s+pct(a),0)/rows.length);
+    const pass=rows.filter(a=>pct(a)>=50).length;
+    resultsSummary.innerHTML=`<div><strong>${rows.length}</strong><small>محاولة مسلّمة</small></div>
+      <div><strong>${avg}%</strong><small>متوسط الدرجات</small></div>
+      <div><strong>${pass}</strong><small>نجح (50% فأكثر)</small></div>`;
+    resultsBody.innerHTML=`<table class="results-table"><thead><tr><th>#</th><th>الطالب</th><th>الدرجة</th><th>التسليم</th></tr></thead><tbody>
+      ${rows.map((a,i)=>`<tr><td>${i+1}</td><td>${esc(a.student?.name||'طالب محذوف')}</td><td class="num">${Number(a.score)}/${Number(a.maxScore||max)}</td><td>${a.submittedAt?fmt.format(new Date(a.submittedAt)):'—'}</td></tr>`).join('')}
+    </tbody></table>`;
+  }catch(err){
+    resultsBody.innerHTML=`<div class="empty">${esc(err.message||'تعذر تحميل النتائج')}</div>`;
+  }
+};
+
+// مراجعة الطالب: كل سؤال مع إجابته والإجابة الصحيحة (نافذة النتائج نفسها)
+window.openReview=async(id)=>{
+  const q=all.find(x=>x._id===id);
+  resultsTitle.textContent='مراجعة: '+(q?.title||'الاختبار');
+  resultsSummary.innerHTML='';
+  resultsBody.innerHTML='<div class="empty">جاري التحميل…</div>';
+  resultsModal.classList.add('show');
+  try{
+    const r=await CBS.apiGet(`/api/quizzes/${id}/review`),d=await r.json();
+    if(!r.ok)throw Error(d.message);
+    const qs=d.data.questions||[];
+    const right=qs.filter(x=>x.isCorrect).length;
+    resultsSummary.innerHTML=`<div><strong>${Number(d.data.score)}/${Number(d.data.maxScore)}</strong><small>درجتك</small></div>
+      <div><strong>${right}</strong><small>إجابة صحيحة</small></div>
+      <div><strong>${qs.length-right}</strong><small>تحتاج مراجعة</small></div>`;
+    const letters=['أ','ب','ج','د','هـ','و'];
+    resultsBody.innerHTML=qs.map((x,i)=>`
+      <div class="review-q ${x.isCorrect?'ok':'bad'}">
+        <div class="review-head"><strong>${i+1}. ${esc(x.text)}</strong>
+          <span class="review-badge">${x.isCorrect?'<i class="ri-check-line"></i> صحيحة':x.selectedOption===null?'<i class="ri-subtract-line"></i> لم تُجب':'<i class="ri-close-line"></i> خاطئة'}</span></div>
+        <ul class="review-options">${x.options.map((o,j)=>`
+          <li class="${j===x.correctOption?'is-correct':''} ${j===x.selectedOption&&!x.isCorrect?'is-wrong':''}">
+            <span class="opt-letter">${letters[j]||j+1}</span> <span class="opt-text">${esc(o)}</span>
+            ${j===x.correctOption?'<em>الإجابة الصحيحة</em>':j===x.selectedOption?'<em>إجابتك</em>':''}
+          </li>`).join('')}</ul>
+      </div>`).join('');
+  }catch(err){
+    resultsBody.innerHTML=`<div class="empty">${esc(err.message||'تعذر تحميل المراجعة')}</div>`;
+  }
+};
 
 window.deleteQuiz=async(id)=>{
   if(!confirm('هل أنت متأكد من حذف الاختبار وكافة نتائجه؟'))return;
@@ -287,28 +377,43 @@ function drawQuestions(){
 
 function removeQ(i){questions.splice(i,1);drawQuestions()}
 
-let _timerInterval=null,_isAutoSubmitting=false;
-function openTake(id){
+let _timerInterval=null,_isAutoSubmitting=false,_submitting=false;
+/* المؤقت مصدره الخادم: /start يثبّت لحظة البدء ويعيد الموعد النهائي، فإعادة فتح
+   الاختبار أو تحديث الصفحة لا تمنح وقتاً إضافياً، والأسئلة لا تصل إلا هنا. */
+async function openTake(id){
   active=all.find(q=>q._id===id);
+  if(!active)return;
+  let start;
+  try{
+    const r=await CBS.apiPost(`/api/quizzes/${id}/start`,{}),d=await r.json();
+    if(!r.ok)throw Error(d.message);
+    start=d.data;
+  }catch(err){
+    CBS.toast('تعذر بدء الاختبار',err.message||'حاول مرة أخرى','error');
+    return load();
+  }
+  active.questions=start.questions||[];
   _isAutoSubmitting=false;
   takeTitle.textContent=active.title;
-  takeMeta.textContent=`المدة ${active.durationMinutes} دقيقة · لا يمكن تعديل الإجابات بعد التسليم`;
+  takeMeta.textContent=`${active.questions.length} سؤال · المدة ${active.durationMinutes} دقيقة · المؤقت يستمر حتى لو أغلقت النافذة · لا يمكن تعديل الإجابات بعد التسليم`;
   takeQuestions.innerHTML=active.questions.map((q,i)=>`
-    <div class="take-question">
-      <strong>${i+1}. ${esc(q.text)}</strong>
+    <fieldset class="take-question" style="border:0;margin:0;">
+      <legend><strong>${i+1}. ${esc(q.text)}</strong></legend>
       ${q.options.map((o,j)=>`
         <label class="choice">
           <input type="radio" name="q${i}" value="${j}"> ${esc(o)}
         </label>
       `).join('')}
-    </div>
+    </fieldset>
   `).join('');
   takeModal.classList.add('show');
   clearInterval(_timerInterval);
-  let secondsLeft=active.durationMinutes*60;
+  const skew=Date.now()-new Date(start.serverNow).getTime();
+  const deadline=new Date(start.deadline).getTime()+skew;
   const timerEl=document.getElementById('quizTimerDisplay');
   const timerBar=document.getElementById('quizTimerBar');
   function updateTimer(){
+    const secondsLeft=Math.max(0,Math.round((deadline-Date.now())/1000));
     const m=Math.floor(secondsLeft/60);
     const s=secondsLeft%60;
     timerEl.textContent=`${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')}`;
@@ -317,10 +422,8 @@ function openTake(id){
     if(secondsLeft<=0){
       clearInterval(_timerInterval);
       _isAutoSubmitting=true;
-      takeForm.dispatchEvent(new Event('submit',{cancelable:true}));
-      return;
+      takeForm.requestSubmit();
     }
-    secondsLeft--;
   }
   updateTimer();
   _timerInterval=setInterval(updateTimer,1000);
@@ -340,7 +443,6 @@ async function load(){
 async function prep(){
   if(!staff())return;
   document.getElementById('staffActions').hidden=false;
-  subtitle.textContent='أنشئ اختبارات مؤقتة أو ولّدها بالذكاء الاصطناعي وصحّح تلقائياً.';
   try{
     let r=await CBS.apiGet('/api/subjects'),d=await r.json();
     const subOpts = (d.data?.subjects||d.subjects||d.data||(Array.isArray(d)?d:[])).map(s=>`<option value="${s._id}">${esc(s.name)}</option>`).join('');
@@ -351,6 +453,7 @@ async function prep(){
 
 newQuiz.onclick=()=>{
   questions=[{text:'',options:['','','',''],correctOption:0,points:1}];
+  reviewHint.hidden=true;
   drawQuestions();
   quizModal.classList.add('show');
 };
@@ -392,7 +495,7 @@ aiQuizForm.onsubmit=async e=>{
   const btn = document.getElementById('aiSubmitBtn');
   const original = btn.innerHTML;
   btn.disabled = true;
-  btn.innerHTML = '<i class="ri-loader-4-line spinner"></i> جاري التوليد بواسطة كيدي...';
+  btn.innerHTML = '<i class="ri-loader-4-line spinner"></i> جاري اقتراح الأسئلة...';
 
   const title = document.getElementById('aiTitle').value;
   const subjectId = document.getElementById('aiSubject').value;
@@ -409,14 +512,29 @@ aiQuizForm.onsubmit=async e=>{
       count,
       durationMinutes,
       text,
-      saveDirectly: true
+      saveDirectly: false
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.message || 'فشل التوليد');
+    /* أسئلة الطوارئ عامة لا علاقة لها بالمحاضرة — لا نعرضها كاقتراح */
+    if (data.usedFallback || !Array.isArray(data.questions) || !data.questions.length) {
+      throw new Error('تعذّر الاتصال بالمساعد الآن. حاول بعد قليل.');
+    }
 
-    CBS.toast('نجاح', data.message || 'تم توليد الاختبار ونشره للدفعة', 'success');
+    /* الأسئلة المولّدة لا تُنشر مباشرة: تُفتح في محرر الاختبار ليراجعها الأستاذ */
+    questions = data.questions.map(q => ({ text: q.question, options: [...q.options], correctOption: q.correct, points: 1 }));
+    const pad = n => String(n).padStart(2, '0');
+    const local = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+    const now = new Date();
+    quizForm.title.value = title;
+    quizForm.subject.value = subjectId;
+    quizForm.durationMinutes.value = durationMinutes;
+    quizForm.startsAt.value = local(now);
+    quizForm.endsAt.value = local(new Date(now.getTime() + 7 * 864e5));
+    reviewHint.hidden = false;
+    drawQuestions();
     aiModal.classList.remove('show');
-    load();
+    quizModal.classList.add('show');
   } catch (err) {
     CBS.toast('خطأ في التوليد', err.message, 'error');
   } finally {
@@ -431,7 +549,15 @@ takeForm.onsubmit=async e=>{
     const val=new FormData(e.target).get('q'+i);
     return{questionIndex:i,selectedOption:val!==null?Number(val):-1};
   });
-  if(!_isAutoSubmitting && !confirm('هل تريد تسليم الاختبار؟ لا يمكن التراجع.'))return;
+  if(_submitting)return;
+  if(!_isAutoSubmitting){
+    const unanswered=answers.filter(a=>a.selectedOption<0).length;
+    const msg=unanswered?`لم تُجب على ${unanswered} سؤال. هل تريد التسليم الآن؟ لا يمكن التراجع.`:'هل تريد تسليم الاختبار؟ لا يمكن التراجع.';
+    if(!confirm(msg))return;
+  }
+  _submitting=true;
+  const submitBtn=takeForm.querySelector('[type=submit]');
+  submitBtn.disabled=true;
   try{
     let r=await CBS.apiPost(`/api/quizzes/${active._id}/attempt`,{answers}),d=await r.json();
     if(!r.ok)throw Error(d.message);
@@ -443,6 +569,10 @@ takeForm.onsubmit=async e=>{
     load();
   }catch(err){
     CBS.toast('تعذر التسليم',err.message||'حاول مرة أخرى','error');
+    if(_isAutoSubmitting){clearInterval(_timerInterval);takeModal.classList.remove('show');load();}
+  }finally{
+    _submitting=false;
+    submitBtn.disabled=false;
   }
 };
 

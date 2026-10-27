@@ -12,8 +12,21 @@ const state = {
   lastErrorAt: null
 };
 
+const MAX_TRACKED_ROUTES = 200;
+
 function safeRoute(req) {
-  return String(req?.route?.path || req?.path || 'unknown').slice(0, 180);
+  if (req?.route?.path) {
+    return `${req.baseUrl || ''}${req.route.path}`.slice(0, 180);
+  }
+  /* بلا مسار مطابق نسجّل المسار بعد توحيد المعرّفات (ObjectId/أرقام/رموز طويلة → :id)
+     فيبقى عدد المسارات محدوداً (مع سقف MAX_TRACKED_ROUTES) دون فقدان الرؤية كلياً. */
+  if (!req?.path) return 'unknown';
+  return String(req.path)
+    .split('?')[0]
+    .replace(/\/[0-9a-f]{24}(?=\/|$)/gi, '/:id')
+    .replace(/\/\d+(?=\/|$)/g, '/:n')
+    .replace(/\/[A-Za-z0-9_-]{32,}(?=\/|$)/g, '/:token')
+    .slice(0, 180);
 }
 
 function recordRequest(req, res, durationMs) {
@@ -21,7 +34,13 @@ function recordRequest(req, res, durationMs) {
   const status = String(res.statusCode || 0);
   state.byStatus[status] = (state.byStatus[status] || 0) + 1;
   const route = safeRoute(req);
-  state.byRoute[route] = (state.byRoute[route] || 0) + 1;
+  if (state.byRoute[route]) {
+    state.byRoute[route] += 1;
+  } else if (Object.keys(state.byRoute).length < MAX_TRACKED_ROUTES) {
+    state.byRoute[route] = 1;
+  } else {
+    state.byRoute['other_untracked'] = (state.byRoute['other_untracked'] || 0) + 1;
+  }
   if (Number(status) >= 500) {
     state.errors += 1;
     state.lastErrorAt = new Date().toISOString();
@@ -62,7 +81,7 @@ function snapshot(includeRoutes = false) {
     status: mongoose.connection.readyState === 1 ? 'ok' : 'degraded',
     uptimeSec: Math.floor((Date.now() - startedAt) / 1000),
     memoryMb: Math.round(process.memoryUsage().rss / 1024 / 1024),
-    cpuCount: os.cpus().length,
+    cpuCount: os.cpus()?.length || 1,
     requests: state.requests,
     errors: state.errors,
     lastErrorAt: state.lastErrorAt,

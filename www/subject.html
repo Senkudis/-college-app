@@ -6,8 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>تفاصيل المقرر | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=2026083019">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026083019">
+  <link rel="stylesheet" href="/css/style.css?v=2026102613">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026102613">
+  <link rel="stylesheet" href="/css/ui.css?v=2026102613">
   <style>
     /* ===== PDF Modal Header Responsive ===== */
     .pdf-header-wrap {
@@ -31,7 +32,7 @@
     }
     #aiPanel.show { display: flex; }
     .ai-sheet {
-      width: 100%; max-width: 680px; max-height: 85vh;
+      width: 100%; max-width: 680px; max-height: 85vh; max-height: 85dvh;
       background: var(--bg-card); border-radius: 24px 24px 0 0;
       display: flex; flex-direction: column;
       animation: slideUp 0.3s ease;
@@ -49,13 +50,18 @@
       font-size: 1.05rem; font-weight: 800; color: var(--text-main);
     }
     .ai-sheet-title .ai-badge {
-      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      background: var(--primary);
       color: #fff; font-size: 0.65rem; font-weight: 800;
       padding: 2px 7px; border-radius: 20px; letter-spacing: 0.5px;
     }
+    /* صف واحد قابل للسحب أفقياً: على الهاتف كانت الأزرار الستة تلتف في ثلاثة
+       صفوف تأكل ثلث النافذة فيضيق مكان المحادثة */
     .ai-tabs {
-      display: flex; gap: 6px; padding: 14px 20px 0; flex-shrink: 0; flex-wrap: wrap;
+      display: flex; gap: 6px; padding: 14px 20px 2px; flex-shrink: 0; flex-wrap: nowrap;
+      overflow-x: auto; scrollbar-width: none; touch-action: pan-x;
     }
+    .ai-tabs::-webkit-scrollbar { display: none; }
+    .ai-tab { flex-shrink: 0; white-space: nowrap; }
     .ai-tab {
       border: 1.5px solid var(--border); background: var(--bg-card);
       color: var(--text-muted); border-radius: 20px;
@@ -64,9 +70,8 @@
       display: flex; align-items: center; gap: 5px;
     }
     .ai-tab.active {
-      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      background: var(--primary);
       color: #fff; border-color: transparent;
-      box-shadow: 0 4px 12px rgba(79,70,229,0.35);
     }
     .ai-body { padding: 16px 20px 24px; overflow-y: auto; flex: 1; }
     .ai-question-row {
@@ -82,7 +87,7 @@
     .ai-question-input:focus { border-color: #4f46e5; }
     .ai-send-btn {
       padding: 10px 18px; border: none; border-radius: var(--radius-md);
-      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      background: var(--primary);
       color: #fff; font-weight: 800; font-size: 0.88rem;
       cursor: pointer; transition: opacity 0.2s; white-space: nowrap;
       font-family: 'Cairo',sans-serif;
@@ -135,7 +140,7 @@
     .quiz-option.correct { background: var(--success-bg); border-color: var(--success); color: var(--success); }
     .quiz-option.wrong   { background: var(--danger-bg);  border-color: var(--danger);  color: var(--danger); }
     .ai-action-btn {
-      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      background: var(--primary);
       color: #fff; border: none; border-radius: var(--radius-md);
       padding: 11px 20px; font-weight: 800; font-size: 0.88rem;
       cursor: pointer; width: 100%; font-family: 'Cairo',sans-serif;
@@ -147,9 +152,9 @@
     /* ===== Kedy AI Enhancements ===== */
     .kedy-avatar {
       width: 38px; height: 38px; border-radius: 12px;
-      background: linear-gradient(135deg, #4f46e5, #7c3aed);
+      background: var(--primary);
       color: #fff; display: flex; align-items: center; justify-content: center;
-      font-size: 1.2rem; box-shadow: 0 4px 12px rgba(124,58,237,0.3);
+      font-size: 1.2rem;
       flex-shrink: 0;
     }
     .kedy-chat-container {
@@ -158,11 +163,13 @@
     .chat-bubble {
       max-width: 88%; padding: 12px 16px; border-radius: 16px; font-size: 0.88rem;
       line-height: 1.7; position: relative; animation: fadeIn 0.25s ease;
-      white-space: pre-wrap; word-break: break-word;
+      /* المحتوى HTML منسّق (formatAiResponse يحوّل الأسطر إلى <br>)؛ pre-wrap كان
+         يُظهر مسافات القالب وأسطره فراغات كبيرة داخل الفقاعة */
+      white-space: normal; overflow-wrap: anywhere;
     }
     @keyframes fadeIn { from{opacity:0;transform:translateY(6px)} to{opacity:1;transform:translateY(0)} }
     .chat-bubble.user {
-      align-self: flex-start; background: linear-gradient(135deg, #4f46e5, #6366f1);
+      align-self: flex-start; background: var(--primary);
       color: #fff; border-bottom-right-radius: 4px; font-weight: 600;
     }
     .chat-bubble.kedy {
@@ -202,101 +209,29 @@
     [data-theme='dark'] #pdfCanvasWrap canvas {
       filter: invert(0.85) hue-rotate(180deg);
     }
-    .subject-hero {
-      background: linear-gradient(135deg, #0d3b66, #1e6091);
-      border-radius: var(--radius-xl);
-      padding: 28px 32px;
-      color: white;
-      margin-bottom: 28px;
-      display: flex;
-      align-items: center;
-      gap: 20px;
-    }
-    .subject-hero-icon {
-      width: 64px; height: 64px;
-      background: rgba(255,255,255,0.15);
-      border-radius: 50%;
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1.8rem; flex-shrink: 0;
-    }
-    .subject-hero-title { font-size: 1.6rem; font-weight: 800; margin: 0 0 4px; }
-    .subject-hero-meta  { font-size: 0.9rem; opacity: 0.8; display: flex; gap: 16px; flex-wrap: wrap; }
-
-    .section-block { margin-bottom: 32px; }
-    .section-header {
-      display: flex; align-items: center; justify-content: space-between;
-      margin-bottom: 16px; padding-bottom: 12px;
-      border-bottom: 2px solid var(--border);
-    }
-    .section-header-left { display: flex; align-items: center; gap: 10px; }
-    .section-icon {
-      width: 36px; height: 36px; border-radius: var(--radius-md);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 1rem;
-    }
-    .section-title { font-size: 1.05rem; font-weight: 700; color: var(--text-main); }
-
-    .items-grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-      gap: 14px;
-    }
-    .item-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: var(--radius-lg);
-      padding: 18px;
-      box-shadow: var(--shadow-sm);
-      transition: var(--transition);
-    }
-    .item-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-md); border-color: var(--primary); }
-    .item-title { font-weight: 700; font-size: 0.95rem; color: var(--text-main); margin-bottom: 12px; }
-    .item-links { display: flex; flex-direction: column; gap: 8px; }
-    .item-link {
-      display: flex; align-items: center; gap: 8px;
-      padding: 8px 12px; border-radius: var(--radius-md);
-      font-size: 0.83rem; font-weight: 600; text-decoration: none;
-      transition: var(--transition);
-    }
-    .item-link.video { background: var(--danger-bg); color: var(--danger); }
-    .item-link.video:hover { background: var(--danger); color: white; }
-    .item-link.file  { background: var(--success-bg); color: var(--success); }
-    .item-link.file:hover  { background: var(--success); color: white; }
-    .item-link.link  { background: var(--primary-light); color: var(--primary); }
-    .item-link.link:hover  { background: var(--primary); color: white; }
-
-    .search-sort { display: flex; gap: 10px; }
-    .search-sort .search-wrapper { flex: 1; }
-    .search-sort select { padding: 9px 14px; border: 2px solid var(--border); border-radius: var(--radius-md); background: var(--bg-card); color: var(--text-main); font-family: 'Cairo', sans-serif; }
-
-    @media (max-width: 768px) {
-      .items-grid {
-        grid-template-columns: 1fr;
-      }
-      .section-header {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 12px;
-      }
-      .search-sort {
-        flex-direction: column;
-      }
-      .subject-hero {
-        flex-direction: column;
-        text-align: center;
-        padding: 20px;
-      }
-      .subject-hero-meta {
-        justify-content: center;
-      }
-    }
-  
-/* Prevent PTR / Overscroll inside AI sidebar and scrollable tabs */
+    /* اسم المادة في الترويسة؛ هنا سطر الأستاذ والمستوى وأدوات المذاكرة فقط */
+    .subject-meta { display: flex; flex-wrap: wrap; gap: 4px 14px; margin: 0 2px 12px; font-size: 0.85rem; color: var(--text-muted); }
+    .subject-meta span { display: inline-flex; align-items: center; gap: 5px; }
+    .subject-meta span:empty { display: none; }
+    .subject-tools { display: flex; gap: 8px; overflow-x: auto; scrollbar-width: none; margin: 0 0 22px; }
+    .ui-section-tools { display: flex; gap: 8px; margin-bottom: 10px; }
+    .ui-section-tools .ui-search { flex: 1; min-width: 0; }
+    .ui-section-tools select { min-height: 44px; padding: 0 12px; border-radius: 12px; border: 1px solid var(--border); background: var(--hm-surface); color: var(--text-main); font: inherit; font-size: 0.85rem; }
+  /* Prevent PTR / Overscroll inside AI sidebar and scrollable tabs */
 .subject-sidebar, .tab-content, #aiTab, #notesTab, #plannerTab, .ai-chat-messages, [class*="ai-"] {
   overscroll-behavior: contain !important;
   overscroll-behavior-y: contain !important;
   -webkit-overflow-scrolling: touch;
 }
+  #pdfModal { position: fixed; }
+  .pdf-zoom { position:absolute; bottom:calc(env(safe-area-inset-bottom,0px) + 12px); left:12px; display:flex; gap:6px; }
+  .pdf-zoom[hidden] { display:none; }
+  .pdf-zoom button { width:40px; height:40px; border-radius:50% !important; padding:0 !important; min-width:0 !important; min-height:0 !important; border:1px solid rgba(255,255,255,0.15); background:rgba(22,27,34,0.92); color:#fff; font-size:1.1rem; display:grid; place-items:center; cursor:pointer; }
+  .subject-unavailable { display:flex; flex-direction:column; align-items:center; text-align:center; gap:10px; padding:56px 20px; animation: cbsRise var(--dur-enter, 320ms) var(--ease-out, ease) backwards; }
+  .subject-unavailable .su-icon { width:72px; height:72px; border-radius:50%; display:grid; place-items:center; font-size:2rem; background:var(--primary-light); color:var(--primary-text, var(--primary)); }
+  .subject-unavailable h2 { margin:8px 0 0; font-size:1.2rem; font-weight:800; }
+  .subject-unavailable p { margin:0; color:var(--text-muted); max-width:320px; line-height:1.7; }
+  .subject-unavailable .su-actions { display:flex; gap:10px; flex-wrap:wrap; justify-content:center; margin-top:10px; }
 </style>
 
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
@@ -321,104 +256,51 @@
 
 <div class="page-content">
 
-    <!-- Welcome Banner -->
-    <div class="welcome-banner" style="background: linear-gradient(135deg,#7c3aed,#6d28d9,#5b21b6);">
-      <div class="welcome-banner-icon-wrap">
-        <i class="ri-book-open-line welcome-banner-icon"></i>
-      </div>
-      <div class="welcome-banner-body">
-        <h2>تفاصيل المقرر</h2>
-        <p>تصفح المحاضرات والمراجع والتمارين</p>
-      </div>
-    </div>
-  <!-- Hero -->
-  <div class="subject-hero">
-    <div class="subject-hero-icon"><i class="ri-book-open-fill"></i></div>
-    <div>
-      <div class="subject-hero-title" id="subjectName">جاري التحميل...</div>
-      <div class="subject-hero-meta">
-        <span id="subjectLevel"></span>
-        <span id="subjectDoctor"></span>
-      </div>
-    </div>
+  <!-- اسم المادة في الترويسة (headerSub)؛ #subjectName مخفي لأن كوداً آخر يقرأه -->
+  <span id="subjectName" hidden>جاري التحميل...</span>
+  <div class="subject-meta"><span id="subjectDoctor"></span><span id="subjectLevel"></span></div>
+  <div class="subject-tools">
+    <button type="button" class="ui-chip" onclick="openSubjectFlashcards()"><i class="ri-stack-line"></i> بطاقات الاستذكار</button>
   </div>
 
-  <!-- المحاضرات -->
-  <div class="section-block">
-    <div class="section-header">
-      <div class="section-header-left">
-        <div class="section-icon" style="background:var(--primary-light); color:var(--primary);"><i class="ri-slideshow-3-line"></i></div>
-        <div class="section-title">المحاضرات</div>
-      </div>
-      <div class="search-sort">
-        <div class="search-wrapper">
-          <i class="ri-search-line"></i>
-          <input type="text" class="search-input" id="searchLecture" placeholder="بحث...">
-        </div>
-        <select id="sortSelect" onchange="applyFilters()">
-          <option value="order">ترتيب المقرر (الافتراضي)</option>
-          <option value="new">الأحدث أولاً</option>
-          <option value="old">الأقدم أولاً</option>
-        </select>
-      </div>
+  <section class="ui-section" id="secLectures">
+    <div class="hm-sec-head"><h2 class="hm-sec-title">المحاضرات <span class="n" id="lecturesCount"></span></h2></div>
+    <!-- البحث والترتيب حين تكثر المحاضرات فقط -->
+    <div class="ui-section-tools" id="lectureTools" hidden>
+      <div class="ui-search"><i class="ri-search-line"></i><input type="search" id="searchLecture" placeholder="ابحث في المحاضرات" aria-label="بحث في المحاضرات"></div>
+      <select id="sortSelect" onchange="applyFilters()" aria-label="ترتيب المحاضرات">
+        <option value="order">ترتيب المقرر</option>
+        <option value="new">الأحدث</option>
+        <option value="old">الأقدم</option>
+      </select>
     </div>
-    <div class="items-grid" id="lecturesGrid"></div>
-  </div>
+    <div class="hm-list" id="lecturesGrid"></div>
+  </section>
 
-  <!-- الفيديوهات (VOD) -->
-  <div class="section-block">
-    <div class="section-header">
-      <div class="section-header-left">
-        <div class="section-icon" style="background:var(--danger-bg); color:var(--danger);"><i class="ri-play-circle-line"></i></div>
-        <div class="section-title">الفيديوهات</div>
-      </div>
-    </div>
-    <div class="items-grid" id="videosGrid"></div>
-  </div>
+  <section class="ui-section" id="secVideos">
+    <div class="hm-sec-head"><h2 class="hm-sec-title">الفيديوهات <span class="n"></span></h2></div>
+    <div class="hm-list" id="videosGrid"></div>
+  </section>
 
-  <!-- المراجع -->
-  <div class="section-block">
-    <div class="section-header">
-      <div class="section-header-left">
-        <div class="section-icon" style="background:var(--accent-light,#ede9fe); color:var(--accent);"><i class="ri-book-2-line"></i></div>
-        <div class="section-title">المراجع</div>
-      </div>
-    </div>
-    <div class="items-grid" id="refsGrid"></div>
-  </div>
+  <section class="ui-section">
+    <div class="hm-sec-head"><h2 class="hm-sec-title">التمارين <span class="n"></span></h2></div>
+    <div class="hm-list" id="exercisesGrid"></div>
+  </section>
 
-  <!-- التمارين -->
-  <div class="section-block">
-    <div class="section-header">
-      <div class="section-header-left">
-        <div class="section-icon" style="background:var(--warning-bg); color:var(--warning);"><i class="ri-file-list-3-line"></i></div>
-        <div class="section-title">التمارين</div>
-      </div>
-    </div>
-    <div class="items-grid" id="exercisesGrid"></div>
-  </div>
+  <section class="ui-section">
+    <div class="hm-sec-head"><h2 class="hm-sec-title">الأبحاث <span class="n"></span></h2></div>
+    <div class="hm-list" id="researchGrid"></div>
+  </section>
 
-  <!-- الأبحاث -->
-  <div class="section-block">
-    <div class="section-header">
-      <div class="section-header-left">
-        <div class="section-icon" style="background:var(--success-bg); color:var(--success);"><i class="ri-search-eye-line"></i></div>
-        <div class="section-title">الأبحاث</div>
-      </div>
-    </div>
-    <div class="items-grid" id="researchGrid"></div>
-  </div>
+  <section class="ui-section">
+    <div class="hm-sec-head"><h2 class="hm-sec-title">المشاريع <span class="n"></span></h2></div>
+    <div class="hm-list" id="projectsGrid"></div>
+  </section>
 
-  <!-- المشاريع -->
-  <div class="section-block">
-    <div class="section-header">
-      <div class="section-header-left">
-        <div class="section-icon" style="background:var(--danger-bg); color:var(--danger);"><i class="ri-rocket-2-line"></i></div>
-        <div class="section-title">المشاريع</div>
-      </div>
-    </div>
-    <div class="items-grid" id="projectsGrid"></div>
-  </div>
+  <section class="ui-section">
+    <div class="hm-sec-head"><h2 class="hm-sec-title">المراجع <span class="n"></span></h2></div>
+    <div class="hm-list" id="refsGrid"></div>
+  </section>
 
 </div>
 
@@ -428,9 +310,9 @@
   جميع الحقوق محفوظة &copy; <span id="year"></span> النظام الجامعي المتكامل
 </footer>
 
-<script src="/js/shared.js?v=2026083019"></script>
-<script src="/js/app.js?v=2026083019"></script>
-<script src="/js/socket-client.js?v=2026083019" defer></script>
+<script src="/js/shared.js?v=2026102613"></script>
+<script src="/js/app.js?v=2026102613"></script>
+<script src="/js/socket-client.js?v=2026102613" defer></script>
 <script>
   CBS.init();
   const subjectId = new URLSearchParams(location.search).get('id');
@@ -462,7 +344,7 @@
       return CBS.toast('تحتاج إنترنت', 'لحفظ الملف للتصفح لاحقاً يجب تنزيله الآن أثناء الاتصال بالإنترنت.', 'warning', 5000);
     }
     const ogHtml = btn.innerHTML;
-    btn.innerHTML = '<i class="ri-loader-4-line" style="animation:spin 1s linear infinite"></i> جاري الحفظ...';
+    btn.innerHTML = '<i class="ri-loader-4-line" style="animation:spin 1s linear infinite"></i>';
     btn.style.pointerEvents = 'none';
 
     try {
@@ -470,7 +352,7 @@
       await CBS.offlineSave(fetchTarget);
       try { cachedUrls.add(new URL(fetchTarget, location.origin).pathname); } catch(e) { cachedUrls.add(fetchTarget); }
       CBS.toast('نجاح', 'تم حفظ الملف، يمكنك فتحه بدون إنترنت!', 'success');
-      btn.innerHTML = '<i class="ri-checkbox-circle-fill" style="color:var(--success)"></i> متاح بدون نت';
+      btn.innerHTML = '<i class="ri-checkbox-circle-fill"></i>'; btn.classList.add('done'); btn.onclick = null;
     } catch (e) {
       console.warn('saveOffline failed:', e);
       // نميّز بين انقطاع النت أثناء التنزيل وبين خطأ من الخادم
@@ -478,7 +360,7 @@
         ? 'انقطع الاتصال أثناء التنزيل، حاول مرة أخرى.'
         : 'تعذّر تنزيل الملف من الخادم. حاول لاحقاً.';
       CBS.toast('فشل الحفظ', msg, 'error');
-      btn.innerHTML = '<i class="ri-error-warning-line"></i> فشل الحفظ';
+      btn.innerHTML = '<i class="ri-error-warning-line"></i>';
       setTimeout(() => { btn.innerHTML = ogHtml; btn.style.pointerEvents = 'auto'; }, 3000);
     }
   };
@@ -487,30 +369,73 @@
     let filePath = fileUrl;
     try { filePath = new URL(fileUrl, location.origin).pathname; } catch(e){}
     if (cachedUrls.has(fileUrl) || cachedUrls.has(filePath)) {
-      return `<button class="item-link" style="border:none;background:rgba(16,185,129,0.1);color:var(--success);"><i class="ri-checkbox-circle-fill"></i> متاح بدون نت</button>`;
+      return `<span class="ui-icon-btn done" title="محفوظ للتصفح بدون إنترنت" aria-label="محفوظ بدون إنترنت"><i class="ri-checkbox-circle-fill"></i></span>`;
     }
-    return `<button class="item-link link" style="border:none;background:transparent;cursor:pointer;" onclick="saveOffline('${fileUrl}', this)"><i class="ri-download-offline-line"></i> حفظ بدون نت</button>`;
+    return `<button type="button" class="ui-icon-btn" title="حفظ للتصفح بدون إنترنت" aria-label="حفظ بدون إنترنت" onclick="saveOffline('${fileUrl}', this)"><i class="ri-download-cloud-2-line"></i></button>`;
+  }
+
+  /* المادة غير متاحة (دفعة أخرى/محذوفة/رابط ناقص): كانت الصفحة تبقى على
+     "جاري التحميل..." إلى الأبد وتقول "لا يوجد بعد" لكل قسم — كأن المادة فارغة. */
+  function showUnavailable(status) {
+    const [icon, title, text] = status === 403
+      ? ['ri-lock-2-line', 'هذه المادة غير متاحة لك', 'المادة تخص دفعة أخرى. تجد موادك في صفحة المواد.']
+      : status === 0
+        ? ['ri-wifi-off-line', 'تعذّر تحميل المادة', 'تحقّق من اتصالك بالإنترنت ثم أعد المحاولة.']
+        : ['ri-file-search-line', 'المادة غير موجودة', 'ربما حُذفت أو أن الرابط غير صحيح.'];
+    document.getElementById('headerSub').textContent = title;
+    document.querySelector('.page-content').innerHTML = `<div class="subject-unavailable" role="alert">
+      <span class="su-icon"><i class="${icon}"></i></span>
+      <h2>${title}</h2><p>${text}</p>
+      <div class="su-actions">
+        ${status === 0 ? '<button class="btn btn-primary" onclick="location.reload()"><i class="ri-refresh-line"></i> أعد المحاولة</button>' : ''}
+        <a class="btn ${status === 0 ? 'btn-outline' : 'btn-primary'}" href="/subjects.html"><i class="ri-book-2-line"></i> موادي</a>
+      </div></div>`;
   }
 
   async function loadSubject() {
+    if (!subjectId) { showUnavailable(404); return false; }
     try {
       const res = await CBS.apiGet(`/api/subjects/${subjectId}`);
-      if (!res.ok) return;
+      if (!res.ok) { showUnavailable(res.status === 403 ? 403 : res.status === 404 || res.status === 400 ? 404 : 0); return false; }
       const _resData = await res.json();
       const s = _resData.data?.subject || _resData.subject || _resData.data || _resData;
       document.getElementById('subjectName').textContent = s.name;
       document.getElementById('headerSub').textContent  = s.name;
       document.title = `${s.name} | كلية النصر التقنية`;
-      if (s.level)  document.getElementById('subjectLevel').innerHTML = `<i class="ri-graduation-cap-line"></i> ${CBS.escapeHTML(s.level)}`;
-      if (s.doctor) document.getElementById('subjectDoctor').innerHTML = `<i class="ri-user-voice-line"></i> د. ${CBS.escapeHTML(s.doctor.name)}`;
-    } catch(e) { console.error('[subject/loadSubject]', e); }
+      if (s.level)  document.getElementById('subjectLevel').innerHTML = `<i class="ri-graduation-cap-line"></i> المستوى ${CBS.escapeHTML(s.level)}`;
+      if (s.doctor) document.getElementById('subjectDoctor').innerHTML = `<i class="ri-user-voice-line"></i> ${CBS.escapeHTML(CBS.doctorName(s.doctor.name))}`;
+      return true;
+    } catch(e) { console.error('[subject/loadSubject]', e); showUnavailable(0); return false; }
   }
 
   function renderItems(containerId, items, buildFn) {
     const el = document.getElementById(containerId);
-    if (!items || !items.length) { CBS.showEmpty(containerId, 'لا توجد بيانات', 'ri-inbox-line'); return; }
+    const empty = !items || !items.length;
+    const section = el.closest('.ui-section');
+    section?.classList.toggle('is-empty', empty);
+    const n = section?.querySelector('.hm-sec-title .n');
+    if (n) n.textContent = empty ? '' : items.length;
+    if (empty) { el.innerHTML = ''; return; }
     el.innerHTML = items.map(buildFn).join('');
   }
+
+  /* صف قائمة: الضغط على الصف يفتح العنصر، والإجراءات الثانوية أيقونات في طرفه */
+  const esc = s => CBS.escapeHTML(s == null ? '' : String(s));
+  /* open: { url, title, id } يفتح الملف في العارض؛ القيم في data-* لا داخل نص JS —
+     escapeHTML يحوّل ' إلى &#39; فيفكّها المتصفح قبل التنفيذ، فكان عنوان فيه
+     فاصلة عليا يكسر زر الفتح */
+  function itemRow({ icon, tone, title, meta, open, href, external, actions = '' }) {
+    const body = `<span class="hm-ic"${tone ? ` data-tone="${tone}"` : ''}><i class="${icon}"></i></span>
+      <div class="hm-row-body"><div class="hm-row-title">${esc(title)}</div>${meta ? `<div class="hm-row-meta">${meta}</div>` : ''}</div>`;
+    const main = open
+      ? `<button type="button" class="ui-row-main" data-url="${esc(open.url)}" data-title="${esc(open.title)}" data-id="${esc(open.id || '')}" onclick="openPdfModal(this.dataset.url, this.dataset.title, this.dataset.id || undefined)">${body}</button>`
+      : `<a class="ui-row-main" href="${esc(href || '#')}"${external ? ' target="_blank" rel="noopener noreferrer"' : ''}>${body}</a>`;
+    return `<div class="hm-row ui-row">${main}<span class="hm-row-end">${actions}<i class="ri-arrow-left-s-line" aria-hidden="true"></i></span></div>`;
+  }
+
+  /* الردود بصيغة { data: { references|assignments: [...] } } — كانت تُمرَّر ككائن
+     إلى renderItems فتُعامل كقائمة فارغة: لم تظهر أي مراجع أو تكليفات في أي مادة */
+  const listFrom = (json, key) => Array.isArray(json) ? json : (json?.data?.[key] || json?.[key] || []);
 
   async function loadLectures() {
     try {
@@ -531,36 +456,39 @@
     } else {
       list.sort((a,b) => ((a.order ?? 0) - (b.order ?? 0)) || (new Date(a.createdAt) - new Date(b.createdAt)));
     }
-    renderItems('lecturesGrid', list, l => `
-      <div class="item-card">
-        <div class="item-title">${CBS.escapeHTML(l.title)}</div>
-        <div class="item-links">
-          ${l.videoUrl ? `<a href="${CBS.escapeHTML(l.videoUrl)}" target="_blank" rel="noopener noreferrer" class="item-link video"><i class="ri-play-circle-line"></i> مشاهدة</a>` : ''}
-          ${l.file ? `<button class='item-link file' style='border:none;cursor:pointer;' onclick="openPdfModal('${getFileUrl(l.file, 'lectures')}', '${CBS.escapeHTML(l.title)}', '${l._id}')"><i class='ri-file-text-line'></i> فتح الملف</button>
-                      ${getOfflineBtn(getFileUrl(l.file, 'lectures'))}` : ''}
-        </div>
-      </div>`);
+    document.getElementById('lectureTools').hidden = lecturesData.length <= 5;
+    renderItems('lecturesGrid', list, (l, i) => {
+      const fileUrl = l.file ? getFileUrl(l.file, 'lectures') : '';
+      const date = l.createdAt ? new Date(l.createdAt).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short' }) : '';
+      const kinds = [l.file ? 'ملف' : '', l.videoUrl ? 'فيديو' : ''].filter(Boolean).join(' + ');
+      const video = l.videoUrl ? `<a class="ui-icon-btn" href="${esc(l.videoUrl)}" target="_blank" rel="noopener noreferrer" title="مشاهدة الفيديو" aria-label="مشاهدة الفيديو"><i class="ri-play-circle-line"></i></a>` : '';
+      return itemRow({
+        icon: l.file ? 'ri-file-text-line' : 'ri-play-circle-line',
+        title: l.title, meta: [kinds, date].filter(Boolean).join(' · '),
+        open: fileUrl ? { url: fileUrl, title: l.title, id: l._id } : null,
+        href: l.videoUrl, external: true,
+        actions: (fileUrl ? video + getOfflineBtn(fileUrl) : '')
+      });
+    });
   }
 
   async function loadRefs() {
     try {
       const res  = await CBS.apiGet(`/api/references/by-subject/${subjectId}`);
-      const data = res.ok ? await res.json() : [];
+      const data = res.ok ? listFrom(await res.json(), 'references') : [];
       renderItems('refsGrid', data, r => {
-        let delBtn = '';
-        if (CBS.hasRole('admin') || CBS.hasRole('dean') || (CBS.hasRole('doctor') && CBS.isMe(r.addedBy))) {
-          delBtn = `<button class='item-link' style='border:none;cursor:pointer;color:var(--danger);background:rgba(239,68,68,0.1);' onclick="deleteRef('${r._id}')" aria-label="حذف"><i class="ri-delete-bin-line"></i> حذف</button>`;
-        }
-        return `
-        <div class="item-card">
-          <div class="item-title">${CBS.escapeHTML(r.title)}</div>
-          <div class="item-links">
-          ${r.link ? `<a href="${CBS.escapeHTML(r.link)}" target="_blank" rel="noopener noreferrer" class="item-link link"><i class="ri-external-link-line"></i> رابط خارجي</a>` : ''}
-          ${r.file ? `<button class='item-link file' style='border:none;cursor:pointer;' onclick="openPdfModal('${getFileUrl(r.file, 'references')}', '${CBS.escapeHTML(r.title)}')"><i class='ri-file-text-line'></i> فتح الملف</button>
-                      ${getOfflineBtn(getFileUrl(r.file, 'references'))}` : ''}
-          ${delBtn}
-        </div>
-        </div>`;
+        const canDelete = CBS.hasRole('admin') || CBS.hasRole('dean') || (CBS.hasRole('doctor') && CBS.isMe(r.addedBy));
+        const fileUrl = r.file ? getFileUrl(r.file, 'references') : '';
+        const actions = (fileUrl ? getOfflineBtn(fileUrl) : '') +
+          (fileUrl && r.link ? `<a class="ui-icon-btn" href="${esc(r.link)}" target="_blank" rel="noopener noreferrer" title="الرابط الخارجي" aria-label="الرابط الخارجي"><i class="ri-external-link-line"></i></a>` : '') +
+          (canDelete ? `<button type="button" class="ui-icon-btn danger" onclick="deleteRef('${r._id}')" title="حذف المرجع" aria-label="حذف المرجع"><i class="ri-delete-bin-line"></i></button>` : '');
+        return itemRow({
+          icon: fileUrl ? 'ri-book-2-line' : 'ri-links-line',
+          title: r.title, meta: fileUrl ? 'ملف' : 'رابط خارجي',
+          open: fileUrl ? { url: fileUrl, title: r.title } : null,
+          href: r.link, external: true,
+          actions
+        });
       });
     } catch(e) { console.error('[subject/loadRefs]', e); }
   }
@@ -584,17 +512,21 @@
   async function loadByType(type, gridId) {
     try {
       const res  = await CBS.apiGet(`/api/assignments/by-subject/${subjectId}/${type}`);
-      const data = res.ok ? await res.json() : [];
-      renderItems(gridId, data, item => `
-        <div class="item-card">
-          <div class="item-title">${CBS.escapeHTML(item.title)}</div>
-          ${item.description ? `<div style="font-size:0.82rem;color:var(--text-muted);margin-bottom:10px;">${CBS.escapeHTML(item.description)}</div>` : ''}
-          ${item.dueDate ? `<div style="font-size:0.78rem;color:var(--warning);margin-bottom:10px;"><i class="ri-time-line"></i> آخر موعد: ${CBS.formatDate(item.dueDate)}</div>` : ''}
-          <div class="item-links">
-            ${item.file ? `<button class='item-link file' style='border:none;cursor:pointer;' onclick="openPdfModal('${getFileUrl(item.file, 'assignments')}', '${CBS.escapeHTML(item.title)}')"><i class='ri-file-text-line'></i> فتح الملف</button>` : ''}
-            ${item.file ? getOfflineBtn(getFileUrl(item.file, 'assignments')) : ''}
-          </div>
-        </div>`);
+      const data = res.ok ? listFrom(await res.json(), 'assignments') : [];
+      const isStudent = CBS.hasRole('student') || CBS.hasRole('leader');
+      renderItems(gridId, data, item => {
+        const fileUrl = item.file ? getFileUrl(item.file, 'assignments') : '';
+        const due = item.dueDate ? `آخر موعد ${CBS.formatDate(item.dueDate)}` : '';
+        const actions = (fileUrl ? getOfflineBtn(fileUrl) : '') +
+          (isStudent && fileUrl ? `<a class="ui-icon-btn" href="/submit-assignment.html" title="تسليم" aria-label="تسليم"><i class="ri-upload-2-line"></i></a>` : '');
+        return itemRow({
+          icon: { exercise: 'ri-file-list-3-line', research: 'ri-search-eye-line', project: 'ri-rocket-2-line' }[type] || 'ri-task-line',
+          title: item.title, meta: esc(due || item.description || ''),
+          open: fileUrl ? { url: fileUrl, title: item.title } : null,
+          href: isStudent ? '/submit-assignment.html' : '#',
+          actions
+        });
+      });
     } catch(e) { console.error('[subject/loadByType]', e); }
   }
 
@@ -605,13 +537,11 @@
       const videos = data.videos || [];
       renderItems('videosGrid', videos, v => {
         const dur = v.duration ? `${Math.floor(v.duration/60)}:${String(v.duration%60).padStart(2,'0')}` : '';
-        return `
-        <div class="item-card" onclick="location.href='/watch-video.html?id=${v._id}'" style="cursor:pointer;">
-          <div class="item-title">${CBS.escapeHTML(v.title)}</div>
-          <div class="item-links">
-            <span class="item-link video" style="cursor:pointer;"><i class="ri-play-circle-line"></i> مشاهدة${dur ? ' (' + dur + ')' : ''}</span>
-          </div>
-        </div>`;
+        return itemRow({
+          icon: 'ri-play-circle-line', title: v.title,
+          meta: dur ? `<span dir="ltr">${dur}</span> دقيقة` : 'فيديو',
+          href: `/watch-video.html?id=${encodeURIComponent(v._id)}`
+        });
       });
     } catch(e) { CBS.showEmpty('videosGrid','فشل التحميل','ri-wifi-off-line'); }
   }
@@ -620,7 +550,7 @@
 
   async function initAll() {
     await checkOfflineFiles();
-    loadSubject();
+    if (!(await loadSubject())) return;
     loadLectures();
     loadVideos();
     loadRefs();
@@ -632,170 +562,18 @@
   initAll();
 
   // ===== عارض PDF داخلي (PDF.js) — يعمل داخل التطبيق و WebView أندرويد =====
-  let _pdfjsLoading = null;
-  function loadPdfJs() {
-    if (window.pdfjsLib) return Promise.resolve();
-    if (_pdfjsLoading) return _pdfjsLoading;
-    _pdfjsLoading = new Promise((resolve, reject) => {
-      const s = document.createElement('script');
-      s.src = '/vendor/pdfjs/pdf.min.js';
-      s.onload = () => {
-        try {
-          const workerUrl = new URL('/vendor/pdfjs/pdf.worker.min.js', window.location.href).href;
-          window.pdfjsLib.GlobalWorkerOptions.workerSrc = workerUrl;
-        } catch (e) {
-          try { window.pdfjsLib.GlobalWorkerOptions.workerSrc = '/vendor/pdfjs/pdf.worker.min.js'; } catch (err) {}
-        }
-        resolve();
-      };
-      s.onerror = () => { _pdfjsLoading = null; reject(new Error('pdfjs load failed')); };
-      document.head.appendChild(s);
-    });
-    return _pdfjsLoading;
-  }
-
-  // كشف نوع الملف من محتواه (magic bytes) لا من امتداده — يعالج ملفات .bin التي هي PDF فعلياً
-  function sniffType(buf) {
-    if (!buf || !buf.byteLength) return 'unknown';
-    const b = new Uint8Array(buf.slice(0, 12));
-    if (b[0] === 0x25 && b[1] === 0x50 && b[2] === 0x44 && b[3] === 0x46) return 'pdf';   // %PDF
-    if (b[0] === 0x89 && b[1] === 0x50 && b[2] === 0x4E && b[3] === 0x47) return 'image'; // PNG
-    if (b[0] === 0xFF && b[1] === 0xD8 && b[2] === 0xFF) return 'image';                  // JPEG
-    if (b[0] === 0x47 && b[1] === 0x49 && b[2] === 0x46) return 'image';                  // GIF
-    if (b[0] === 0x52 && b[1] === 0x49 && b[2] === 0x46 && b[8] === 0x57 && b[9] === 0x45) return 'image'; // WebP
-    // ملفات أوفيس الحديثة حاويات ZIP (PK) والقديمة بصيغة OLE2 — نميّزها كي
-    // نُظهر رسالة دقيقة بدل «نوع غير مدعوم» الغامضة
-    if (b[0] === 0x50 && b[1] === 0x4B && b[2] === 0x03 && b[3] === 0x04) return 'zip';
-    if (b[0] === 0xD0 && b[1] === 0xCF && b[2] === 0x11 && b[3] === 0xE0) return 'ole';
-    return 'unknown';
-  }
-
-  /* اسم نوع الملف بالعربية من امتداده — لرسالة مفهومة للطالب */
-  function describeFileKind(name) {
-    const ext = (name || '').toLowerCase().match(/\.([a-z0-9]+)$/)?.[1] || '';
-    const map = {
-      ppt: 'عرض PowerPoint', pptx: 'عرض PowerPoint',
-      doc: 'مستند Word', docx: 'مستند Word',
-      xls: 'جدول Excel', xlsx: 'جدول Excel',
-      zip: 'ملف مضغوط', rar: 'ملف مضغوط', '7z': 'ملف مضغوط',
-      txt: 'ملف نصي', csv: 'ملف بيانات'
-    };
-    return { label: map[ext] || 'هذا النوع من الملفات', ext };
-  }
-
-  /* عرض عبر محرك أندرويد الأصلي (PDFium).
-     pdf.js يرسم الحروف من الخط المضمّن داخل الملف؛ وملفات المحاضرات المصدَّرة
-     من PowerPoint كثيراً ما لا تُضمّن الخط العربي، فيستبدله pdf.js بخط لا يعرف
-     التشكيل وتظهر الحروف منفصلة ومبعثرة. المحرك الأصلي يستخدم خطوط النظام
-     العربية ويطبّق التشكيل — والصفحات تُعرض صوراً داخل التطبيق نفسه. */
-  async function renderPdfNative(buf, container, plugin) {
-    const bytes = new Uint8Array(buf);
-    let bin = '';
-    const CHUNK = 0x8000;
-    for (let i = 0; i < bytes.length; i += CHUNK) {
-      bin += String.fromCharCode.apply(null, bytes.subarray(i, i + CHUNK));
-    }
-    const { pageCount } = await plugin.load({ data: btoa(bin) });
-    if (!pageCount) throw new Error('ملف بلا صفحات');
-
-    container.innerHTML = '';
-    const targetWidth = Math.min(1600, Math.round(
-      (container.clientWidth || window.innerWidth) * (window.devicePixelRatio || 2)
-    ));
-
-    for (let i = 0; i < pageCount; i++) {
-      const { data } = await plugin.renderPage({ page: i, width: targetWidth });
-      const img = document.createElement('img');
-      img.src = 'data:image/jpeg;base64,' + data;
-      img.style.cssText = 'display:block;margin:0 auto 16px;width:100%;max-width:950px;' +
-                          'box-shadow:0 6px 24px rgba(0,0,0,0.45);background:#fff;border-radius:6px;';
-      container.appendChild(img);
-    }
-  }
-
-  async function renderPdfBuffer(buf, container) {
-    // نُجرّب المحرك الأصلي أولاً داخل التطبيق، ونعود إلى pdf.js عند تعذّره
-    const nativePdf = window.Capacitor?.Plugins?.NativePdf;
-    const isNativeApp = !!(window.Capacitor?.isNativePlatform?.());
-    if (nativePdf) {
-      try {
-        await renderPdfNative(buf, container, nativePdf);
-        console.log('[PDF] عُرض عبر محرك أندرويد الأصلي (PDFium) ');
-        return;
-      } catch (e) {
-        console.warn('[PDF] العارض الأصلي فشل، نعود إلى pdf.js:', e.message || e);
-      }
-    } else if (isNativeApp) {
-      // إضافة NativePdf غير موجودة في هذا البناء — يلزم إعادة بناء التطبيق
-      console.warn('[PDF] إضافة NativePdf غير متاحة في هذا البناء — سيُستخدم pdf.js (قد تتكسر العربية)');
-    }
-    await loadPdfJs();
-    // ننسخ الـ ArrayBuffer (buf.slice(0)) لأن pdfjsLib يفكّكه ويربطه بالـ Web Worker فيصبح Detached ArrayBuffer
-    const typedarray = new Uint8Array(buf.slice(0));
-    const pdfJsVer = window.pdfjsLib?.version || '3.11.174';
-
-    const origin = (window.location.origin && window.location.origin !== 'null' && !window.location.origin.includes('localhost')) ? window.location.origin : 'https://elnasrcsit.website';
-    const absStandardFonts = new URL('/vendor/pdfjs/standard_fonts/', origin).href;
-    const absCmaps = new URL('/vendor/pdfjs/cmaps/', origin).href;
-
-    const cdnStandardFonts = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfJsVer}/standard_fonts/`;
-    const cdnCmaps = `https://cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfJsVer}/cmaps/`;
-
-    let pdf;
-    try {
-      pdf = await pdfjsLib.getDocument({
-        data: typedarray,
-        cMapUrl: absCmaps,
-        cMapPacked: true,
-        standardFontDataUrl: absStandardFonts,
-        disableFontFace: false,
-        isEvalSupported: true,
-        useSystemFonts: true
-      }).promise;
-    } catch (err) {
-      pdf = await pdfjsLib.getDocument({
-        data: typedarray,
-        cMapUrl: cdnCmaps,
-        cMapPacked: true,
-        standardFontDataUrl: cdnStandardFonts,
-        disableFontFace: false,
-        isEvalSupported: true,
-        useSystemFonts: true
-      }).promise;
-    }
-
-    container.innerHTML = '';
-    
-    const containerW = container.clientWidth || (window.innerWidth - 32);
-    const targetWidth = Math.max(280, Math.min(containerW - 20, 920));
-    const dpr = Math.max(2, window.devicePixelRatio || 1);
-
-    for (let n = 1; n <= pdf.numPages; n++) {
-      const page = await pdf.getPage(n);
-      const baseViewport = page.getViewport({ scale: 1.0 });
-      const displayScale = targetWidth / baseViewport.width;
-      const displayHeight = Math.round(baseViewport.height * displayScale);
-
-      const renderViewport = page.getViewport({ scale: displayScale * dpr });
-      
-      const canvas = document.createElement('canvas');
-      canvas.width = renderViewport.width;
-      canvas.height = renderViewport.height;
-      canvas.style.cssText = `display:block;margin:0 auto 16px;width:${targetWidth}px;height:${displayHeight}px;max-width:100%;box-shadow:0 6px 24px rgba(0,0,0,0.45);background:#fff;border-radius:6px;`;
-      container.appendChild(canvas);
-      
-      await page.render({
-        canvasContext: canvas.getContext('2d', { alpha: false }),
-        viewport: renderViewport
-      }).promise;
-    }
-  }
+  /* أدوات عرض PDF القديمة (sniffType / renderPdfNative / pdf.js) انتقلت إلى
+     العارض الموحّد js/file-viewer.js مع العرض التدريجي وبقية الأنواع. */
 
   // الملف المعروض حالياً والذي تعذّر عرضه داخلياً (لفتحه خارجياً عند الطلب)
   let _pendingFile = null;
 
   async function openCurrentPdfExternally(btn) {
-    if (!_pendingFile || !_pendingFile.buf) return;
+    if (!_pendingFile || !_pendingFile.buf) {
+      const u = document.getElementById('pdfDownloadLink')?.href;
+      if (u && u !== '#') window.open(u, window.Capacitor?.isNativePlatform?.() ? '_system' : '_blank');
+      return;
+    }
     const original = btn ? btn.innerHTML : '';
     if (btn) { btn.disabled = true; btn.innerHTML = 'جاري التجهيز...'; }
     try {
@@ -818,111 +596,59 @@
 
   /* lectureId اختياري: نخزّنه على عنصر العنوان ليعرف كيدي أي محاضرة
      مفتوحة أمام الطالب، فيقرأ نصها حين يقول "لخص لي" بدل أن يعتذر. */
+  /* العرض يتولاه العارض الموحّد (js/file-viewer.js): PDF تدريجي، Word، PowerPoint،
+     Excel، صور، فيديو، صوت، نصوص، ومضغوط — بدل PDF والصور فقط.
+     lectureId اختياري: نخزّنه على عنصر العنوان ليعرف كيدي أي محاضرة مفتوحة. */
+  let _viewerSession = null;
   async function openPdfModal(url, title, lectureId) {
-    const isNative = !!(window.Capacitor?.isNativePlatform?.());
     const titleEl = document.getElementById('pdfModalTitle');
     titleEl.textContent = title || 'عرض الملف';
     if (lectureId) titleEl.dataset.lectureId = lectureId;
     else delete titleEl.dataset.lectureId;
     const frame = document.getElementById('pdfFrame');
     const wrap = document.getElementById('pdfCanvasWrap');
+    const chip = document.getElementById('pdfPageChip');
+    const zoomBox = document.getElementById('pdfZoom');
     const dlBtn = document.getElementById('pdfDownloadLink');
+    const isNative = !!(window.Capacitor?.isNativePlatform?.());
+    const fileUrl = CBS.resolveFileUrl(url);
     if (dlBtn) {
-      dlBtn.href = url;
-      dlBtn.onclick = (e) => { if (isNative) { e.preventDefault(); window.open(url, '_system'); } };
+      dlBtn.href = fileUrl;
+      dlBtn.onclick = (e) => { if (isNative) { e.preventDefault(); window.open(fileUrl, '_system'); } };
     }
+    if (_viewerSession) _viewerSession.close();
+    const session = { closed: false, closers: [], abort: new AbortController(),
+      close() { this.closed = true; this.abort.abort(); this.closers.forEach(fn => { try { fn(); } catch (e) {} }); } };
+    _viewerSession = session;
+
     document.getElementById('pdfModal').style.display = 'flex';
+    document.body.classList.add('cv-open'); // زر كيدي العائم لا يغطي الصفحات — زر AI في الترويسة
     frame.style.display = 'none'; frame.src = '';
     wrap.style.display = 'block';
-    wrap.innerHTML = '<div style="color:#fff;text-align:center;padding:40px;"><i class="ri-loader-4-line" style="animation:spin 1s linear infinite;font-size:1.6rem;"></i><div style="margin-top:8px;font-size:0.9rem;">جاري تحميل الملف...</div></div>';
-
-    try {
-      let buf = await CBS.offlineGet(url);
-      if (!buf) {
-        const resp = await fetch(url);
-        if (!resp.ok) throw new Error('HTTP ' + resp.status);
-        buf = await resp.arrayBuffer();
+    wrap.style.padding = '0';
+    chip.hidden = true; zoomBox.hidden = true;
+    let total = 0;
+    _pendingFile = null;
+    const r = await CBS.renderFileInto(wrap, fileUrl, {
+      title, signal: session.abort.signal,
+      ctx: {
+        scroller: wrap,
+        closed: () => session.closed,
+        onClose: fn => session.closers.push(fn),
+        setPages: n => { total = n; chip.hidden = false; zoomBox.hidden = false; setPdfZoom(1); },
+        setPage: p => { chip.textContent = `${p} / ${total}`; }
       }
-
-      let kind = sniffType(buf);
-      if (kind === 'unknown') {
-        const u = url.toLowerCase();
-        if (u.includes('.pdf')) kind = 'pdf';
-        else if (/\.(png|jpe?g|gif|webp|bmp)/.test(u)) kind = 'image';
-      }
-
-      let fileName = CBS.fileNameFromUrl(url, (title || 'محاضرة'));
-      if (kind === 'pdf') {
-        // إصلاح الامتدادات المقصوصة أو ملفات .bin لتكون دائماً .pdf
-        if (!fileName.toLowerCase().endsWith('.pdf')) {
-          fileName = fileName.replace(/\.[^/.]+$/, '') + '.pdf';
-        }
-      }
-      _pendingFile = { buf, name: fileName, url };
-
-      if (kind === 'pdf') {
-        if (isNative) {
-          /* نعرضه داخل التطبيق: renderPdfBuffer تستخدم محرك أندرويد الأصلي
-             (PDFium عبر إضافة NativePdf) وهو يملك خطوط النظام العربية ويطبّق
-             التشكيل، فيعرض الملفات التي لا تُضمّن خطها بشكل صحيح — وهو ما
-             يعجز عنه pdf.js. وإن فشل المحرك الأصلي تعود الدالة إلى pdf.js.
-             زر "فتح بقارئ خارجي" يبقى في الترويسة خياراً للمستخدم لا إجباراً. */
-          wrap.style.display = 'block';
-          frame.style.display = 'none';
-          await renderPdfBuffer(buf, wrap);
-          return;
-        }
-        // على المتصفح (localhost / DevTools): اعرضه بـ blob في iframe
-        try {
-          const blobUrl = URL.createObjectURL(new Blob([buf.slice(0)], { type: 'application/pdf' }));
-          wrap.style.display = 'none';
-          frame.style.display = 'block';
-          frame.src = blobUrl;
-          return;
-        } catch(e) {}
-        await renderPdfBuffer(buf, wrap);
-      } else if (kind === 'image') {
-        const blobUrl = URL.createObjectURL(new Blob([buf.slice(0)]));
-        wrap.innerHTML = '<img src="' + blobUrl + '" style="display:block;margin:0 auto;max-width:100%;border-radius:6px;" alt="">';
-      } else {
-        const info = describeFileKind(_pendingFile.name);
-        const isOffice = ['ppt','pptx','doc','docx','xls','xlsx'].includes(info.ext);
-        const icon = isOffice ? 'ri-file-ppt-2-line' : 'ri-file-3-line';
-        wrap.innerHTML =
-          '<div style="color:#fff;text-align:center;padding:40px 24px;font-size:0.9rem;">' +
-          '<i class="' + icon + '" style="font-size:2.8rem;display:block;margin-bottom:12px;opacity:0.85;"></i>' +
-          '<strong style="font-size:1rem;">' + CBS.escapeHTML(info.label) + ' لا يُعرض داخل التطبيق</strong>' +
-          '<div style="opacity:0.7;font-size:0.82rem;margin-top:6px;word-break:break-all;">' + CBS.escapeHTML(_pendingFile.name) + '</div>' +
-          (isOffice
-            ? '<div style="opacity:0.65;font-size:0.8rem;margin-top:10px;line-height:1.6;">' +
-              'التطبيق يعرض ملفات PDF والصور داخلياً. افتح هذا الملف بتطبيق Office على جهازك،<br>' +
-              'أو اطلب من المحاضر رفعه بصيغة PDF ليُقرأ داخل التطبيق مباشرة.</div>'
-            : '') +
-          '<button onclick="openPendingFileExternally(this)" style="margin-top:16px;padding:11px 24px;border:none;border-radius:10px;background:#2563eb;color:#fff;font-family:inherit;font-weight:700;font-size:0.9rem;cursor:pointer;">' +
-          '<i class="ri-external-link-line"></i> فتح بتطبيق آخر</button></div>';
-      }
-    } catch (err) {
-      console.warn('file view failed:', err);
-      const isOffline = !navigator.onLine;
-      wrap.style.display = 'block';
-      frame.style.display = 'none';
-      if (isOffline) {
-        wrap.innerHTML =
-          '<div style="color:#fff;text-align:center;padding:40px;font-size:0.9rem;">' +
-          '<i class="ri-wifi-off-line" style="font-size:2.5rem;display:block;margin-bottom:12px;color:#f87171;"></i>' +
-          '<strong style="font-size:1rem;">لا يوجد اتصال بالإنترنت</strong>' +
-          '<div style="opacity:0.7;font-size:0.85rem;margin-top:8px;line-height:1.5;">هذا الملف لم يُفتح من قبل وغير محفوظ على جهازك.<br>افتحه مرة واحدة بالإنترنت ليصبح متاحاً بدون نت.</div>' +
-          '</div>';
-      } else if (isNative) {
-        wrap.innerHTML = '<div style="color:#fff;text-align:center;padding:40px;font-size:0.9rem;">تعذّر تحميل الملف.<br><button onclick="window.open(\'' + url + '\',\'_system\')" style="margin-top:14px;padding:10px 22px;border:none;border-radius:10px;background:#2563eb;color:#fff;font-family:inherit;font-weight:700;cursor:pointer;">فتح خارجياً</button></div>';
-      } else {
-        frame.style.display = 'block';
-        wrap.style.display = 'none';
-        frame.src = url;
-      }
-    }
+    });
+    if (!session.closed && r && r.buf) _pendingFile = { buf: r.buf, name: r.name, url: fileUrl };
   }
 
+  let _pdfZoom = 1;
+  function setPdfZoom(z) {
+    _pdfZoom = Math.max(1, Math.min(3, z));
+    const host = document.getElementById('pdfCanvasWrap');
+    host.style.setProperty('--cv-zoom', _pdfZoom);
+    host.querySelector('.cv-pdf')?.style.setProperty('--cv-zoom', _pdfZoom);
+  }
   let _readingMode = false;
   function toggleReadingMode() {
     _readingMode = !_readingMode;
@@ -943,6 +669,8 @@
   }
 
   function closePdfModal() {
+    if (_viewerSession) { _viewerSession.close(); _viewerSession = null; }
+    document.body.classList.remove('cv-open');
     if (_readingMode) toggleReadingMode();
     document.getElementById('pdfModal').style.display = 'none';
     document.getElementById('pdfFrame').src = '';
@@ -950,31 +678,6 @@
     if (wrap) { wrap.innerHTML = ''; wrap.style.display = 'none'; } // تحرير ذاكرة الصفحات
   }
 
-  // ===== IMPROVEMENT 7: Swipe Gestures (scrolls between section-blocks) =====
-  (function() {
-    let touchStartX = 0;
-    document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
-    document.addEventListener('touchend', e => {
-      // Ignore swipes inside the PDF modal
-      if (document.getElementById('pdfModal')?.style.display === 'flex') return;
-      const dx = e.changedTouches[0].clientX - touchStartX;
-      if (Math.abs(dx) < 60) return;
-      const sections = Array.from(document.querySelectorAll('.section-block'));
-      if (!sections.length) return;
-      // Find the section closest to the viewport center
-      const mid = window.innerHeight / 2;
-      let closest = 0, minDist = Infinity;
-      sections.forEach((s, i) => {
-        const rect = s.getBoundingClientRect();
-        const dist = Math.abs(rect.top + rect.height / 2 - mid);
-        if (dist < minDist) { minDist = dist; closest = i; }
-      });
-      const target = dx < 0
-        ? sections[Math.min(closest + 1, sections.length - 1)]
-        : sections[Math.max(closest - 1, 0)];
-      if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, { passive: true });
-  })();
 </script>
 <!-- ===== IMPROVEMENT 5 & 8: PDF Modal ===== -->
 <div id='pdfModal' data-no-ptr="true" style='display:none;position:fixed;inset:0;z-index:9000;background:#0d1117;flex-direction:column;overscroll-behavior:none;overscroll-behavior-y:contain;'>
@@ -986,13 +689,15 @@
       <span id='pdfModalTitle' style='font-weight:800;color:#fff;font-size:0.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0;'></span>
     </div>
     <div class='pdf-header-actions' style='display:flex;gap:7px;align-items:center;flex-shrink:0;'>
-      <button onclick='openCurrentPdfExternally(this)' class='btn btn-secondary' style='font-size:0.8rem;padding:7px 11px;border-radius:10px;display:inline-flex;align-items:center;gap:5px;font-weight:700;background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.22);cursor:pointer;' title='فتح قارئ PDF الخاص بالهاتف (الشكل الأصلي)'><i class='ri-external-link-line'></i> <span class='pdf-btn-label'>فتح قارئ PDF</span></button>
-      <a id='pdfDownloadLink' href='#' target="_blank" rel="noopener noreferrer" class='btn btn-primary' style='font-size:0.8rem;padding:7px 11px;border-radius:10px;display:inline-flex;align-items:center;gap:5px;font-weight:700;text-decoration:none;'><i class='ri-download-line'></i> <span class='pdf-btn-label'>تحميل</span></a>
-      <button onclick='openAiPanel()' style='background:linear-gradient(135deg,#4f46e5,#7c3aed);border:none;border-radius:10px;cursor:pointer;color:#fff;padding:7px 11px;display:flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:800;font-family:inherit;' title='مساعد الدراسة بالذكاء الاصطناعي'><i class='ri-sparkling-2-fill'></i> <span>AI</span></button>
+      <button onclick='openCurrentPdfExternally(this)' class='btn btn-secondary' style='font-size:0.8rem;padding:7px 11px;border-radius:10px;display:inline-flex;align-items:center;gap:5px;font-weight:700;background:rgba(255,255,255,0.15);color:#fff;border:1px solid rgba(255,255,255,0.22);cursor:pointer;' title='فتح الملف بتطبيق آخر على الجهاز'><i class='ri-external-link-line'></i> <span class='pdf-btn-label'>تطبيق آخر</span></button>
+      <a id='pdfDownloadLink' href='#' data-no-viewer target="_blank" rel="noopener noreferrer" class='btn btn-primary' style='font-size:0.8rem;padding:7px 11px;border-radius:10px;display:inline-flex;align-items:center;gap:5px;font-weight:700;text-decoration:none;'><i class='ri-download-line'></i> <span class='pdf-btn-label'>تحميل</span></a>
+      <button onclick='openAiPanel()' style='background:var(--primary);border:none;border-radius:10px;cursor:pointer;color:#fff;padding:7px 11px;display:flex;align-items:center;gap:5px;font-size:0.8rem;font-weight:800;font-family:inherit;' title='مساعد الدراسة بالذكاء الاصطناعي'><i class='ri-sparkling-2-fill'></i> <span>AI</span></button>
       <button id='readingModeBtn' onclick='toggleReadingMode()' style='background:rgba(255,255,255,0.1);border:none;border-radius:10px;cursor:pointer;font-size:1.05rem;color:#fff;width:34px;height:34px;display:flex;align-items:center;justify-content:center;' title='وضع القراءة'><i class='ri-fullscreen-line'></i></button>
     </div>
   </div>
   <div id='pdfCanvasWrap' data-no-ptr="true" style='flex:1;overflow:auto;-webkit-overflow-scrolling:touch;padding:12px;display:none;overscroll-behavior:none;overscroll-behavior-y:contain;touch-action:pan-y;'></div>
+  <div id='pdfPageChip' class='cv-pagechip' hidden></div>
+  <div id='pdfZoom' class='pdf-zoom' hidden><button type='button' onclick='setPdfZoom(_pdfZoom - 0.5)' aria-label='تصغير'><i class='ri-zoom-out-line'></i></button><button type='button' onclick='setPdfZoom(_pdfZoom + 0.5)' aria-label='تكبير'><i class='ri-zoom-in-line'></i></button></div>
   <iframe id='pdfFrame' data-no-ptr="true" src='' style='flex:1;width:100%;border:none;background:#fff;display:none;overscroll-behavior:none;overscroll-behavior-y:contain;'></iframe>
 </div>
 
@@ -1175,6 +880,12 @@ function useQuickPrompt(text) {
   }
 }
 
+/* التمرير الفعلي في .ai-body لا في حاوية الرسائل (ليست عنصر تمرير) */
+function scrollKedyChat() {
+  const body = document.getElementById('aiBody');
+  if (body) body.scrollTop = body.scrollHeight;
+}
+
 function renderKedyChatHistory() {
   const container = document.getElementById('kedyChatStream');
   if (!container || !_kedyChatHistory.length) return;
@@ -1192,7 +903,7 @@ function renderKedyChatHistory() {
       </div>`;
     }
   }).join('');
-  container.scrollTop = container.scrollHeight;
+  scrollKedyChat();
 }
 
 function saveKedyChatNote(idx) {
@@ -1255,7 +966,7 @@ async function doAiAsk() {
   loadingBubble.id = 'kedyLoadingBubble';
   loadingBubble.innerHTML = `<div class="chat-bubble-author"><span style="color:#4f46e5;"><i class="ri-robot-2-line"></i> كيدي</span></div><div class="ai-result loading" style="padding:4px 0;background:none;border:none;min-height:auto;"><div class="ai-spinner"></div> كيدي يفكّر...</div>`;
   container.appendChild(loadingBubble);
-  container.scrollTop = container.scrollHeight;
+  scrollKedyChat();
 
   try {
     const text = await extractPdfText();
@@ -1283,7 +994,7 @@ async function doAiAsk() {
         saveBtn.innerHTML = '<i class="ri-bookmark-3-line"></i> حفظ في ملاحظاتي';
         saveBtn.onclick = () => saveKedyChatNote(currentIdx);
         kedyBubble.appendChild(saveBtn);
-        container.scrollTop = container.scrollHeight;
+        scrollKedyChat();
       });
     } else {
       const errBubble = document.createElement('div');
@@ -1299,7 +1010,7 @@ async function doAiAsk() {
     container.appendChild(errBubble);
   }
   btn.disabled = false;
-  container.scrollTop = container.scrollHeight;
+  scrollKedyChat();
 }
 
 async function doAiFlashcards() {
@@ -1422,17 +1133,17 @@ ${lecturesList}
         if(n.type === 'quiz') icon = 'ri-question-answer-line';
         if(n.type === 'flashcards') icon = 'ri-stack-line';
         if(n.type === 'plan') icon = 'ri-calendar-check-line';
-        const d = new Date(n.createdAt).toLocaleDateString('ar-SD');
+        const d = new Date(n.createdAt).toLocaleDateString('ar-EG-u-nu-latn');
         html += `
           <div style="background:var(--bg-main);border:1px solid var(--border);border-radius:12px;padding:14px;position:relative;">
             <div style="font-weight:800;color:var(--primary);display:flex;align-items:center;gap:6px;margin-bottom:4px;">
               <i class="${icon}"></i> ${CBS.escapeHTML(n.title)}
             </div>
             <div style="font-size:0.75rem;color:var(--text-muted);margin-bottom:8px;">
-              ${CBS.escapeHTML(n.subject)} â€¢ ${d}
+              ${CBS.escapeHTML(n.subject)} • ${d}
             </div>
             <div style="font-size:0.85rem;color:var(--text-main);white-space:pre-wrap;max-height:150px;overflow-y:auto;background:var(--bg-card);padding:10px;border-radius:8px;">
-              ${n.content}
+              ${CBS.escapeHTML(n.content)}
             </div>
             <button onclick="deleteKedyNote('${n._id}')" style="position:absolute;top:10px;left:10px;background:none;border:none;color:var(--danger);cursor:pointer;" title="حذف" aria-label="حذف"><i class="ri-delete-bin-line"></i></button>
           </div>`;
@@ -1513,6 +1224,15 @@ async function clearAllKedyNotes() {
   if (!confirm('هل تريد مسح جميع الملاحظات المحفوظة؟')) return;
   localStorage.removeItem('cbs_saved_notes');
   renderNotesTab();
+}
+
+function openSubjectFlashcards() {
+  const id = new URLSearchParams(window.location.search).get('id');
+  if (id) {
+    location.href = `/flashcards.html?subject=${encodeURIComponent(id)}`;
+  } else {
+    location.href = '/flashcards.html';
+  }
 }
 </script>
 

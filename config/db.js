@@ -109,14 +109,14 @@ async function connectDB() {
   }
 
   const isProduction = process.env.NODE_ENV === 'production';
+  const isSrv = uri.startsWith('mongodb+srv://');
+  const enableTls = isSrv || process.env.MONGO_TLS === 'true';
   const options = {
     serverSelectionTimeoutMS: 30000,
     connectTimeoutMS: 30000,
     socketTimeoutMS: 30000,
-    tls: true,
-    // tlsInsecure فقط في بيئة التطوير لتجنب مشاكل الشهادات المحلية
-    // في الإنتاج يجب التحقق الكامل من الشهادة
-    tlsInsecure: !isProduction,
+    tls: enableTls,
+    tlsInsecure: !isProduction && enableTls,
     family: 4
   };
 

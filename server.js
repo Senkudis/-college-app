@@ -15,7 +15,7 @@ require("dotenv").config();
 const connectDB = require("./config/db");
 const Notification = require("./models/Notification");
 const User = require("./models/User");
-const { apiLimiter, authLimiter, passwordResetLimiter, uploadLimiter } = require("./middleware/rateLimiter");
+const { apiLimiter, uploadLimiter } = require("./middleware/rateLimiter");
 const requestId = require("./middleware/requestId");
 const { log, recordRequest, snapshot } = require("./utils/observability");
 
@@ -28,17 +28,20 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://unpkg.com", "https://cdn.jsdelivr.net"],
+      scriptSrc: ["'self'", "'unsafe-inline'", "'unsafe-eval'", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
       scriptSrcAttr: ["'unsafe-inline'"],
-      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net"],
-      fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net"],
-      imgSrc: ["'self'", "data:", "blob:"],
+      styleSrc: ["'self'", "'unsafe-inline'", "https://fonts.googleapis.com", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
+      fontSrc: ["'self'", "https://fonts.gstatic.com", "https://cdn.jsdelivr.net", "https://cdnjs.cloudflare.com"],
+      imgSrc: ["'self'", "data:", "blob:", "https://api.qrserver.com", "https://*.googleusercontent.com"],
       // ce.judge0.com يترجم وينفّذ C++ في مختبر البرمجة (لا يوجد مترجم C++ داخل المتصفح)
       connectSrc: ["'self'", "ws:", "wss:", "https://unpkg.com", "https://cdn.jsdelivr.net", "https://ce.judge0.com"],
-      mediaSrc: ["'self'", "blob:"],
+      // فيديو/صوت المحاضرات قد يكون رابطاً خارجياً مباشراً (mp4) يُشغَّل داخل العارض
+      mediaSrc: ["'self'", "blob:", "https:"],
       workerSrc: ["'self'", "blob:"],
       frameAncestors: ["'self'"],
-      frameSrc: ["'self'"],
+      /* عارض الملفات داخل التطبيق: Office Online لعروض PowerPoint وجداول Excel
+         (للملفات العامة فقط)، ومشغّلا يوتيوب وGoogle Drive لروابط فيديو المحاضرات */
+      frameSrc: ["'self'", "blob:", "https://view.officeapps.live.com", "https://www.youtube-nocookie.com", "https://www.youtube.com", "https://drive.google.com"],
       objectSrc: ["'none'"],
       baseUri: ["'self'"],
       formAction: ["'self'"]
@@ -279,10 +282,10 @@ app.use((req, res, next) => {
 
 // ===== Rate Limiting =====
 app.use('/api/', apiLimiter);
-app.use('/api/auth/login', authLimiter);
-app.use('/api/auth/forgot-password', passwordResetLimiter);
-app.use('/api/auth/verify-reset-code', passwordResetLimiter);
-app.use('/api/auth/reset-password', passwordResetLimiter);
+/* حدود المصادقة تُطبَّق داخل auth.routes على كل مسار مرة واحدة. تكرارها هنا كان
+   يعدّ الطلب مرتين بنفس العدّاد: محاولة دخول خاطئة واحدة = اثنتان، ومسار الاستعادة
+   (طلب الكود ×2 + التحقق + التعيين) يتجاوز حد الـ3 في الساعة فيُرفض التعيين بـ429
+   في الخطوة الأخيرة — أي أن استعادة كلمة المرور كانت مستحيلة عملياً. */
 app.use('/api/videos/init-upload', uploadLimiter);
 
 // ===== Static Files =====
@@ -497,6 +500,14 @@ app.get('/news/:newsId', (req, res) => {
 
 app.get('/gallery/:imageId', (req, res) => {
   serveHtmlWithOg(req, res, 'welcome.html');
+});
+
+/* رابط QR بطاقة الهوية الرقمية: /id/<code> — مسار قصير عمداً لأن طول
+   الرابط يحدد حجم الرمز وسهولة مسحه. الصفحة تقرأ الرمز من المسار وتسأل
+   /api/public/verify-id. */
+app.get('/id/:code', (req, res) => {
+  res.setHeader('Cache-Control', 'no-cache');
+  res.sendFile(path.join(__dirname, 'www', 'verify-id.html'));
 });
 
 /* روابط تطبيق أندرويد (App Links): أندرويد يطلب هذا الملف للتحقق أن

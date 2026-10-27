@@ -28,7 +28,7 @@ const FeeSchema = new mongoose.Schema(
       default: 0,
       min: [0, "الخصم لا يمكن أن يكون سالباً"],
       validate: {
-        validator: function(v) { return v <= this.amount; },
+        validator: function(v) { return this.amount === undefined || v <= this.amount; },
         message: "الخصم لا يمكن أن يتجاوز قيمة الرسم"
       }
     },
@@ -77,8 +77,10 @@ FeeSchema.virtual("netAmount").get(function() {
 
 // Virtual property to calculate remaining balance on the fee (after discount)
 FeeSchema.virtual("remainingAmount").get(function() {
-  const net = Math.max(0, this.amount - (this.discount || 0));
-  return Math.max(0, net - this.paidAmount);
+  const net = Math.max(0, (this.amount || 0) - (this.discount || 0));
+  return Math.max(0, net - (this.paidAmount || 0));
 });
+
+FeeSchema.index({ student: 1, status: 1, dueDate: 1 });
 
 module.exports = mongoose.model("Fee", FeeSchema);

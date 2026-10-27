@@ -4,6 +4,8 @@ const authMiddleware = require("../middleware/auth.middleware");
 const roleMiddleware = require("../middleware/role.middleware");
 const { success, fail, serverError } = require("../utils/response");
 const normalizeEmail = require("../utils/normalizeEmail");
+const normalizePassword = require("../utils/normalizePassword");
+const { createCode: createIdCardCode } = require("../utils/idCard");
 
 // إنشاء مستخدم جديد (للعميد فقط)
 router.post("/", authMiddleware, roleMiddleware("dean", "admin"), async (req, res) => {
@@ -26,7 +28,7 @@ router.post("/", authMiddleware, roleMiddleware("dean", "admin"), async (req, re
     }
 
     // التحقق من أن الأدوار صحيحة (roles قد تصل نصاً مفرداً وليس مصفوفة)
-    const validRoles = ["student", "leader", "doctor", "dean"];
+    const validRoles = ["student", "leader", "doctor", "dean", "admin"];
     const rolesArr = Array.isArray(roles) ? roles : [roles];
     const invalidRoles = rolesArr.filter(role => !validRoles.includes(role));
 
@@ -36,6 +38,10 @@ router.post("/", authMiddleware, roleMiddleware("dean", "admin"), async (req, re
         message: `أدوار غير صحيحة: ${invalidRoles.join(", ")}`
       });
     }
+    // منح دور "admin" للمسؤول وحده — كان العميد يستطيع إنشاء حساب أعلى صلاحية منه
+    if (rolesArr.includes("admin") && !req.user.roles.includes("admin")) {
+      return fail(res, "منح دور المسؤول متاح للمسؤول فقط", 403);
+    }
 
     // التحقق من عدم وجود مستخدم بنفس البريد (شامل المحذوفين soft-delete)
     const existingUser = await User.collection.findOne({ email: normalizeEmail(email) });
@@ -44,7 +50,7 @@ router.post("/", authMiddleware, roleMiddleware("dean", "admin"), async (req, re
       // إذا كان المستخدم محذوفاً (soft-deleted) نعيد تفعيله ببيانات جديدة
       if (existingUser.deletedAt !== null && existingUser.deletedAt !== undefined) {
         const bcrypt = require('bcryptjs');
-        const hashedPassword = await bcrypt.hash(password, 12);
+        const hashedPassword = await bcrypt.hash(normalizePassword(password), 12);
         await User.collection.updateOne(
           { _id: existingUser._id },
           { $set: {
@@ -186,7 +192,14 @@ router.post("/request-deletion", authMiddleware, async (req, res) => {
 // 1. جلب قائمة الطلبات المعلقة
 router.get("/pending-registrations", authMiddleware, roleMiddleware("dean", "admin", "leader"), async (req, res) => {
   try {
-    const pendingUsers = await User.find({ isPendingRegistration: true })
+    // الليدر يرى طلبات دفعته فقط — كانت أسماء وأرقام هواتف كل المتقدمين في الكلية مكشوفة له
+    const isStaff = req.user.roles.includes("dean") || req.user.roles.includes("admin");
+    const filter = { isPendingRegistration: true };
+    if (!isStaff) {
+      if (!req.user.batch) return success(res, { pendingUsers: [] });
+      filter.batch = req.user.batch;
+    }
+    const pendingUsers = await User.find(filter)
       .populate("batch", "name code")
       .select("name email phone batch createdAt")
       .sort({ createdAt: -1 })
@@ -205,8 +218,17 @@ router.post("/approve-registrations", authMiddleware, roleMiddleware("dean", "ad
       return fail(res, "يرجى تحديد مستخدم واحد على الأقل للقبول");
     }
 
+    const isStaff = req.user.roles.includes("dean") || req.user.roles.includes("admin");
+    const filter = { _id: { $in: userIds }, isPendingRegistration: true };
+    if (!isStaff) {
+      if (!req.user.batch) {
+        return fail(res, "غير مصرح لك بإدارة تسجيلات هذه الدفعة", 403);
+      }
+      filter.batch = req.user.batch;
+    }
+
     const result = await User.updateMany(
-      { _id: { $in: userIds }, isPendingRegistration: true },
+      filter,
       { $set: { isActive: true, isPendingRegistration: false } }
     );
 
@@ -224,7 +246,16 @@ router.post("/reject-registrations", authMiddleware, roleMiddleware("dean", "adm
       return fail(res, "يرجى تحديد مستخدم واحد على الأقل للرفض");
     }
 
-    const result = await User.deleteMany({ _id: { $in: userIds }, isPendingRegistration: true });
+    const isStaff = req.user.roles.includes("dean") || req.user.roles.includes("admin");
+    const filter = { _id: { $in: userIds }, isPendingRegistration: true };
+    if (!isStaff) {
+      if (!req.user.batch) {
+        return fail(res, "غير مصرح لك بإدارة تسجيلات هذه الدفعة", 403);
+      }
+      filter.batch = req.user.batch;
+    }
+
+    const result = await User.deleteMany(filter);
     return success(res, { deletedCount: result.deletedCount }, `تم رفض وحذف ${result.deletedCount} طالب بنجاح`);
   } catch (err) {
     return serverError(res, err, "رفض طلبات التسجيل");
@@ -283,6 +314,11 @@ router.get("/", authMiddleware, roleMiddleware("dean", "admin"), async (req, res
   }
 });
 
+// رمز التحقق الموقّع لبطاقة الهوية الرقمية للمستخدم الحالي (يُرسم QR في الملف الشخصي)
+router.get("/me/id-card", authMiddleware, (req, res) => {
+  return success(res, { code: createIdCardCode(req.user.id) });
+});
+
 // جلب مستخدم محدد (للعميد فقط)
 router.get("/:id", authMiddleware, roleMiddleware("dean", "admin"), async (req, res) => {
   try {
@@ -325,6 +361,26 @@ router.put("/:id", authMiddleware, roleMiddleware("dean", "admin"), async (req, 
       });
     }
 
+    /* حواجز الصلاحيات: العميد لا يعدّل حساب مسؤول ولا يمنح دور المسؤول،
+       ولا أحد يسحب صلاحية الإدارة من نفسه أو يعطّل حسابه (قفل ذاتي لا رجعة فيه). */
+    const actorIsAdmin = req.user.roles.includes("admin");
+    if (user.roles.includes("admin") && !actorIsAdmin) {
+      return fail(res, "لا يمكنك تعديل حساب مسؤول النظام", 403);
+    }
+    const isSelf = String(user._id) === String(req.user.id);
+    if (isSelf && isActive === false) {
+      return fail(res, "لا يمكنك تعطيل حسابك بنفسك", 400);
+    }
+    if (roles) {
+      const nextRoles = Array.isArray(roles) ? roles : [roles];
+      if (nextRoles.includes("admin") && !actorIsAdmin) {
+        return fail(res, "منح دور المسؤول متاح للمسؤول فقط", 403);
+      }
+      if (isSelf && !nextRoles.some(r => r === "dean" || r === "admin")) {
+        return fail(res, "لا يمكنك سحب صلاحية الإدارة من حسابك", 400);
+      }
+    }
+
     // التحقق من عدم تكرار البريد الإلكتروني
     if (email && email !== user.email) {
       const existingUser = await User.findOne({ 
@@ -360,9 +416,30 @@ router.put("/:id", authMiddleware, roleMiddleware("dean", "admin"), async (req, 
       updateData.roles = rolesArr;
     }
     
-    if (isActive !== undefined) updateData.isActive = isActive;
+    if (isActive !== undefined) updateData.isActive = Boolean(isActive);
     if (req.body.batch !== undefined) updateData.batch = req.body.batch || null;
     if (req.body.batches !== undefined) updateData.batches = Array.isArray(req.body.batches) ? req.body.batches : [];
+
+    /* كلمة المرور من نموذج التعديل: كانت تُرسل ويُتجاهَل الحقل بصمت بينما
+       تظهر رسالة "تم تحديث المستخدم" — فيظن العميد أنه غيّرها ويبقى الطالب
+       مرفوضاً. التشفير يتم في خطّاف findOneAndUpdate بالنموذج. */
+    const { password } = req.body;
+    if (password) {
+      if (typeof password !== "string" || normalizePassword(password).length < 6) {
+        return fail(res, "كلمة المرور يجب أن تكون 6 أحرف على الأقل");
+      }
+      if (user.roles.includes("admin") && !actorIsAdmin) {
+        return fail(res, "لا يمكنك إعادة تعيين كلمة مرور مسؤول النظام", 403);
+      }
+      updateData.password = password;
+      updateData.failedLoginAttempts = 0;
+      updateData.lockUntil = null;
+      if (!isSelf) {
+        updateData.firstLogin = true; // يختار كلمة مرور خاصة به عند أول دخول، كمسار reset-password
+        // إبطال الجلسات القائمة بكلمة المرور القديمة
+        updateData.currentSessionId = require("crypto").randomUUID();
+      }
+    }
 
     // تنفيذ التحديث
     const updatedUser = await User.findByIdAndUpdate(
@@ -378,11 +455,8 @@ router.put("/:id", authMiddleware, roleMiddleware("dean", "admin"), async (req, 
     });
 
   } catch (error) {
-    console.error("Update user error:", error);
-    res.status(500).json({
-      success: false,
-      message: "حدث خطأ في الخادم"
-    });
+    // serverError يُظهر أخطاء التحقق الحقيقية (400) بدل "خطأ في الخادم" العام
+    serverError(res, error, "تحديث المستخدم");
   }
 });
 
@@ -399,7 +473,7 @@ router.post("/:id/reset-password", authMiddleware, roleMiddleware("dean", "admin
     }
 
     // التحقق من قوة كلمة المرور
-    if (newPassword.length < 6) {
+    if (typeof newPassword !== "string" || newPassword.length < 6) {
       return res.status(400).json({
         success: false,
         message: "كلمة المرور يجب أن تكون 6 أحرف على الأقل"
@@ -416,9 +490,16 @@ router.post("/:id/reset-password", authMiddleware, roleMiddleware("dean", "admin
       });
     }
 
+    // إعادة تعيين كلمة مسؤول على يد عميد = استيلاء على حساب أعلى صلاحية
+    if (user.roles.includes("admin") && !req.user.roles.includes("admin")) {
+      return fail(res, "لا يمكنك إعادة تعيين كلمة مرور مسؤول النظام", 403);
+    }
+
     // تحديث كلمة المرور
     user.password = newPassword;
     user.firstLogin = true; // إجبار تغيير كلمة السر عند أول دخول
+    // إبطال الجلسات القائمة: من سُرقت كلمته يبقى داخلاً بعد إعادة التعيين لولا هذا
+    user.currentSessionId = require("crypto").randomUUID();
     await user.save();
 
     res.json({
@@ -445,6 +526,13 @@ router.delete("/:id", authMiddleware, roleMiddleware("dean", "admin"), async (re
         success: false,
         message: "المستخدم غير موجود"
       });
+    }
+
+    if (String(user._id) === String(req.user.id)) {
+      return fail(res, "لا يمكنك حذف حسابك من هنا — استخدم خيار حذف الحساب في ملفك الشخصي", 400);
+    }
+    if (user.roles.includes("admin") && !req.user.roles.includes("admin")) {
+      return fail(res, "لا يمكنك حذف حساب مسؤول النظام", 403);
     }
 
     // لا يمكن حذف العميد الرئيسي
@@ -477,7 +565,9 @@ router.delete("/:id", authMiddleware, roleMiddleware("dean", "admin"), async (re
 router.post('/fcm-token', authMiddleware, async (req, res) => {
   try {
     const { token } = req.body;
-    if (!token) return fail(res, 'يجب توفير التوكن');
+    if (!token || typeof token !== 'string' || token.length > 4096) return fail(res, 'يجب توفير التوكن');
+    // الجهاز لحساب واحد — انظر device.routes
+    await User.updateMany({ _id: { $ne: req.user.id }, fcmTokens: token }, { $pull: { fcmTokens: token } });
     await User.findByIdAndUpdate(req.user.id, { $addToSet: { fcmTokens: token } });
     return success(res, null, 'تم حفظ التوكن بنجاح');
   } catch (err) {
@@ -567,11 +657,12 @@ router.get('/portfolio/:id', authMiddleware, async (req, res) => {
         id: user._id,
         name: user.name,
         role: 'dean',
-        roleTitle: 'عميد كلية النصر التقنية ورئيس المجلس الأكاديمي',
+        roleTitle: 'عمادة الكلية',
         enrolledAt: user.createdAt,
         serialNumber,
         verificationHash,
-        badges: user.badges || ['القيادة الأكاديمية العليا', 'الاعتماد المؤسسي الرسمي']
+        idCardCode: createIdCardCode(user._id),
+        badges: user.badges || []
       };
 
       const academicRecord = {
@@ -587,10 +678,8 @@ router.get('/portfolio/:id', authMiddleware, async (req, res) => {
           totalStudents,
           totalDoctors,
           accreditedSubjectsCount: allSubjects.length,
-          subjects: allSubjects.slice(0, 12).map(s => ({ name: s.name, code: s.code || 'CS' }))
-        },
-        accreditationDecree: 'قرار اعتماد وتكليف عمادة الكلية رقم (2026/01/ADM)',
-        authorityLevel: 'كامل الصلاحيات الإشرافية والأكاديمية والتنفيذية'
+          subjects: allSubjects.slice(0, 12).map(s => ({ name: s.name, level: s.level || '' }))
+        }
       };
 
       return success(res, {
@@ -601,9 +690,8 @@ router.get('/portfolio/:id', authMiddleware, async (req, res) => {
           name: 'جامعة النصر التقنية',
           faculty: 'كلية النصر التقنية',
           city: 'الخرطوم - السودان',
-          verified: true,
           issuedAt: new Date(),
-          documentType: 'وثيقة الاعتماد القيادي والمؤسسي الرسمي (Official Executive Leadership Credential)'
+          documentType: 'ملخص النشاط على المنصة'
         }
       });
     }
@@ -618,18 +706,17 @@ router.get('/portfolio/:id', authMiddleware, async (req, res) => {
         id: user._id,
         name: user.name,
         role: 'doctor',
-        roleTitle: 'عضو هيئة التدريس وأستاذ المقررات المعتمد',
+        roleTitle: 'عضو هيئة التدريس',
         enrolledAt: user.createdAt,
         serialNumber,
         verificationHash,
-        badges: user.badges || ['هيئة تدريس معتمدة', 'كفاءة أكاديمية متميزة']
+        idCardCode: createIdCardCode(user._id),
+        badges: user.badges || []
       };
 
       const academicRecord = {
         roleType: 'doctor',
-        attendanceRate: 100,
         totalClasses: totalLectures,
-        presentClasses: totalLectures,
         completedQuizzes: 0,
         passedQuizzes: 0,
         completedAssignments: 0,
@@ -638,13 +725,11 @@ router.get('/portfolio/:id', authMiddleware, async (req, res) => {
           lecturesCount: totalLectures,
           subjects: assignedSubjects.map(s => ({
             name: s.name,
-            code: s.code || 'CS',
-            level: s.level || 'البكالوريوس',
+            level: s.level || '',
             batches: (s.batches || []).map(b => b.name).join(' · ')
-          }))
-        },
-        facultyRank: 'أستاذ مقرر ومحاضر معتمد بالكلية',
-        accreditationStatus: 'معتمد رسمياً من مجلس الأساتذة والشؤون العلمية'
+          })),
+          batchesCount: new Set(assignedSubjects.flatMap(s => (s.batches || []).map(b => String(b._id)))).size
+        }
       };
 
       return success(res, {
@@ -655,40 +740,44 @@ router.get('/portfolio/:id', authMiddleware, async (req, res) => {
           name: 'جامعة النصر التقنية',
           faculty: 'كلية النصر التقنية',
           city: 'الخرطوم - السودان',
-          verified: true,
           issuedAt: new Date(),
-          documentType: 'شهادة الاعتماد والتكليف التدريسي الموثقة (Faculty Academic & Teaching Credential)'
+          documentType: 'ملخص النشاط التدريسي على المنصة'
         }
       });
     }
 
     // 3. سجل الطالب الأكاديمي الموثق (Student / Leader)
-    const attendanceRecords = await Attendance.find({}).select('students').lean();
+    // استعلام مقصور على سجلات الطالب (يعمل أيضاً مع قاعدة الاختبار التي لا تدعم aggregate)
+    const myRecords = await Attendance.find({ 'students.student': user._id }).select('students').lean();
+    const myId = String(user._id);
     let totalClasses = 0;
     let presentClasses = 0;
-    attendanceRecords.forEach(rec => {
-      (rec.students || []).forEach(st => {
-        if (st.student?.toString() === user._id.toString()) {
-          totalClasses++;
-          if (st.status === 'present') presentClasses++;
-        }
-      });
+    myRecords.forEach(rec => {
+      const entry = (rec.students || []).find(st => st.student && String(st.student) === myId);
+      if (!entry) return;
+      totalClasses++;
+      if (entry.status === 'present') presentClasses++;
     });
-    const attendanceRate = totalClasses > 0 ? Math.round((presentClasses / totalClasses) * 100) : 100;
+    // بلا حصص مرصودة لا نسبة — كانت تُعرض 100% لطالب لم يُرصد له شيء
+    const attendanceRate = totalClasses > 0 ? Math.round((presentClasses / totalClasses) * 100) : null;
 
-    const quizAttempts = await QuizAttempt.find({ student: user._id }).select('score maxScore totalPoints passed').lean();
-    const passedQuizzes = quizAttempts.filter(q => q.passed !== false).length;
+    const quizAttempts = await QuizAttempt.find({ student: user._id, submitted: true }).select('score maxScore').lean();
+    // الاجتياز = 50% فأكثر؛ الحقل passed غير موجود في النموذج فكان كل اختبار يُحسب ناجحاً
+    const passedQuizzes = quizAttempts.filter(q => q.maxScore > 0 && q.score / q.maxScore >= 0.5).length;
+    const totalQuizPoints = quizAttempts.reduce((acc, q) => acc + (q.score || 0), 0);
+    const maxQuizPoints = quizAttempts.reduce((acc, q) => acc + (q.maxScore || 0), 0);
+    const quizAverage = maxQuizPoints > 0 ? Math.round((totalQuizPoints / maxQuizPoints) * 100) : null;
 
-    const submissions = await StudentSubmission.find({ student: user._id }).select('status grade pointsEarned').lean();
+    const submissions = await StudentSubmission.find({ student: user._id }).select('status grade').lean();
     const completedAssignments = submissions.length;
+    const graded = submissions.filter(s => typeof s.grade === 'number');
+    const assignmentAverage = graded.length ? Math.round(graded.reduce((a, s) => a + s.grade, 0) / graded.length) : null;
 
-    const subjects = user.batch ? await Subject.find({
-      $or: [{ batch: user.batch._id }, { batches: user.batch._id }]
-    }).select('name code level').lean() : [];
+    const subjects = user.batch ? await Subject.find({ batches: user.batch._id }).select('name level').lean() : [];
 
-    let rank = 1;
+    let rank = null;
     if (user.batch) {
-      const topStudents = await User.find({ batch: user.batch._id, deletedAt: null })
+      const topStudents = await User.find({ batch: user.batch._id, deletedAt: null, roles: { $in: ['student', 'leader'] } })
         .select('points')
         .sort({ points: -1 })
         .lean();
@@ -696,27 +785,21 @@ router.get('/portfolio/:id', authMiddleware, async (req, res) => {
       if (myIdx !== -1) rank = myIdx + 1;
     }
 
-    // حساب المعدل التراكمي التقريبي
-    const totalQuizPoints = quizAttempts.reduce((acc, q) => acc + (q.score || 0), 0);
-    const maxQuizPoints = quizAttempts.reduce((acc, q) => acc + (q.maxScore || 100), 0);
-    const quizPct = maxQuizPoints > 0 ? (totalQuizPoints / maxQuizPoints) * 100 : 85;
-    const academicPct = Math.min(100, Math.round(attendanceRate * 0.3 + quizPct * 0.7));
-    const estimatedGPA = (Math.max(2.0, (academicPct / 100) * 4.0)).toFixed(2);
-
     const studentData = {
       id: user._id,
       name: user.name,
       role: isLeader ? 'leader' : 'student',
-      roleTitle: isLeader ? 'طالب - ممثل الدفعة الأكاديمية' : 'طالب جامعي منتظم',
-      batchName: user.batch?.name || 'دفعة عامة',
-      batchCode: user.batch?.code || 'IT-CBS',
-      year: user.batch?.year || new Date().getFullYear(),
+      roleTitle: isLeader ? 'طالب - ممثل الدفعة' : 'طالب',
+      batchName: user.batch?.name || '',
+      batchCode: user.batch?.code || '',
+      year: user.batch?.year || null,
       enrolledAt: user.createdAt,
       points: user.points || 0,
-      badges: user.badges && user.badges.length ? user.badges : ['طالب متميز ', 'ملتزم أكاديمياً '],
+      badges: user.badges || [],
       rankInBatch: rank,
       serialNumber,
-      verificationHash
+      verificationHash,
+      idCardCode: createIdCardCode(user._id)
     };
 
     const academicRecord = {
@@ -726,17 +809,11 @@ router.get('/portfolio/:id', authMiddleware, async (req, res) => {
       presentClasses,
       completedQuizzes: quizAttempts.length,
       passedQuizzes,
+      quizAverage,
       completedAssignments,
+      assignmentAverage,
       registeredSubjectsCount: subjects.length,
-      estimatedGPA,
-      academicPct,
-      subjects: subjects.map(s => ({
-        name: s.name,
-        code: s.code || 'CS',
-        creditHours: 3,
-        status: 'مسجل ونشط',
-        grade: 'معتمد'
-      }))
+      subjects: subjects.map(s => ({ name: s.name, level: s.level || '' }))
     };
 
     return success(res, {
@@ -747,9 +824,8 @@ router.get('/portfolio/:id', authMiddleware, async (req, res) => {
         name: 'جامعة النصر التقنية',
         faculty: 'كلية النصر التقنية',
         city: 'الخرطوم - السودان',
-        verified: true,
         issuedAt: new Date(),
-        documentType: 'السجل الأكاديمي وكشف الدرجات الموثق (Official Verified Academic Transcript)'
+        documentType: 'ملخص النشاط الأكاديمي على المنصة'
       }
     });
   } catch (err) {

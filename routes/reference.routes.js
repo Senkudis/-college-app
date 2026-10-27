@@ -7,28 +7,70 @@ const auth = require("../middleware/auth.middleware");
 const role = require("../middleware/role.middleware");
 const upload = require("../config/multer");
 const { success, fail, notFound, serverError } = require("../utils/response");
+const { uploadLimiter } = require("../middleware/rateLimiter");
+const { getManageScope, canManageSubjectContent } = require("../utils/contentPermissions");
+const fs = require("fs");
+
+const discardUpload = (req) => { if (req.file?.path) fs.promises.unlink(req.file.path).catch(() => {}); };
+
+// الرابط يُعرض كـ <a href>: http/https فقط
+function safeLink(raw) {
+  const v = String(raw || "").trim();
+  if (!v) return { ok: true, value: null };
+  try {
+    const u = new URL(v);
+    return ["http:", "https:"].includes(u.protocol) ? { ok: true, value: v } : { ok: false };
+  } catch { return { ok: false }; }
+}
+
+/* من يضيف مرجعاً لأي مادة؟ كان أي دكتور أو ليدر يضيف لأي مادة في الكلية. */
+async function canAddToSubject(user, subjectId) {
+  if (user.roles.includes("dean") || user.roles.includes("admin")) return true;
+  const subject = await Subject.findById(subjectId).select("doctor batches").lean();
+  if (!subject) return false;
+  if (user.roles.includes("doctor") && String(subject.doctor) === String(user.id)) return true;
+  if (user.roles.includes("leader") && user.batch) {
+    return (subject.batches || []).some(b => String(b) === String(user.batch));
+  }
+  return false;
+}
 
 // إضافة مرجع (عميد أو دكتور أو ليدر)
-router.post("/", auth, role("dean", "doctor", "leader", "admin"), upload.single("file"), async (req, res) => {
+router.post("/", auth, role("dean", "doctor", "leader", "admin"), uploadLimiter, upload.single("file"), async (req, res) => {
   try {
     const { title, subject, link } = req.body;
     if (!title || !title.trim() || !subject) {
+      discardUpload(req);
       return fail(res, "عنوان المرجع والمادة مطلوبان", 400);
     }
     if (!mongoose.Types.ObjectId.isValid(subject)) {
+      discardUpload(req);
       return fail(res, "معرف المادة غير صالح", 400);
+    }
+    if (!(await canAddToSubject(req.user, subject))) {
+      discardUpload(req);
+      return fail(res, "غير مصرح لك بإضافة مراجع لهذه المادة", 403);
+    }
+    const cleanLink = safeLink(link);
+    if (!cleanLink.ok) {
+      discardUpload(req);
+      return fail(res, "الرابط يجب أن يبدأ بـ http أو https", 400);
+    }
+    if (!req.file && !cleanLink.value) {
+      return fail(res, "أرفق ملفاً أو رابطاً للمرجع", 400);
     }
 
     const reference = await Reference.create({
       title: title.trim(),
       subject,
-      link: link ? link.trim() : null,
+      link: cleanLink.value,
       file: req.file ? req.file.filename : null,
       addedBy: req.user.id
     });
 
     return success(res, { reference }, "تم إضافة المرجع بنجاح", 201);
   } catch (err) {
+    discardUpload(req);
     return serverError(res, err, "إضافة مرجع");
   }
 });
@@ -101,11 +143,10 @@ router.delete("/:id", auth, role("dean", "doctor", "admin", "leader"), async (re
     const ref = await Reference.findById(req.params.id);
     if (!ref) return notFound(res, "المرجع غير موجود");
 
-    // Permissions
-    if (!req.user.roles.includes("dean") && !req.user.roles.includes("admin")) {
-      if (ref.addedBy.toString() !== req.user.id) {
-        return fail(res, "غير مصرح لك بحذف هذا المرجع", 403);
-      }
+    // نفس قاعدة المحاضرات: العميد، من أضافه، دكتور المادة، ليدر دفعتها
+    const subject = await Subject.findById(ref.subject).select("doctor batches").lean();
+    if (!canManageSubjectContent(await getManageScope(req.user), { ownerId: ref.addedBy, subject })) {
+      return fail(res, "غير مصرح لك بحذف هذا المرجع", 403);
     }
 
     await Reference.findByIdAndDelete(req.params.id);

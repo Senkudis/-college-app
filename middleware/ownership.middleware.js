@@ -16,13 +16,16 @@ const verifySubjectAccess = async (req, res, next) => {
       return res.status(400).json({ success: false, message: 'معرف المادة مطلوب' });
     }
 
-    if (req.user?.roles?.includes('dean') || req.user?.roles?.includes('admin')) {
-      return next(); // العميد والأدمن يملكون كل الصلاحيات
-    }
-
     const subject = await Subject.findById(subjectId).select('doctor batches');
     if (!subject) {
       return res.status(404).json({ success: false, message: 'المادة غير موجودة' });
+    }
+
+    // إرفاق المادة بالطلب لتجنب الاستعلام عنها مرة أخرى
+    req.subject = subject;
+
+    if (req.user?.roles?.includes('dean') || req.user?.roles?.includes('admin')) {
+      return next(); // العميد والأدمن يملكون كل الصلاحيات
     }
 
     const doctorId = subject.doctor ? subject.doctor.toString() : null;

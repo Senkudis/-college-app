@@ -6,8 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>مراجعة البلاغات | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=2026083019">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026083019">
+  <link rel="stylesheet" href="/css/style.css?v=2026102613">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026102613">
+  <link rel="stylesheet" href="/css/ui.css?v=2026102613">
   <style>
     .sla-bar {
       display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
@@ -70,16 +71,6 @@
 </header>
 
 <div class="page-content">
-  <div class="page-header">
-    <div class="page-header-left">
-      <div class="page-icon"><i class="ri-flag-line"></i></div>
-      <div>
-        <div class="page-title">مراجعة البلاغات</div>
-        <div class="page-subtitle">المحتوى الذي أبلغ عنه الطلاب</div>
-      </div>
-    </div>
-  </div>
-
   <div class="sla-bar">
     <i class="ri-time-line" style="font-size:1.4rem;color:var(--primary);"></i>
     <div>
@@ -88,19 +79,19 @@
     </div>
   </div>
 
-  <div class="status-tabs">
-    <button class="status-tab active" data-status="pending"   onclick="switchStatus(this)">قيد المراجعة</button>
-    <button class="status-tab"        data-status="removed"   onclick="switchStatus(this)">أُزيل المحتوى</button>
-    <button class="status-tab"        data-status="dismissed" onclick="switchStatus(this)">بلاغات مرفوضة</button>
+  <div class="ui-chips" id="modTabs" aria-label="حالة البلاغ">
+    <button type="button" class="ui-chip active" data-status="pending" onclick="switchStatus(this)">قيد المراجعة</button>
+    <button type="button" class="ui-chip" data-status="removed" onclick="switchStatus(this)">أُزيل المحتوى</button>
+    <button type="button" class="ui-chip" data-status="dismissed" onclick="switchStatus(this)">مرفوضة</button>
   </div>
 
   <div id="alertMsg" class="alert" role="alert"></div>
   <div id="reportsList"></div>
 </div>
 
-<script src="/js/shared.js?v=2026083019"></script>
-<script src="/js/app.js?v=2026083019"></script>
-<script src="/js/socket-client.js?v=2026083019" defer></script>
+<script src="/js/shared.js?v=2026102613"></script>
+<script src="/js/app.js?v=2026102613"></script>
+<script src="/js/socket-client.js?v=2026102613" defer></script>
 <script>
   CBS.init({ requireRoles: ['dean', 'admin'] });
 
@@ -123,7 +114,7 @@
   };
 
   function switchStatus(btn) {
-    document.querySelectorAll('.status-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('#modTabs .ui-chip').forEach(t => t.classList.remove('active'));
     btn.classList.add('active');
     currentStatus = btn.dataset.status;
     loadReports();

@@ -82,6 +82,10 @@ router.post('/', auth, async (req, res) => {
     if (!title || !subject || !targetBatch) {
       return fail(res, 'العنوان والمادة والدفعة حقول مطلوبة');
     }
+    if (String(title).trim().length > 120) return fail(res, 'عنوان الغرفة طويل جداً (120 حرفاً كحد أقصى)');
+    if (!mongoose.Types.ObjectId.isValid(subject) || !mongoose.Types.ObjectId.isValid(targetBatch)) {
+      return fail(res, 'المادة أو الدفعة غير صالحة');
+    }
 
     /* الدفعة كانت تُؤخذ من الجسم بلا تحقق، فيُنشئ الطالب غرفة داخل دفعة
        لا ينتمي إليها. العميد والأدمن وحدهما يتجاوزان هذا القيد. */
@@ -93,7 +97,7 @@ router.post('/', auth, async (req, res) => {
     }
 
     const pod = await StudyPod.create({
-      title,
+      title: String(title).trim(),
       subject,
       batch: targetBatch,
       activeUsers: [{ user: req.user.id, name: req.user.name, joinedAt: new Date() }],
@@ -117,21 +121,22 @@ router.post('/:id/join', auth, async (req, res) => {
   try {
     const pod = await loadPodForUser(req, res);
     if (!pod) return;
-    await pod.populate('subject', 'name');
-    await pod.populate('createdBy', 'name');
 
-    const alreadyJoined = pod.activeUsers.some(u => String(u.user) === String(req.user.id));
-    if (!alreadyJoined) {
-      pod.activeUsers.push({ user: req.user.id, name: req.user.name, joinedAt: new Date() });
-      await pod.save();
-    }
+    await StudyPod.updateOne(
+      { _id: pod._id, 'activeUsers.user': { $ne: req.user.id } },
+      { $push: { activeUsers: { user: req.user.id, name: req.user.name, joinedAt: new Date() } } }
+    );
+
+    const updatedPod = await StudyPod.findById(pod._id)
+      .populate('subject', 'name')
+      .populate('createdBy', 'name');
 
     const io = req.app.get('io');
     if (io) {
       io.to(`pod:${pod._id}`).emit('studypod:user-joined', { userId: req.user.id, name: req.user.name });
     }
 
-    return success(res, { pod });
+    return success(res, { pod: updatedPod });
   } catch (err) {
     return serverError(res, err);
   }
@@ -143,8 +148,10 @@ router.post('/:id/leave', auth, async (req, res) => {
     const pod = await loadPodForUser(req, res);
     if (!pod) return;
 
-    pod.activeUsers = pod.activeUsers.filter(u => String(u.user) !== String(req.user.id));
-    await pod.save();
+    await StudyPod.updateOne(
+      { _id: pod._id },
+      { $pull: { activeUsers: { user: req.user.id } } }
+    );
 
     const io = req.app.get('io');
     if (io) {
@@ -184,7 +191,8 @@ router.delete('/:id', auth, async (req, res) => {
 router.post('/:id/tasks', auth, async (req, res) => {
   try {
     const { title } = req.body;
-    if (!title || !title.trim()) return fail(res, 'عنوان المهمة مطلوب');
+    if (!title || typeof title !== 'string' || !title.trim()) return fail(res, 'عنوان المهمة مطلوب');
+    if (title.trim().length > 200) return fail(res, 'عنوان المهمة طويل جداً');
 
     const pod = await loadPodForUser(req, res);
     if (!pod) return;
@@ -246,9 +254,13 @@ router.post('/:id/timer', auth, async (req, res) => {
     const pod = await loadPodForUser(req, res);
     if (!pod) return;
 
+    const validStatus = ['stopped', 'running', 'break'].includes(status) ? status : 'running';
+    // سقف 4 ساعات: قيمة ضخمة كانت تُخزَّن وتُبث لكل أعضاء الغرفة
+    const validSecs = Number.isFinite(remainingSeconds) && remainingSeconds >= 0 ? Math.min(Math.round(remainingSeconds), 4 * 3600) : 1500;
+
     pod.timerState = {
-      status: status || 'running',
-      remainingSeconds: remainingSeconds || 1500,
+      status: validStatus,
+      remainingSeconds: validSecs,
       startedAt: new Date()
     };
     await pod.save();

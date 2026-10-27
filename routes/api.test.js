@@ -500,6 +500,33 @@ test("Financials Module Tests", async (t) => {
     assert.strictEqual(res.data.balance, 2000);
   });
 
+  await t.test("overpayment credit covers a fee added later", async () => {
+    const pay = await apiCall("/api/financials/payments", {
+      method: "POST",
+      token: deanToken,
+      body: { studentId: studentUser._id.toString(), amount: 2500, paymentMethod: "cash", reference: "TXN10002" }
+    });
+    assert.strictEqual(pay.status, 201);
+    assert.strictEqual(pay.data.remainingPayment, 500); // 2000 left on the fee, 500 extra
+
+    const due = new Date(Date.now() - 2 * 864e5).toISOString().split("T")[0]; // already past due
+    const fee = await apiCall("/api/financials/fees", {
+      method: "POST",
+      token: deanToken,
+      body: { studentId: studentUser._id.toString(), title: "Lab fee", amount: 400, dueDate: due }
+    });
+    assert.strictEqual(fee.status, 201);
+
+    const Fee = mongoose.model("Fee");
+    const labFee = await Fee.findById(fee.data.fee._id);
+    assert.strictEqual(labFee.status, "paid");
+    assert.strictEqual(labFee.paidAmount, 400);
+
+    const overdue = await apiCall("/api/financials/overdue-report", { token: deanToken });
+    const mine = overdue.data.data.students.find(s => String(s.student._id) === studentUser._id.toString());
+    assert.ok(!mine, "a fee paid from credit must not appear as overdue");
+  });
+
   await t.test("GET /api/financials/overdue-report - Overdue fees report (Dean)", async () => {
     const res = await apiCall("/api/financials/overdue-report", { token: deanToken });
     assert.strictEqual(res.status, 200);
@@ -552,8 +579,8 @@ test("App Version Module Tests", async (t) => {
     const res = await apiCall("/api/app-version/check");
     assert.strictEqual(res.status, 200);
     assert.strictEqual(res.data.success, true);
-    assert.strictEqual(res.data.data.latestVersion, "2.1.0");
-    assert.strictEqual(res.data.data.latestVersionCode, 28);
+    assert.strictEqual(res.data.data.latestVersion, "2.3.0");
+    assert.strictEqual(res.data.data.latestVersionCode, 30);
   });
 
   await t.test("GET /api/app-version/check - Outdated client version detected", async () => {
@@ -566,7 +593,7 @@ test("App Version Module Tests", async (t) => {
   });
 
   await t.test("GET /api/app-version/check - Up-to-date client version detected", async () => {
-    const res = await apiCall("/api/app-version/check?v=2.1.0&code=28");
+    const res = await apiCall("/api/app-version/check?v=2.3.0&code=30");
     assert.strictEqual(res.status, 200);
     assert.strictEqual(res.data.success, true);
     assert.strictEqual(res.data.data.isOutdated, false);
@@ -590,7 +617,7 @@ test("App Version Module Tests", async (t) => {
     const res = await apiCall("/api/app-version/admin", { token: deanToken });
     assert.strictEqual(res.status, 200);
     assert.strictEqual(res.data.success, true);
-    assert.strictEqual(res.data.data.latestVersion, "2.1.0");
+    assert.strictEqual(res.data.data.latestVersion, "2.3.0");
   });
 
   await t.test("POST /api/app-version/admin - Update version settings as Dean", async () => {
@@ -598,8 +625,8 @@ test("App Version Module Tests", async (t) => {
       method: "POST",
       token: deanToken,
       body: {
-        latestVersion: "2.1.0",
-        latestVersionCode: 28,
+        latestVersion: "2.3.0",
+        latestVersionCode: 30,
         minSupportedVersion: "2.1.0",
         minSupportedVersionCode: 28,
         forceUpdate: true,

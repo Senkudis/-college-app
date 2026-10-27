@@ -27,10 +27,29 @@ router.get("/", async (req, res) => {
   }
 });
 
-router.post("/", role("dean", "leader", "admin"), async (req, res) => {
+/* الدكتور يضيف فعاليات لمواده (محاضرة تعويضية، امتحان) — واجهة مركز اليوم الدراسي
+   كانت تُظهر له زر الإضافة بينما الخادم يرفضه بـ403. */
+async function doctorOwnsSubject(user, subjectId) {
+  if (!subjectId || !mongoose.Types.ObjectId.isValid(subjectId)) return false;
+  const Subject = require("../models/Subject");
+  return Boolean(await Subject.exists({ _id: subjectId, doctor: user.id }));
+}
+const isBatchManager = (user) => ["dean", "admin", "leader"].some(r => user.roles.includes(r));
+
+function formatEventDateAr(d) {
+  const date = new Date(d);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleString("ar-EG-u-nu-latn", { weekday: "long", day: "numeric", month: "long", hour: "numeric", minute: "2-digit", timeZone: process.env.COLLEGE_TZ || "Africa/Khartoum" });
+}
+
+router.post("/", role("dean", "leader", "admin", "doctor"), async (req, res) => {
   try {
     const { title, description, type, startsAt, endsAt, location, subject } = req.body;
     if (!title || !startsAt) return fail(res, "العنوان وموعد البداية مطلوبان");
+    if (Number.isNaN(new Date(startsAt).getTime())) return fail(res, "موعد البداية غير صالح");
+    if (!isBatchManager(req.user) && !(await doctorOwnsSubject(req.user, subject))) {
+      return fail(res, "حدد مادة تدرّسها لإضافة فعالية لها", 403);
+    }
     if (endsAt && new Date(endsAt) < new Date(startsAt)) return fail(res, "موعد النهاية يجب أن يكون بعد البداية");
     if (subject && !mongoose.Types.ObjectId.isValid(subject)) return fail(res, "معرف المادة غير صالح");
 
@@ -45,7 +64,7 @@ router.post("/", role("dean", "leader", "admin"), async (req, res) => {
       const Notification = require("../models/Notification");
       await Notification.create({
         title: `فعالية جديدة: ${event.title}`,
-        message: `تمت إضافة فعالية أكاديمية جديدة للجدول: ${event.title} في تاريخ ${event.startsAt}`,
+        message: `تمت إضافة فعالية أكاديمية جديدة للجدول: ${event.title} — ${formatEventDateAr(event.startsAt)}`,
         type: "normal",
         target: "students",
         batches: [req.activeBatch],
@@ -61,13 +80,16 @@ router.post("/", role("dean", "leader", "admin"), async (req, res) => {
   }
 });
 
-router.put("/:id", role("dean", "leader", "admin"), async (req, res) => {
+router.put("/:id", role("dean", "leader", "admin", "doctor"), async (req, res) => {
   try {
     const event = await AcademicEvent.findOne({ _id: req.params.id, batch: req.activeBatch });
     if (!event) return notFound(res, "الفعالية غير موجودة");
-    const isDeanOrLeader = req.user.roles && (req.user.roles.includes("dean") || req.user.roles.includes("admin") || req.user.roles.includes("leader"));
+    const isDeanOrLeader = isBatchManager(req.user);
     if (!isDeanOrLeader && event.createdBy.toString() !== req.user.id) {
       return res.status(403).json({ success: false, message: "ليس لديك صلاحية لتعديل هذه الفعالية" });
+    }
+    if (!isDeanOrLeader && req.body.subject !== undefined && !(await doctorOwnsSubject(req.user, req.body.subject))) {
+      return fail(res, "لا يمكنك نقل الفعالية إلى مادة لا تدرّسها", 403);
     }
     const permitted = ["title", "description", "type", "startsAt", "endsAt", "location", "subject"];
     permitted.forEach((key) => { if (req.body[key] !== undefined) event[key] = req.body[key] || null; });
@@ -80,11 +102,11 @@ router.put("/:id", role("dean", "leader", "admin"), async (req, res) => {
   }
 });
 
-router.delete("/:id", role("dean", "leader", "admin"), async (req, res) => {
+router.delete("/:id", role("dean", "leader", "admin", "doctor"), async (req, res) => {
   try {
     const event = await AcademicEvent.findOne({ _id: req.params.id, batch: req.activeBatch });
     if (!event) return notFound(res, "الفعالية غير موجودة");
-    const isDeanOrLeader = req.user.roles && (req.user.roles.includes("dean") || req.user.roles.includes("admin") || req.user.roles.includes("leader"));
+    const isDeanOrLeader = isBatchManager(req.user);
     if (!isDeanOrLeader && event.createdBy.toString() !== req.user.id) {
       return res.status(403).json({ success: false, message: "ليس لديك صلاحية لحذف هذه الفعالية" });
     }

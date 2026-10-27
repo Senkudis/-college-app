@@ -6,12 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>إدارة التنبيهات | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=2026083019">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026083019">
+  <link rel="stylesheet" href="/css/style.css?v=2026102613">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026102613">
+  <link rel="stylesheet" href="/css/ui.css?v=2026102613">
   <style>
     .notif-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(min(320px, 100%), 1fr));
       gap: 16px;
     }
     .notif-item {
@@ -29,10 +30,14 @@
     .notif-item.emergency .notif-item-title { color: var(--danger); }
     .notif-item-body { font-size: 0.88rem; color: var(--text-muted); line-height: 1.6; margin-bottom: 14px; }
     .notif-item-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-bottom: 14px; }
-    .notif-item-footer { display: flex; align-items: center; justify-content: space-between; padding-top: 12px; border-top: 1px dashed var(--border); }
-    .notif-sender { font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 5px; }
+    .notif-item-footer { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding-top: 12px; border-top: 1px dashed var(--border); }
+    .notif-sender { font-size: 0.8rem; color: var(--text-muted); display: flex; align-items: center; gap: 5px; min-width: 0; }
+    .notif-item-footer .btn { flex-shrink: 0; }
     #batchSelectGroup { display: none; }
-  </style>
+      .mn-row { align-items: flex-start; }
+    .mn-row .hm-row-title { white-space: normal; }
+    .mn-msg { margin: 3px 0; font-size: 0.84rem; line-height: 1.6; color: var(--text-main); display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+</style>
 
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
   <meta name="mobile-web-app-capable" content="yes">
@@ -57,7 +62,7 @@
 <div class="page-content">
 
     <!-- Welcome Banner -->
-    <div class="welcome-banner" style="background: linear-gradient(135deg,#06b6d4,#0891b2,#0e7490);">
+    <div class="welcome-banner" style="--page-accent:#0e7490">
       <div class="welcome-banner-icon-wrap">
         <i class="ri-megaphone-line welcome-banner-icon"></i>
       </div>
@@ -66,21 +71,13 @@
         <p>إرسال وإدارة الإشعارات للطلاب والأقسام</p>
       </div>
     </div>
-  <div class="page-header">
-    <div class="page-header-left">
-      <div class="page-icon"><i class="ri-megaphone-line"></i></div>
-      <div>
-        <div class="page-title">إدارة التنبيهات والإشعارات</div>
-        <div class="page-subtitle">نظام الإشعارات الشامل</div>
-      </div>
-    </div>
-    <button class="btn btn-primary" id="addBtn">
-      <i class="ri-add-line"></i> إرسال تنبيه
-    </button>
+  <div class="ui-toolbar">
+    <button type="button" class="ui-primary" id="addBtn"><i class="ri-add-line"></i> إشعار جديد</button>
   </div>
 
   <div id="alertMsg" class="alert"></div>
-  <div class="notif-grid" id="notifGrid"></div>
+  <div class="hm-sec-head"><h2 class="hm-sec-title">المرسلة <span class="n" id="sentCount"></span></h2></div>
+  <div class="hm-list" id="notifGrid"></div>
 </div>
 
 <!-- Modal -->
@@ -144,9 +141,9 @@
   جميع الحقوق محفوظة © <span id="year"></span> النظام الجامعي المتكامل
 </footer>
 
-<script src="/js/shared.js?v=2026083019"></script>
-<script src="/js/app.js?v=2026083019"></script>
-<script src="/js/socket-client.js?v=2026083019" defer></script>
+<script src="/js/shared.js?v=2026102613"></script>
+<script src="/js/app.js?v=2026102613"></script>
+<script src="/js/socket-client.js?v=2026102613" defer></script>
 <script>
   CBS.init({ requireRoles: ['dean', 'doctor', 'leader', 'admin'] });
 
@@ -213,28 +210,19 @@
       CBS.showEmpty('notifGrid', 'لا توجد تنبيهات', 'ri-notification-off-line');
       return;
     }
+    document.getElementById('sentCount').textContent = allNotifs.length;
+    // اسم المرسل واسم الدفعة كانا يُدرجان بلا تهريب في innerHTML
     document.getElementById('notifGrid').innerHTML = allNotifs.map(n => {
-      const sender = n.createdBy?.name || 'النظام';
-      const typeMap = { normal: ['badge-primary','عادي'], emergency: ['badge-danger','طارئ'] };
-      const [cls, label] = typeMap[n.type] || typeMap.normal;
-      const batchName = getBatchName(n.batch);
-      return `
-        <div class="notif-item ${n.type === 'emergency' ? 'emergency' : ''}">
-          <div class="notif-item-title">${CBS.escapeHTML(n.title)}</div>
-          <div class="notif-item-body">${CBS.escapeHTML(n.message)}</div>
-          <div class="notif-item-meta">
-            <span class="badge ${cls}">${label}</span>
-            ${batchName
-              ? `<span class="badge badge-accent"><i class="ri-team-line"></i> ${batchName}</span>`
-              : `<span class="badge badge-accent"><i class="ri-global-line"></i> عام</span>`}
-            <span class="badge badge-accent"><i class="ri-time-line"></i> ${CBS.formatDate(n.createdAt)}</span>
+      const emergency = n.type === 'emergency';
+      const meta = [getBatchName(n.batch) || 'عام لكل الدفعات', CBS.formatDate(n.createdAt), n.createdBy?.name || 'النظام'].join(' · ');
+      return `<div class="hm-row mn-row">
+          <span class="hm-ic"${emergency ? ' data-tone="danger"' : ''}><i class="${emergency ? 'ri-alarm-warning-line' : 'ri-megaphone-line'}"></i></span>
+          <div class="hm-row-body">
+            <div class="hm-row-title">${CBS.escapeHTML(n.title)}${emergency ? ' <span class="hm-chip" data-tone="danger">طارئ</span>' : ''}</div>
+            <div class="mn-msg">${CBS.escapeHTML(n.message)}</div>
+            <div class="hm-row-meta">${CBS.escapeHTML(meta)}</div>
           </div>
-          <div class="notif-item-footer">
-            <span class="notif-sender"><i class="ri-user-line"></i>${sender}</span>
-            <button class="btn btn-danger" style="padding:6px 14px;font-size:0.8rem;" onclick="deleteNotif('${n._id}')" aria-label="حذف">
-              <i class="ri-delete-bin-line"></i> حذف
-            </button>
-          </div>
+          <span class="hm-row-end"><button type="button" class="ui-icon-btn danger" onclick="deleteNotif('${n._id}')" title="حذف" aria-label="حذف"><i class="ri-delete-bin-line"></i></button></span>
         </div>`;
     }).join('');
   }

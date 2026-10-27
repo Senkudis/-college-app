@@ -2,6 +2,11 @@ name: Build iOS App
 
 on:
   workflow_dispatch: # تشغيل يدوي بضغطة زر
+    inputs:
+      upload:
+        description: 'رفع النسخة الموقّعة إلى TestFlight'
+        type: boolean
+        default: true
   push:
     branches:
       - main
@@ -12,10 +17,22 @@ on:
       - 'package.json'
       - '.github/workflows/build-ios.yml'
 
+# التوقيع يتم عبر مفتاح App Store Connect API (توقيع تلقائي سحابي، بلا شهادات
+# أو ملفات provisioning يدوية). بدون الأسرار الثلاثة يبني نسخة غير موقّعة فقط
+# للتأكد أن المشروع يُترجم. معرّف الفريق ليس سراً: مثبّت في project.pbxproj
+# (DEVELOPMENT_TEAM) ويمكن تجاوزه بسر APPLE_TEAM_ID.
+#   ASC_KEY_ID      — Key ID لمفتاح App Store Connect API (صلاحية Admin)
+#   ASC_ISSUER_ID   — Issuer ID الظاهر أعلى صفحة المفاتيح
+#   ASC_KEY_P8      — محتوى ملف AuthKey_XXXX.p8 كما هو
 jobs:
   build:
     name: Build iOS (Xcode & Capacitor)
     runs-on: macos-15
+    env:
+      APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID || 'T2QRZLMA3C' }}
+      ASC_KEY_ID: ${{ secrets.ASC_KEY_ID }}
+      ASC_ISSUER_ID: ${{ secrets.ASC_ISSUER_ID }}
+      ASC_KEY_P8: ${{ secrets.ASC_KEY_P8 }}
 
     steps:
       - name: 📥 Checkout Repository
@@ -30,6 +47,7 @@ jobs:
       - name: 📦 Install Node Dependencies
         run: npm ci || npm install
 
+      # يعيد توليد CapApp-SPM/Package.swift بمسارات ماك (المولَّد على ويندوز فيه \)
       - name: 🔄 Sync Capacitor iOS Project
         run: npx cap sync ios
 
@@ -38,7 +56,19 @@ jobs:
         with:
           xcode-version: latest-stable
 
+      - name: 🔍 Check signing secrets
+        id: signing
+        run: |
+          if [ -n "$ASC_KEY_ID" ] && [ -n "$ASC_ISSUER_ID" ] && [ -n "$ASC_KEY_P8" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::أسرار التوقيع غير مكتملة — سيُبنى التطبيق بدون توقيع (لا يُثبَّت ولا يُرفع)."
+          fi
+
+      # ---------- نسخة غير موقّعة (عند غياب الأسرار) ----------
       - name: 📱 Build iOS Archive (Unsigned)
+        if: steps.signing.outputs.enabled != 'true'
         run: |
           xcodebuild \
             -project ios/App/App.xcodeproj \
@@ -52,6 +82,7 @@ jobs:
             archive
 
       - name: 📦 Package App into Payload / IPA
+        if: steps.signing.outputs.enabled != 'true'
         run: |
           mkdir -p build/Payload
           cp -r build/App.xcarchive/Products/Applications/App.app build/Payload/
@@ -60,6 +91,7 @@ jobs:
           cd ..
 
       - name: 📤 Upload iOS App Artifact
+        if: steps.signing.outputs.enabled != 'true'
         uses: actions/upload-artifact@v4
         with:
           name: iOS-App-Build
@@ -67,3 +99,78 @@ jobs:
             build/App-unsigned.ipa
             build/App.xcarchive/Products/Applications/App.app
           retention-days: 14
+
+      # ---------- نسخة موقّعة + رفع إلى TestFlight ----------
+      - name: 🔑 Install App Store Connect API key
+        if: steps.signing.outputs.enabled == 'true'
+        run: |
+          mkdir -p "$RUNNER_TEMP/keys"
+          printf '%s\n' "$ASC_KEY_P8" > "$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
+          echo "ASC_KEY_PATH=$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8" >> "$GITHUB_ENV"
+
+      - name: 📱 Build iOS Archive (Signed)
+        if: steps.signing.outputs.enabled == 'true'
+        run: |
+          xcodebuild \
+            -project ios/App/App.xcodeproj \
+            -scheme App \
+            -configuration Release \
+            -destination 'generic/platform=iOS' \
+            -archivePath build/App.xcarchive \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$ASC_KEY_PATH" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
+            DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
+            CODE_SIGN_STYLE=Automatic \
+            archive
+
+      # destination=upload يرفع مباشرة إلى App Store Connect؛ export يكتفي بملف IPA
+      - name: 🚀 Export IPA / Upload to TestFlight
+        if: steps.signing.outputs.enabled == 'true'
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ] && [ "${{ inputs.upload }}" != "true" ]; then
+            DEST=export
+          elif [ "${{ github.event_name }}" = "push" ]; then
+            DEST=export
+          else
+            DEST=upload
+          fi
+          cat > build/ExportOptions.plist <<EOF
+          <?xml version="1.0" encoding="UTF-8"?>
+          <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+          <plist version="1.0">
+          <dict>
+            <key>method</key><string>app-store-connect</string>
+            <key>destination</key><string>$DEST</string>
+            <key>teamID</key><string>$APPLE_TEAM_ID</string>
+            <key>signingStyle</key><string>automatic</string>
+            <key>uploadSymbols</key><true/>
+          </dict>
+          </plist>
+          EOF
+          xcodebuild -exportArchive \
+            -archivePath build/App.xcarchive \
+            -exportOptionsPlist build/ExportOptions.plist \
+            -exportPath build/export \
+            -allowProvisioningUpdates \
+            -authenticationKeyPath "$ASC_KEY_PATH" \
+            -authenticationKeyID "$ASC_KEY_ID" \
+            -authenticationKeyIssuerID "$ASC_ISSUER_ID"
+          echo "### iOS: $DEST" >> "$GITHUB_STEP_SUMMARY"
+          if [ "$DEST" = "upload" ]; then
+            echo "تم الرفع إلى App Store Connect — تظهر النسخة في TestFlight بعد المعالجة (15-30 دقيقة)." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: 📤 Upload signed IPA
+        if: steps.signing.outputs.enabled == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: iOS-App-Signed
+          path: build/export/*.ipa
+          if-no-files-found: ignore
+          retention-days: 14
+
+      - name: 🧹 Remove API key
+        if: always()
+        run: rm -rf "$RUNNER_TEMP/keys"

@@ -6,12 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>غرف المذاكرة الجماعية وبومودورو | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=2026083019">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026083019">
+  <link rel="stylesheet" href="/css/style.css?v=2026102613">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026102613">
+  <link rel="stylesheet" href="/css/ui.css?v=2026102613">
   <style>
     .pod-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(min(290px, 100%), 1fr));
       gap: 16px;
       margin-top: 14px;
     }
@@ -127,21 +128,17 @@
 <body>
 
 
+<header class="main-header">
+  <div class="header-brand">
+    <img src="/assets/logo.png" class="header-logo" alt="">
+    <div class="header-title-group"><strong>غرف المذاكرة</strong><small>غرف المذاكرة</small></div>
+  </div>
+  <div class="header-actions"></div>
+</header>
+
 <main class="page-container" style="max-width:1040px; margin:0 auto; padding:16px 16px 80px;">
-  <!-- Header Bar -->
-  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
-    <div style="display:flex; align-items:center; gap:8px;">
-      <a href="/dashboard.html" class="btn btn-icon btn-outline" style="width:36px; height:36px;"><i class="ri-arrow-right-line"></i></a>
-      <div>
-        <h1 style="font-size:1.25rem; font-weight:800; margin:0; color:var(--text-main);">
-          <i class="ri-team-fill" style="color:var(--primary);"></i> غرف المذاكرة الجماعية وبومودورو
-        </h1>
-        <span style="font-size:0.78rem; color:var(--text-muted);">جلسات تركيز مشتركة ومؤقت بومودورو متزامن لطلاب الدفعة</span>
-      </div>
-    </div>
-    <div>
-      <button class="btn btn-primary" onclick="openCreatePodModal()"><i class="ri-add-line"></i> إنشاء جلسة مذاكرة</button>
-    </div>
+  <div class="ui-toolbar">
+    <button type="button" class="ui-primary" onclick="openCreatePodModal()"><i class="ri-add-line"></i> جلسة مذاكرة</button>
   </div>
 
   <!-- Pods List View -->
@@ -236,9 +233,9 @@
 
 <div id="toast-container"></div>
 
-<script src="/js/shared.js?v=2026083019"></script>
-<script src="/js/app.js?v=2026083019"></script>
-<script src="/js/socket-client.js?v=2026083019"></script>
+<script src="/js/shared.js?v=2026102613"></script>
+<script src="/js/app.js?v=2026102613"></script>
+<script src="/js/socket-client.js?v=2026102613"></script>
 <script>
   CBS.init({ requireAuth: true });
   const user = CBS.getUser();

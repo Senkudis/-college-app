@@ -6,12 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>إدارة المحاضرات | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=2026083019">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026083019">
+  <link rel="stylesheet" href="/css/style.css?v=2026102613">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026102613">
+  <link rel="stylesheet" href="/css/ui.css?v=2026102613">
   <style>
     .lectures-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(min(260px, 100%), 1fr));
       gap: 12px;
     }
     @media (max-width: 480px) {
@@ -75,7 +76,15 @@
       background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.85rem; padding: 2px;
     }
     .btn-header-group { display: flex; gap: 6px; flex-wrap: wrap; }
-  </style>
+      .ml-tools { display: flex; gap: 8px; margin-bottom: 16px; }
+    .ml-tools .ui-search { flex: 1; min-width: 0; }
+    .ml-tools select { min-height: 44px; max-width: 42%; padding: 0 10px; border-radius: 12px; border: 1px solid var(--border); background: var(--hm-surface); color: var(--text-main); font: inherit; font-size: 0.84rem; }
+    .ml-num { font-size: 0.9rem; font-weight: 800; font-variant-numeric: tabular-nums; }
+    .ml-reorder { display: flex; flex-direction: column; }
+    .ml-reorder button { width: 32px !important; height: 22px !important; min-width: 0 !important; min-height: 0 !important; padding: 0 !important; border: 0; border-radius: 6px !important; background: transparent !important; color: var(--text-muted); font-size: 1rem; cursor: pointer; display: grid; place-items: center; }
+    .ml-reorder button:disabled { opacity: 0.25; cursor: default; }
+    #lecturesGrid .hm-row-end { gap: 0; }
+</style>
 
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
   <meta name="mobile-web-app-capable" content="yes">
@@ -100,7 +109,7 @@
 <div class="page-content">
 
     <!-- Welcome Banner -->
-    <div class="welcome-banner" style="background: linear-gradient(135deg,#ef4444,#dc2626,#b91c1c);">
+    <div class="welcome-banner" style="--page-accent:#dc2626">
       <div class="welcome-banner-icon-wrap">
         <i class="ri-video-line welcome-banner-icon"></i>
       </div>
@@ -109,36 +118,19 @@
         <p>رفع ومشاركة المحاضرات المرئية والمرفقات</p>
       </div>
     </div>
-  <div class="page-header">
-    <div class="page-header-left">
-      <div class="page-icon"><i class="ri-slideshow-3-line"></i></div>
-      <div>
-        <div class="page-title">إدارة المحاضرات</div>
-        <div class="page-subtitle" id="lectureCount">جاري التحميل...</div>
-      </div>
-    </div>
-    <div class="btn-header-group">
-      <button class="btn btn-primary" id="addBtn">
-        <i class="ri-add-line"></i> إضافة محاضرة
-      </button>
-      <button class="btn btn-ghost" id="batchBtn" onclick="openBatchModal()">
-        <i class="ri-upload-cloud-2-line"></i> رفع دفعي
-      </button>
-    </div>
+  <p class="ui-count" id="lectureCount">جاري التحميل...</p>
+  <div class="ui-toolbar">
+    <button type="button" class="ui-primary" id="addBtn"><i class="ri-add-line"></i> محاضرة جديدة</button>
+    <button type="button" class="ui-act primary" id="batchBtn" onclick="openBatchModal()" style="min-height:44px"><i class="ri-upload-cloud-2-line"></i> رفع دفعي</button>
   </div>
 
-  <div class="controls-bar">
-    <div class="search-wrapper">
-      <i class="ri-search-line"></i>
-      <input type="text" class="search-input" id="searchBox" placeholder="ابحث بعنوان المحاضرة...">
-    </div>
-    <select class="form-control" id="filterSubject" onchange="loadLectures()" style="max-width:260px;">
-      <option value="">جميع المواد</option>
-    </select>
+  <div class="ml-tools">
+    <div class="ui-search"><i class="ri-search-line"></i><input type="search" id="searchBox" placeholder="ابحث بعنوان المحاضرة" aria-label="ابحث بعنوان المحاضرة"></div>
+    <select id="filterSubject" onchange="loadLectures()" aria-label="المادة"><option value="">كل المواد</option></select>
   </div>
 
   <div id="alertMsg" class="alert"></div>
-  <div class="lectures-grid" id="lecturesGrid"></div>
+  <div id="lecturesGrid"></div>
 </div>
 
 <!-- Modal -->
@@ -269,9 +261,9 @@
   جميع الحقوق محفوظة © <span id="year"></span> النظام الجامعي المتكامل
 </footer>
 
-<script src="/js/shared.js?v=2026083019"></script>
-<script src="/js/app.js?v=2026083019"></script>
-<script src="/js/socket-client.js?v=2026083019" defer></script>
+<script src="/js/shared.js?v=2026102613"></script>
+<script src="/js/app.js?v=2026102613"></script>
+<script src="/js/socket-client.js?v=2026102613" defer></script>
 <script>
   CBS.init({ requireRoles: ['dean', 'doctor', 'leader', 'admin'] });
   let allLectures = [];
@@ -282,11 +274,10 @@
       const _resData = await CBS.readJson(res);
       const list = _resData.data?.subjects || _resData.subjects || _resData.data || _resData;
       const options = list.map(s => {
-        let batchName = '';
-        if (s.batches && s.batches.length > 0) {
-          batchName = ' (' + s.batches.map(b => CBS.escapeHTML(b.name)).join(' و ') + ')';
-        }
-        return `<option value="${CBS.escapeHTML(s._id)}">${CBS.escapeHTML(s.name)}${batchName}</option>`;
+        // أسماء الدفعات فقط إن وُجدت (كانت تظهر "()" فارغة)، وتهريب مرة واحدة
+        const names = (s.batches || []).map(b => b && b.name).filter(Boolean);
+        const batchName = names.length ? ' (' + names.join(' و ') + ')' : '';
+        return `<option value="${CBS.escapeHTML(s._id)}">${CBS.escapeHTML(s.name + batchName)}</option>`;
       }).join('');
 
       document.getElementById('lSubject').innerHTML =
@@ -308,7 +299,7 @@
       // بدون هذا الفحص كان رد الخطأ (كائن) يمر بصمت فيظهر "undefined محاضرة"
       // ثم قائمة فارغة، بدل رسالة الخطأ الحقيقية
       allLectures = Array.isArray(data) ? data : (data.lectures || data.data || []);
-      document.getElementById('lectureCount').textContent = `${allLectures.length} محاضرة`;
+      document.getElementById('lectureCount').textContent = CBS.arCount(allLectures.length, ['محاضرة واحدة', 'محاضرتان', 'محاضرات', 'محاضرة']);
       render(allLectures);
     } catch(e) { CBS.showAlert('alertMsg', e.message || 'فشل تحميل المحاضرات', 'danger'); }
   }
@@ -336,66 +327,36 @@
       g.items.push(l);
     });
 
-    const cardsHtml = (items) => items.map((l, index) => {
-      const canManage = canManageAll || String(l.uploadedBy?._id || l.uploadedBy || '') === String(userId || '');
-      return `
-      <div class="lecture-card" id="lec-card-${l._id}">
-        <div class="lecture-title">
-          <span style="display:inline-flex;align-items:center;justify-content:center;min-width:24px;height:24px;
-                       border-radius:6px;background:var(--primary-light);color:var(--primary);
-                       font-size:0.75rem;font-weight:800;margin-left:6px;">${index + 1}</span>
-          ${CBS.escapeHTML(l.title)}
-        </div>
-        <div class="lecture-subject"><i class="ri-book-open-line"></i>${CBS.escapeHTML(typeof l.subject === 'object' ? l.subject?.name : (l.subject || 'غير محددة'))}</div>
-        <div class="lecture-links">
-          ${l.videoUrl ? `<a href="${CBS.escapeHTML(l.videoUrl)}" target="_blank" rel="noopener noreferrer" class="llink video"><i class="ri-play-circle-line"></i> مشاهدة الفيديو</a>` : ''}
-          ${l.file ? `<a href="${API_BASE}/uploads/lectures/${l.file}" target="_blank" rel="noopener noreferrer" class="llink file"><i class="ri-download-cloud-line"></i> تحميل الملف</a>` : ''}
-          ${!l.videoUrl && !l.file ? '<span style="font-size:0.8rem;color:var(--text-muted)">لا توجد مرفقات</span>' : ''}
-        </div>
-        ${canManage ? `
-        <div class="lecture-footer" style="display:flex; justify-content:space-between; align-items:center; gap:8px;">
-          <div class="reorder-btns" style="display:flex; gap:4px; align-items:center;">
-            <button class="btn btn-ghost" style="padding:4px 8px; font-size:0.85rem;"
-              onclick="moveLecture('${l._id}', -1)"
-              ${index === 0 ? 'disabled' : ''}
-              title="تقديم لأعلى" aria-label="تقديم لأعلى"><i class="ri-arrow-up-s-line"></i></button>
-            <button class="btn btn-ghost" style="padding:4px 8px; font-size:0.85rem;"
-              onclick="moveLecture('${l._id}', 1)"
-              ${index === items.length - 1 ? 'disabled' : ''}
-              title="تأخير لأسفل" aria-label="تأخير لأسفل"><i class="ri-arrow-down-s-line"></i></button>
-          </div>
-          <div style="display:flex; gap:6px;">
-            <button class="btn btn-secondary" style="padding:6px 12px; font-size:0.78rem;" onclick="openEditModal('${l._id}')" aria-label="تعديل">
-              <i class="ri-edit-line"></i> تعديل
-            </button>
-            <button class="btn btn-danger" style="padding:6px 12px; font-size:0.78rem;" onclick="deleteLecture('${l._id}')" aria-label="حذف">
-              <i class="ri-delete-bin-line"></i> حذف
-            </button>
-          </div>
-        </div>` : ''}
-      </div>`;
+    /* صف لكل محاضرة: الرقم = ترتيبها في المادة، الضغط يفتح المرفق، وفي الطرف
+       أسهم الترتيب (عمود صغير) ثم التعديل ثم الحذف كأيقونة خافتة لا زر أحمر */
+    const rowsHtml = (items) => items.map((l, index) => {
+      const canManage = typeof l.canManage === 'boolean'
+        ? l.canManage
+        : canManageAll || String(l.uploadedBy?._id || l.uploadedBy || '') === String(userId || '');
+      const kinds = [l.file ? 'ملف' : '', l.videoUrl ? 'فيديو' : ''].filter(Boolean).join(' + ') || 'بلا مرفقات';
+      const href = l.file ? `${API_BASE}/uploads/lectures/${encodeURIComponent(l.file)}` : (l.videoUrl || '');
+      const main = `<span class="hm-ic ml-num">${index + 1}</span>
+        <div class="hm-row-body"><div class="hm-row-title">${CBS.escapeHTML(l.title)}</div><div class="hm-row-meta">${kinds}</div></div>`;
+      const open = href
+        ? `<a class="ui-row-main" href="${CBS.escapeHTML(href)}" data-title="${CBS.escapeHTML(l.title)}" target="_blank" rel="noopener noreferrer">${main}</a>`
+        : `<div class="ui-row-main" style="cursor:default">${main}</div>`;
+      const video = l.file && l.videoUrl ? `<a class="ui-icon-btn" href="${CBS.escapeHTML(l.videoUrl)}" target="_blank" rel="noopener noreferrer" title="مشاهدة الفيديو" aria-label="مشاهدة الفيديو"><i class="ri-play-circle-line"></i></a>` : '';
+      const manage = canManage ? `
+          <span class="ml-reorder">
+            <button type="button" onclick="moveLecture('${l._id}', -1)" ${index === 0 ? 'disabled' : ''} title="تقديم" aria-label="تقديم"><i class="ri-arrow-up-s-line"></i></button>
+            <button type="button" onclick="moveLecture('${l._id}', 1)" ${index === items.length - 1 ? 'disabled' : ''} title="تأخير" aria-label="تأخير"><i class="ri-arrow-down-s-line"></i></button>
+          </span>
+          <button type="button" class="ui-icon-btn" onclick="openEditModal('${l._id}')" title="تعديل" aria-label="تعديل"><i class="ri-edit-line"></i></button>
+          <button type="button" class="ui-icon-btn danger" onclick="deleteLecture('${l._id}')" title="حذف" aria-label="حذف"><i class="ri-delete-bin-line"></i></button>` : '';
+      return `<div class="hm-row ui-row" id="lec-card-${l._id}">${open}<span class="hm-row-end">${video}${manage}</span></div>`;
     }).join('');
 
-    /* مادة واحدة: شبكة بسيطة. عدة مواد: عنوان لكل مادة فوق محاضراتها،
-       ليتضح للمستخدم أن الترقيم يبدأ من جديد داخل كل مادة. */
     const grid = document.getElementById('lecturesGrid');
-    if (groups.length === 1) {
-      grid.className = 'lectures-grid';
-      grid.innerHTML = cardsHtml(groups[0].items);
-      return;
-    }
-
-    grid.className = '';
     grid.innerHTML = groups.map(g => `
-      <div style="margin-bottom:26px;">
-        <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;
-                    padding-bottom:8px;border-bottom:2px solid var(--border);">
-          <i class="ri-book-open-line" style="color:var(--primary)"></i>
-          <span style="font-weight:800;color:var(--text-main);">${CBS.escapeHTML(g.name)}</span>
-          <span style="font-size:0.78rem;color:var(--text-muted);">(${g.items.length} محاضرة)</span>
-        </div>
-        <div class="lectures-grid">${cardsHtml(g.items)}</div>
-      </div>`).join('');
+      <section class="ui-section">
+        ${groups.length > 1 || !singleSubject ? `<div class="hm-sec-head"><h2 class="hm-sec-title">${CBS.escapeHTML(g.name)} <span class="n">${g.items.length}</span></h2></div>` : ''}
+        <div class="hm-list">${rowsHtml(g.items)}</div>
+      </section>`).join('');
   }
 
   function openEditModal(id) {
@@ -549,7 +510,10 @@
     if (!confirm('تأكيد حذف هذه المحاضرة؟')) return;
     const res = await CBS.apiDelete(`/api/lectures/${id}`);
     if (res.ok) { CBS.toast('تم الحذف', '', 'success'); loadLectures(); }
-    else CBS.toast('فشل الحذف', '', 'error');
+    else {
+      const err = await res.json().catch(() => ({}));
+      CBS.toast('فشل الحذف', err.message || '', 'error');
+    }
   }
 
   document.getElementById('searchBox').addEventListener('input', e => {

@@ -6,6 +6,7 @@ const AcademicEvent = require("../models/AcademicEvent");
 const User = require("../models/User");
 const { success, serverError } = require("../utils/response");
 const mongoose = require("mongoose");
+const { resolveDueDateTime } = require("../utils/dueDate");
 
 // دالة مساعدة لجلب الأحداث حسب النطاق الزمني والمستخدم
 async function fetchCalendarEvents(user, queryStart, queryEnd, headerBatchId) {
@@ -60,17 +61,15 @@ async function fetchCalendarEvents(user, queryStart, queryEnd, headerBatchId) {
       .lean()
   ]);
 
+  // canManage = إدارة كل فعاليات الدفعة؛ canCreate يشمل الدكتور (لمواده) — والتعديل لما أنشأه فقط
   const canManage = Boolean(user.roles && (user.roles.includes("dean") || user.roles.includes("admin") || user.roles.includes("leader")));
+  const canCreate = canManage || Boolean(user.roles && user.roles.includes("doctor"));
 
   // تحويل كل الأحداث لصيغة موحدة غنية بالبيانات
   const events = [
     // الواجبات — لون برتقالي
     ...assignments.map(a => {
-      const due = new Date(a.dueDate);
-      if (a.dueTime) {
-        const [h, m] = a.dueTime.split(":").map(Number);
-        due.setHours(h, m, 0, 0);
-      }
+      const due = resolveDueDateTime(a) || new Date(a.dueDate);
       return {
         id: `assignment-${a._id}`,
         rawId: a._id,
@@ -130,7 +129,7 @@ async function fetchCalendarEvents(user, queryStart, queryEnd, headerBatchId) {
 
   return {
     events,
-    canManage,
+    canManage: canCreate,
     period: { start: startDate.toISOString(), end: endDate.toISOString() },
     counts: {
       assignments: assignments.length,
@@ -144,7 +143,17 @@ async function fetchCalendarEvents(user, queryStart, queryEnd, headerBatchId) {
 // ========== تقويم موحّد: الواجبات + الاختبارات + الأحداث ==========
 router.get("/events", auth, async (req, res) => {
   try {
-    const result = await fetchCalendarEvents(req.user, req.query.start, req.query.end, req.headers["x-batch-id"]);
+    /* صفحة التقويم ترسل ?year=&month= بينما كان المسار يقرأ start/end فقط —
+       فكل شهر تتنقل إليه يعرض أحداث الشهر الحالي. ندعم الصيغتين. */
+    let { start, end } = req.query;
+    const year = parseInt(req.query.year, 10);
+    const month = parseInt(req.query.month, 10);
+    if (!start && !end && year >= 2000 && year <= 2100 && month >= 1 && month <= 12) {
+      // هامش أسبوع قبل وبعد لتعبئة أيام الشهرين المجاورين في شبكة التقويم
+      start = new Date(Date.UTC(year, month - 1, 1) - 7 * 864e5).toISOString();
+      end = new Date(Date.UTC(year, month, 1) + 7 * 864e5).toISOString();
+    }
+    const result = await fetchCalendarEvents(req.user, start, end, req.headers["x-batch-id"]);
     success(res, result);
   } catch (err) {
     serverError(res, err, "تقويم الأحداث");

@@ -17,6 +17,12 @@ router.post('/register', auth, async (req, res) => {
       return fail(res, 'رمز الجهاز (Token) غير صالح', 400);
     }
 
+    /* الجهاز لحساب واحد: على هاتف مشترك (خروج طالب ودخول آخر) كان التوكن يبقى
+       في حساب الأول فتصله إشعارات الثاني — درجاته ورسومه وتنبيهات غيابه. */
+    await User.updateMany(
+      { _id: { $ne: req.user.id }, fcmTokens: token },
+      { $pull: { fcmTokens: token } }
+    );
     // أضف التوكن إذا لم يكن موجوداً مسبقاً (addToSet)
     await User.updateOne(
       { _id: req.user.id },
@@ -51,7 +57,7 @@ router.delete('/unregister', auth, async (req, res) => {
 // المفتاح العام لـ VAPID — يحتاجه العميل للاشتراك (عام وآمن للكشف)
 router.get('/webpush/key', (req, res) => {
   const key = process.env.VAPID_PUBLIC_KEY || '';
-  res.json({ success: true, key, enabled: !key });
+  res.json({ success: true, key, enabled: Boolean(key) }); // كانت !key: معكوسة
 });
 
 // حفظ اشتراك Web Push للمستخدم الحالي
@@ -61,9 +67,9 @@ router.post('/webpush/subscribe', auth, async (req, res) => {
     if (!sub || typeof sub.endpoint !== 'string' || !sub.keys?.p256dh || !sub.keys?.auth) {
       return fail(res, 'بيانات الاشتراك غير صالحة', 400);
     }
-    // نحذف أي اشتراك بنفس الـ endpoint أولاً (تفادي التكرار) ثم نضيف المحدّث
-    await User.updateOne(
-      { _id: req.user.id },
+    // نحذف أي اشتراك بنفس الـ endpoint من كل الحسابات (جهاز مشترك) ثم نضيف المحدّث
+    await User.updateMany(
+      { 'webPushSubscriptions.endpoint': sub.endpoint },
       { $pull: { webPushSubscriptions: { endpoint: sub.endpoint } } }
     );
     await User.updateOne(

@@ -1,0 +1,56 @@
+/* =====================================================================
+   auth.css — صفحات الدخول والتسجيل واستعادة كلمة المرور.
+   تبقى داكنة عمداً (أول ما يراه المستخدم، بهوية الكلية الكحلية)، لكن
+   الألوان كانت متضاربة: زر الدخول أزرق ساطع (#2563eb) لا يشبه لون التطبيق،
+   وزر التسجيل أخضر، ورابطا التسجيل والأخبار أخضر وأزرق، وحقل "نسيت كلمة
+   المرور" أبيض فاقع فوق الخلفية الداكنة. هنا: زر أساسي واحد بلون التطبيق،
+   والروابط الثانوية محايدة، والحقول داكنة في كل الصفحات.
+   يُحمَّل قبل </head> ليأتي بعد الأنماط المضمّنة في كل صفحة.
+   ===================================================================== */
+:root { --auth-primary: #4f46e5; --auth-primary-hover: #4338ca; }
+
+/* الزر الأساسي: لون التطبيق، مصمت، بلا توهج */
+.btn-login, .btn-submit,
+body:has(.bg-orb) .btn-primary, .auth-card .btn-primary {
+  background: var(--auth-primary) !important;
+  box-shadow: none !important;
+  border: 0 !important;
+  border-radius: 12px !important;
+  min-height: 48px;
+  color: #fff !important;
+}
+.btn-login:hover:not(:disabled), .btn-submit:hover:not(:disabled),
+body:has(.bg-orb) .btn-primary:hover:not(:disabled) { background: var(--auth-primary-hover) !important; transform: none !important; }
+
+/* الدخول بالبصمة: ثانوي محدد الحواف */
+#bioBtn.btn-login { background: transparent !important; border: 1px solid rgba(255, 255, 255, 0.22) !important; }
+
+/* رابط "تسجيل طالب جديد": ثانوي محايد (كان أخضر)، ورابط الأخبار: نصّي (كان أزرق) */
+.login-card a[href="/register.html"] {
+  background: rgba(255, 255, 255, 0.06) !important; border: 1px solid rgba(255, 255, 255, 0.18) !important;
+  color: #e2e8f0 !important; min-height: 46px;
+}
+.login-card a[href="/register.html"] i { color: #a5b4fc !important; }
+.login-card a[href="/welcome.html"] { background: transparent !important; border: 0 !important; color: #a5b4fc !important; }
+.login-card a[href="/welcome.html"] i { color: #a5b4fc !important; }
+
+/* الحقول: داكنة في كل صفحات الخلفية الداكنة (style.css يجعل .form-control أبيض) */
+body:has(.bg-orb) .form-control,
+body:has(.bg-orb) .form-input,
+body:has(.bg-orb) input[type="email"],
+body:has(.bg-orb) input[type="password"],
+body:has(.bg-orb) input[type="text"] {
+  background: rgba(255, 255, 255, 0.07) !important;
+  border: 1.5px solid rgba(255, 255, 255, 0.14) !important;
+  color: #fff !important;
+}
+body:has(.bg-orb) .form-control::placeholder, body:has(.bg-orb) .form-input::placeholder { color: rgba(255, 255, 255, 0.45) !important; }
+body:has(.bg-orb) .form-control:focus, body:has(.bg-orb) .form-input:focus,
+body:has(.bg-orb) input:focus { border-color: #818cf8 !important; box-shadow: 0 0 0 3px rgba(129, 140, 248, 0.25) !important; outline: none; }
+
+/* روابط ثانوية (العودة، إعادة الإرسال) بلون واحد */
+body:has(.bg-orb) .forgot-link, body:has(.bg-orb) .resend-link, body:has(.bg-orb) a.btn-ghost { color: #a5b4fc !important; }
+
+/* البطاقة: سطح واحد هادئ بدل زجاج ضبابي متحرك */
+.login-card, .auth-card { border-radius: 20px !important; box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35) !important; }
+@media (prefers-reduced-motion: reduce) { .bg-orb { animation: none !important; } }

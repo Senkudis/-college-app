@@ -9,40 +9,31 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Al-Nasr CBS">
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
-  <link rel="stylesheet" href="/css/style.css?v=2026083019">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026083019">
+  <link rel="stylesheet" href="/css/style.css?v=2026102613">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026102613">
+  <link rel="stylesheet" href="/css/ui.css?v=2026102613">
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
   <style>
     :root {
-      --calendar-primary: #0d3b66;
-      --calendar-accent: #2176c7;
+      --calendar-primary: var(--primary);
+      --calendar-accent: var(--primary);
     }
+    /* سطح هادئ بدل التدرج والأيقونة العملاقة الشفافة خلف النص */
     .calendar-banner {
-      background: linear-gradient(135deg, #0d3b66 0%, #1a6fc4 60%, #2176c7 100%);
-      border-radius: 20px;
-      padding: 24px 28px;
-      color: #fff;
-      margin-bottom: 24px;
-      box-shadow: 0 10px 30px rgba(13,59,102,0.25);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px 18px;
+      color: var(--text-main);
+      margin-bottom: 18px;
       display: flex;
       align-items: center;
       justify-content: space-between;
       flex-wrap: wrap;
-      gap: 16px;
-      position: relative;
-      overflow: hidden;
+      gap: 12px;
     }
-    .calendar-banner::before {
-      content: '\eb29';
-      font-family: 'remixicon';
-      font-style: normal;
-      font-size: 8rem;
-      position: absolute;
-      left: -20px;
-      bottom: -30px;
-      opacity: 0.12;
-      pointer-events: none;
-    }
+    .calendar-banner h2 { font-size: 1.2rem; font-weight: 800; margin: 0 0 2px; color: var(--text-main); }
+    .calendar-banner p { font-size: 0.88rem; margin: 0; color: var(--text-muted); }
     .month-bar {
       display: flex;
       align-items: center;
@@ -63,8 +54,8 @@
       transition: all 0.2s; display: flex; align-items: center; gap: 6px; font-size: 0.9rem;
     }
     .btn-month:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
-    .btn-today { background: rgba(33,118,199,0.12); color: #2176c7; border: 1px solid rgba(33,118,199,0.3); }
-    .btn-today:hover { background: #2176c7; color: #fff; }
+    .btn-today { background: rgba(var(--primary-rgb),0.12); color: var(--primary); border: 1px solid rgba(var(--primary-rgb),0.3); }
+    .btn-today:hover { background: var(--primary); color: #fff; }
 
     .filter-tabs {
       display: flex;
@@ -72,8 +63,14 @@
       margin-bottom: 24px;
       overflow-x: auto;
       padding-bottom: 4px;
+      scrollbar-width: none;
+      -webkit-overflow-scrolling: touch;
     }
+    .filter-tabs::-webkit-scrollbar { display: none; }
     .filter-tab {
+      /* بدون هذا تنكمش الأزرار داخل الشريط القابل للتمرير بدل أن يتمرر،
+         ومع nowrap يخرج النص من حدود الزر على الهاتف */
+      flex-shrink: 0;
       background: var(--bg-card);
       border: 1px solid var(--border);
       color: var(--text-secondary);
@@ -89,10 +86,10 @@
       gap: 6px;
     }
     .filter-tab.active {
-      background: linear-gradient(135deg, #0d3b66, #2176c7);
+      background: var(--hero-gradient);
       color: white;
       border-color: transparent;
-      box-shadow: 0 4px 14px rgba(13,59,102,0.25);
+      box-shadow: 0 4px 14px rgba(var(--primary-rgb),0.25);
     }
 
     /* Day Group Container */
@@ -191,26 +188,26 @@
 
     /* Manage Button for Admin / Leader */
     #addScheduleBtn {
-      background: white;
-      color: #0d3b66;
+      background: var(--primary);
+      color: #fff;
       border: none;
-      border-radius: 14px;
-      padding: 12px 20px;
-      font-weight: 800;
-      font-size: 0.95rem;
+      border-radius: 12px;
+      padding: 10px 16px;
+      min-height: 44px;
+      font-weight: 700;
+      font-size: 0.92rem;
       cursor: pointer;
       display: flex;
       align-items: center;
       gap: 8px;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
-      transition: all 0.2s;
+      transition: background 0.15s;
     }
-    #addScheduleBtn:hover { transform: translateY(-2px); box-shadow: 0 6px 20px rgba(0,0,0,0.2); }
+    #addScheduleBtn:hover { background: var(--primary-hover); }
 
     /* Modal Form Styling */
     .modal-content { max-width: 520px; border-radius: 22px; overflow: hidden; padding: 0; }
     .modal-header-gradient {
-      background: linear-gradient(135deg, #0d3b66, #2176c7);
+      background: var(--hero-gradient);
       padding: 22px 24px;
       color: white;
       display: flex;
@@ -352,16 +349,23 @@
   opacity: 0.7;
 }
 
+    .cal-day { display: flex; align-items: center; gap: 8px; margin: 18px 2px 8px; font-size: 0.9rem; font-weight: 800; color: var(--text-main); }
+    #eventsContainer > .cal-day:first-child { margin-top: 4px; }
+    .cal-row { align-items: flex-start; }
+    .cal-row .hm-row + .hm-row::before { inset-inline-start: 120px; }
+    .cal-time { width: 64px; white-space: nowrap; flex-shrink: 0; padding-top: 2px; display: flex; flex-direction: column; gap: 2px; font-variant-numeric: tabular-nums; }
+    .cal-time b { font-size: 0.82rem; font-weight: 800; color: var(--text-main); }
+    .cal-time span { font-size: 0.72rem; color: var(--text-light); }
 </style>
 </head>
 <body>
 
 <header class="main-header">
   <div class="header-brand">
-    <button class="btn-icon" onclick="CBS.goHome()" title="رجوع" aria-label="رجوع"><i class="ri-arrow-right-line"></i></button>
+    <img src="/assets/logo.png" class="header-logo" alt="شعار كلية النصر التقنية - جامعة النصر التقنية">
     <div class="header-title-group">
       <strong>كلية النصر التقنية</strong>
-      <small>الجدول الدراسي والتقويم الأكاديمي</small>
+      <small>التقويم</small>
     </div>
   </div>
   <div class="header-actions">
@@ -371,44 +375,28 @@
 </header>
 
 <div class="page-content">
-  <!-- Banner -->
-  <div class="calendar-banner">
-    <div>
-      <h2 style="font-size:1.55rem;font-weight:900;margin-bottom:6px">الجدول الدراسي والتقويم الأكاديمي</h2>
-      <p style="opacity:0.9;font-size:0.92rem;margin:0">جدول المحاضرات، مواعيد تسليم الواجبات، الاختبارات القصيرة، والأحداث الرسمية للدفعة</p>
-    </div>
-    <!-- Manage Button (Shown dynamically if Admin/Leader) -->
-    <div id="managerControls" style="display:none;">
-      <button id="addScheduleBtn" onclick="openAddModal()">
-        <i class="ri-add-circle-fill" style="font-size:1.25rem;"></i>
-        <span>إضافة موعد / محاضرة</span>
-      </button>
-    </div>
+  <!-- العنوان في الترويسة؛ إضافة موعد للطاقم كإجراء أساسي واحد -->
+  <div class="ui-toolbar" id="managerControls" style="display:none;">
+    <button type="button" class="ui-primary" id="addScheduleBtn" onclick="openAddModal()"><i class="ri-add-line"></i> موعد جديد</button>
   </div>
 
-  <!-- Month Navigation Bar -->
-  
-  <!-- View Toggle -->
-  <div class="view-toggle">
-    <button id="btnMonthView" class="active" onclick="switchView('month')"><i class="ri-list-check"></i> قائمة المواعيد (شهري)</button>
-    <button id="btnWeekView" onclick="switchView('week')"><i class="ri-layout-grid-fill"></i> الجدول الأسبوعي</button>
+  <div class="ui-seg" role="tablist" aria-label="طريقة العرض">
+    <button type="button" id="btnMonthView" class="active" onclick="switchView('month')"><i class="ri-list-check"></i> قائمة المواعيد</button>
+    <button type="button" id="btnWeekView" onclick="switchView('week')"><i class="ri-layout-grid-line"></i> الجدول الأسبوعي</button>
   </div>
 
-  <div class="month-bar">
-    <div style="display:flex; gap:8px; align-items:center;">
-      <button class="btn-month" onclick="changeMonth(-1)" aria-label="رجوع"><i class="ri-arrow-right-s-line"></i> السابق</button>
-      <button class="btn-month btn-today" onclick="goToToday()">اليوم</button>
-      <button class="btn-month" onclick="changeMonth(1)" aria-label="رجوع">التالي <i class="ri-arrow-left-s-line"></i></button>
-    </div>
-    <div id="monthLabel" class="month-title">جاري التحميل...</div>
+  <div class="ui-month">
+    <button type="button" class="ui-icon-btn" onclick="changeMonth(-1)" aria-label="الشهر السابق" title="الشهر السابق"><i class="ri-arrow-right-s-line"></i></button>
+    <div id="monthLabel" class="ui-month-title">جاري التحميل...</div>
+    <button type="button" class="ui-icon-btn" onclick="changeMonth(1)" aria-label="الشهر التالي" title="الشهر التالي"><i class="ri-arrow-left-s-line"></i></button>
+    <button type="button" class="ui-chip" onclick="goToToday()">اليوم</button>
   </div>
 
-  <!-- Filter Tabs -->
-  <div class="filter-tabs">
-    <button class="filter-tab active" onclick="setFilter('all', this)"><i class="ri-layout-grid-line"></i> كل المواعيد</button>
-    <button class="filter-tab" onclick="setFilter('academicEvent', this)"><i class="ri-calendar-event-line"></i> محاضرات وأحداث</button>
-    <button class="filter-tab" onclick="setFilter('assignment', this)"><i class="ri-file-text-line"></i> واجبات وتكليفات</button>
-    <button class="filter-tab" onclick="setFilter('quiz', this)"><i class="ri-timer-2-line"></i> اختبارات قصيرة</button>
+  <div class="ui-chips" id="calFilters" aria-label="تصفية المواعيد">
+    <button type="button" class="ui-chip active" onclick="setFilter('all', this)">الكل</button>
+    <button type="button" class="ui-chip" onclick="setFilter('academicEvent', this)">محاضرات وأحداث</button>
+    <button type="button" class="ui-chip" onclick="setFilter('assignment', this)">واجبات</button>
+    <button type="button" class="ui-chip" onclick="setFilter('quiz', this)">اختبارات</button>
   </div>
 
   <!-- Loading State -->
@@ -422,28 +410,20 @@
   <div id="eventsContainer" style="display:none;"></div>
 
   <!-- Empty State -->
-  <div id="emptyState" style="display:none;text-align:center;padding:4rem 1rem;background:var(--bg-card);border:1px solid var(--border);border-radius:20px;">
-    <i class="ri-calendar-check-line" style="font-size:4rem;display:block;margin-bottom:14px;color:var(--text-muted);opacity:0.6;"></i>
-    <h3 style="font-size:1.2rem;font-weight:800;color:var(--text-primary);margin-bottom:6px;">لا توجد مواعيد أو محاضرات في هذا الشهر</h3>
-    <p style="color:var(--text-muted);font-size:0.92rem;max-width:400px;margin:0 auto;">لم يتم تسجيل أي أحداث أو مهام في هذه الفترة. يمكنك تصفح الشهور الأخرى أو إضافة موعد جديد.</p>
+  <div id="emptyState" class="hm-list" style="display:none;">
+    <div class="hm-row hm-empty"><span class="hm-ic" data-tone="success"><i class="ri-calendar-check-line"></i></span>
+      <div class="hm-row-body"><div class="hm-row-title">لا مواعيد في هذا الشهر</div><div class="hm-row-meta">تنقّل بين الشهور بالسهمين أعلاه</div></div></div>
   </div>
 </div>
 
 <!-- ================= ADD / EDIT EVENT MODAL ================= -->
 <div id="addEditEventModal" class="modal-overlay">
   <div class="modal-box" style="max-width: 520px; overflow: hidden;">
-    <div class="modal-header-gradient">
-      <div>
-        <h3 id="modalTitleText" style="margin:0;font-size:1.2rem;font-weight:800;display:flex;align-items:center;gap:8px;">
-          <i class="ri-calendar-add-line"></i> إضافة موعد أو محاضرة للجدول
-        </h3>
-        <div style="font-size:0.78rem;opacity:0.8;margin-top:3px;">سيظهر هذا الموعد فوراً لجميع طلاب الدفعة</div>
-      </div>
-      <button onclick="CBS.closeModal('addEditEventModal')" style="background:rgba(255,255,255,0.15);border:none;border-radius:50%;width:36px;height:36px;color:white;font-size:1.3rem;cursor:pointer;display:flex;align-items:center;justify-content:center;" aria-label="إغلاق">
-        <i class="ri-close-line"></i>
-      </button>
+    <div class="modal-header">
+      <h3 class="modal-title" id="modalTitleText"><i class="ri-calendar-add-line"></i> موعد جديد</h3>
+      <button type="button" class="modal-close" onclick="CBS.closeModal('addEditEventModal')" aria-label="إغلاق"><i class="ri-close-line"></i></button>
     </div>
-    <div class="modal-body" style="padding:24px;">
+    <div class="modal-body">
       <form id="eventForm" onsubmit="handleSaveEvent(event)">
         <input type="hidden" id="editEventId">
         
@@ -494,7 +474,7 @@
         </div>
 
         <button type="submit" id="saveEventBtn" class="btn btn-primary btn-block" style="padding:14px;font-size:1.05rem;font-weight:800;border-radius:14px;">
-          <i class="ri-check-line"></i> حفظ ونشر في جدول الدفعة
+          <i class="ri-check-line"></i> حفظ ونشر للدفعة
         </button>
       </form>
     </div>
@@ -505,8 +485,8 @@
   حقوق النشر &copy; <span id="year"></span> جامعة النصر التقنية
 </footer>
 
-<script src="/js/shared.js?v=2026083019"></script>
-<script src="/js/app.js?v=2026083019"></script>
+<script src="/js/shared.js?v=2026102613"></script>
+<script src="/js/app.js?v=2026102613"></script>
 <script>
   CBS.init();
   document.getElementById('year').textContent = new Date().getFullYear();
@@ -547,7 +527,7 @@
 
   function setFilter(filterType, btnEl) {
     currentFilter = filterType;
-    document.querySelectorAll('.filter-tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('#calFilters .ui-chip').forEach(t => t.classList.remove('active'));
     btnEl.classList.add('active');
     renderEvents();
   }
@@ -584,7 +564,7 @@
     document.getElementById('btnMonthView').classList.toggle('active', mode === 'month');
     document.getElementById('btnWeekView').classList.toggle('active', mode === 'week');
     
-    document.querySelector('.filter-tabs').style.display = (mode === 'month') ? 'flex' : 'none';
+    document.getElementById('calFilters').style.display = (mode === 'month') ? 'flex' : 'none';
     document.getElementById('eventsContainer').style.display = 'none';
     document.getElementById('weeklyTimetableContainer').style.display = 'none';
     document.getElementById('emptyState').style.display = 'none';
@@ -685,12 +665,12 @@
 
     filtered.forEach(e => {
       const d = new Date(e.start);
-      const key = d.toISOString().split('T')[0];
+      const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
       if (!groups[key]) {
         const dayName = dayNames[d.getDay()];
         groups[key] = {
-          label: `${dayName}، ${d.getDate()} ${monthsShort[d.getMonth()]} ${d.getFullYear()}`,
-          isToday: new Date().toISOString().split('T')[0] === key,
+          label: `${dayName}، ${d.getDate()} ${monthsShort[d.getMonth()]}${d.getFullYear() !== new Date().getFullYear() ? ' ' + d.getFullYear() : ''}`,
+          isToday: d.toDateString() === new Date().toDateString(),
           items: []
         };
       }
@@ -700,93 +680,39 @@
     const sortedKeys = Object.keys(groups).sort();
 
     const badgeConfig = {
-      assignment: { label: 'واجب / تكليف', color: '#f59e0b', bg: 'rgba(245,158,11,0.15)', icon: 'ri-file-text-line' },
-      quiz:       { label: 'اختبار قصير', color: '#ef4444', bg: 'rgba(239,68,68,0.15)',  icon: 'ri-timer-2-line' },
-      lecture:    { label: 'محاضرة دراسية', color: '#10b981', bg: 'rgba(16,185,129,0.15)', icon: 'ri-book-open-line' },
-      exam:       { label: 'امتحان / اختبار', color: '#ef4444', bg: 'rgba(239,68,68,0.15)', icon: 'ri-file-list-3-line' },
+      assignment: { label: 'واجب / تكليف', color: 'var(--warning-text)', bg: 'rgba(245,158,11,0.15)', icon: 'ri-file-text-line' },
+      quiz:       { label: 'اختبار قصير', color: 'var(--danger-text)', bg: 'rgba(239,68,68,0.15)',  icon: 'ri-timer-2-line' },
+      lecture:    { label: 'محاضرة دراسية', color: 'var(--success-text)', bg: 'rgba(16,185,129,0.15)', icon: 'ri-book-open-line' },
+      exam:       { label: 'امتحان / اختبار', color: 'var(--danger-text)', bg: 'rgba(239,68,68,0.15)', icon: 'ri-file-list-3-line' },
       meeting:    { label: 'اجتماع / لقاء', color: '#8b5cf6', bg: 'rgba(139,92,246,0.15)', icon: 'ri-group-line' },
       holiday:    { label: 'عطلة رسمية', color: '#3b82f6', bg: 'rgba(59,130,246,0.15)',  icon: 'ri-sun-line' },
-      event:      { label: 'فعالية أكاديمية', color: '#10b981', bg: 'rgba(16,185,129,0.15)', icon: 'ri-calendar-check-line' }
+      event:      { label: 'فعالية أكاديمية', color: 'var(--success-text)', bg: 'rgba(16,185,129,0.15)', icon: 'ri-calendar-check-line' }
     };
 
-    sortedKeys.forEach(dateKey => {
+    /* يوم = عنوان صغير + قائمة مجمّعة؛ الحدث صف: الوقت في عمود، العنوان، ثم
+       النوع والمادة والمكان في سطر واحد. اللون للنوع في الأيقونة فقط. */
+    const TONE = { assignment: 'warning', quiz: 'danger', exam: 'danger', lecture: '', meeting: 'info', holiday: 'success', event: '' };
+    const time = d => new Date(d).toLocaleTimeString('ar-EG-u-nu-latn', { hour: 'numeric', minute: '2-digit' });
+    container.innerHTML = sortedKeys.map(dateKey => {
       const group = groups[dateKey];
-      const groupDiv = document.createElement('div');
-      groupDiv.className = 'day-group';
-      
-      const todayBadge = group.isToday ? `<span style="background:#2176c7;color:white;padding:2px 8px;border-radius:12px;font-size:0.72rem;margin-right:6px;">اليوم</span>` : '';
-
-      groupDiv.innerHTML = `
-        <div class="day-header" ${group.isToday ? 'style="background:rgba(33,118,199,0.08);"' : ''}>
-          <div class="day-title">
-            <i class="ri-calendar-event-line" style="color:var(--primary);"></i>
-            <span>${group.label}</span>
-            ${todayBadge}
-          </div>
-          <div class="day-count">${group.items.length} أحداث</div>
-        </div>
-        <div class="day-items">
-          ${group.items.map(item => {
-            const startDate = new Date(item.start);
-            const timeMain = startDate.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-            let timeSub = 'استحقاق/بداية';
-            if (item.end) {
-              const endDate = new Date(item.end);
-              timeSub = 'إلى ' + endDate.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
-            }
-
-            const cfg = badgeConfig[item.type] || badgeConfig.event;
-            
-            // Sub details
-            const subItems = [];
-            if (item.subtitle || item.subjectName) {
-              subItems.push(`<span class="event-sub-item"><i class="ri-book-2-line"></i> ${CBS.escapeHTML(item.subjectName || item.subtitle)}</span>`);
-            }
-            if (item.location) {
-              subItems.push(`<span class="event-sub-item"><i class="ri-map-pin-line"></i> ${CBS.escapeHTML(item.location)}</span>`);
-            }
-            if (item.description) {
-              subItems.push(`<span class="event-sub-item" style="color:var(--text-muted);"><i class="ri-sticky-note-line"></i> ${CBS.escapeHTML(item.description)}</span>`);
-            }
-
-            // Actions for Leaders / Admin on AcademicEvents
-            let actionsHtml = '';
-            if (item.url && !item.canEdit) {
-              actionsHtml = `
-                <div class="event-actions">
-                  <a href="${item.url}" class="btn-event-action" title="فتح التفاصيل"><i class="ri-arrow-left-up-line"></i></a>
-                </div>`;
-            } else if (item.rawType === 'academicEvent' && (item.canEdit || canUserManage)) {
-              const itemJsonStr = encodeURIComponent(JSON.stringify(item));
-              actionsHtml = `
-                <div class="event-actions">
-                  <button type="button" class="btn-event-action" title="تعديل" onclick="openEditModal('${itemJsonStr}')" aria-label="تعديل"><i class="ri-edit-line"></i></button>
-                  <button type="button" class="btn-event-action delete" title="حذف" onclick="handleDeleteEvent('${item.rawId}')" aria-label="حذف"><i class="ri-delete-bin-line"></i></button>
-                </div>`;
-            }
-
-            return `
-              <div class="event-item">
-                <div class="event-time-badge">
-                  <div class="event-time-main">${timeMain}</div>
-                  <div class="event-time-sub">${timeSub}</div>
-                </div>
-                <div class="event-content">
-                  <div class="event-badge" style="background:${cfg.bg};color:${cfg.color};">
-                    <i class="${cfg.icon}"></i> ${cfg.label}
-                  </div>
-                  <div class="event-title-text">${CBS.escapeHTML(item.title)}</div>
-                  <div class="event-sub-info">
-                    ${subItems.join(' · ')}
-                  </div>
-                </div>
-                ${actionsHtml}
-              </div>`;
-          }).join('')}
-        </div>
-      `;
-      container.appendChild(groupDiv);
-    });
+      return `<h2 class="cal-day">${group.label}${group.isToday ? ' <span class="hm-chip" data-tone="primary">اليوم</span>' : ''}</h2>
+        <div class="hm-list">${group.items.map(item => {
+          const cfg = badgeConfig[item.type] || badgeConfig.event;
+          const meta = [cfg.label.split(' / ')[0], item.subjectName || item.subtitle, item.location].filter(Boolean).map(s => CBS.escapeHTML(s)).join(' · ');
+          const when = `<div class="cal-time"><b>${time(item.start)}</b>${item.end ? `<span>${time(item.end)}</span>` : ''}</div>`;
+          const body = `${when}<span class="hm-ic"${TONE[item.type] ? ` data-tone="${TONE[item.type]}"` : ''}><i class="${cfg.icon}"></i></span>
+            <div class="hm-row-body"><div class="hm-row-title" style="white-space:normal">${CBS.escapeHTML(item.title)}</div><div class="hm-row-meta">${meta}</div>
+            ${item.description ? `<div class="hm-row-meta" style="white-space:normal">${CBS.escapeHTML(item.description)}</div>` : ''}</div>`;
+          if (item.rawType === 'academicEvent' && item.canEdit) {
+            const itemJsonStr = encodeURIComponent(JSON.stringify(item));
+            return `<div class="hm-row cal-row">${body}<span class="hm-row-end">
+              <button type="button" class="ui-icon-btn" title="تعديل" aria-label="تعديل" onclick="openEditModal('${itemJsonStr}')"><i class="ri-edit-line"></i></button>
+              <button type="button" class="ui-icon-btn danger" title="حذف" aria-label="حذف" onclick="handleDeleteEvent('${item.rawId}')"><i class="ri-delete-bin-line"></i></button></span></div>`;
+          }
+          if (item.url) return `<a class="hm-row cal-row" href="${CBS.escapeHTML(item.url)}">${body}<span class="hm-row-end"><i class="ri-arrow-left-s-line" aria-hidden="true"></i></span></a>`;
+          return `<div class="hm-row cal-row">${body}</div>`;
+        }).join('')}</div>`;
+    }).join('');
   }
 
   // ================= MODAL & CRUD LOGIC =================
@@ -819,7 +745,7 @@
     }
     loadSubjectsDropdown();
     document.getElementById('editEventId').value = '';
-    document.getElementById('modalTitleText').innerHTML = `<i class="ri-calendar-add-line"></i> إضافة موعد أو محاضرة للجدول`;
+    document.getElementById('modalTitleText').innerHTML = `<i class="ri-calendar-add-line"></i> موعد جديد`;
     document.getElementById('eventForm').reset();
     
     // Default start time right now (rounded to nearest 30 mins)
@@ -887,7 +813,7 @@
       CBS.toast('خطأ الحفظ', err.message, 'error');
     } finally {
       saveBtn.disabled = false;
-      saveBtn.innerHTML = `<i class="ri-check-line"></i> حفظ ونشر في جدول الدفعة`;
+      saveBtn.innerHTML = `<i class="ri-check-line"></i> حفظ ونشر للدفعة`;
     }
   }
 

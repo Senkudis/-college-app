@@ -2,6 +2,8 @@ const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const crypto = require("crypto");
 const normalizeEmail = require("../utils/normalizeEmail");
+const normalizePassword = require("../utils/normalizePassword");
+const { toArabicIndicDigits } = normalizePassword;
 
 /* تكلفة التشفير في مكان واحد: كانت 10 في خطّافات المخطط و12 في مسارَي
    استعادة المستخدم المحذوف — نفس العملية بقوّتين مختلفتين. */
@@ -53,6 +55,12 @@ const userSchema = new mongoose.Schema({
   resetPasswordExpires: {
     type: Date,
     default: null
+  },
+
+  // محاولات خاطئة لكود الاستعادة الحالي — يُلغى الكود بعد 5 (حد لكل حساب لا لكل IP)
+  resetCodeAttempts: {
+    type: Number,
+    default: 0
   },
   
   // تاريخ آخر تغيير لكلمة السر
@@ -234,7 +242,7 @@ userSchema.pre('save', async function() {
   try {
     // تشفير كلمة السر
     const salt = await bcrypt.genSalt(BCRYPT_COST);
-    this.password = await bcrypt.hash(this.password, salt);
+    this.password = await bcrypt.hash(normalizePassword(this.password), salt);
     
     // تحديث وقت تغيير كلمة السر
     this.passwordChangedAt = Date.now();
@@ -264,24 +272,23 @@ userSchema.pre('findOneAndUpdate', async function() {
 
       // تشفير كلمة السر الجديدة
       const salt = await bcrypt.genSalt(BCRYPT_COST);
-      const hashedPassword = await bcrypt.hash(passwordToHash, salt);
+      const hashedPassword = await bcrypt.hash(normalizePassword(passwordToHash), salt);
       
       // تحديث object التعديل
-      if (update.password) {
+      if (update.$set) {
+        update.$set.password = hashedPassword;
+        update.$set.passwordChangedAt = Date.now();
+        delete update.password;
+        this.setUpdate(update);
+      } else if (Object.keys(update).some(k => k.startsWith('$'))) {
+        update.$set = { password: hashedPassword, passwordChangedAt: Date.now() };
+        delete update.password;
+        this.setUpdate(update);
+      } else {
         this.setUpdate({
           ...update,
           password: hashedPassword,
           passwordChangedAt: Date.now()
-        });
-      } else if (update.$set) {
-        const newSet = {
-          ...update.$set,
-          password: hashedPassword,
-          passwordChangedAt: Date.now()
-        };
-        this.setUpdate({
-          ...update,
-          $set: newSet
         });
       }
     } catch (error) {
@@ -294,7 +301,24 @@ userSchema.pre('findOneAndUpdate', async function() {
 
 // مقارنة كلمة السر المدخلة مع المشفرة
 userSchema.methods.comparePassword = async function(candidatePassword) {
-  return await bcrypt.compare(candidatePassword, this.password);
+  if (typeof candidatePassword !== "string" || !isBcryptHash(this.password)) return false;
+
+  const normalized = normalizePassword(candidatePassword);
+  if (await bcrypt.compare(normalized, this.password)) return true;
+
+  /* حسابات شُفّرت قبل التطبيع: بالنص الخام كما كُتب، أو بأرقام عربية
+     "١٢٣" من لوحة المفاتيح العربية بينما يكتب الطالب الآن "123".
+     عند التطابق نضع الصيغة الموحّدة لتُعاد تشفيرها في أول save —
+     مسار الدخول يحفظ المستخدم مباشرة بعد المقارنة. */
+  const legacyForms = [...new Set([candidatePassword, toArabicIndicDigits(normalized)])]
+    .filter(form => form !== normalized);
+  for (const form of legacyForms) {
+    if (await bcrypt.compare(form, this.password)) {
+      this.password = normalized;
+      return true;
+    }
+  }
+  return false;
 };
 
 // التحقق إذا انتهت صلاحية كود الاستعادة
@@ -333,8 +357,10 @@ userSchema.methods.verifyResetCode = function(code) {
     return false;
   }
   
-  // التحقق من تطابق الكود وانتهاء الصلاحية
-  const isCodeValid = this.resetPasswordCode === code;
+  // التحقق من تطابق الكود بأمان ضد timing attacks وانتهاء الصلاحية
+  const codeBuf = Buffer.from(String(code));
+  const storedBuf = Buffer.from(String(this.resetPasswordCode || ''));
+  const isCodeValid = codeBuf.length === storedBuf.length && crypto.timingSafeEqual(storedBuf, codeBuf);
   const isNotExpired = Date.now() < this.resetPasswordExpires;
   
   return isCodeValid && isNotExpired;
@@ -348,6 +374,7 @@ userSchema.methods.resetPassword = async function(newPassword) {
   this.firstLogin = false; // بعد إعادة التعيين، لم يعد أول دخول
   this.failedLoginAttempts = 0; // إعادة تعيين المحاولات الفاشلة
   this.lockUntil = null; // إلغاء قفل الحساب
+  this.currentSessionId = crypto.randomUUID(); // إبطال أي جلسات سابقة
   
   await this.save();
   return true;

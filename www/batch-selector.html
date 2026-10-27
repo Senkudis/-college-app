@@ -4,9 +4,10 @@
   <script>if(localStorage.getItem('darkMode')==='true' || (!localStorage.getItem('darkMode') && window.matchMedia('(prefers-color-scheme: dark)').matches)){document.documentElement.setAttribute('data-theme', 'dark');}</script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-  <title>اختيار الدفعة الدراسية (العميد) | كلية النصر التقنية</title>
-  <link rel="stylesheet" href="/css/style.css?v=2026083019">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026083019">
+  <title>اختيار الدفعة الدراسية | كلية النصر التقنية</title>
+  <link rel="stylesheet" href="/css/style.css?v=2026102613">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026102613">
+  <link rel="stylesheet" href="/css/ui.css?v=2026102613">
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet"/>
   <style>
     body {
@@ -37,7 +38,7 @@
     }
     .batches-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr));
       gap: 20px;
       width: 100%;
       max-width: 1000px;
@@ -80,7 +81,10 @@
     .spinner-wrap {
       display: flex; justify-content: center; align-items: center; padding: 50px;
     }
-  </style>
+      .selector-container { max-width: 640px; margin: 0 auto; padding: 16px 14px 110px; }
+    .bs-row { cursor: pointer; min-height: 68px; }
+    .bs-row:active { background: var(--bg-hover); }
+</style>
 
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
   <meta name="mobile-web-app-capable" content="yes">
@@ -93,8 +97,8 @@
     <div class="header-brand">
       <img src="/assets/logo.png" class="header-logo" alt="شعار كلية النصر التقنية">
       <div class="header-title-group">
-        <strong>كلية النصر التقنية</strong>
-        <small>كلية النصر التقنية</small>
+        <strong>اختيار الدفعة</strong>
+        <small>اختيار الدفعة</small>
       </div>
     </div>
     <div class="header-actions">
@@ -104,27 +108,21 @@
   </header>
 
   <div class="selector-container">
-    <div class="selector-header">
-      <h1>اختيار الدفعة الدراسية</h1>
-      <p>حدد الدفعة التي تريد إدارتها للدخول إلى لوحة التحكم الخاصة بها</p>
-    </div>
-
-
-
+    <p class="ui-count">اختر الدفعة التي تريد إدارتها</p>
     <div id="loading" class="spinner-wrap">
       <div class="spinner"></div>
     </div>
 
-    <div class="batches-grid" id="batchesGrid" style="display: none;">
+    <div class="hm-list" id="batchesGrid" style="display: none;">
       <!-- Batches will be rendered here -->
     </div>
   </div>
 
   <footer class="main-footer">جميع الحقوق محفوظة &copy; <span id="year"></span> النظام الجامعي المتكامل</footer>
 
-  <script src="/js/shared.js?v=2026083019"></script>
-<script src="/js/app.js?v=2026083019"></script>
-<script src="/js/socket-client.js?v=2026083019" defer></script>
+  <script src="/js/shared.js?v=2026102613"></script>
+<script src="/js/app.js?v=2026102613"></script>
+<script src="/js/socket-client.js?v=2026102613" defer></script>
   <script>
     CBS.init();
     const user = CBS.getUser();
@@ -141,7 +139,7 @@
         
         document.getElementById('loading').style.display = 'none';
         const grid = document.getElementById('batchesGrid');
-        grid.style.display = 'grid';
+        grid.style.display = 'block';
 
         const batchArray = Array.isArray(data) ? data : (data.batches || data.data?.batches || data.data || []);
 
@@ -165,11 +163,13 @@
           const bColor = batch.themeColor || '#2563eb';
           const bName = CBS.escapeHTML(batch.name || 'دفعة بدون اسم');
           const bCode = CBS.escapeHTML(batch.code || '');
+          // لون الدفعة يُدرج في style فيُتحقق من صيغته أولاً
+          const safeColor = /^#[0-9a-f]{3,8}$/i.test(bColor) ? bColor : '#2563eb';
           return `
-          <div class="batch-card" style="border-color: ${bColor};" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" onclick="selectBatch('${bId}', '${bColor}')">
-            <div class="batch-icon" style="color: ${bColor};"><i class="ri-group-line"></i></div>
-            <div class="batch-title">${bName}</div>
-            <div class="batch-code">${bCode}</div>
+          <div class="hm-row bs-row" role="button" tabindex="0" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}" onclick="selectBatch('${bId}', '${safeColor}')">
+            <span class="hm-ic" style="color:${safeColor};background:var(--bg-hover)"><i class="ri-group-line"></i></span>
+            <div class="hm-row-body"><div class="hm-row-title">${bName}</div><div class="hm-row-meta">${bCode}</div></div>
+            <span class="hm-row-end"><i class="ri-arrow-left-s-line" aria-hidden="true"></i></span>
           </div>
         `}).join('');
 
@@ -180,7 +180,7 @@
 
     function selectBatch(batchId, themeColor) {
       if (!batchId || batchId === 'undefined' || batchId === 'null' || batchId === '[object Object]') {
-        alert('خطأ: معرف الدفعة غير صالح. يرجى إعادة تحديث الصفحة.');
+        CBS.toast('معرّف الدفعة غير صالح', 'يرجى إعادة تحميل الصفحة', 'error');
         return;
       }
       localStorage.setItem('cbs_active_batch_color', themeColor || '#2563eb');

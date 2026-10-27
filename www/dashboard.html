@@ -10,8 +10,9 @@
   <link rel="manifest" href="/manifest.json">
   <title>الرئيسية | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=2026083019">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026083019">
+  <link rel="stylesheet" href="/css/style.css?v=2026102613">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026102613">
+  <link rel="stylesheet" href="/css/ui.css?v=2026102613">
 
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -23,176 +24,100 @@
     <img src="/assets/logo.png" class="header-logo" alt="شعار كلية النصر التقنية - جامعة النصر التقنية">
     <div class="header-title-group">
       <strong>كلية النصر التقنية</strong>
-      <small id="headerSubtitle">لوحة التحكم</small>
+      <small id="headerSubtitle">الرئيسية</small>
     </div>
   </div>
+  <!-- البحث والجرس فقط: الخروج والوضع الليلي في "حسابي"، والطالب يصل للتنبيهات من الشريط السفلي -->
   <div class="header-actions">
     <button class="btn-icon" onclick="CBS.openSearch?.()" title="بحث سريع" id="headerSearchBtn" aria-label="بحث"><i class="ri-search-line"></i></button>
-    <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي" aria-label="تبديل الوضع الليلي"><i class="ri-moon-line" id="themeIcon"></i></button>
-    <button class="btn-icon" style="position:relative" onclick="location.href='/notifications.html'" title="الإشعارات" aria-label="الإشعارات">
+    <button class="btn-icon hm-header-bell" id="headerBell" hidden onclick="location.href='/notifications.html'" title="الإشعارات" aria-label="الإشعارات">
       <i class="ri-notification-3-line"></i>
-      <span class="bnav-badge" id="notifBadge" style="display:none;top:-2px;right:-2px;position:absolute"></span>
+      <span class="bnav-badge" id="notifBadge" style="display:none"></span>
     </button>
-    <button class="btn-icon" onclick="CBS.logout()" title="خروج" aria-label="تسجيل الخروج"><i class="ri-logout-box-r-line"></i></button>
   </div>
 </header>
 
 <div class="page-content">
+  <main class="hm" id="home">
 
-  <!-- Welcome Banner -->
-  <div class="welcome-banner">
-    <div class="welcome-banner-icon-wrap">
-      <i class="ri-home-5-line welcome-banner-icon"></i>
+    <section class="hm-greet">
+      <p class="hm-date" id="hmDate"></p>
+      <h1 class="hm-title" id="hmTitle">مرحباً</h1>
+      <!-- الدور في الترويسة؛ هنا محوّل الدفعة للطاقم فقط (يحقنه app.js) -->
+      <div class="hm-context" data-batch-slot></div>
+    </section>
+
+    <div class="hm-cols">
+      <div class="hm-col">
+        <!-- الآن / التالي: أول حدث متبقٍّ اليوم -->
+        <section id="hmNow" aria-label="الآن">
+          <div class="hm-skel" style="height:148px"></div>
+        </section>
+
+        <section aria-labelledby="hmFocusTitle">
+          <div class="hm-sec-head">
+            <h2 class="hm-sec-title" id="hmFocusTitle">يحتاج انتباهك</h2>
+            <a class="hm-link" id="hmFocusLink" href="#" hidden>عرض الكل <i class="ri-arrow-left-s-line"></i></a>
+          </div>
+          <div id="hmAlert"></div>
+          <div class="hm-list" id="hmFocusList" aria-live="polite">
+            <div class="hm-skel" style="height:128px;border-radius:0"></div>
+          </div>
+        </section>
+
+        <!-- للطاقم: الطلاب الأقل حضوراً -->
+        <section id="hmRisk" aria-labelledby="hmRiskTitle" hidden>
+          <div class="hm-sec-head">
+            <h2 class="hm-sec-title" id="hmRiskTitle">طلاب بحاجة لمتابعة</h2>
+            <a class="hm-link" href="/reports.html">التقرير الكامل <i class="ri-arrow-left-s-line"></i></a>
+          </div>
+          <div class="hm-list" id="hmRiskList"></div>
+        </section>
+
+        <nav class="hm-kpis" id="hmKpis" aria-label="مؤشرات سريعة"></nav>
+
+        <section aria-labelledby="hmActionsTitle">
+          <div class="hm-sec-head"><h2 class="hm-sec-title" id="hmActionsTitle">وصول سريع</h2></div>
+          <div class="hm-actions" id="hmActions"></div>
+        </section>
+      </div>
+
+      <div class="hm-col">
+        <section aria-labelledby="hmUpdatesTitle">
+          <div class="hm-sec-head">
+            <h2 class="hm-sec-title" id="hmUpdatesTitle">آخر التنبيهات</h2>
+            <a class="hm-link" href="/notifications.html">عرض الكل <i class="ri-arrow-left-s-line"></i></a>
+          </div>
+          <div class="hm-list" id="activitiesContainer">
+            <div class="hm-skel" style="height:128px;border-radius:0"></div>
+          </div>
+        </section>
+
+        <section id="newsSectionHeader" aria-labelledby="hmNewsTitle" style="display:none">
+          <div class="hm-sec-head">
+            <h2 class="hm-sec-title" id="hmNewsTitle">أخبار الكلية</h2>
+            <button type="button" class="hm-link" onclick="openStudentGalleryModal()"><i class="ri-gallery-line"></i> معرض الصور</button>
+          </div>
+          <div id="universityNewsContainer">
+            <div id="newsFeedList" class="hm-news"></div>
+          </div>
+        </section>
+      </div>
     </div>
-    <div class="welcome-banner-body">
-      <h2 id="welcomeTitle">مرحباً بك</h2>
-      <p>تابع مهامك الدراسية وتقدمك الأكاديمي من هنا</p>
+
+  </main>
+</div>
+
+<!-- كل الأدوات: لوحة سفلية مجمّعة حسب الغرض (تُغلق بزر الرجوع عبر .overlay.show) -->
+<div class="overlay hm-sheet" id="hmSheet" role="dialog" aria-modal="true" aria-labelledby="hmSheetTitle" onclick="if(event.target===this)CBSHome.closeSheet()">
+  <div class="hm-sheet-panel">
+    <div class="hm-sheet-grip" aria-hidden="true"></div>
+    <div class="hm-sheet-head">
+      <h2 id="hmSheetTitle">كل الأدوات</h2>
+      <button type="button" class="hm-sheet-close" onclick="CBSHome.closeSheet()" aria-label="إغلاق"><i class="ri-close-line"></i></button>
     </div>
+    <div id="hmSheetBody"></div>
   </div>
-
-  <!-- Stats Bar -->
-  <div class="stats-bar" id="statsBar">
-    <div class="stat-item">
-      <i class="ri-book-2-line"></i>
-      <div class="stat-item-body">
-        <div class="stat-num" id="statSubjects">-</div>
-        <div class="stat-label">المقررات</div>
-      </div>
-    </div>
-    <div class="stat-item">
-      <i class="ri-task-line"></i>
-      <div class="stat-item-body">
-        <div class="stat-num" id="statAssignments">-</div>
-        <div class="stat-label">الواجبات</div>
-      </div>
-    </div>
-    <div class="stat-item">
-      <i class="ri-bar-chart-box-line"></i>
-      <div class="stat-item-body">
-        <div class="stat-num" id="statAttendance">-</div>
-        <div class="stat-label">الحضور</div>
-      </div>
-    </div>
-    <div class="stat-item">
-      <i class="ri-video-on-line"></i>
-      <div class="stat-item-body">
-        <div class="stat-num" id="statVideos">-</div>
-        <div class="stat-label">المحاضرات</div>
-      </div>
-    </div>
-  </div>
-
-
-  <!-- Quick Actions -->
-
-  <div class="section-divider">
-    <i class="ri-apps-2-line"></i>
-    <span>الوصول السريع</span>
-  </div>
-
-  <!-- بطاقة الواجبات القادمة (تظهر للطالب فقط) -->
-  <div id="upcomingTasksSection" style="display:none;margin-bottom:12px;">
-    <div class="section-divider" style="margin-top:0;">
-      <i class="ri-alarm-line"></i>
-      <span>واجباتك القادمة</span>
-    </div>
-    <div id="upcomingTasksList" style="display:flex;flex-direction:column;gap:8px;"></div>
-  </div>
-
-  <div class="dash-grid" id="dashGridContainer">
-    <!-- Populated by JavaScript -->
-  </div>
-
-  <!-- Performance Progress Bars -->
-  <div class="card perf-card" id="progressCard">
-    <div class="perf-card-title"><i class="ri-bar-chart-line"></i> مؤشرات الأداء</div>
-    <div class="perf-bar-group">
-      <div class="perf-bar-header">
-        <span class="perf-bar-label">الواجبات المنجزة</span>
-        <span id="assignPct" class="perf-bar-pct perf-success">0%</span>
-      </div>
-      <div class="perf-bar-track">
-        <div id="assignBar" class="perf-bar-fill perf-fill-success" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width:0%"></div>
-      </div>
-    </div>
-    <div class="perf-bar-group">
-      <div class="perf-bar-header">
-        <span class="perf-bar-label">نسبة الحضور</span>
-        <span id="attendPct" class="perf-bar-pct perf-primary">0%</span>
-      </div>
-      <div class="perf-bar-track">
-        <div id="attendBar" class="perf-bar-fill perf-fill-primary" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100" style="width:0%"></div>
-      </div>
-    </div>
-  </div>
-
-  <div class="card cbs-study-plan-card" id="studyPlanCard" style="display:none;">
-    <div class="cbs-study-plan-header">
-      <div>
-        <div class="cbs-study-plan-title"><i class="ri-route-line"></i> خطتك الدراسية القادمة</div>
-        <div id="studyPlanSummary" class="cbs-study-plan-summary">جاري حساب الأولويات...</div>
-      </div>
-      <span id="studyRiskBadge" class="cbs-risk-badge" hidden></span>
-    </div>
-    <div id="studyPlanList" class="cbs-study-plan-list" aria-live="polite"></div>
-  </div>
-
-  <div class="card cbs-study-plan-card" id="roleHealthCard" style="display:none;">
-    <div class="cbs-study-plan-header">
-      <div>
-        <div class="cbs-study-plan-title"><i class="ri-shield-check-line"></i> صحة الدفعة الأكاديمية</div>
-        <div id="roleHealthSummary" class="cbs-study-plan-summary">جاري تحميل المؤشرات...</div>
-      </div>
-      <a href="/reports.html" class="btn btn-xs btn-secondary">التقرير الكامل</a>
-    </div>
-    <div id="roleHealthRisk" class="cbs-study-plan-list"></div>
-  </div>
-
-
-  <!-- Public University News & Gallery Header -->
-  <div style="display:flex; justify-content:space-between; align-items:center; margin: 28px 0 14px; flex-wrap:wrap; gap:10px;">
-    <div style="display:flex; align-items:center; gap:8px; font-weight:800; font-size:1.05rem; color:var(--text-main);">
-      <div style="width:34px; height:34px; border-radius:10px; background:var(--primary-light); color:var(--primary); display:flex; align-items:center; justify-content:center; font-size:1.2rem;">
-        <i class="ri-newspaper-line"></i>
-      </div>
-      <span>أخبار وفعاليات الجامعة</span>
-    </div>
-    <button class="btn btn-outline-primary btn-xs" onclick="openStudentGalleryModal()" style="font-weight:700; padding:6px 14px; border-radius:20px;">
-      <i class="ri-gallery-line"></i> معرض صور الكلية
-    </button>
-  </div>
-
-  <div id="universityNewsContainer" style="margin-bottom: 24px;">
-    <div style="background: var(--bg-card); border: 1px solid var(--border); border-radius: 20px; padding: 18px; box-shadow: 0 4px 20px rgba(0,0,0,0.04);">
-      <!-- News Search -->
-      <div style="position:relative; margin-bottom:14px;">
-        <i class="ri-search-line" style="position:absolute; right:12px; top:50%; transform:translateY(-50%); color:var(--text-muted); font-size:1rem;"></i>
-        <input type="text" id="dashNewsSearch" oninput="filterDashNews(this.value)" placeholder="ابحث في الأخبار والفعاليات..." style="width:100%; box-sizing:border-box; padding:8px 36px 8px 12px; border:1px solid var(--border,#e2e8f0); border-radius:20px; font-size:0.85rem; background:var(--bg-input,#f8fafc); color:var(--text-main,#0f172a); outline:none;">
-      </div>
-
-      <!-- الشبكة عبر صنف لا style مضمّن: القيمة المضمّنة (260px) كانت
-           تتفوّق على كل قواعد الاستجابة، فتبقى الأخبار عموداً واحداً على
-           الهاتف مهما عُدّل ملف الأنماط. -->
-      <div id="newsFeedList" class="news-grid">
-        <div style="background:var(--border,#e2e8f0); border-radius:14px; height:130px; animation:skeletonPulse 1.4s infinite ease-in-out;"></div>
-        <div style="background:var(--border,#e2e8f0); border-radius:14px; height:130px; animation:skeletonPulse 1.4s infinite ease-in-out;"></div>
-      </div>
-    </div>
-  </div>
-
-  <!-- Recent Activities -->
-  <div class="section-divider">
-    <i class="ri-history-line"></i>
-    <span>آخر النشاطات</span>
-  </div>
-
-  <div id="activitiesContainer">
-    <div class="loading-state">
-      <div class="uib-loader dark"><div class="half"></div><div class="half"></div></div>
-      <p>جاري تحميل النشاطات...</p>
-    </div>
-  </div>
-
 </div>
 
 <div id="toast-container"></div>
@@ -259,7 +184,7 @@
         <button class="btn btn-xs btn-ghost" onclick="filterDashGallery('الكليات', this)">الكليات</button>
       </div>
 
-      <div id="dashGalleryGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:12px;">
+      <div id="dashGalleryGrid" style="display:grid; grid-template-columns:repeat(auto-fill, minmax(min(220px, 100%), 1fr)); gap:12px;">
         <div style="text-align:center; padding:30px; color:var(--text-muted); grid-column:1/-1;">
           <i class="ri-loader-4-line" style="animation:spin 1s linear infinite; font-size:1.5rem;"></i>
           <p style="margin-top:6px; font-size:0.85rem;">جاري تحميل معرض الصور...</p>
@@ -301,616 +226,233 @@
   حقوق النشر &copy; <span id="year"></span> جامعة النصر التقنية &nbsp;|&nbsp; تطوير: ضياء الدين إبراهيم
 </footer>
 
-<script src="/js/shared.js?v=2026083019"></script>
-<script src="/js/app.js?v=2026083019"></script>
-<script src="/js/socket-client.js?v=2026083019" defer></script>
+<script src="/js/shared.js?v=2026102613"></script>
+<script src="/js/app.js?v=2026102613"></script>
+<script src="/js/home.js?v=2026102613"></script>
+<script src="/js/socket-client.js?v=2026102613" defer></script>
 <script>
   CBS.init();
 
-  // تحية المستخدم
+  /* ===== الصفحة الرئيسية — الطالب والليدر والدكتور والعميد داخل دفعة =====
+     المكوّنات في js/home.js والعقد في docs/design/home-screens.md */
+  const H = CBSHome;
   const user = CBS.getUser();
-  if (user.name) {
-    document.getElementById('welcomeTitle').textContent = `مرحباً، ${user.name}`;
-  }
-  const sub = document.getElementById('headerSubtitle');
-  if (sub && user.roles) {
-    const roleMap = { dean: 'العميد', admin: 'المسؤول', doctor: 'أستاذ', leader: 'قائد الدفعة', student: 'طالب' };
-    const r = CBS.getPrimaryRole(user);
-    if (r) sub.textContent = roleMap[r];
-  }
+  const role = CBS.getPrimaryRole(user);
+  const isDean = role === 'dean' || role === 'admin' || !!user.roles?.includes('admin');
+  const isDoctor = role === 'doctor';
+  const isLeader = role === 'leader';
+  const isStaff = isDean || isDoctor;
+  const esc = H.esc;
+  H.batchQuery = CBS.getBatchId() ? `?batch=${encodeURIComponent(CBS.getBatchId())}` : '';
 
-  // Populate Dashboard Grid dynamically based on role
-  const primaryRole = CBS.getPrimaryRole(user);
-  const isDoctor = primaryRole === 'doctor';
-  const isLeader = primaryRole === 'leader';
-  const isDean = primaryRole === 'dean' || user.roles?.includes('admin');
-  const dashGrid = document.getElementById('dashGridContainer');
-  let cardsHTML = '';
+  H.greet(user, role);
+  // الطالب والليدر لديهما تبويب التنبيهات بشارته في الشريط السفلي؛ الطاقم يصل لها من الجرس.
+  // على الحاسوب لا يوجد شريط سفلي فيظهر الجرس للجميع.
+  document.getElementById('headerBell').hidden = !isStaff && window.innerWidth <= 900;
 
-  let studentCards = `
-    <a href="/subjects.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-      <div class="dash-card-icon primary"><i class="ri-book-2-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">المواد الدراسية</span>
-        <span class="subtitle">عرض وتصفح المقررات</span>
-      </div>
-    </a>
-    <a href="/assignments.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-      <div class="dash-card-icon warning"><i class="ri-task-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">الواجبات والتكاليف</span>
-        <span class="subtitle">تسليم ومتابعة الواجبات</span>
-      </div>
-    </a>
-    <a href="/video-library.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-      <div class="dash-card-icon danger"><i class="ri-play-circle-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">المكتبة المرئية</span>
-        <span class="subtitle">مشاهدة المحاضرات المسجلة</span>
-      </div>
-    </a>
-    <a href="/notifications.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-      <div class="dash-card-icon info"><i class="ri-notification-3-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">الإشعارات</span>
-        <span class="subtitle">آخر التنبيهات والأخبار</span>
-      </div>
-    </a>
-    <a href="/financials.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-      <div class="dash-card-icon primary"><i class="ri-money-dollar-circle-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">الرسوم المالية</span>
-        <span class="subtitle">متابعة المدفوعات والأقساط</span>
-      </div>
-    </a>
-    <a href="/quizzes.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-      <div class="dash-card-icon danger"><i class="ri-question-answer-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">الاختبارات القصيرة</span>
-        <span class="subtitle">حل الاختبارات ومتابعة الدرجات</span>
-      </div>
-    </a>
-    <a href="/calendar.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-      <div class="dash-card-icon success"><i class="ri-calendar-event-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">التقويم الأكاديمي</span>
-        <span class="subtitle">مواعيد الواجبات والأحداث</span>
-      </div>
-    </a>
-    <a href="/leaderboard.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-      <div class="dash-card-icon warning"><i class="ri-trophy-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">لوحة المتصدرين</span>
-        <span class="subtitle">ترتيب الطلاب ونقاط التميز</span>
-      </div>
-    </a>
-    <div class="dash-card" onclick="openStudentGalleryModal()">
-      <div class="dash-card-icon" style="background:rgba(236,72,153,0.15);color:#ec4899;"><i class="ri-gallery-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">معرض صور الكلية</span>
-        <span class="subtitle">تصفح وتفاعل مع الصور والمناسبات</span>
-      </div>
-    </div>
-  `;
-
-  studentCards += `
-    <a href="/code-lab.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-      <div class="dash-card-icon" style="background:rgba(59,130,246,0.15);color:#3b82f6;"><i class="ri-terminal-box-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">مختبر البرمجة</span>
-        <span class="subtitle">محرر وتصحيح فوري بكيدي AI</span>
-      </div>
-    </a>
-    <a href="/past-exams.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-      <div class="dash-card-icon" style="background:rgba(16,185,129,0.15);color:#10b981;"><i class="ri-archive-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">بنك الامتحانات</span>
-        <span class="subtitle">نماذج الفاينل والمحاكاة الذكية</span>
-      </div>
-    </a>
-    <a href="/study-pods.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-      <div class="dash-card-icon" style="background:rgba(236,72,153,0.15);color:#ec4899;"><i class="ri-team-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">غرف المذاكرة</span>
-        <span class="subtitle">مؤقت بومودورو ومهام الدفعة</span>
-      </div>
-    </a>
-    <a href="/course-surveys.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-      <div class="dash-card-icon" style="background:rgba(245,158,11,0.15);color:#f59e0b;"><i class="ri-survey-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">تقييم المقررات</span>
-        <span class="subtitle">استبيانات الجودة الأكاديمية</span>
-      </div>
-    </a>
-    <a href="/flashcards.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-      <div class="dash-card-icon" style="background:rgba(124,58,237,0.15);color:#7c3aed;"><i class="ri-stack-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">بطاقات الاستذكار</span>
-        <span class="subtitle">مراجعة تكرارية ذكية للمفاهيم</span>
-      </div>
-    </a>
-    <a href="/student-portfolio.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-      <div class="dash-card-icon" style="background:rgba(14,165,233,0.15);color:#0ea5e9;"><i class="ri-verified-badge-line"></i></div>
-      <div class="dash-card-text">
-        <span class="title">السجل الأكاديمي الرقمي</span>
-        <span class="subtitle">ملف الإنجاز والشهادة الموثقة</span>
-      </div>
-    </a>
-  `;
-
-  if (primaryRole === 'student' || primaryRole === 'leader') {
-    studentCards += `
-      <a href="/attendance-history.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-        <div class="dash-card-icon success"><i class="ri-calendar-check-line"></i></div>
-        <div class="dash-card-text">
-          <span class="title">سجل الحضور</span>
-          <span class="subtitle">تتبع حضورك وغيابك</span>
-        </div>
-      </a>
-      <a href="/my-report.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-        <div class="dash-card-icon info"><i class="ri-bar-chart-2-line"></i></div>
-        <div class="dash-card-text">
-          <span class="title">تقريري الأكاديمي</span>
-          <span class="subtitle">إحصائيات الأداء والتحصيل</span>
-        </div>
-      </a>
-    `;
-  }
-
+  /* ===== الوصول السريع لكل دور (ما في الشريط السفلي لا يتكرر هنا) ===== */
+  const t = H.tools;
   if (isDean) {
-    cardsHTML = `
-      <div class="dash-card dash-card-featured" onclick="location.href='/admin_dashboard.html'">
-        <div class="dash-card-icon"><i class="ri-shield-star-line"></i></div>
-        <div class="dash-card-text">
-          <span class="title">لوحة الإدارة الشاملة</span>
-          <span class="subtitle">إدارة النظام، المستخدمين، والدفعات</span>
-        </div>
-      </div>
-    ` + studentCards;
+    H.actions(
+      [t.admin, t.reports, t.mSubs, t.mLectures, t.mNotifs, t.mSubjects, t.pending],
+      [['الدفعة', [t.mLectures, t.mAttendance, t.mSubs, t.mAssign, t.quizzes, t.reports, t.calendar]],
+       ['الكلية', [t.admin, t.mSubjects, t.pending, t.content, t.moderation]],
+       ['محتوى ومتابعة', [t.mNotifs, t.notifs, t.videos, t.pastExams, t.surveys, t.studio]]]);
   } else if (isDoctor) {
-    cardsHTML = `
-      <a href="/manage-lectures.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-        <div class="dash-card-icon danger"><i class="ri-video-line"></i></div>
-        <div class="dash-card-text">
-          <span class="title">إدارة المحاضرات</span>
-          <span class="subtitle">رفع وإدارة المحاضرات المرئية</span>
-        </div>
-      </a>
-      <a href="/manage-attendance.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-        <div class="dash-card-icon success"><i class="ri-calendar-check-line"></i></div>
-        <div class="dash-card-text">
-          <span class="title">إدارة الحضور</span>
-          <span class="subtitle">تسجيل ومتابعة غياب الطلاب</span>
-        </div>
-      </a>
-      <a href="/creator-studio.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-        <div class="dash-card-icon primary"><i class="ri-magic-line"></i></div>
-        <div class="dash-card-text">
-          <span class="title">استوديو المنشئ</span>
-          <span class="subtitle">أدوات صناعة المحتوى</span>
-        </div>
-      </a>
-      <a href="/manage-submissions.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-        <div class="dash-card-icon warning"><i class="ri-stack-line"></i></div>
-        <div class="dash-card-text">
-          <span class="title">إدارة التسليمات</span>
-          <span class="subtitle">مراجعة الواجبات وتقييمها</span>
-        </div>
-      </a>
-      <a href="/quizzes.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-        <div class="dash-card-icon danger"><i class="ri-question-answer-line"></i></div>
-        <div class="dash-card-text">
-          <span class="title">الاختبارات القصيرة</span>
-          <span class="subtitle">أنشئ الاختبارات وتابع النتائج</span>
-        </div>
-      </a>
-      <a href="/calendar.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-        <div class="dash-card-icon success"><i class="ri-calendar-event-line"></i></div>
-        <div class="dash-card-text">
-          <span class="title">التقويم الأكاديمي</span>
-          <span class="subtitle">إدارة الجدول والفعاليات</span>
-        </div>
-      </a>
-      <a href="/subjects.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-        <div class="dash-card-icon primary"><i class="ri-book-2-line"></i></div>
-        <div class="dash-card-text">
-          <span class="title">المواد الدراسية</span>
-          <span class="subtitle">عرض وتصفح المقررات</span>
-        </div>
-      </a>
-      <a href="/manage-notifications.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-        <div class="dash-card-icon info"><i class="ri-megaphone-line"></i></div>
-        <div class="dash-card-text">
-          <span class="title">إدارة الإشعارات</span>
-          <span class="subtitle">إرسال التنبيهات للطلاب</span>
-        </div>
-      </a>
-      <a href="/past-exams.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-        <div class="dash-card-icon" style="background:rgba(16,185,129,0.15);color:#10b981;"><i class="ri-archive-line"></i></div>
-        <div class="dash-card-text">
-          <span class="title">بنك الامتحانات</span>
-          <span class="subtitle">رفع نماذج الفاينل ومراجعتها</span>
-        </div>
-      </a>
-      <a href="/course-surveys.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-        <div class="dash-card-icon" style="background:rgba(245,158,11,0.15);color:#f59e0b;"><i class="ri-survey-line"></i></div>
-        <div class="dash-card-text">
-          <span class="title">تقييم المقررات</span>
-          <span class="subtitle">نتائج استبيانات الجودة لمقرراتك</span>
-        </div>
-      </a>
-      <a href="/campus.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-        <div class="dash-card-icon warning"><i class="ri-building-4-line"></i></div>
-        <div class="dash-card-text">
-          <span class="title">المستخدمين والدفعات</span>
-          <span class="subtitle">الطلاب وإدارة الكلية</span>
-        </div>
-      </a>
-    `;
+    H.actions(
+      [t.mSubs, t.mNotifs, t.subjects, t.reports, t.calendar, t.pastExams, t.studio],
+      [['التدريس', [t.mLectures, t.mAttendance, t.quizzes, t.mSubs, t.mAssign, t.subjects, t.pastExams]],
+       ['التواصل والمتابعة', [t.mNotifs, t.notifs, t.reports, t.surveys]],
+       ['أدوات', [t.studio, t.campus, t.calendar, t.videos]]]);
   } else if (isLeader) {
-    cardsHTML = studentCards + `
-      <div style="width: 100%; grid-column: 1 / -1; margin-top: 15px; border-top: 1px dashed var(--border); padding-top: 15px;">
-        <h4 style="color: var(--text-muted); font-size: 0.9rem; margin: 0; text-align: center;">أدوات قائد الدفعة</h4>
-      </div>
-      <a href="/manage-lectures.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-        <div class="dash-card-icon danger"><i class="ri-video-line"></i></div>
-        <div class="dash-card-text">
-          <span class="title">إدارة المحاضرات</span>
-          <span class="subtitle">رفع محاضرات دفعتك ومتابعتها</span>
-        </div>
-      </a>
-      <a href="/manage-attendance.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-        <div class="dash-card-icon success"><i class="ri-calendar-check-line"></i></div>
-        <div class="dash-card-text">
-          <span class="title">إدارة الحضور</span>
-          <span class="subtitle">تسجيل حضور الدفعة</span>
-        </div>
-      </a>
-      <a href="/manage-submissions.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-        <div class="dash-card-icon warning"><i class="ri-stack-line"></i></div>
-        <div class="dash-card-text">
-          <span class="title">إدارة التسليمات</span>
-          <span class="subtitle">متابعة وتقييم الواجبات</span>
-        </div>
-      </a>
-      <a href="/manage-notifications.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-        <div class="dash-card-icon info"><i class="ri-megaphone-line"></i></div>
-        <div class="dash-card-text">
-          <span class="title">إدارة الإشعارات</span>
-          <span class="subtitle">إرسال التنبيهات للطلاب</span>
-        </div>
-      </a>
-      <a href="/creator-studio.html" class="dash-card" style="text-decoration:none;color:inherit;display:block;">
-        <div class="dash-card-icon primary"><i class="ri-magic-line"></i></div>
-        <div class="dash-card-text">
-          <span class="title">استوديو المنشئ</span>
-          <span class="subtitle">أدوات صناعة المحتوى</span>
-        </div>
-      </a>
-    `;
+    H.actions(
+      [t.assignments, t.quizzes, t.mLectures, t.mNotifs, t.pending, t.fees, t.calendar],
+      [['دراستي', [t.assignments, t.quizzes, t.videos, t.pastExams, t.flashcards, t.lab, t.pods]],
+       ['أدوات قائد الدفعة', [t.mLectures, t.mAttendance, t.mNotifs, t.pending, t.studio]],
+       ['متابعتي', [t.attendance, t.myReport, t.portfolio, t.leaderboard, t.fees]],
+       ['الكلية', [t.calendar, t.surveys, t.gallery]]]);
   } else {
-    // Default Student
-    cardsHTML = studentCards;
-  }
-  if (dashGrid) {
-    dashGrid.innerHTML = cardsHTML;
-    // Cards are navigation controls, so make them usable with a keyboard too.
-    dashGrid.querySelectorAll('.dash-card').forEach(card => {
-      card.setAttribute('role', 'link');
-      card.tabIndex = 0;
-      card.addEventListener('keydown', event => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          card.click();
-        }
-      });
-    });
+    H.actions(
+      [t.assignments, t.quizzes, t.fees, t.videos, t.lab, t.pastExams, t.attendance],
+      [['دراستي', [t.assignments, t.quizzes, t.videos, t.pastExams, t.flashcards, t.lab, t.pods]],
+       ['متابعتي', [t.attendance, t.myReport, t.portfolio, t.leaderboard, t.fees]],
+       ['الكلية', [t.calendar, t.surveys, t.gallery]]]);
   }
 
+  /* ===== الآن / التالي: أول موعد متبقٍّ اليوم ===== */
+  async function loadNow() {
+    const host = document.getElementById('hmNow');
+    const data = await H.get('/api/calendar/today');
+    const events = Array.isArray(data?.events) ? data.events : [];
+    const now = new Date();
+    // الواجب لحظة تسليم؛ البقية لها مدة — بلا نهاية مسجّلة نفترض ساعة
+    const upcoming = events
+      .map(e => { const s = new Date(e.start); return { e, s, end: e.end ? new Date(e.end) : (e.type === 'assignment' ? s : new Date(s.getTime() + 3600e3)) }; })
+      .filter(x => !isNaN(x.s) && x.end >= now && x.e.type !== 'holiday')
+      .sort((a, b) => a.s - b.s);
 
-  
-
-  function renderRoleHealthWidget(report) {
-    const card = document.getElementById('roleHealthCard');
-    const summary = document.getElementById('roleHealthSummary');
-    const list = document.getElementById('roleHealthRisk');
-    if (!card || !summary || !list || !report || report.scopeMissing) return;
-    card.style.display = 'block';
-    summary.textContent = `${report.totalStudents ?? 0} طالب · متوسط الحضور ${report.avgAttendance ?? 0}% · ${report.atRiskCount ?? 0} يحتاج متابعة`;
-    const rows = Array.isArray(report.atRiskStudents) ? report.atRiskStudents.slice(0, 5) : [];
-    list.innerHTML = rows.length ? rows.map(row => `
-      <div class="cbs-study-plan-item is-urgent" role="article">
-        <div class="cbs-study-plan-item-icon"><i class="ri-user-warning-line"></i></div>
-        <div class="cbs-study-plan-item-body">
-          <div class="cbs-study-plan-item-title">${CBS.escapeHTML(row.name || 'طالب')}</div>
-          <div class="cbs-study-plan-item-meta">
-            <span class="cbs-study-plan-subject-tag">${CBS.escapeHTML(row.batchName || 'الدفعة')}</span>
-            <span class="cbs-study-plan-date-tag"><i class="ri-pie-chart-line"></i> نسبة الحضور: ${row.attendanceRate}%</span>
-          </div>
-        </div>
-        <div class="cbs-study-plan-item-action">
-          <span class="btn btn-xs ${row.risk === 'high' ? 'btn-danger' : 'btn-secondary'}">${row.risk === 'high' ? 'عالي الخطورة' : 'يحتاج متابعة'}</span>
-        </div>
-      </div>
-    `).join('') : `
-      <div class="cbs-study-plan-empty">
-        <i class="ri-checkbox-circle-line"></i>
-        <div>صحة الدفعة ممتازة، لا توجد حالات تحتاج متابعة حالياً.</div>
-      </div>
-    `;
-  }
-
-  function renderStudyPlanWidget(studyPlan, risk, progress, alerts) {
-    const card = document.getElementById('studyPlanCard');
-    const list = document.getElementById('studyPlanList');
-    const summary = document.getElementById('studyPlanSummary');
-    const badge = document.getElementById('studyRiskBadge');
-    if (!card || !list) return;
-    const items = Array.isArray(studyPlan?.items) ? studyPlan.items : [];
-    const riskLabels = { low: 'مستقر وممتاز', medium: 'يحتاج متابعة', high: 'عالي الأهمية' };
-    const riskLevel = risk?.level || 'low';
-    const overall = progress?.overall;
-    const alertCount = Array.isArray(alerts) ? alerts.length : 0;
-    card.style.display = 'block';
-    if (summary) summary.textContent = overall !== null && overall !== undefined
-      ? `التقدم العام ${overall}% · ${items.length ? `لديك ${items.length} أولويات مقترحة لإنجازها` : 'لا توجد مهام عاجلة'}${alertCount ? ` · ${alertCount} تنبيه` : ''}`
-      : (items.length ? `لديك ${items.length} أولويات مقترحة لإنجازها` : 'لا توجد مهام قادمة');
-    if (badge) {
-      badge.hidden = false;
-      badge.dataset.level = riskLevel;
-      badge.innerHTML = `<i class="${riskLevel === 'high' ? 'ri-error-warning-line' : (riskLevel === 'medium' ? 'ri-alarm-warning-line' : 'ri-shield-check-line')}"></i> ${riskLabels[riskLevel] || riskLabels.low}`;
-    }
-    if (!items.length) {
-      list.innerHTML = `
-        <div class="cbs-study-plan-empty">
-          <i class="ri-sparkling-2-line"></i>
-          <div style="font-weight:700;color:var(--text-main);">أنت على المسار الصحيح تماماً!</div>
-          <div>استغل وقت فراغك في مراجعة آخر المحاضرات أو حل اختبارات تدريبية سريعة.</div>
-        </div>
-      `;
+    if (!upcoming.length) {
+      host.innerHTML = `<a class="hm-now is-empty" href="/calendar.html${H.batchQuery}">
+        <span class="hm-ic" data-tone="success"><i class="ri-sun-line"></i></span>
+        <div class="hm-row-body"><div class="hm-row-title">لا مواعيد متبقية اليوم</div><div class="hm-row-meta">افتح التقويم لمواعيد الأيام القادمة</div></div>${H.CHEV}</a>`;
       return;
     }
-    list.innerHTML = items.slice(0, 5).map(item => {
-      const urgent = item.urgency === 'high';
-      const date = item.dueAt ? new Date(item.dueAt).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' }) : '';
-      const isQuiz = item.type === 'quiz';
-      const icon = isQuiz ? 'ri-questionnaire-line' : 'ri-task-line';
-      const typeLabel = isQuiz ? 'اختبار قصير' : 'واجب دراسي';
-      const href = isQuiz ? '/quizzes.html' : '/assignments.html';
-      const actionText = item.action || (isQuiz ? 'بدء الاختبار' : 'تسليم الواجب');
-      return `
-        <div class="cbs-study-plan-item${urgent ? ' is-urgent' : ''}" role="link" tabindex="0" onclick="location.href='${href}'" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
-          <div class="cbs-study-plan-item-icon"><i class="${icon}"></i></div>
-          <div class="cbs-study-plan-item-body">
-            <div class="cbs-study-plan-item-title">${CBS.escapeHTML(item.title)}</div>
-            <div class="cbs-study-plan-item-meta">
-              ${item.subject ? `<span class="cbs-study-plan-subject-tag">${CBS.escapeHTML(item.subject)}</span>` : ''}
-              <span style="display:inline-flex;align-items:center;gap:3px;"><i class="ri-bookmark-line"></i> ${typeLabel}</span>
-              ${date ? `<span class="cbs-study-plan-date-tag"><i class="ri-calendar-event-line"></i> ${date}</span>` : ''}
-            </div>
-          </div>
-          <div class="cbs-study-plan-item-action">
-            <span class="btn btn-xs ${urgent ? 'btn-primary' : 'btn-secondary'}">${CBS.escapeHTML(actionText)} <i class="ri-arrow-left-s-line"></i></span>
-          </div>
-        </div>
-      `;
-    }).join('');
+    const { e: ev, s, end } = upcoming[0];
+    const live = ev.type !== 'assignment' && s <= now;
+    const mins = Math.max(1, Math.round((s - now) / 60000));
+    const rel = mins < 60 ? `بعد ${mins} د` : `بعد ${Math.floor(mins / 60)} س${mins % 60 ? ` و${mins % 60} د` : ''}`;
+    const [kind, kindIcon] = {
+      assignment: ['موعد تسليم', 'ri-task-line'], quiz: ['اختبار', 'ri-question-answer-line'], exam: ['امتحان', 'ri-file-edit-line'],
+      meeting: ['اجتماع', 'ri-team-line'], lecture: ['محاضرة', 'ri-presentation-line']
+    }[ev.type] || ['موعد', 'ri-calendar-event-line'];
+    const time = d => d.toLocaleTimeString('ar-EG-u-nu-latn', { hour: 'numeric', minute: '2-digit' });
+    const timeText = ev.type === 'assignment' ? `حتى ${time(s)}` : `${time(s)} – ${time(end)}`;
+    const chip = live ? 'جارٍ الآن' : (ev.type === 'assignment' ? `يُغلق ${rel}` : `يبدأ ${rel}`);
+    const subject = ev.subjectName || ev.subtitle || '';
+    const subjectLink = ev.subjectId ? `/subject.html?id=${encodeURIComponent(ev.subjectId)}` : (typeof ev.url === 'string' && ev.url.startsWith('/') ? ev.url : '');
+    // للطاقم في محاضرة: الفعل الأول رصد الحضور، لا فتح المادة
+    const primary = isStaff && ev.type === 'lecture'
+      ? `<a class="hm-now-btn" href="/manage-attendance.html${H.batchQuery}"><i class="ri-user-follow-line"></i> رصد الحضور</a>`
+      : (subjectLink ? `<a class="hm-now-btn" href="${esc(subjectLink)}"><i class="ri-book-open-line"></i> ${ev.subjectId ? 'صفحة المادة' : 'فتح'}</a>` : '');
+    host.innerHTML = `<div class="hm-now" data-kind="${esc(ev.type || 'event')}">
+      <div class="hm-now-top">
+        <span class="hm-now-kind"><i class="${kindIcon}"></i> ${esc(kind)}</span>
+        <span class="hm-now-chip${live ? ' live' : ''}">${esc(chip)}</span>
+      </div>
+      <div class="hm-now-title">${esc(ev.title || kind)}</div>
+      <div class="hm-now-meta">
+        <span><i class="ri-time-line"></i> ${esc(timeText)}</span>
+        ${subject ? `<span><i class="ri-book-2-line"></i> ${esc(subject)}</span>` : ''}
+        ${ev.location ? `<span><i class="ri-map-pin-2-line"></i> ${esc(ev.location)}</span>` : ''}
+      </div>
+      <div class="hm-now-actions">
+        ${primary}
+        <a class="hm-now-btn ghost" href="/calendar.html${H.batchQuery}">جدول اليوم</a>
+        ${upcoming.length > 1 ? `<span class="hm-now-more">+${upcoming.length - 1} اليوم</span>` : ''}
+      </div>
+    </div>`;
   }
 
-  // جلب إحصائيات حية مخصصة حسب الدور
-
-  (async () => {
-    const primaryRole = CBS.getPrimaryRole(user);
-    const isStudentOrLeader = primaryRole === 'student' || primaryRole === 'leader' || !primaryRole || primaryRole === 'doctor';
-
-    let loadedCustom = false;
-    if (isStudentOrLeader) {
-      try {
-        const res = await CBS.apiGet('/api/student/dashboard');
-        if (res.ok) {
-          const resJson = await res.json();
-                    const responseData = resJson.data || resJson;
-          const stats = responseData.stats;
-          const recentNotifications = responseData.recentNotifications;
-          renderStudyPlanWidget(responseData.studyPlan, responseData.risk, responseData.progress, responseData.smartAlerts);
-          if (stats) {
-
-            document.getElementById('statSubjects').textContent = stats.subjects ?? '-';
-            document.getElementById('statAssignments').textContent = stats.pendingAssignments ?? '-';
-            document.getElementById('statAttendance').textContent = stats.attendanceRate !== null ? stats.attendanceRate + '%' : '-';
-            
-            // تغيير الخانة الرابعة لتعرض نقاط التميز للطالب
-            const statVideosEl = document.getElementById('statVideos');
-            if (statVideosEl) {
-              statVideosEl.textContent = stats.points ?? 0;
-              const labelEl = statVideosEl.nextElementSibling;
-              if (labelEl) labelEl.textContent = 'نقاط التميز';
-              const iconEl = statVideosEl.closest('.stat-item')?.querySelector('i');
-              if (iconEl) iconEl.className = 'ri-trophy-line';
-            }
-
-            // تحديث شريط تقدم الواجبات
-            const assignPctVal = stats.totalAssignments ? Math.round((stats.submittedAssignments / stats.totalAssignments) * 100) : 0;
-            document.getElementById('assignPct').textContent = assignPctVal + '%';
-            setTimeout(() => {
-              const bar = document.getElementById('assignBar');
-              bar.style.width = assignPctVal + '%';
-              bar.setAttribute('aria-valuenow', assignPctVal);
-            }, 200);
-
-            // تحديث شريط تقدم الحضور
-            const attendPctVal = stats.attendanceRate || 0;
-            document.getElementById('attendPct').textContent = attendPctVal + '%';
-            setTimeout(() => {
-              const bar = document.getElementById('attendBar');
-              bar.style.width = attendPctVal + '%';
-              bar.setAttribute('aria-valuenow', attendPctVal);
-            }, 400);
-
-            loadedCustom = true;
-          }
-
-          // عرض النشاطات الحديثة من بيانات الـ dashboard
-          const container = document.getElementById('activitiesContainer');
-          if (container) {
-            if (Array.isArray(recentNotifications) && recentNotifications.length) {
-              container.innerHTML = recentNotifications.map(n => `
-                <div class="card" style="margin-bottom:12px;padding:16px;cursor:pointer" onclick="location.href='/notifications.html'">
-                  <div style="display:flex;align-items:center;gap:12px">
-                    <div style="width:42px;height:42px;border-radius:12px;background:${n.type==='emergency'?'var(--danger-bg)':'var(--primary-light)'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                      <i class="${n.type==='emergency'?'ri-alarm-warning-fill':'ri-notification-3-line'}" style="font-size:1.25rem;color:${n.type==='emergency'?'var(--danger)':'var(--primary)'}"></i>
-                    </div>
-                    <div style="flex:1;min-width:0">
-                      <div style="font-weight:700;font-size:0.95rem;color:var(--text-primary);margin-bottom:2px">${CBS.escapeHTML(n.title)}</div>
-                      <div style="font-size:0.8rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${CBS.escapeHTML(n.message || '')}</div>
-                    </div>
-                    <div style="font-size:0.72rem;color:var(--text-light);white-space:nowrap">${new Date(n.createdAt).toLocaleDateString('ar')}</div>
-                  </div>
-                </div>
-              `).join('');
-            } else {
-              container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:2rem">لا توجد نشاطات حديثة</p>';
-            }
-          }
-        }
-      } catch (e) {
-        console.warn("Custom student dashboard fetch failed, using general summary fallback:", e.message);
-      }
+  /* ===== الطالب والليدر ===== */
+  async function loadStudentHome() {
+    H.kpis([
+      { val: '—', label: 'الحضور', href: '/attendance-history.html' },
+      { val: '—', label: 'واجبات متبقية', href: '/assignments.html' },
+      { val: '—', label: 'نقاط التميز', href: '/leaderboard.html' }
+    ]);
+    document.getElementById('hmFocusTitle').textContent = 'مطلوب منك';
+    const list = document.getElementById('hmFocusList');
+    const data = await H.get('/api/student/dashboard');
+    if (!data) {
+      list.innerHTML = H.empty('تعذّر تحميل مهامك', 'تحقّق من الاتصال ثم اسحب الصفحة للأسفل للتحديث', 'ri-wifi-off-line', 'warning');
+      H.updates([]);
+      return;
     }
+    const s = data.stats || {};
+    H.kpis([
+      { val: s.attendanceRate == null ? '—' : s.attendanceRate + '%', label: 'الحضور', href: '/attendance-history.html', tone: H.attendanceTone(s.attendanceRate) },
+      { val: s.pendingAssignments ?? 0, label: 'واجبات متبقية', href: '/assignments.html', tone: s.pendingAssignments ? 'warning' : '' },
+      { val: s.points ?? 0, label: 'نقاط التميز', href: '/leaderboard.html' }
+    ]);
+    // تنبيه الحضور وحده بارز؛ تنبيهات المواعيد هي نفسها عناصر القائمة أدناه
+    const attAlert = (data.smartAlerts || []).find(a => a.type === 'attendance_risk');
+    document.getElementById('hmAlert').innerHTML = attAlert
+      ? `<a class="hm-alert" href="/attendance-history.html"><i class="ri-error-warning-line"></i><span>${esc(attAlert.message)}</span>${H.CHEV}</a>` : '';
 
-    // fallback للعميد أو إذا فشل جلب بيانات الطالب
-    if (!loadedCustom) {
-      try {
-        const res = await CBS.apiGet('/api/reports/summary');
-        if (res.ok) {
-                    const d = await res.json();
-          const reportData = d.data || d;
-          renderRoleHealthWidget(reportData);
-          document.getElementById('statSubjects').textContent = reportData.totalStudents ?? reportData.subjects?.length ?? '-';
-
-                    document.getElementById('statAssignments').textContent = reportData.totalSubmissions ?? reportData.atRiskCount ?? '-';
-          document.getElementById('statAttendance').textContent = reportData.avgAttendance ? reportData.avgAttendance + '%' : '-';
-          document.getElementById('statVideos').textContent = reportData.videoViews ?? '-';
-
-        }
-      } catch {}
-
-      // جلب آخر النشاطات (fallback)
-      const container = document.getElementById('activitiesContainer');
-      try {
-        const res = await CBS.apiGet('/api/notifications?limit=5');
-        if (res.ok) {
-          const _resData = await res.json();
-          const list = _resData.data?.notifications || _resData.notifications || _resData.data || _resData;
-          if (Array.isArray(list) && list.length) {
-            container.innerHTML = list.map(n => `
-              <div class="card" style="margin-bottom:12px;padding:16px;cursor:pointer" onclick="location.href='/notifications.html'">
-                <div style="display:flex;align-items:center;gap:12px">
-                  <div style="width:42px;height:42px;border-radius:12px;background:${n.type==='emergency'?'var(--danger-bg)':'var(--primary-light)'};display:flex;align-items:center;justify-content:center;flex-shrink:0">
-                    <i class="${n.type==='emergency'?'ri-alarm-warning-fill':'ri-notification-3-line'}" style="font-size:1.25rem;color:${n.type==='emergency'?'var(--danger)':'var(--primary)'}"></i>
-                  </div>
-                  <div style="flex:1;min-width:0">
-                    <div style="font-weight:700;font-size:0.95rem;color:var(--text-primary);margin-bottom:2px">${CBS.escapeHTML(n.title)}</div>
-                    <div style="font-size:0.8rem;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">${CBS.escapeHTML(n.message || '')}</div>
-                  </div>
-                  <div style="font-size:0.72rem;color:var(--text-light);white-space:nowrap">${new Date(n.createdAt).toLocaleDateString('ar')}</div>
-                </div>
-              </div>
-            `).join('');
-          } else {
-            container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:2rem">لا توجد نشاطات حديثة</p>';
-          }
-        }
-      } catch {
-        container.innerHTML = '<p style="text-align:center;color:var(--text-muted);padding:2rem">لا توجد نشاطات حديثة</p>';
-      }
-
-      // fallback progress bars
-      try {
-        const ar = await CBS.apiGet('/api/assignments');
-        if (ar.ok) {
-          const list = await ar.json();
-          const done = list.filter(a => a.status === 'completed' || a.status === 'graded').length;
-          const pct = list.length ? Math.round((done / list.length) * 100) : 0;
-          document.getElementById('assignPct').textContent = pct + '%';
-          setTimeout(() => {
-            const bar = document.getElementById('assignBar');
-            bar.style.width = pct + '%';
-            bar.setAttribute('aria-valuenow', pct);
-          }, 200);
-        }
-      } catch {}
-      try {
-        const hr = await CBS.apiGet('/api/attendance/history');
-        if (hr.ok) {
-          const hist = await hr.json();
-          const arr = Array.isArray(hist) ? hist : (hist.data || hist.history || []);
-          const present = arr.filter(r => r.status === 'present').length;
-          const pct = arr.length ? Math.round((present / arr.length) * 100) : 0;
-          document.getElementById('attendPct').textContent = pct + '%';
-          setTimeout(() => {
-            const bar = document.getElementById('attendBar');
-            bar.style.width = pct + '%';
-            bar.setAttribute('aria-valuenow', pct);
-          }, 400);
-        }
-      } catch {}
-    }
-  })();
-
-  // جلب الواجبات القادمة (للطالب فقط)
-  (async function loadUpcomingAssignments() {
-    const pr = CBS.getPrimaryRole(user);
-    if (pr !== 'student' && pr !== 'leader') return;
-    try {
-      const res = await CBS.apiGet('/api/assignments');
-      if (!res.ok) return;
-      const data = await res.json();
-      const all = data.assignments || data.data?.assignments || (Array.isArray(data) ? data : []);
-      const now = Date.now();
-
-      // نموذج Assignment لا يحتوي حقل submitted، فكان الشرط !a.submitted بلا أثر
-      // والواجبات المسلَّمة تبقى ظاهرة كـ"قادمة". نجلب تسليمات الطالب لاستبعادها.
-      const submittedIds = new Set();
-      try {
-        const subRes = await CBS.apiGet('/api/submissions/my-submissions');
-        if (subRes && subRes.ok) {
-          const subData = await subRes.json();
-          (subData.data?.submissions || subData.submissions || []).forEach(s => {
-            const aid = s.assignment && (s.assignment._id || s.assignment);
-            if (aid) submittedIds.add(String(aid));
-          });
-        }
-      } catch {}
-
-      const upcoming = all
-        .filter(a => a.dueDate && !submittedIds.has(String(a._id)) && new Date(a.dueDate) > now)
-        .sort((a,b) => new Date(a.dueDate) - new Date(b.dueDate))
-        .slice(0, 4);
-      if (!upcoming.length) return;
-      document.getElementById('upcomingTasksSection').style.display = 'block';
-      document.getElementById('upcomingTasksList').innerHTML = upcoming.map(a => {
-        const due = new Date(a.dueDate);
-        const daysLeft = Math.ceil((due - now) / (1000*60*60*24));
-        const urgent = daysLeft <= 2;
-        const color = urgent ? 'var(--danger)' : (daysLeft <= 5 ? '#d97706' : 'var(--primary)');
-        const bg    = urgent ? 'var(--danger-bg,#fee2e2)' : (daysLeft <= 5 ? '#fef3c7' : 'var(--primary-light)');
-        return `<div class="card" style="padding:14px 16px;display:flex;align-items:center;gap:12px;cursor:pointer;border-right:3px solid ${color};" onclick="location.href='/assignments.html'">
-          <div style="width:40px;height:40px;border-radius:10px;background:${bg};display:flex;align-items:center;justify-content:center;flex-shrink:0;">
-            <i class="ri-task-line" style="font-size:1.2rem;color:${color};"></i>
-          </div>
-          <div style="flex:1;min-width:0;">
-            <div style="font-weight:700;font-size:0.9rem;color:var(--text-main);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${CBS.escapeHTML(a.title || 'واجب')}</div>
-            <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">${CBS.escapeHTML(a.subject?.name || '')}</div>
-          </div>
-          <div style="text-align:center;flex-shrink:0;">
-            <div style="font-weight:900;font-size:1.1rem;color:${color};">${daysLeft}</div>
-            <div style="font-size:0.65rem;color:var(--text-muted);">يوم</div>
-          </div>
-        </div>`;
+    // كانت هنا قائمتان للواجب نفسه (واجباتك القادمة + خطتك الدراسية) — صارت واحدة مرتبة بالموعد
+    const items = Array.isArray(data.studyPlan?.items) ? data.studyPlan.items : [];
+    if (!items.length) {
+      list.innerHTML = H.empty('لا مهام مستحقة الآن', 'أحسنت. راجع آخر محاضرة أو جرّب نموذجاً من بنك الامتحانات.', 'ri-checkbox-circle-line', 'success');
+    } else {
+      list.innerHTML = items.slice(0, 4).map(it => {
+        const quiz = it.type === 'quiz';
+        const due = H.due(it.dueAt);
+        return H.row({
+          href: quiz ? '/quizzes.html' : '/assignments.html',
+          icon: quiz ? 'ri-question-answer-line' : 'ri-task-line',
+          title: it.title, meta: `${it.subject || ''} · ${quiz ? 'اختبار' : 'واجب'}`,
+          chip: due.text, chipTone: due.tone
+        });
       }).join('');
-    } catch { /* silent */ }
-  })();
+      if (items.length > 4) {
+        const link = document.getElementById('hmFocusLink');
+        link.hidden = false; link.href = '/assignments.html';
+      }
+    }
+    H.updates(data.recentNotifications);
+  }
+
+  /* ===== الدكتور والعميد داخل دفعة ===== */
+  async function loadStaffHome() {
+    H.kpis([
+      { val: '—', label: 'الطلاب', href: '/reports.html' },
+      { val: '—', label: 'متوسط الحضور', href: '/reports.html' },
+      { val: '—', label: 'بحاجة لمتابعة', href: '/reports.html' }
+    ]);
+    const list = document.getElementById('hmFocusList');
+    const [sum, home, notifs] = await Promise.all([
+      H.get('/api/reports/summary'),
+      H.get('/api/reports/home'),
+      H.get('/api/notifications?limit=3')
+    ]);
+    H.updates(notifs?.notifications || (Array.isArray(notifs) ? notifs : []));
+
+    if (sum?.scopeMissing) {
+      list.innerHTML = `<a class="hm-row" href="/batch-selector.html">
+        <span class="hm-ic" data-tone="warning"><i class="ri-stack-line"></i></span>
+        <div class="hm-row-body"><div class="hm-row-title">اختر دفعة لعرض بياناتها</div><div class="hm-row-meta">التسليمات والحضور تُعرض لكل دفعة على حدة</div></div>${H.CHEV}</a>`;
+      return;
+    }
+    if (sum) {
+      const att = sum.healthStatus === 'no_data' ? null : sum.avgAttendance;
+      H.kpis([
+        { val: sum.totalStudents ?? 0, label: 'الطلاب', href: '/reports.html' },
+        { val: att == null ? '—' : att + '%', label: 'متوسط الحضور', href: '/reports.html', tone: H.attendanceTone(att) },
+        { val: sum.atRiskCount ?? 0, label: 'بحاجة لمتابعة', href: '/reports.html', tone: sum.atRiskCount ? 'danger' : '' }
+      ]);
+      // كانت بطاقات بأزرار حمراء كبيرة ليست أزراراً؛ الآن صفوف مرتبة بالأقل حضوراً
+      const risk = Array.isArray(sum.atRiskStudents) ? sum.atRiskStudents : [];
+      if (risk.length) {
+        document.getElementById('hmRisk').hidden = false;
+        document.getElementById('hmRiskList').innerHTML = risk
+          .slice().sort((a, b) => a.attendanceRate - b.attendanceRate).slice(0, 3)
+          .map(r => H.row({
+            href: '/reports.html', icon: 'ri-user-line', tone: r.risk === 'high' ? 'danger' : 'warning',
+            title: r.name || 'طالب', meta: `نسبة الحضور ⁦${r.attendanceRate}%⁩`,
+            chip: r.risk === 'high' ? 'خطر مرتفع' : 'متابعة', chipTone: r.risk === 'high' ? 'danger' : 'warning'
+          })).join('');
+      }
+    }
+
+    const rows = [];
+    const ungraded = home?.ungraded;
+    if (ungraded?.items?.length) {
+      ungraded.items.forEach(it => rows.push(H.row({
+        href: `/manage-submissions.html?assignment=${encodeURIComponent(it.assignmentId)}&status=pending`,
+        icon: 'ri-inbox-archive-line', title: it.title, meta: `${it.subjectName ? it.subjectName + ' · ' : ''}بانتظار التصحيح`,
+        chip: String(it.count), chipTone: 'warning'
+      })));
+      H.badges['/manage-submissions.html'] = ungraded.count;
+      const shown = ungraded.items.reduce((n, it) => n + it.count, 0);
+      if (ungraded.count > shown) {
+        const link = document.getElementById('hmFocusLink');
+        link.hidden = false; link.href = '/manage-submissions.html?status=pending';
+      }
+    }
+    if (isDean && home?.pendingRegistrations) {
+      rows.push(H.row({ href: '/pending-registrations.html', icon: 'ri-user-add-line', tone: 'warning', title: 'طلبات تسجيل جديدة', meta: 'بانتظار القبول أو الرفض', chip: String(home.pendingRegistrations), chipTone: 'warning' }));
+      H.badges['/pending-registrations.html'] = home.pendingRegistrations;
+    }
+    if (isDean && home?.pendingReports?.count) {
+      const late = home.pendingReports.overdue;
+      rows.push(H.row({ href: '/moderation.html', icon: 'ri-flag-line', tone: 'danger', title: 'بلاغات محتوى', meta: late ? `${late} تجاوز مهلة 24 ساعة` : 'يجب البتّ خلال 24 ساعة', chip: String(home.pendingReports.count), chipTone: 'danger' }));
+    }
+    list.innerHTML = rows.length ? rows.join('') : H.empty('لا شيء بانتظارك', 'لا تسليمات بانتظار التصحيح في هذه الدفعة.', 'ri-checkbox-circle-line', 'success');
+    H.actions(); // إعادة الرسم لإظهار شارات الأعداد على الأيقونات
+  }
+
+  if (isStaff) loadStaffHome(); else loadStudentHome();
+  loadNow();
 
   // جلب الأخبار والفعاليات العامة للجامعة
   window._allDashNews = [];
@@ -930,30 +472,13 @@
       return;
     }
     container.innerHTML = news.map(n => {
-      const dateStr = n.publishedAt || n.createdAt || new Date();
-      const date = new Date(dateStr).toLocaleDateString('ar-EG');
-      const tag = (n.tags && n.tags.length > 0) ? n.tags[0] : 'أخبار الجامعة';
-      const readTime = getDashReadTime(n.body || n.summary);
-
-      return `
-        <div class="card" style="padding: 16px; display: flex; flex-direction: column; justify-content: space-between; cursor: pointer; transition: var(--transition-spring);" onclick="openDashboardNewsModal('${n._id}')">
-          <div>
-            <div style="display: flex; align-items: center; justify-content: space-between; font-size: 0.75rem; color: var(--primary); font-weight: 700; margin-bottom: 6px;">
-              <span><i class="ri-price-tag-3-line"></i> ${CBS.escapeHTML(tag)}</span>
-              <span style="color: var(--text-muted); font-weight: 500;"><i class="ri-time-line"></i> ${readTime} دقيقة</span>
-            </div>
-            <h4 style="margin: 0 0 8px 0; font-size: 0.95rem; font-weight: 800; color: var(--text-main); line-height: 1.4;">${CBS.escapeHTML(n.title)}</h4>
-            <p style="margin: 0; font-size: 0.82rem; color: var(--text-muted); line-height: 1.55; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden;">${CBS.escapeHTML(n.summary || n.body || '')}</p>
-          </div>
-          <div style="margin-top: 12px; font-size: 0.8rem; color: var(--text-muted); font-weight:700; border-top: 1px solid var(--border); padding-top: 12px; display:flex; justify-content:space-between; align-items:center;">
-            <span><i class="ri-calendar-line"></i> ${date}</span>
-            <div style="display:flex; gap:12px;">
-              <span><i class="ri-eye-line"></i> ${n.viewsCount || 0}</span>
-              <span style="color:${getDashNewsLikes(n._id).isLiked ? '#ef4444' : 'inherit'}"><i class="${getDashNewsLikes(n._id).isLiked ? 'ri-heart-3-fill' : 'ri-heart-3-line'}"></i> ${getDashNewsLikes(n._id).count}</span>
-            </div>
-          </div>
-        </div>
-      `;
+      const date = new Date(n.publishedAt || n.createdAt || Date.now()).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short' });
+      const tag = (n.tags && n.tags.length > 0) ? n.tags[0] : 'أخبار الكلية';
+      return `<div class="hm-news-card" role="button" tabindex="0" onclick="openDashboardNewsModal('${n._id}')" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();this.click();}">
+        <span class="hm-news-tag">${CBS.escapeHTML(tag)}</span>
+        <span class="hm-news-title">${CBS.escapeHTML(n.title)}</span>
+        <span class="hm-news-date">${date} · ${getDashReadTime(n.body || n.summary)} د قراءة</span>
+      </div>`;
     }).join('');
   }
 
@@ -978,10 +503,12 @@
       const news = data?.data?.news || data?.news || [];
       const container = document.getElementById('newsFeedList');
       if (!container) return;
-      if (!news.length) {
-        container.innerHTML = `<div style="text-align:center;color:var(--text-muted);padding:15px;grid-column:1/-1;font-size:0.85rem;">لا توجد أخبار جديدة حالياً</div>`;
-        return;
-      }
+      const header = document.getElementById('newsSectionHeader');
+      const wrap = document.getElementById('universityNewsContainer');
+      // قسم فارغ يطيل الصفحة بلا فائدة — يُخفى حتى توجد أخبار
+      if (header) header.style.display = news.length ? '' : 'none';
+      if (wrap) wrap.style.display = news.length ? '' : 'none';
+      if (!news.length) return;
       window._allDashNews = news;
       window._cachedDashboardNewsMap = {};
       news.forEach(n => { window._cachedDashboardNewsMap[n._id] = n; });
@@ -1021,7 +548,7 @@
     }
 
     const dateStr = item.publishedAt || item.createdAt || new Date();
-    dateVal.textContent = new Date(dateStr).toLocaleDateString('ar-EG');
+    dateVal.textContent = new Date(dateStr).toLocaleDateString('ar-EG-u-nu-latn');
     tag.textContent = (item.tags && item.tags.length > 0) ? item.tags[0] : 'أخبار الجامعة';
     if (readTimeVal) readTimeVal.textContent = getDashReadTime(item.body || item.summary) + ' دقائق قراءة';
     title.textContent = item.title || 'تفاصيل الخبر';
@@ -1420,13 +947,11 @@
 
   loadPublicNews();
 
-  // Auto-refresh every minute
+  // تحديث كل دقيقة والصفحة ظاهرة فقط (توفير بطارية الهاتف وطلبات الخادم)
   setInterval(() => {
-    if (typeof renderSummary === 'function') renderSummary();
-    if (typeof loadPublicNews === 'function') loadPublicNews();
-    if (user && user.roles.includes('student') && typeof loadStudentGallery === 'function') {
-      loadStudentGallery();
-    }
+    if (document.hidden) return;
+    loadNow();
+    loadPublicNews();
   }, 60000);
 </script>
 </body>

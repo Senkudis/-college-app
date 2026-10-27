@@ -67,6 +67,8 @@ htmlFiles.forEach(file => {
   const content = fs.readFileSync(filePath, 'utf8');
 
   // A. Check external <script src="..."> tags
+  // ملفات الصفحة المحلية (مثل js/home.js) تعرّف دوال تستدعيها المعالجات أيضاً
+  let localScriptsCode = '';
   const scriptSrcMatches = content.matchAll(/<script[\s\S]*?src=["']([^"']+)["']/gi);
   for (const match of scriptSrcMatches) {
     let src = match[1].trim();
@@ -77,6 +79,8 @@ htmlFiles.forEach(file => {
     const resolvedPath = path.join(wwwDir, relPath);
     if (!fs.existsSync(resolvedPath)) {
       logError(file, `Script src="${match[1]}" not found on disk! (Resolved: ${resolvedPath})`);
+    } else if (relPath !== 'js/app.js') {
+      localScriptsCode += '\n' + fs.readFileSync(resolvedPath, 'utf8');
     }
   }
 
@@ -99,7 +103,7 @@ htmlFiles.forEach(file => {
   }
 
   // Combine page inline code + appJsContent for handler lookup
-  const pageCombinedCode = appJsContent + '\n' + inlineScriptsCode;
+  const pageCombinedCode = appJsContent + '\n' + localScriptsCode + '\n' + inlineScriptsCode;
 
   // C. Check inline event handlers (onclick="foo()", oninput="bar(this.value)", etc.)
   const handlerMatches = content.matchAll(/on([a-z]+)=["']([^"']+)["']/gi);

@@ -9,22 +9,25 @@ const PaymentRequest = require("../models/PaymentRequest");
 const Notification = require("../models/Notification");
 const upload = require("../config/multer");
 const { success, fail, serverError } = require("../utils/response");
-const { allocatePaymentToFees, getStudentBalanceSummary } = require("../utils/feeAllocation");
+const { allocatePaymentToFees, applyStudentCredit, getStudentBalanceSummary } = require("../utils/feeAllocation");
 const { uploadLimiter } = require("../middleware/rateLimiter");
 
 /* ─── مساعد: إرسال إشعار مالي للطالب (DB + Socket.io لحظي) ─── */
-async function notifyStudent(req, studentId, title, message) {
+async function notifyStudent(req, studentIds, title, message) {
   try {
+    const ids = (Array.isArray(studentIds) ? studentIds : [studentIds]).map(String);
+    if (!ids.length) return;
+    // مستند واحد بقائمة مستلمين — كانت رسوم الدفعة تُنشئ إشعاراً منفصلاً لكل طالب
     const notif = await Notification.create({
       title,
       message,
       type: 'normal',
       target: 'custom',
-      recipients: [studentId],
+      recipients: ids,
       createdBy: req.user?.id || null
     });
     const io = req.app?.get('io');
-    if (io) {
+    if (io) ids.forEach(studentId => {
       io.to(`user:${studentId}`).emit('notification:new', {
         _id: notif._id,
         title: notif.title,
@@ -32,7 +35,7 @@ async function notifyStudent(req, studentId, title, message) {
         type: notif.type,
         createdAt: notif.createdAt
       });
-    }
+    });
   } catch (notifErr) {
     // لا نُخفق الطلب الأصلي بسبب فشل الإشعار
     console.error('[Financial] فشل إرسال الإشعار:', notifErr.message);
@@ -72,8 +75,8 @@ router.post("/fees", auth, role("dean", "admin"), async (req, res) => {
 
     if (studentId) {
       // Create fee for individual student
-      const studentObj = await User.findById(studentId);
-      if (!studentObj) {
+      const studentObj = mongoose.Types.ObjectId.isValid(studentId) ? await User.findById(studentId) : null;
+      if (!studentObj || !studentObj.roles?.some(r => r === "student" || r === "leader")) {
         return fail(res, "الطالب غير موجود", 404);
       }
 
@@ -83,13 +86,16 @@ router.post("/fees", auth, role("dean", "admin"), async (req, res) => {
         batch: studentObj.batch
       });
 
+      // ما دفعه الطالب زيادة سابقاً يُغطّي الرسم الجديد بدل أن يظهر متأخراً
+      await applyStudentCredit(studentId);
+
       // إشعار الطالب بالرسوم الجديدة
       const netAmt = Math.max(0, amount - discount);
       await notifyStudent(
         req,
         studentId,
-        ' رسوم دراسية جديدة',
-        `تمت إضافة رسوم بعنوان "${title}" بقيمة ${netAmt.toLocaleString('ar-SA')} ج.س. تاريخ الاستحقاق: ${new Date(dueDate).toLocaleDateString('ar-SA')}.`
+        'رسوم دراسية جديدة',
+        `تمت إضافة رسوم بعنوان "${title}" بقيمة ${netAmt.toLocaleString('ar-EG-u-nu-latn')} ج.س. تاريخ الاستحقاق: ${new Date(dueDate).toLocaleDateString('ar-EG-u-nu-latn')}.`
       );
 
       return res.status(201).json({
@@ -118,12 +124,14 @@ router.post("/fees", auth, role("dean", "admin"), async (req, res) => {
 
       const createdFees = await Fee.insertMany(feeDocs);
 
+      // الطلاب ذوو الدفعات فقط قد يملكون رصيداً دائناً — لا داعي لفحص البقية
+      const payers = await Payment.find({ student: { $in: students.map(s => s._id) } }).distinct("student");
+      for (const sid of payers) await applyStudentCredit(sid);
+
       // إشعار كل طالب في الدفعة بالرسوم الجديدة (بدون await لتجنب التأخير)
       const netAmt = Math.max(0, amount - discount);
-      const notifMsg = `تمت إضافة رسوم بعنوان "${title}" بقيمة ${netAmt.toLocaleString('ar-SA')} ج.س. تاريخ الاستحقاق: ${new Date(dueDate).toLocaleDateString('ar-SA')}.`;
-      Promise.allSettled(
-        students.map(st => notifyStudent(req, st._id.toString(), ' رسوم دراسية جديدة', notifMsg))
-      ).catch(() => {});
+      const notifMsg = `تمت إضافة رسوم بعنوان "${title}" بقيمة ${netAmt.toLocaleString('ar-EG-u-nu-latn')} ج.س. تاريخ الاستحقاق: ${new Date(dueDate).toLocaleDateString('ar-EG-u-nu-latn')}.`;
+      notifyStudent(req, students.map(st => st._id), 'رسوم دراسية جديدة', notifMsg).catch(() => {});
 
       return res.status(201).json({
         success: true,
@@ -151,13 +159,14 @@ router.post("/payments", auth, role("dean", "admin"), async (req, res) => {
     }
 
     // Check if student exists
-    const studentExists = await User.findById(studentId);
+    const studentExists = mongoose.Types.ObjectId.isValid(studentId) ? await User.findById(studentId) : null;
     if (!studentExists) {
       return fail(res, "الطالب غير موجود", 404);
     }
 
     // Check if reference is unique
-    const existingPayment = await Payment.findOne({ reference: reference.trim() });
+    const cleanRef = String(reference).trim();
+    const existingPayment = await Payment.findOne({ reference: cleanRef });
     if (existingPayment) {
       return fail(res, "رقم المرجع/الإيصال مسجل مسبقاً", 400);
     }
@@ -183,7 +192,7 @@ router.post("/payments", auth, role("dean", "admin"), async (req, res) => {
           student: studentId,
           amount,
           paymentMethod,
-          reference,
+          reference: cleanRef,
           notes,
           recordedBy: req.user.id
         }],
@@ -207,8 +216,8 @@ router.post("/payments", auth, role("dean", "admin"), async (req, res) => {
     await notifyStudent(
       req,
       studentId,
-      ' تم تسجيل دفعتك',
-      `تم تسجيل دفعة بمبلغ ${amount.toLocaleString('ar-SA')} ج.س. بطريقة ${methodLabels[paymentMethod] || paymentMethod}. رقم المرجع: ${reference}.`
+      'تم تسجيل دفعتك',
+      `تم تسجيل دفعة بمبلغ ${amount.toLocaleString('ar-EG-u-nu-latn')} ج.س. بطريقة ${methodLabels[paymentMethod] || paymentMethod}. رقم المرجع: ${reference}.`
     );
 
     return res.status(201).json({
@@ -366,10 +375,23 @@ router.post("/payment-requests", auth, role("student", "leader"), uploadLimiter,
       return fail(res, "يرجى إرفاق إيصال الدفع", 400);
     }
 
+    /* نفس رقم التحويل مرتين = طلبان يقبلهما العميد فيُقيَّد المبلغ مرتين.
+       نرفض المرجع المكرر سواء كان طلباً قيد المراجعة/مقبولاً أو دفعة مسجلة. */
+    const cleanRef = String(reference || "").trim();
+    if (cleanRef) {
+      const [dupRequest, dupPayment] = await Promise.all([
+        PaymentRequest.findOne({ reference: cleanRef, status: { $in: ["pending", "approved"] } }).select("_id").lean(),
+        Payment.findOne({ reference: cleanRef }).select("_id").lean()
+      ]);
+      if (dupRequest || dupPayment) {
+        return fail(res, "رقم المرجع هذا مستخدم في إشعار سداد سابق", 409);
+      }
+    }
+
     const request = await PaymentRequest.create({
       student: req.user.id,
       amount,
-      reference,
+      reference: cleanRef || undefined,
       receiptFile: req.file.filename,
       notes,
       paymentMethod
@@ -457,15 +479,23 @@ router.post("/payment-requests/:id/action", auth, role("dean", "admin"), async (
 
       // إشعار الطالب برفض طلبه
       const rejectMsg = rejectionReason
-        ? `تم رفض طلب السداد الخاص بك بمبلغ ${request.amount.toLocaleString('ar-SA')} ج.س. السبب: ${rejectionReason}.`
-        : `تم رفض طلب السداد الخاص بك بمبلغ ${request.amount.toLocaleString('ar-SA')} ج.س. يرجى التواصل مع الإدارة.`;
-      await notifyStudent(req, request.student.toString(), ' رفض طلب السداد', rejectMsg);
+        ? `تم رفض طلب السداد الخاص بك بمبلغ ${request.amount.toLocaleString('ar-EG-u-nu-latn')} ج.س. السبب: ${rejectionReason}.`
+        : `تم رفض طلب السداد الخاص بك بمبلغ ${request.amount.toLocaleString('ar-EG-u-nu-latn')} ج.س. يرجى التواصل مع الإدارة.`;
+      await notifyStudent(req, request.student.toString(), 'رفض طلب السداد', rejectMsg);
 
       return res.json({ success: true, message: "تم رفض طلب السداد" });
     }
 
     // If Approve -> Create Payment and update Fee balances
     // 1. Create Payment
+    // مرجع الطالب قد يكون سُجّل يدوياً كدفعة بعد رفع الطلب — لا نقيّده مرتين
+    if (request.reference) {
+      const dup = await Payment.findOne({ reference: request.reference }).select("_id").lean();
+      if (dup) {
+        if (session) { await session.abortTransaction(); session.endSession(); }
+        return fail(res, "رقم المرجع مسجل مسبقاً كدفعة — يبدو أن هذا المبلغ قُيّد بالفعل. ارفض الطلب مع ذكر السبب.", 409);
+      }
+    }
     const paymentDoc = {
       student: request.student,
       amount: request.amount,
@@ -498,8 +528,8 @@ router.post("/payment-requests/:id/action", auth, role("dean", "admin"), async (
     await notifyStudent(
       req,
       request.student.toString(),
-      ' تم قبول طلب السداد',
-      `تم قبول طلب السداد الخاص بك بمبلغ ${request.amount.toLocaleString('ar-SA')} ج.س. وتحديث رصيدك. شكراً لك.`
+      'تم قبول طلب السداد',
+      `تم قبول طلب السداد الخاص بك بمبلغ ${request.amount.toLocaleString('ar-EG-u-nu-latn')} ج.س. وتحديث رصيدك. شكراً لك.`
     );
 
     return res.json({

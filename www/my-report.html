@@ -10,30 +10,21 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Al-Nasr CBS">
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
-  <link rel="stylesheet" href="/css/style.css?v=2026083019">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026083019">
+  <link rel="stylesheet" href="/css/style.css?v=2026102613">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026102613">
+  <link rel="stylesheet" href="/css/ui.css?v=2026102613">
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
   <style>
     .report-banner {
-      background: linear-gradient(135deg, #2563eb, #1d4ed8, #1e40af);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       border-radius: var(--radius-lg);
-      padding: 28px;
-      color: #fff;
-      margin-bottom: 24px;
-      box-shadow: var(--shadow-lg);
-      position: relative;
-      overflow: hidden;
+      padding: 16px 18px;
+      color: var(--text-main);
+      margin-bottom: 18px;
     }
-    .report-banner::after {
-      content: '\eeab';
-      font-family: 'remixicon';
-      font-style: normal;
-      font-size: 8rem;
-      position: absolute;
-      left: -20px;
-      bottom: -30px;
-      opacity: 0.15;
-    }
+    .report-banner h2 { font-size: 1.2rem; font-weight: 800; margin: 0 0 2px; }
+    .report-banner p { font-size: 0.88rem; margin: 0; color: var(--text-muted); }
     .stats-grid-3 {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -73,13 +64,22 @@
     .subject-stat-row:last-child { border-bottom: none; }
     .progress-bar-wrap { width: 140px; background: var(--bg-main); height: 10px; border-radius: 6px; overflow: hidden; }
     .progress-bar-inner { height: 100%; border-radius: 6px; transition: width 0.5s ease; }
-  </style>
+      .report-banner { background: none !important; border: 0 !important; box-shadow: none !important; padding: 0 2px !important; margin-bottom: 14px !important; color: var(--text-main) !important; }
+    .report-banner h2 { font-size: 1.05rem !important; margin: 0 !important; color: var(--text-main) !important; }
+    .report-banner p { font-size: 0.82rem !important; color: var(--text-muted) !important; margin: 2px 0 0 !important; }
+    .stats-grid-3 { display: grid !important; grid-template-columns: repeat(3, 1fr) !important; gap: 0 !important; background: var(--hm-surface); border: 1px solid var(--border); border-radius: 18px; margin-bottom: 16px !important; }
+    .stats-grid-3 .stat-card-clean { background: none !important; border: 0 !important; box-shadow: none !important; padding: 14px 6px !important; position: relative; text-align: center; }
+    .stats-grid-3 .stat-card-clean + .stat-card-clean::before { content: ''; position: absolute; top: 18px; bottom: 18px; inset-inline-start: 0; width: 1px; background: var(--border); }
+    .stats-grid-3 .num { font-size: 1.35rem !important; color: var(--text-main) !important; }
+    .stats-grid-3 .label { font-size: 0.72rem !important; }
+    .report-section-card { background: var(--hm-surface) !important; border: 1px solid var(--border) !important; box-shadow: none !important; border-radius: 16px !important; }
+</style>
 </head>
 <body>
 
 <header class="main-header">
   <div class="header-brand">
-    <button class="btn-icon" onclick="CBS.goHome()" title="رجوع" aria-label="رجوع"><i class="ri-arrow-right-line"></i></button>
+    <img src="/assets/logo.png" class="header-logo" alt="شعار كلية النصر التقنية - جامعة النصر التقنية">
     <div class="header-title-group">
       <strong>كلية النصر التقنية</strong>
       <small>تقرير الأداء والتحصيل الأكاديمي</small>
@@ -93,8 +93,8 @@
 
 <div class="page-content">
   <div class="report-banner">
-    <h2 id="reportUserName" style="font-size:1.6rem;font-weight:900;margin-bottom:6px">تقرير الأداء الشامل</h2>
-    <p id="reportBatchName" style="opacity:0.9;font-size:0.95rem"></p>
+    <h2 id="reportUserName">تقرير الأداء</h2>
+    <p id="reportBatchName"></p>
   </div>
 
   <div id="loading" class="loading-state">
@@ -143,10 +143,16 @@
   حقوق النشر &copy; <span id="year"></span> جامعة النصر التقنية
 </footer>
 
-<script src="/js/shared.js?v=2026083019"></script>
-<script src="/js/app.js?v=2026083019"></script>
+<script src="/js/shared.js?v=2026102613"></script>
+<script src="/js/app.js?v=2026102613"></script>
 <script>
   CBS.init();
+  /* "2 / 1" في واجهة عربية يُقرأ بالمقلوب، وكان العدد المسلَّم قد يفوق الإجمالي
+     (تكليفات قديمة سُلّمت قبل تغيير نطاق دفعاتها). صيغة "X من Y" وإجمالي لا يقل عن المسلَّم. */
+  function ofTotal(done, total) {
+    const d = Number(done) || 0;
+    return `${d} من ${Math.max(Number(total) || 0, d)}`;
+  }
   const user = CBS.getUser();
   const userRole = CBS.getPrimaryRole(user);
   if (user?.roles?.includes('admin')) {
@@ -181,7 +187,7 @@
       document.getElementById('attendRate').textContent =
         (attRate !== null && attRate !== undefined) ? `${attRate}%` : 'غير متاح';
       document.getElementById('assignCount').textContent =
-        `${report.assignments?.submittedCount ?? 0} / ${report.assignments?.totalCount ?? 0}`;
+        ofTotal(report.assignments?.submittedCount, report.assignments?.totalCount);
       document.getElementById('pointsCount').textContent = report.totalPoints || 0;
 
       // الحضور حسب المواد
@@ -213,7 +219,7 @@
           <div class="subject-stat-row">
             <div>
               <div style="font-weight:700;color:var(--text-main)">${CBS.escapeHTML(a.title || 'واجب')}</div>
-              <div style="font-size:0.8rem;color:var(--text-muted)">تاريخ التسليم: ${new Date(a.submittedAt).toLocaleDateString('ar')}</div>
+              <div style="font-size:0.8rem;color:var(--text-muted)">تاريخ التسليم: ${new Date(a.submittedAt).toLocaleDateString('ar-EG-u-nu-latn')}</div>
             </div>
             <span style="padding:4px 12px;border-radius:12px;font-size:0.8rem;font-weight:700;background:var(--success-bg);color:var(--success)">${a.status === 'graded' && a.grade !== undefined ? `الدرجة: ${a.grade}` : 'تم التسليم'}</span>
           </div>
@@ -229,9 +235,9 @@
           <div class="subject-stat-row">
             <div>
               <div style="font-weight:700;color:var(--text-main)">${CBS.escapeHTML(q.title || 'اختبار')}</div>
-              <div style="font-size:0.8rem;color:var(--text-muted)">تاريخ المحاولة: ${new Date(q.submittedAt).toLocaleDateString('ar')}</div>
+              <div style="font-size:0.8rem;color:var(--text-muted)">تاريخ المحاولة: ${new Date(q.submittedAt).toLocaleDateString('ar-EG-u-nu-latn')}</div>
             </div>
-            <span style="font-weight:800;font-size:1rem;color:var(--primary)">${q.score} / ${q.maxScore}</span>
+            <span style="font-weight:800;font-size:1rem;color:var(--primary)">${q.score} من ${q.maxScore}</span>
           </div>
         `).join('');
       } else {
@@ -273,13 +279,13 @@
     }).join('');
     const assignments = (r.assignments?.list || []).map(a => row(
       `<div style="font-weight:700;color:#1e293b;">${esc(a.title || 'واجب')}</div>
-       <div style="font-size:0.78rem;color:#64748b;">${new Date(a.submittedAt).toLocaleDateString('ar-EG')}</div>`,
+       <div style="font-size:0.78rem;color:#64748b;">${new Date(a.submittedAt).toLocaleDateString('ar-EG-u-nu-latn')}</div>`,
       `<span style="font-weight:700;color:#16a34a;">${a.status === 'graded' && a.grade !== undefined ? 'الدرجة: ' + esc(String(a.grade)) : 'تم التسليم'}</span>`
     )).join('');
     const quizzes = (r.quizzes?.list || []).map(q => row(
       `<div style="font-weight:700;color:#1e293b;">${esc(q.title || 'اختبار')}</div>
-       <div style="font-size:0.78rem;color:#64748b;">${new Date(q.submittedAt).toLocaleDateString('ar-EG')}</div>`,
-      `<span style="font-weight:800;color:#2563eb;">${esc(String(q.score))} / ${esc(String(q.maxScore))}</span>`
+       <div style="font-size:0.78rem;color:#64748b;">${new Date(q.submittedAt).toLocaleDateString('ar-EG-u-nu-latn')}</div>`,
+      `<span style="font-weight:800;color:#2563eb;">${esc(String(q.score))} من ${esc(String(q.maxScore))}</span>`
     )).join('');
 
     return `
@@ -299,12 +305,12 @@
           <div><strong>اسم الطالب:</strong> ${esc(r.student?.name || '')}</div>
           <div><strong>الرقم الجامعي:</strong> ${esc(r.student?.studentId || r.student?.email || '-')}</div>
           <div><strong>الدفعة الأكاديمية:</strong> ${esc(r.student?.batch?.name || 'غير محدد')}</div>
-          <div><strong>تاريخ الإصدار:</strong> ${new Date().toLocaleDateString('ar-EG')}</div>
+          <div><strong>تاريخ الإصدار:</strong> ${new Date().toLocaleDateString('ar-EG-u-nu-latn')}</div>
         </div>
 
         <div style="display:flex;gap:12px;margin-bottom:20px;">
           ${box(attRate !== null && attRate !== undefined ? attRate + '%' : 'غير متاح', 'نسبة الالتزام بالحضور')}
-          ${box(`${r.assignments?.submittedCount ?? 0} / ${r.assignments?.totalCount ?? 0}`, 'الواجبات والتكاليف')}
+          ${box(ofTotal(r.assignments?.submittedCount, r.assignments?.totalCount), 'الواجبات والتكاليف')}
           ${box(r.totalPoints || 0, 'نقاط التميز الأكاديمي')}
         </div>
 

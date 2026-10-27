@@ -71,11 +71,13 @@ router.get("/", auth, cacheRoute(120), async (req, res) => {
     if (req.query.level) filter.level = req.query.level;
     if (req.query.batch) filter.batches = req.query.batch;
 
-    // إذا كان طالب، فلترة المواد حسب دفعته
+    // إذا كان طالب، فلترة المواد حسب دفعته — وبلا دفعة لا شيء (كان يرى مواد الكلية كلها)
     if (req.user.roles.includes("student") || req.user.roles.includes("leader")) {
       const student = await User.findById(req.user.id).select("batch");
       if (student?.batch) {
         filter.batches = student.batch;
+      } else {
+        filter._id = null;
       }
     }
     
@@ -156,7 +158,42 @@ router.put("/:id", auth, role("dean", "doctor", "admin"), verifySubjectAccess, a
       return fail(res, "معرف المادة غير صالح");
     }
 
-    const subject = await Subject.findByIdAndUpdate(id, req.body, { returnDocument: 'after' })
+    /* كان req.body يُمرَّر كما هو: الدكتور يستطيع نقل المادة لدكتور آخر أو
+       ربطها بأي دفعة في الكلية. نقبل حقولاً محددة فقط وبصلاحيات واضحة. */
+    const isDeanOrAdmin = req.user.roles.includes("dean") || req.user.roles.includes("admin");
+    const update = {};
+    if (req.body.name !== undefined) {
+      const name = String(req.body.name || "").trim();
+      if (!name) return fail(res, "اسم المادة لا يمكن أن يكون فارغاً");
+      update.name = name;
+    }
+    if (req.body.level !== undefined) {
+      const level = String(req.body.level || "").trim();
+      if (!level) return fail(res, "المستوى لا يمكن أن يكون فارغاً");
+      update.level = level;
+    }
+    if (req.body.doctor !== undefined) {
+      if (!isDeanOrAdmin) return fail(res, "تغيير أستاذ المادة من صلاحيات العميد", 403);
+      const target = mongoose.Types.ObjectId.isValid(req.body.doctor)
+        ? await User.findById(req.body.doctor).select("roles").lean() : null;
+      if (!target || !target.roles?.includes("doctor")) return fail(res, "الدكتور المحدد غير موجود");
+      update.doctor = req.body.doctor;
+    }
+    if (req.body.batches !== undefined) {
+      if (!Array.isArray(req.body.batches) || req.body.batches.some(b => !mongoose.Types.ObjectId.isValid(b))) {
+        return fail(res, "قائمة الدفعات غير صالحة");
+      }
+      if (!isDeanOrAdmin) {
+        const me = await User.findById(req.user.id).select("batches").lean();
+        const mine = new Set((me?.batches || []).map(String));
+        if (req.body.batches.some(b => !mine.has(String(b)))) {
+          return fail(res, "لا يمكنك ربط المادة بدفعة غير مخصصة لك", 403);
+        }
+      }
+      update.batches = req.body.batches;
+    }
+
+    const subject = await Subject.findByIdAndUpdate(id, { $set: update }, { returnDocument: 'after', runValidators: true })
       .populate("doctor", "name email")
       .populate("batches", "name code");
 
@@ -177,6 +214,23 @@ router.delete("/:id", auth, role("dean", "doctor", "admin"), verifySubjectAccess
 
     if (!id || id === "null" || id === "undefined" || !mongoose.Types.ObjectId.isValid(id)) {
       return fail(res, "معرف المادة غير صالح");
+    }
+
+    /* حذف مادة تحتوي محاضرات وتكليفات يترك كل ذلك يتيماً (مادة null في
+       الواجهات وتسليمات الطلاب). للدكتور: نرفض ما دام فيها محتوى؛ العميد يقرر. */
+    const isDeanOrAdmin = req.user.roles.includes("dean") || req.user.roles.includes("admin");
+    if (!isDeanOrAdmin) {
+      const Lecture = require("../models/Lecture");
+      const Assignment = require("../models/Assignment");
+      const Quiz = require("../models/Quiz");
+      const [lec, asg, qz] = await Promise.all([
+        Lecture.countDocuments({ subject: id }),
+        Assignment.countDocuments({ subject: id }),
+        Quiz.countDocuments({ subject: id })
+      ]);
+      if (lec + asg + qz > 0) {
+        return fail(res, `لا يمكن حذف المادة لأنها تحتوي ${lec} محاضرة و${asg} تكليف و${qz} اختبار — احذف المحتوى أولاً أو تواصل مع العميد`, 409);
+      }
     }
 
     const subject = await Subject.findByIdAndDelete(id);
@@ -239,6 +293,9 @@ const handleCopyBatchSubjects = async (req, res) => {
 
     if (!fromBatchId || !toBatchId) {
       return fail(res, "يجب تحديد الدفعة المصدر والدفعة الهدف");
+    }
+    if (!mongoose.Types.ObjectId.isValid(fromBatchId) || !mongoose.Types.ObjectId.isValid(toBatchId)) {
+      return fail(res, "معرف الدفعة غير صالح");
     }
 
     if (fromBatchId.toString() === toBatchId.toString()) {

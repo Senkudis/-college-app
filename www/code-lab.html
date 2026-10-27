@@ -6,8 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>مختبر البرمجة السحابي | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=2026083019">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026083019">
+  <link rel="stylesheet" href="/css/style.css?v=2026102613">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026102613">
+  <link rel="stylesheet" href="/css/ui.css?v=2026102613">
   <style>
     /* إخفاء زر كيدي العائم العام وشريط التنقل السفلي في صفحة المختبر */
     /* لأن المختبر عنده شريطه الخاص .lab-mobile-dock */
@@ -483,9 +484,9 @@
       gap: 10px;
       text-align: center;
     }
-    .console-welcome i { font-size: 2.4rem; color: #1e3a5f; }
-    .console-welcome strong { color: #475569; font-size: 0.9rem; }
-    .console-welcome span { font-size: 0.78rem; color: #334155; }
+    .console-welcome i { font-size: 2.4rem; color: #38bdf8; opacity: 0.6; }
+    .console-welcome strong { color: #cbd5e1; font-size: 0.9rem; }
+    .console-welcome span { font-size: 0.78rem; color: #94a3b8; }
 
     /* سطر واحد في المخرجات */
     .clog-line {
@@ -527,7 +528,7 @@
     .clog-num {
       flex-shrink: 0;
       font-size: 0.72rem;
-      color: #1e293b;
+      color: #475569; /* كان #1e293b: غير مرئي تقريباً على الخلفية */
       min-width: 22px;
       text-align: right;
       user-select: none;
@@ -585,17 +586,18 @@
       background: rgba(0,0,0,0.35);
       border-top: 1px solid #0f172a;
       font-size: 0.72rem;
-      color: #334155;
+      color: #94a3b8;
       font-family: monospace;
       flex-shrink: 0;
+      direction: rtl; /* النص عربي — داخل الطرفية LTR كان يظهر مقلوب الترتيب */
     }
     .clog-status-bar.status-ok   { border-top-color: #064e3b; }
     .clog-status-bar.status-err  { border-top-color: #7f1d1d; color: #f87171; }
     .clog-status-bar.status-warn { border-top-color: #78350f; color: #fbbf24; }
     .clog-copy-btn {
       background: rgba(255,255,255,0.06);
-      border: 1px solid #1e293b;
-      color: #475569;
+      border: 1px solid #334155;
+      color: #cbd5e1;
       border-radius: 4px;
       padding: 2px 6px;
       font-size: 0.7rem;
@@ -872,6 +874,90 @@
       .btn-input-text { display: none; } /* إخفاء نص المدخلات الإضافي */
     }
 
+    /* ===== تخطيط الجوال بلا تداخل =====
+       الشاشة بارتفاع ثابت (100svh) والعناصر تتقاسمها: الشريط العلوي، التبويبات،
+       مساحة العمل (تتمدد)، ثم شريط التشغيل كجزء من التدفق لا طافياً فوق المحتوى.
+       كان الشريط الطافي (position:fixed) يغطي صف الرموز وآخر أسطر الكود. */
+    @media (max-width: 900px) {
+      /* mobile.css يضيف حشوة سفلية للبار السفلي العام — المختبر يخفيه فتبقى فراغاً */
+      body { min-height: 0; height: 100svh; overflow: hidden; padding-bottom: 0 !important; }
+      .lab-app-container {
+        height: 100svh;
+        padding: calc(6px + env(safe-area-inset-top, 0px)) 8px 0;
+        min-height: 0;
+      }
+      .lab-workspace { flex: 1; min-height: 0; padding-bottom: 0; grid-template-rows: minmax(0, 1fr); }
+      .lab-editor-pane, .lab-inspector-pane { min-height: 0; }
+      .lab-editor-wrapper { min-height: 0; flex: 1; }
+      .lab-console-body, .lab-ai-body { min-height: 0; max-height: none; flex: 1; }
+      #paneConsole, #paneAi { min-height: 0; }
+      .lab-mobile-dock {
+        position: static;
+        margin: 8px 0 calc(8px + env(safe-area-inset-bottom, 0px));
+        padding: 6px;
+        border-radius: 14px;
+        box-shadow: none;
+        backdrop-filter: none;
+        -webkit-backdrop-filter: none;
+      }
+      .lab-mobile-dock .btn-dock-run, .lab-mobile-dock .btn-dock-ai { padding: 10px 12px; box-shadow: none; }
+      /* عنوان "المحرر" مكرر مع تبويب "المحرر" أعلاه، وعدّاد الأسطر كان يُقص */
+      #editorPane .lab-pane-title, #codeLengthBadge { display: none; }
+      .lab-autosave-badge { bottom: auto; top: calc(10px + env(safe-area-inset-top, 0px)); }
+    }
+
+    /* الحاسوب: المحرر والمخرجات يملآن ارتفاع الشاشة (كان المحرر نصف الشاشة والباقي فارغاً) */
+    @media (min-width: 901px) {
+      body { height: 100vh; overflow: hidden; padding-bottom: 0 !important; min-height: 0; }
+      .lab-app-container { height: 100vh; padding-bottom: 12px; min-height: 0; }
+      .lab-workspace { min-height: 0; grid-template-rows: minmax(0, 1fr); }
+      .lab-editor-pane, .lab-inspector-pane { min-height: 0; }
+      .lab-editor-wrapper { min-height: 0; }
+      .lab-console-body, .lab-ai-body { min-height: 0; max-height: none; flex: 1; }
+      #paneConsole, #paneAi, #paneCheat { min-height: 0; }
+    }
+
+    /* قائمة الأدوات: تجمع التنسيق والنسخ والمسح بدل أربع أيقونات بلا أسماء */
+    .lab-tools-menu { position: relative; }
+    .lab-tools-dropdown {
+      display: none;
+      position: absolute;
+      top: calc(100% + 6px);
+      left: 0;
+      min-width: 190px;
+      background: var(--lab-surface);
+      border: 1px solid var(--lab-border);
+      border-radius: 12px;
+      box-shadow: 0 12px 30px rgba(0,0,0,0.45);
+      padding: 6px;
+      z-index: 1000;
+    }
+    .lab-tools-menu.open .lab-tools-dropdown { display: block; }
+    .lab-tools-dropdown button {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 12px;
+      border: none;
+      background: transparent;
+      color: var(--lab-text);
+      font: inherit;
+      font-size: 0.86rem;
+      font-weight: 700;
+      border-radius: 8px;
+      cursor: pointer;
+      text-align: right;
+    }
+    .lab-tools-dropdown button:hover { background: rgba(255,255,255,0.07); }
+    .lab-tools-dropdown button.danger { color: #f87171; }
+    .lab-tools-dropdown hr { border: none; border-top: 1px solid var(--lab-border); margin: 4px 0; }
+    @media (max-width: 900px) {
+      .lab-tools-menu .lab-tool-btn .btn-label-text { display: inline; }
+      .lab-tools-menu .lab-tool-btn, .lab-nav-right > .lab-tool-btn { padding: 0 10px; }
+      .lab-nav-right > .lab-tool-btn .btn-label-text { display: inline; }
+    }
+
     /* ===== مؤشر الحفظ التلقائي ===== */
     .lab-autosave-badge {
       position: fixed;
@@ -926,6 +1012,54 @@
       min-height: 0 !important;
       flex: 1 !important;
     }
+    /* المحرر يبقى ظاهراً في وضع التركيز مهما كان تبويب الجوال النشط —
+       كان التشغيل يبدّل إلى تبويب المخرجات فيُخفي المحرر وتبقى شاشة سوداء */
+    body.lab-focus-mode .lab-workspace .lab-editor-pane {
+      display: flex !important;
+      padding-top: env(safe-area-inset-top, 0px);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    /* شريط أدوات وضع التركيز: خروج + تشغيل + حجم الخط فقط (كان يفيض خارج الشاشة) */
+    body.lab-focus-mode #editorPane .lab-pane-title,
+    body.lab-focus-mode #codeLengthBadge,
+    body.lab-focus-mode #editorPane .lab-share-btn,
+    body.lab-focus-mode #editorPane .lab-download-btn {
+      display: none !important;
+    }
+    body.lab-focus-mode #editorPane .lab-pane-header { justify-content: flex-start; }
+    body.lab-focus-mode #editorPane .lab-pane-toolbar { width: 100%; gap: 6px; }
+    #focusRunBtn { display: none; }
+    body.lab-focus-mode #focusRunBtn {
+      display: inline-flex;
+      background: linear-gradient(135deg, #10b981, #059669);
+      color: #fff;
+      border-color: #047857;
+      margin-inline-start: auto;
+      padding: 3px 14px;
+    }
+    /* المخرجات في وضع التركيز: لوحة سفلية تحت المحرر بدل مغادرة الوضع */
+    body.lab-focus-mode.lab-focus-output .lab-editor-pane {
+      bottom: 42svh !important;
+      height: auto !important;
+      max-height: none !important;
+    }
+    body.lab-focus-mode.lab-focus-output .lab-inspector-pane {
+      display: flex !important;
+      position: fixed;
+      left: 0; right: 0; bottom: 0;
+      height: 42svh;
+      z-index: 10001;
+      border-radius: 14px 14px 0 0;
+      border-top: 2px solid var(--lab-border);
+      padding-bottom: env(safe-area-inset-bottom, 0px);
+    }
+    body.lab-focus-mode.lab-focus-output .lab-inspector-tabs,
+    body.lab-focus-mode.lab-focus-output #paneAi,
+    body.lab-focus-mode.lab-focus-output #paneCheat { display: none !important; }
+    body.lab-focus-mode.lab-focus-output #paneConsole { display: flex !important; min-height: 0; }
+    body.lab-focus-mode.lab-focus-output .lab-console-body { min-height: 0 !important; max-height: none !important; flex: 1; }
+    .focus-output-close { display: none; }
+    body.lab-focus-mode.lab-focus-output .focus-output-close { display: inline-flex; }
   </style>
 </head>
 <body>
@@ -960,16 +1094,21 @@
         <span class="btn-label-text">النماذج</span>
       </button>
 
-      <!-- أدوات التحرير السريعة -->
-      <button type="button" class="lab-tool-btn" onclick="formatCode()" aria-label="تنسيق الكود">
-        <i class="ri-magic-line"></i>
-      </button>
-      <button type="button" class="lab-tool-btn" onclick="copyCode()" aria-label="نسخ الكود">
-        <i class="ri-file-copy-line"></i>
-      </button>
-      <button type="button" class="lab-tool-btn" onclick="clearEditor()" aria-label="مسح المحتوى">
-        <i class="ri-delete-bin-line"></i>
-      </button>
+      <!-- أدوات التحرير: قائمة واحدة بأسماء واضحة -->
+      <div class="lab-tools-menu" id="labToolsMenu">
+        <button type="button" class="lab-tool-btn" onclick="toggleToolsMenu(event)" aria-haspopup="true" aria-expanded="false" id="labToolsBtn">
+          <i class="ri-more-2-fill"></i>
+          <span class="btn-label-text">أدوات</span>
+        </button>
+        <div class="lab-tools-dropdown" role="menu">
+          <button type="button" role="menuitem" onclick="closeToolsMenu(); formatCode()"><i class="ri-magic-line"></i> تنسيق الكود</button>
+          <button type="button" role="menuitem" onclick="closeToolsMenu(); copyCode()"><i class="ri-file-copy-line"></i> نسخ الكود</button>
+          <button type="button" role="menuitem" onclick="closeToolsMenu(); downloadCodeFile()"><i class="ri-download-2-line"></i> تنزيل كملف</button>
+          <button type="button" role="menuitem" onclick="closeToolsMenu(); shareCode()"><i class="ri-share-forward-line"></i> مشاركة</button>
+          <hr>
+          <button type="button" role="menuitem" class="danger" onclick="closeToolsMenu(); clearEditor()"><i class="ri-delete-bin-line"></i> مسح المحرر</button>
+        </div>
+      </div>
 
       <!-- أزرار التشغيل للشاشات الكبيرة (Desktop Only) -->
       <div class="lab-desktop-actions">
@@ -1017,19 +1156,15 @@
           <button type="button" class="lab-tool-btn btn-sm-action" onclick="changeFontSize(1)" aria-label="تكبير الخط" title="تكبير الخط">
             <i class="ri-add-line"></i>A
           </button>
-          <!-- تنزيل ومشاركة -->
-          <button type="button" class="lab-tool-btn btn-sm-action" onclick="downloadCodeFile()" aria-label="تنزيل الملف" title="تنزيل الملف">
-            <i class="ri-download-2-line"></i>
-          </button>
-          <button type="button" class="lab-tool-btn btn-sm-action" onclick="shareCode()" aria-label="مشاركة الكود" title="مشاركة الكود">
-            <i class="ri-share-forward-line"></i>
-          </button>
           <!-- وضع التركيز -->
-          <button type="button" class="lab-tool-btn btn-sm-action" id="focusEnterBtn" onclick="toggleFocusMode()" aria-label="وضع التركيز الكامل" title="وضع التركيز">
-            <i class="ri-fullscreen-line"></i>
+          <button type="button" class="lab-tool-btn btn-sm-action" id="focusEnterBtn" onclick="toggleFocusMode()" aria-label="ملء الشاشة" title="ملء الشاشة">
+            <i class="ri-fullscreen-line"></i> <span class="btn-input-text">ملء الشاشة</span>
           </button>
-          <button type="button" class="lab-tool-btn btn-sm-action" id="focusExitBtn" onclick="toggleFocusMode()" aria-label="خروج من التركيز" style="display:none;background:#dc2626;color:#fff;border-color:#b91c1c;">
+          <button type="button" class="lab-tool-btn btn-sm-action" id="focusExitBtn" onclick="toggleFocusMode()" aria-label="الخروج من ملء الشاشة" style="display:none;background:#dc2626;color:#fff;border-color:#b91c1c;">
             <i class="ri-fullscreen-exit-line"></i> خروج
+          </button>
+          <button type="button" class="lab-tool-btn btn-sm-action" id="focusRunBtn" onclick="runCode()" aria-label="تشغيل الكود">
+            <i class="ri-play-fill"></i> تشغيل
           </button>
           <!-- زر المدخلات لـ C++/Python -->
           <button type="button" class="lab-tool-btn btn-sm-action" id="toggleStdinBtn" onclick="toggleStdinDrawer()" style="display:none;">
@@ -1088,6 +1223,9 @@
             <span id="execStats" class="badge" style="background:rgba(255,255,255,0.08);color:var(--lab-muted);font-size:0.75rem;padding:3px 8px;border-radius:6px;border:1px solid var(--lab-border);">جاهز</span>
             <button type="button" class="lab-tool-btn btn-sm-action" onclick="clearConsole()" style="padding:2px 8px;font-size:0.75rem;" aria-label="مسح المخرجات" title="مسح المخرجات">
               <i class="ri-eraser-line"></i> مسح
+            </button>
+            <button type="button" class="lab-tool-btn btn-sm-action focus-output-close" onclick="document.body.classList.remove('lab-focus-output')" style="padding:2px 8px;font-size:0.75rem;" aria-label="إخفاء المخرجات">
+              <i class="ri-arrow-down-s-line"></i> إخفاء
             </button>
           </div>
         </div>
@@ -1192,8 +1330,8 @@ JOIN Grades g ON s.student_id = g.student_id;</pre>
 <div id="toast-container"></div>
 <div id="autosaveBadge" class="lab-autosave-badge">✓ محفوظ تلقائياً</div>
 
-<script src="/js/shared.js?v=2026083019"></script>
-<script src="/js/app.js?v=2026083019"></script>
+<script src="/js/shared.js?v=2026102613"></script>
+<script src="/js/app.js?v=2026102613"></script>
 <script>
   CBS.init({ requireAuth: true });
 
@@ -1892,7 +2030,11 @@ ORDER BY g.score DESC;`
   }
 
   async function runCode() {
-    if (window.innerWidth <= 900) {
+    if (document.body.classList.contains('lab-focus-mode')) {
+      // نبقى في وضع التركيز ونفتح المخرجات كلوحة سفلية
+      switchInspectorTab('console');
+      document.body.classList.add('lab-focus-output');
+    } else if (window.innerWidth <= 900) {
       switchMobileSegment('console');
     } else {
       switchInspectorTab('console');
@@ -2023,6 +2165,8 @@ ORDER BY g.score DESC;`
   }
 
   async function debugWithAI() {
+    // تقرير كيدي طويل ويحتاج الشاشة كاملة: نغادر وضع التركيز أولاً
+    if (document.body.classList.contains('lab-focus-mode')) toggleFocusMode();
     if (window.innerWidth <= 900) {
       switchMobileSegment('ai');
     } else {
@@ -2287,14 +2431,28 @@ ORDER BY g.score DESC;`
     } catch (_) {}
   }
 
+  /* ===== قائمة الأدوات ===== */
+  function toggleToolsMenu(e) {
+    e.stopPropagation();
+    const menu = document.getElementById('labToolsMenu');
+    const open = menu.classList.toggle('open');
+    document.getElementById('labToolsBtn').setAttribute('aria-expanded', String(open));
+  }
+  function closeToolsMenu() {
+    document.getElementById('labToolsMenu')?.classList.remove('open');
+    document.getElementById('labToolsBtn')?.setAttribute('aria-expanded', 'false');
+  }
+  document.addEventListener('click', e => { if (!e.target.closest('#labToolsMenu')) closeToolsMenu(); });
+  document.addEventListener('keydown', e => { if (e.key === 'Escape') closeToolsMenu(); });
+
   /* ===== وضع التركيز الكامل (Focus Mode) ===== */
   function toggleFocusMode() {
     const isFocus = document.body.classList.toggle('lab-focus-mode');
+    if (!isFocus) document.body.classList.remove('lab-focus-output');
     const exitBtn = document.getElementById('focusExitBtn');
     const enterBtn = document.getElementById('focusEnterBtn');
     if (exitBtn) exitBtn.style.display = isFocus ? 'inline-flex' : 'none';
     if (enterBtn) enterBtn.style.display = isFocus ? 'none' : 'inline-flex';
-    CBS.toast(isFocus ? 'تم تفعيل وضع التركيز الكامل' : 'تم الخروج من وضع التركيز', '', 'info', 1200);
     CBS.haptic('selection');
   }
 

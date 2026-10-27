@@ -6,14 +6,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>سجل الحضور | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=2026083019">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026083019">
+  <link rel="stylesheet" href="/css/style.css?v=2026102613">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026102613">
+  <link rel="stylesheet" href="/css/ui.css?v=2026102613">
   <!-- يُنتج ملف xlsx حقيقياً؛ بدونه يتراجع التصدير إلى CSV -->
   <script src="/vendor/xlsx.full.min.js"></script>
   <style>
     .history-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(min(280px, 100%), 1fr));
       gap: 16px;
     }
     .history-card {
@@ -50,7 +51,23 @@
     .ms-item { text-align: center; }
     .ms-num  { font-size: 1.4rem; font-weight: 800; }
     .ms-lbl  { font-size: 0.75rem; color: var(--text-muted); }
-  </style>
+      .att-summary { grid-column: 1 / -1; background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius-lg, 16px); padding: 16px; margin-bottom: 4px; }
+    .att-summary-main { text-align: center; margin-bottom: 12px; }
+    .att-rate { font-size: 2.4rem; font-weight: 900; line-height: 1; font-variant-numeric: tabular-nums; }
+    .att-rate-label { color: var(--text-muted); font-size: 0.85rem; margin-top: 6px; }
+    .att-warn { margin-top: 8px; color: var(--danger); font-size: 0.82rem; font-weight: 700; }
+    .att-subjects { display: grid; gap: 8px; }
+    .att-subject { display: flex; align-items: center; gap: 10px; padding: 8px 12px; border-radius: 10px; background: var(--bg-hover); font-size: 0.86rem; }
+    .att-subject span { flex: 1; font-weight: 700; }
+    .att-subject small { color: var(--text-muted); font-variant-numeric: tabular-nums; }
+    .history-card.personal { display: flex; align-items: center; justify-content: space-between; gap: 12px; cursor: default; }
+    .att-hero { display: flex; align-items: center; gap: 16px; }
+    .att-hero-rate { font-size: 2.1rem; font-weight: 800; line-height: 1; font-variant-numeric: tabular-nums; color: var(--text-main); }
+    .att-hero-rate[data-tone="success"] { color: var(--success-text); }
+    .att-hero-rate[data-tone="warning"] { color: var(--warning-text); }
+    .att-hero-rate[data-tone="danger"] { color: var(--danger-text); }
+    .att-warn-line { display: flex; align-items: center; gap: 5px; margin-top: 6px; font-size: 0.8rem; font-weight: 700; color: var(--danger-text); }
+</style>
 
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
   <meta name="mobile-web-app-capable" content="yes">
@@ -75,7 +92,7 @@
 <div class="page-content">
 
     <!-- Welcome Banner -->
-    <div class="welcome-banner" style="background: linear-gradient(135deg,#10b981,#059669,#047857);">
+    <div class="welcome-banner" style="--page-accent:#047857">
       <div class="welcome-banner-icon-wrap">
         <i class="ri-calendar-check-line welcome-banner-icon"></i>
       </div>
@@ -94,15 +111,11 @@
     </div>
   </div>
 
-  <div class="controls-bar">
-    <div class="search-wrapper">
-      <i class="ri-search-line"></i>
-      <input type="text" class="search-input" id="searchBox" placeholder="البحث في سجل الحضور...">
-    </div>
-  </div>
+  <div class="ui-search" style="margin-bottom:14px"><i class="ri-search-line"></i>
+    <input type="search" id="searchBox" placeholder="ابحث باسم المقرر" aria-label="بحث في سجل الحضور"></div>
 
   <div id="alertMsg" class="alert"></div>
-  <div class="history-grid" id="historyGrid"></div>
+  <div id="historyGrid"></div>
 </div>
 
 <!-- Detail Modal -->
@@ -117,10 +130,9 @@
       <div class="modal-students" id="studentList"></div>
     </div>
     <div class="modal-footer">
-      <button class="btn btn-ghost" onclick="CBS.closeModal('detailModal')">إغلاق</button>
-      <button class="btn btn-secondary" onclick="viewReportFullscreen()"><i class="ri-eye-line"></i> عرض</button>
-      <button class="btn btn-success" onclick="downloadExcel()"><i class="ri-file-excel-line"></i> تصدير Excel</button>
       <button class="btn btn-primary" onclick="downloadPDF()"><i class="ri-download-cloud-line"></i> تحميل PDF</button>
+      <button class="btn btn-secondary" onclick="downloadExcel()"><i class="ri-file-excel-line"></i> Excel</button>
+      <button class="btn btn-ghost" onclick="viewReportFullscreen()"><i class="ri-eye-line"></i> عرض</button>
     </div>
   </div>
 </div>
@@ -131,9 +143,9 @@
   جميع الحقوق محفوظة &copy; <span id="year"></span> النظام الجامعي المتكامل
 </footer>
 
-<script src="/js/shared.js?v=2026083019"></script>
-<script src="/js/app.js?v=2026083019"></script>
-<script src="/js/socket-client.js?v=2026083019" defer></script>
+<script src="/js/shared.js?v=2026102613"></script>
+<script src="/js/app.js?v=2026102613"></script>
+<script src="/js/socket-client.js?v=2026102613" defer></script>
 <script>
   CBS.init();
   const user = CBS.getUser();
@@ -155,24 +167,66 @@
     } catch(e) { CBS.showAlert('alertMsg', e.message || 'خطأ في جلب البيانات', 'danger'); }
   }
 
+  /* الطالب والليدر يتلقّيان سجلاً شخصياً { date, subject, status } لا كشف حصة.
+     كان يُعرض بقالب الطاقم فيظهر كل يوم "حضور: 0 غياب: 0 0%" ويفتح تفاصيل
+     حصة لا يملك الطالب صلاحية رؤيتها. */
+  const toneOf = r => (r >= 85 ? 'success' : r >= 75 ? 'warning' : 'danger');
+  const dateLabel = d => { const x = new Date(d); return isNaN(x) ? (d || '') : x.toLocaleDateString('ar-EG-u-nu-latn', { weekday: 'short', day: 'numeric', month: 'short' }); };
+  const pct = r => `\u2066${r}%\u2069`;
+
+  function renderPersonal(list) {
+    const present = list.filter(h => h.status === 'present').length;
+    const rate = list.length ? Math.round(present / list.length * 100) : 0;
+    const bySubject = {};
+    list.forEach(h => {
+      const k = h.subject?.name || 'غير محدد';
+      bySubject[k] = bySubject[k] || { total: 0, present: 0 };
+      bySubject[k].total++;
+      if (h.status === 'present') bySubject[k].present++;
+    });
+    // ملخص واحد واضح، ثم كل مادة صف بنسبتها، ثم السجل التفصيلي
+    const summary = `
+      <div class="ui-card att-hero">
+        <div class="att-hero-rate" data-tone="${toneOf(rate)}">${pct(rate)}</div>
+        <div><div class="ui-card-title">نسبة حضورك</div>
+          <div class="ui-card-meta"><span>حضرت ${present} من ${list.length} محاضرة</span></div>
+          ${rate < 75 ? '<div class="att-warn-line"><i class="ri-error-warning-line"></i> أقل من الحد الأدنى المطلوب (75٪)</div>' : ''}</div>
+      </div>
+      <div class="hm-sec-head" style="margin-top:20px"><h2 class="hm-sec-title">حسب المادة</h2></div>
+      <div class="hm-list">${Object.entries(bySubject).map(([name, v]) => {
+        const r = Math.round(v.present / v.total * 100);
+        return `<div class="hm-row"><span class="hm-ic"><i class="ri-book-2-line"></i></span>
+          <div class="hm-row-body"><div class="hm-row-title">${CBS.escapeHTML(name)}</div><div class="hm-row-meta">${v.present} من ${v.total} محاضرة</div></div>
+          <span class="hm-row-end"><span class="hm-chip" data-tone="${toneOf(r)}">${pct(r)}</span></span></div>`;
+      }).join('')}</div>`;
+    const rows = list.map(h => `<div class="hm-row">
+        <span class="hm-ic" data-tone="${h.status === 'present' ? 'success' : 'danger'}"><i class="${h.status === 'present' ? 'ri-check-line' : 'ri-close-line'}"></i></span>
+        <div class="hm-row-body"><div class="hm-row-title">${CBS.escapeHTML(h.subject?.name || 'غير محدد')}</div><div class="hm-row-meta">${CBS.escapeHTML(dateLabel(h.date))}</div></div>
+        <span class="hm-row-end"><span class="hm-chip" data-tone="${h.status === 'present' ? 'success' : 'danger'}">${h.status === 'present' ? 'حاضر' : 'غائب'}</span></span>
+      </div>`).join('');
+    document.getElementById('historyGrid').innerHTML = summary +
+      `<div class="hm-sec-head" style="margin-top:20px"><h2 class="hm-sec-title">السجل</h2></div><div class="hm-list">${rows}</div>`;
+  }
+
   function render(list) {
-    if (!list.length) { CBS.showEmpty('historyGrid', 'لا توجد سجلات حضور', 'ri-calendar-line'); return; }
-    document.getElementById('historyGrid').innerHTML = list.map(h => {
+    if (!list.length) {
+      document.getElementById('historyGrid').innerHTML = `<div class="hm-list"><div class="hm-row hm-empty"><span class="hm-ic" data-tone="info"><i class="ri-calendar-line"></i></span><div class="hm-row-body"><div class="hm-row-title">لا سجلات حضور بعد</div><div class="hm-row-meta">تظهر هنا المحاضرات بعد رصد حضورها</div></div></div></div>`;
+      return;
+    }
+    if (list.every(h => typeof h.status === 'string' && !h.students)) return renderPersonal(list);
+    // الطاقم: كل حصة صف بنسبتها، والضغط يفتح الكشف
+    document.getElementById('historyGrid').innerHTML = '<div class="hm-list">' + list.map(h => {
       const students = h.students || [];
       const present = students.filter(s => s.status === 'present').length;
-      const total   = students.length;
-      const rate    = total ? Math.round(present/total*100) : 0;
-      return `
-        <div class="history-card" onclick="viewDetail('${CBS.escapeHTML(h._id)}')">
-          <div class="h-date"><i class="ri-calendar-line"></i> ${CBS.escapeHTML(h.date)}</div>
-          <div class="h-subject">${CBS.escapeHTML(h.subject?.name) || 'غير محدد'}</div>
-          <div class="h-stats">
-            <span class="h-stat present"><i class="ri-user-follow-line"></i> حضور: ${present}</span>
-            <span class="h-stat absent"><i class="ri-user-unfollow-line"></i> غياب: ${total - present}</span>
-            <span class="h-stat rate"><i class="ri-bar-chart-line"></i> ${rate}%</span>
-          </div>
-        </div>`;
-    }).join('');
+      const total = students.length;
+      const rate = total ? Math.round(present / total * 100) : 0;
+      return `<a class="hm-row" href="#" onclick="viewDetail('${CBS.escapeHTML(h._id)}');return false">
+        <span class="hm-ic"><i class="ri-calendar-check-line"></i></span>
+        <div class="hm-row-body"><div class="hm-row-title">${CBS.escapeHTML(h.subject?.name || 'غير محدد')}</div>
+          <div class="hm-row-meta">${CBS.escapeHTML(dateLabel(h.date))} · حضر ${present} من ${total}</div></div>
+        <span class="hm-row-end"><span class="hm-chip" data-tone="${toneOf(rate)}">${pct(rate)}</span><i class="ri-arrow-left-s-line" aria-hidden="true"></i></span>
+      </a>`;
+    }).join('') + '</div>';
   }
 
   async function viewDetail(id) {

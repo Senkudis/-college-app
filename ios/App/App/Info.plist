@@ -57,6 +57,13 @@
 	<key>ITSAppUsesNonExemptEncryption</key>
 	<false/>
 
+	<!-- الخادم يرسل content-available مع كل إشعار؛ بدون هذا الوضع
+	     يتجاهل iOS الإيقاظ في الخلفية. -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
+
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIMainStoryboardFile</key>

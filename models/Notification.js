@@ -80,15 +80,13 @@ const NotificationSchema = new mongoose.Schema(
     }]
   },
   { 
-    timestamps: true,
-    // إضافة فهرسة إضافية لتحسين أداء الاستعلامات
-    indexes: [
-      { createdAt: -1 }, // للترتيب حسب الأحدث
-      { type: 1, createdAt: -1 }, // للجمع بين النوع والوقت
-      { createdBy: 1, createdAt: -1 } // للبحث حسب المنشئ والوقت
-    ]
+    timestamps: true
   }
 );
+
+NotificationSchema.index({ createdAt: -1 });
+NotificationSchema.index({ type: 1, createdAt: -1 });
+NotificationSchema.index({ createdBy: 1, createdAt: -1 });
 
 // Middleware قبل الحفظ لتنظيف البيانات
 NotificationSchema.pre('save', function() {
@@ -207,8 +205,10 @@ NotificationSchema.methods.markAsSeen = function(userId) {
 
 // تسجيل عرض الإشعار في dashboard لمستخدم معين (لمنع التكرار)
 NotificationSchema.methods.markAsShownInDashboard = function(userId) {
+  if (!userId) return Promise.resolve(this);
+  const targetIdStr = String(userId);
   const alreadyShown = this.shownInDashboard.some(
-    entry => entry.userId.toString() === userId.toString()
+    entry => entry.userId && String(entry.userId) === targetIdStr
   );
   
   if (!alreadyShown) {
@@ -223,9 +223,22 @@ NotificationSchema.methods.markAsShownInDashboard = function(userId) {
 
 // التحقق إذا تم عرض الإشعار في dashboard لمستخدم معين
 NotificationSchema.methods.hasBeenShownInDashboard = function(userId) {
+  if (!userId) return false;
+  const targetIdStr = String(userId);
   return this.shownInDashboard.some(
-    entry => entry.userId.toString() === userId.toString()
+    entry => entry.userId && String(entry.userId) === targetIdStr
   );
 };
+
+/* كل إشعار جديد يصل للهاتف أياً كان من أنشأه (انظر utils/pushDispatch).
+   الحفظ اللاحق للمستند نفسه (تعليم كمقروء/معروض) لا يُعيد الإرسال.
+   من يرسل بنفسه إشعاراً أغنى يضبط doc.$locals.skipPush قبل الحفظ. */
+NotificationSchema.pre("save", function () {
+  this.$locals.wasNew = this.isNew;
+});
+NotificationSchema.post("save", function (doc) {
+  if (!doc.$locals?.wasNew || doc.$locals.skipPush || process.env.NODE_ENV === "test") return;
+  setImmediate(() => require("../utils/pushDispatch").dispatchPush(doc));
+});
 
 module.exports = mongoose.model("Notification", NotificationSchema);

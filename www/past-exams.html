@@ -6,12 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>بنك امتحانات الفاينل والمحاكاة الذكية | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=2026083019">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026083019">
+  <link rel="stylesheet" href="/css/style.css?v=2026102613">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026102613">
+  <link rel="stylesheet" href="/css/ui.css?v=2026102613">
   <style>
     .exam-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(min(290px, 100%), 1fr));
       gap: 16px;
       margin-top: 14px;
     }
@@ -104,21 +105,17 @@
 <body>
 
 
+<header class="main-header">
+  <div class="header-brand">
+    <img src="/assets/logo.png" class="header-logo" alt="">
+    <div class="header-title-group"><strong>بنك الامتحانات</strong><small>بنك الامتحانات</small></div>
+  </div>
+  <div class="header-actions"></div>
+</header>
+
 <main class="page-container" style="max-width:1040px; margin:0 auto; padding:16px 16px 80px;">
-  <!-- Header Bar -->
-  <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:16px;">
-    <div style="display:flex; align-items:center; gap:8px;">
-      <a href="/dashboard.html" class="btn btn-icon btn-outline" style="width:36px; height:36px;"><i class="ri-arrow-right-line"></i></a>
-      <div>
-        <h1 style="font-size:1.25rem; font-weight:800; margin:0; color:var(--text-main);">
-          <i class="ri-archive-fill" style="color:var(--primary);"></i> بنك امتحانات الفاينل والمحاكاة الذكية
-        </h1>
-        <span style="font-size:0.78rem; color:var(--text-muted);">أرشيف النماذج الرسمية ومحاكاة ظروف الامتحانات الحقيقية</span>
-      </div>
-    </div>
-    <div id="staffControls" style="display:none;">
-      <button class="btn btn-primary" onclick="openAddExamModal()"><i class="ri-add-line"></i> إضافة نموذج امتحان</button>
-    </div>
+  <div class="ui-toolbar" id="staffControls" style="display:none;">
+    <button type="button" class="ui-primary" onclick="openAddExamModal()"><i class="ri-add-line"></i> نموذج امتحان</button>
   </div>
 
   <!-- Search and Filter Bar -->
@@ -195,8 +192,8 @@
 
 <div id="toast-container"></div>
 
-<script src="/js/shared.js?v=2026083019"></script>
-<script src="/js/app.js?v=2026083019"></script>
+<script src="/js/shared.js?v=2026102613"></script>
+<script src="/js/app.js?v=2026102613"></script>
 <script>
   CBS.init({ requireAuth: true });
   const user = CBS.getUser();
@@ -336,7 +333,7 @@
             ${qCount > 0 ? `<i class="ri-question-line"></i> ${qCount} أسئلة تفاعلية` : '<i class="ri-file-pdf-line"></i> وثيقة PDF'}
           </span>
           <div style="display:flex; gap:6px; flex-wrap:wrap;">
-            ${ex.pdfFile ? `<a href="/uploads/past-exams/${encodeURIComponent(ex.pdfFile)}" target="_blank" rel="noopener" class="btn btn-outline" style="padding:6px 10px; font-size:0.8rem;" title="فتح الملف"><i class="ri-download-line"></i></a>` : ''}
+            ${ex.pdfFile ? `<a href="/uploads/past-exams/${encodeURIComponent(ex.pdfFile)}" data-title="${CBS.escapeHTML(ex.title)}" target="_blank" rel="noopener" class="btn btn-outline" style="padding:6px 10px; font-size:0.8rem;" title="فتح الملف"><i class="ri-download-line"></i></a>` : ''}
             ${canManage ? `<button class="btn btn-outline" style="padding:6px 10px; font-size:0.8rem;" title="تعديل" onclick="editPastExam('${ex._id}')" aria-label="تعديل"><i class="ri-edit-line"></i></button>` : ''}
             ${canManage ? `<button class="btn btn-outline" style="padding:6px 10px; font-size:0.8rem; color:#ef4444; border-color:rgba(239,68,68,0.5);" title="حذف" onclick="deletePastExam('${ex._id}')" aria-label="حذف"><i class="ri-delete-bin-line"></i></button>` : ''}
             ${qCount > 0 ? `<button class="btn btn-primary" style="padding:6px 14px; font-size:0.82rem; font-weight:800;" onclick="startSimulation('${ex._id}')"><i class="ri-play-circle-line"></i> محاكاة</button>` : ''}
@@ -514,8 +511,8 @@
               ${d.passed ? 'اجتياز المحاكاة بنجاح ممتاز' : 'تحتاج إلى مراجعة إضافية للمقرر'}
             </div>
             <div style="background:var(--bg-card); border:1px solid var(--border); border-radius:var(--radius-md); padding:14px; font-size:0.9rem; line-height:1.7; text-align:right;">
-              <strong style="color:var(--primary); display:block; margin-bottom:4px;"><i class="ri-brain-line"></i> تشخيص كيدي الأكاديمي:</strong>
-              ${CBS.escapeHTML(d.aiDiagnosis)}
+              <strong style="color:var(--primary); display:block; margin-bottom:4px;"><i class="ri-brain-line"></i> ${d.diagnosisSource === 'ai' ? 'تشخيص كيدي لأخطائك:' : 'ملاحظة على أدائك:'}</strong>
+              <div style="white-space:pre-line">${CBS.escapeHTML(d.aiDiagnosis)}</div>
             </div>
           </div>
 

@@ -40,6 +40,7 @@ async function resolveBatchScope(user) {
 router.get("/summary", authMiddleware, async (req, res) => {
   try {
     const user = req.user;
+    const userId = user.id || user._id;
     const isDean = user.roles.includes("dean") || user.roles.includes("admin");
     const isDoctor = user.roles.includes("doctor");
     const isLeader = user.roles.includes("leader");
@@ -79,11 +80,12 @@ router.get("/summary", authMiddleware, async (req, res) => {
 
     // 1. Basic Counts
     const totalStudents = canCount
-      ? await User.countDocuments({ roles: { $in: ["student", "leader"] }, ...batchFilter })
+      // الطلاب الفعليون فقط: طلبات التسجيل المعلّقة والحسابات الموقوفة لا تُحسب
+      ? await User.countDocuments({ roles: { $in: ["student", "leader"] }, isActive: true, isPendingRegistration: { $ne: true }, ...batchFilter })
       : 0;
     const totalSubjects = hasCollegeWideAccess
       ? await Subject.countDocuments({})
-      : (isDoctor ? await Subject.countDocuments({ doctor: user._id })
+      : (isDoctor ? await Subject.countDocuments({ doctor: userId })
                   : (batchScope ? await Subject.countDocuments({ batches: batchScope }) : 0));
 
     // 2. Attendance Stats
@@ -93,7 +95,7 @@ router.get("/summary", authMiddleware, async (req, res) => {
       subjectMatch.subject = { $in: batchSubjects };
     }
     if (isDoctor && !isDean) {
-      const docSubjects = await Subject.find({ doctor: user._id }).distinct('_id');
+      const docSubjects = await Subject.find({ doctor: userId }).distinct('_id');
       if (subjectMatch.subject) {
         const docSubjStrs = new Set(docSubjects.map(id => id.toString()));
         subjectMatch.subject = { $in: subjectMatch.subject.$in.filter(id => docSubjStrs.has(id.toString())) };
@@ -102,7 +104,7 @@ router.get("/summary", authMiddleware, async (req, res) => {
       }
     }
 
-    const studentObjId = isStudent ? new mongoose.Types.ObjectId(user._id) : null;
+    const studentObjId = isStudent ? new mongoose.Types.ObjectId(userId) : null;
     const baseMatch = isStudent ? { "students.student": studentObjId } : subjectMatch;
 
     const [attStatsResult] = await Attendance.aggregate([
@@ -142,10 +144,20 @@ router.get("/summary", authMiddleware, async (req, res) => {
     }));
 
     // 3. Quiz / Engagement Stats
-    const quizMatch = isStudent ? { student: new mongoose.Types.ObjectId(user._id) } : {};
+    /* كان {} لغير الطالب: الدكتور يرى عدد محاولات الكلية كلها كأنها دفعته.
+       المحاولات المسلّمة فقط، ومقصورة على اختبارات النطاق. */
+    let quizMatch = { submitted: true };
+    if (isStudent) {
+      quizMatch.student = new mongoose.Types.ObjectId(userId);
+    } else if (!isDean) {
+      const Quiz = require("../models/Quiz");
+      const quizFilter = { batch: batchScope };
+      if (isDoctor) quizFilter.subject = subjectMatch.subject || { $in: [] };
+      quizMatch.quiz = { $in: await Quiz.find(quizFilter).distinct("_id") };
+    }
     const totalQuizzes = await QuizAttempt.countDocuments(quizMatch);
 
-    const activityMatch = isStudent ? { user: new mongoose.Types.ObjectId(user._id) } : batchFilter;
+    const activityMatch = isStudent ? { user: new mongoose.Types.ObjectId(userId) } : batchFilter;
     const activityLogs = await ActivityLog.aggregate([
       { $match: activityMatch },
       { $group: { _id: "$action", count: { $sum: 1 } } }
@@ -160,8 +172,8 @@ router.get("/summary", authMiddleware, async (req, res) => {
 
     // 4. Students Table Data (for export)
     let studentsTable = [];
-    if (!isStudent) {
-      const usersMatch = { roles: { $in: ["student", "leader"] }, ...batchFilter };
+    if (!isStudent && !isLeader) {
+      const usersMatch = { roles: { $in: ["student", "leader"] }, isActive: true, isPendingRegistration: { $ne: true }, ...batchFilter };
       const students = await User.find(usersMatch).select("name email batch").populate("batch", "name").limit(200).lean();
       const studentIds = students.map(s => s._id);
 
@@ -187,11 +199,12 @@ router.get("/summary", authMiddleware, async (req, res) => {
         name: s.name,
         email: s.email,
         batchName: s.batch ? s.batch.name : "غير محدد",
-        attendanceRate: attMap[s._id.toString()] || 0
+        // بلا سجلات = لا بيانات (null) لا 0% — الصفر كان يُدرج الطالب الجديد في قائمة الخطر
+        attendanceRate: attMap[s._id.toString()] ?? null
       }));
     } else {
       studentsTable = [{
-        id: user._id,
+        id: userId,
         name: user.name,
         email: user.email,
         batchName: "دفعتي",
@@ -200,7 +213,7 @@ router.get("/summary", authMiddleware, async (req, res) => {
     }
 
     const atRiskStudents = studentsTable
-      .filter(student => student.attendanceRate < 75)
+      .filter(student => typeof student.attendanceRate === "number" && student.attendanceRate < 75)
       .map(student => ({ ...student, risk: student.attendanceRate < 60 ? "high" : "medium" }));
 
     success(res, {
@@ -214,11 +227,77 @@ router.get("/summary", authMiddleware, async (req, res) => {
       studentsTable,
       atRiskCount: atRiskStudents.length,
       atRiskStudents,
-      healthStatus: avgAttendance >= 85 ? "good" : avgAttendance >= 75 ? "watch" : "action_required"
+      healthStatus: totalRecords === 0 ? "no_data" : avgAttendance >= 85 ? "good" : avgAttendance >= 75 ? "watch" : "action_required"
     });
 
   } catch (error) {
     serverError(res, error, "استخراج التقارير");
+  }
+});
+
+/**
+ * GET /api/reports/home
+ * ما ينتظر قراراً من الطاقم — تعرضه الصفحة الرئيسية كقائمة "يحتاج انتباهك":
+ *   ungraded: تسليمات بحالة pending في مواد الدكتور (أو الدفعة المحددة للعميد)
+ *   pendingRegistrations / pendingReports: للعميد والمسؤول فقط
+ * أعداد فقط بلا بيانات شخصية؛ القوائم التفصيلية في صفحاتها.
+ */
+router.get("/home", authMiddleware, async (req, res) => {
+  try {
+    const user = req.user;
+    const userId = user.id || user._id;
+    const isDean = user.roles.includes("dean") || user.roles.includes("admin");
+    const isDoctor = user.roles.includes("doctor");
+    if (!isDean && !isDoctor) return success(res, {});
+
+    const Assignment = require("../models/Assignment");
+    const StudentSubmission = require("../models/StudentSubmission");
+    const out = {};
+
+    // نطاق الدفعة: العميد يحدده بالترويسة (صفحة الدفعة)، والدكتور يُتحقق من تعيينه
+    const header = req.headers["x-batch-id"];
+    const batchScope = isDean
+      ? (header && mongoose.Types.ObjectId.isValid(header) ? new mongoose.Types.ObjectId(header) : null)
+      : await resolveBatchScope({ ...user, requestedBatchId: header });
+
+    // العميد بلا دفعة (لوحة الكلية) لا يحتاج قائمة التصحيح — هي مهمة الدكاترة
+    if (isDoctor || batchScope) {
+      const subjectFilter = isDoctor && !isDean ? { doctor: userId } : {};
+      if (batchScope) subjectFilter.batches = batchScope;
+      const subjects = await Subject.find(subjectFilter).select("_id name").lean();
+      const subjectName = new Map(subjects.map(s => [String(s._id), s.name]));
+      const assignFilter = { subject: { $in: subjects.map(s => s._id) } };
+      if (batchScope) assignFilter.batches = batchScope;
+      const assignments = subjects.length
+        ? await Assignment.find(assignFilter).select("_id title subject").lean()
+        : [];
+      const pending = assignments.length
+        ? await StudentSubmission.find({ assignment: { $in: assignments.map(a => a._id) }, status: "pending" }).select("assignment").lean()
+        : [];
+      const perAssignment = new Map();
+      pending.forEach(s => { const k = String(s.assignment); perAssignment.set(k, (perAssignment.get(k) || 0) + 1); });
+      const items = assignments
+        .filter(a => perAssignment.has(String(a._id)))
+        .map(a => ({ assignmentId: a._id, title: a.title, subjectName: subjectName.get(String(a.subject)) || "", count: perAssignment.get(String(a._id)) }))
+        .sort((a, b) => b.count - a.count);
+      out.ungraded = { count: pending.length, items: items.slice(0, 3) };
+    }
+
+    if (isDean) {
+      const ContentReport = require("../models/ContentReport");
+      const [pendingRegistrations, reports] = await Promise.all([
+        User.countDocuments({ isPendingRegistration: true }),
+        ContentReport.find({ status: "pending" }).select("createdAt").lean()
+      ]);
+      // مهلة المتاجر للبتّ في البلاغ 24 ساعة — نفس حساب moderation.routes
+      const overdueBefore = Date.now() - 24 * 3600 * 1000;
+      out.pendingRegistrations = pendingRegistrations;
+      out.pendingReports = { count: reports.length, overdue: reports.filter(r => new Date(r.createdAt) < overdueBefore).length };
+    }
+
+    success(res, out);
+  } catch (error) {
+    serverError(res, error, "ملخص الصفحة الرئيسية");
   }
 });
 
@@ -322,8 +401,10 @@ router.get("/early-warning", authMiddleware, async (req, res) => {
     });
 
     // 3. فحص متوسط درجات الكويزات
+    // المحاولات المسلّمة فقط: محاولة بدأها الطالب ولم يسلّمها مسجّلة بصفر وكانت تسحب متوسطه
     const quizAttempts = await QuizAttempt.find({
-      student: { $in: studentIds }
+      student: { $in: studentIds },
+      submitted: true
     }).select("student score totalPoints maxScore").lean();
 
     const quizCounts = {};
@@ -351,7 +432,10 @@ router.get("/early-warning", authMiddleware, async (req, res) => {
 
     const analyzedStudents = students.map(s => {
       const sId = s._id.toString();
-      const attRate = attMap[sId] !== undefined ? attMap[sId] : 100;
+      /* طالب لا يظهر في أي كشف حضور لم يكن مسجلاً وقت رصده (التحق لاحقاً) —
+         نسبته "غير متاحة" لا 0%. الصفر كان يصنّفه "خطر مرتفع" بلا سبب. */
+      const attRate = attMap[sId] !== undefined ? attMap[sId] : null;
+      const hasAtt = attRate !== null;
       const quizAvg = quizMap[sId] !== undefined ? quizMap[sId] : null;
 
       // حساب عدد الواجبات المتأخرة غير المسلمة
@@ -362,8 +446,8 @@ router.get("/early-warning", authMiddleware, async (req, res) => {
       });
 
       const riskFactors = [];
-      if (attRate < 60) riskFactors.push(`نسبة الحضور متدنية جداً (${attRate}%)`);
-      else if (attRate < 75) riskFactors.push(`نسبة الحضور منخفضة (${attRate}%)`);
+      if (hasAtt && attRate < 60) riskFactors.push(`نسبة الحضور متدنية جداً (${attRate}%)`);
+      else if (hasAtt && attRate < 75) riskFactors.push(`نسبة الحضور منخفضة (${attRate}%)`);
 
       if (overdueCount >= 3) riskFactors.push(`تراكم ${overdueCount} واجبات غير مسلّمة`);
       else if (overdueCount >= 1) riskFactors.push(`${overdueCount} واجب متأخر لم يتم تسليمه`);
@@ -371,10 +455,10 @@ router.get("/early-warning", authMiddleware, async (req, res) => {
       if (quizAvg !== null && quizAvg < 50) riskFactors.push(`متوسط درجات الاختبارات متدنٍ (${quizAvg}%)`);
 
       let riskLevel = "low";
-      if (attRate < 60 || (attRate < 75 && overdueCount >= 2) || (overdueCount >= 4)) {
+      if ((hasAtt && attRate < 60) || (hasAtt && attRate < 75 && overdueCount >= 2) || (overdueCount >= 4)) {
         riskLevel = "high";
         highRiskCount++;
-      } else if (attRate < 75 || overdueCount >= 2 || (quizAvg !== null && quizAvg < 60)) {
+      } else if ((hasAtt && attRate < 75) || overdueCount >= 2 || (quizAvg !== null && quizAvg < 60)) {
         riskLevel = "medium";
         medRiskCount++;
       } else {
@@ -398,7 +482,7 @@ router.get("/early-warning", authMiddleware, async (req, res) => {
 
     // ترتيب النتيجة: الطلاب الأكثر خطورة أولاً
     const riskPriority = { high: 3, medium: 2, low: 1 };
-    analyzedStudents.sort((a, b) => riskPriority[b.riskLevel] - riskPriority[a.riskLevel] || a.attendanceRate - b.attendanceRate);
+    analyzedStudents.sort((a, b) => riskPriority[b.riskLevel] - riskPriority[a.riskLevel] || (a.attendanceRate ?? 101) - (b.attendanceRate ?? 101));
 
     success(res, {
       summary: {

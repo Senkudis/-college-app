@@ -1,5 +1,5 @@
-// Service Worker for CBS College LMS — v2.2.0 (Offline + Speed Boost)
-const CACHE_VERSION = 'cbs-v2.2.0';
+// Service Worker for CBS College LMS — v2.6.0 (Offline + Speed Boost)
+const CACHE_VERSION = 'cbs-v2.6.0.6';
 const STATIC_CACHE  = CACHE_VERSION + '-static';
 const API_CACHE     = CACHE_VERSION + '-api';
 const FILES_CACHE   = 'cbs-offline-files'; // الثبات للحفاظ على الملفات المحملة يدوياً
@@ -49,8 +49,16 @@ const STATIC_ASSETS = [
   '/assets/icon.png',
   '/css/style.css',
   '/css/mobile.css',
+  '/css/ui.css',            // الطبقة الأخيرة لنظام التصميم — بدونها تفقد الصفحات شكلها بلا نت
+  '/css/auth.css',
   '/js/shared.js',
   '/js/app.js',
+  '/js/home.js',            // مكوّنات الصفحات الرئيسية
+  '/js/file-viewer.js',     // عارض الملفات: يلزم لفتح المحاضرات المحفوظة بلا نت
+  '/vendor/office/jszip.min.js',
+  '/vendor/office/docx-preview.min.js',
+  '/vendor/pdfjs/pdf.min.js',
+  '/vendor/pdfjs/pdf.worker.min.js',
   '/manifest.json',
   '/vendor/remixicon/remixicon.css',
   '/vendor/remixicon/remixicon.woff2',

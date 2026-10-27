@@ -5,13 +5,31 @@ const auth = require("../middleware/auth.middleware");
 const restrictTo = require("../middleware/role.middleware");
 const { success, fail, serverError } = require("../utils/response");
 
-// Get settings by keys (comma-separated, or all if empty)
+// Safe settings keys allowed for non-admin/non-dean users (students, doctors, leaders)
+const PUBLIC_SETTINGS_KEYS = new Set([
+  'college_name', 'academic_year', 'semester_name',
+  'bank_name', 'bank_account', 'bank_account_name', 'bank_iban', 'bank_beneficiary',
+  'support_phone', 'support_email', 'announcement_banner'
+]);
+
+// Get settings by keys (comma-separated, or all if empty for staff)
 router.get("/", auth, async (req, res) => {
   try {
-    const keys = req.query.keys ? req.query.keys.split(',').map(k => k.trim()).filter(Boolean) : null;
-    const query = keys && keys.length ? { key: { $in: keys } } : {};
+    const isStaff = req.user?.roles?.some(r => r === "admin" || r === "dean");
+    const requestedKeys = req.query.keys ? req.query.keys.split(',').map(k => k.trim()).filter(Boolean) : null;
     
-    const settings = await Setting.find(query);
+    let query = {};
+    if (!isStaff) {
+      // Non-staff may only request whitelisted public settings
+      const safeKeys = requestedKeys 
+        ? requestedKeys.filter(k => PUBLIC_SETTINGS_KEYS.has(k))
+        : Array.from(PUBLIC_SETTINGS_KEYS);
+      query = { key: { $in: safeKeys } };
+    } else if (requestedKeys && requestedKeys.length) {
+      query = { key: { $in: requestedKeys } };
+    }
+    
+    const settings = await Setting.find(query).lean();
     const settingsObj = {};
     settings.forEach(s => {
       settingsObj[s.key] = s.value;
@@ -31,12 +49,16 @@ router.post("/", auth, restrictTo("admin", "dean"), async (req, res) => {
       return fail(res, "بيانات الإعدادات غير صالحة", 400);
     }
 
-    for (const key of Object.keys(updates)) {
-      await Setting.findOneAndUpdate(
-        { key },
-        { value: updates[key] },
-        { upsert: true, returnDocument: 'after' }
-      );
+    const keys = Object.keys(updates);
+    if (keys.length > 0) {
+      const ops = keys.map(key => ({
+        updateOne: {
+          filter: { key },
+          update: { $set: { value: updates[key] } },
+          upsert: true
+        }
+      }));
+      await Setting.bulkWrite(ops);
     }
     
     return success(res, null, "تم حفظ الإعدادات بنجاح");

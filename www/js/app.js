@@ -10,9 +10,9 @@ const API_BASE = _IS_CAPACITOR_NATIVE ? 'https://elnasrcsit.website' : '';
 
 const CBS = {
 
-  VERSION: '2.1.0',
-  BUILD_CODE: 28,
-  ASSET_VERSION: '2026082228',
+  VERSION: '2.6.0',
+  BUILD_CODE: 37,
+  ASSET_VERSION: '2026100603',
 
   /* ===== Auth ===== */
   getToken() { return localStorage.getItem('token'); },
@@ -39,7 +39,7 @@ const CBS = {
   },
   getPrimaryRole(user = this.getUser()) {
     const roles = user?.roles || [];
-    // 'admin' كان ناقصاً هنا فكانت الدالة تعيد null للمسؤول، فتفشل كل الفروع المبنية عليها
+    // 'admin' كان ناقصاً هنا فكانت الدالة تعيد null للمسؤول، فتفشل كل الفروع المبنية عليها
     return ['admin', 'dean', 'doctor', 'leader', 'student'].find(role => roles.includes(role)) || null;
   },
   isAdminLevel(user = this.getUser()) {
@@ -47,7 +47,7 @@ const CBS = {
     return roles.includes('admin') || roles.includes('dean');
   },
   /* كانت quizzes.html و subject.html تستدعيان CBS.hasRole وهي غير معرَّفة،
-     فيرمى TypeError داخل دالة الرسم وتبقى الصفحة فارغة تماماً للكادر. */
+     فيرمى TypeError داخل دالة الرسم وتبقى الصفحة فارغة تماماً للكادر. */
   hasRole(role, user = this.getUser()) {
     const roles = user?.roles || [];
     if (Array.isArray(role)) return role.some(r => roles.includes(r));
@@ -112,6 +112,13 @@ const CBS = {
      التعريف في js/shared.js — تشاركه welcome.html التي لا تحمّل هذا الملف.
      ملاحظة: النسخة القديمة هنا كانت `if (!str) return ''` فتُرجع '' للرقم 0
      وللقيمة false؛ نسخة shared.js تفحص null/undefined فقط. */
+  /* "د. " مرة واحدة: كثير من أسماء الدكاترة مسجلة بلقبها أصلاً فكانت تظهر "د. د. فلان" */
+  doctorName(name) {
+    const n = String(name || '').trim();
+    if (!n) return 'غير محدد';
+    return /^(د\.|د |دكتور|أ\.|بروف|Dr\.?)/i.test(n) ? n : 'د. ' + n;
+  },
+
   escapeHTML(str) {
     return window.CBSShared.escapeHTML(str);
   },
@@ -129,6 +136,16 @@ const CBS = {
       '/admin-content.html',
       '/manage-users.html',
       '/financials.html',
+      // صفحات على مستوى الكلية أو شخصية: لا معنى لإجبار اختيار دفعة قبلها
+      '/manage-subjects.html',
+      '/pending-registrations.html',
+      '/moderation.html',
+      '/reports.html',
+      '/profile.html',
+      '/notifications.html',
+      '/student-portfolio.html',
+      '/code-lab.html',
+      '/privacy.html',
       '/login.html', 
       '/forgot-password.html',
       '/force-change-password.html',
@@ -138,8 +155,8 @@ const CBS = {
     ];
     const onSkipPage = skipBatchPages.some(p => window.location.pathname === p);
 
-    // إعادة توجيه غير الطلاب وغير الليدر لاختيار الدفعة إذا لم تحدَّد في الـ URL أو التخزين
-    // الليدر مثل الطالب  لديه دفعة واحدة ثابتة لا يحتاج لاختيارها
+    // إعادة توجيه غير الطلاب وغير الليدر لاختيار الدفعة إذا لم تحدَّد في الـ URL أو التخزين
+    // الليدر مثل الطالب  لديه دفعة واحدة ثابتة لا يحتاج لاختيارها
     const primaryRole = this.getPrimaryRole(user);
     const needsBatchPicker = primaryRole === 'dean' || primaryRole === 'doctor';
 
@@ -160,7 +177,7 @@ const CBS = {
   },
 
   async verifyToken() {
-    // إذا لا يوجد توكن أصلاً  مستخدم غير مسجّل
+    // إذا لا يوجد توكن أصلاً  مستخدم غير مسجّل
     if (!this.getToken()) return false;
 
     try {
@@ -189,7 +206,7 @@ const CBS = {
       // أي حالة أخرى (200 ، 500، timeout...) = نبقي المستخدم داخل التطبيق
       return res.ok;
     } catch {
-      // فشل الشبكة (لا إنترنت) → نبقي الجلسة ولا نخرج المستخدم
+      // فشل الشبكة (لا إنترنت) → نبقي الجلسة ولا نخرج المستخدم
       return true; // keep offline gracefully
     }
   },
@@ -203,7 +220,7 @@ const CBS = {
       if (fcmToken) {
         await fetch(API_BASE + '/api/device/unregister', {
           method: 'DELETE',
-          // نستخدم CBS لا this: لو استدعيت logout كمرجع مفصول (callback)
+          // نستخدم CBS لا this: لو استدعيت logout كمرجع مفصول (callback)
           // لضاع الربط وظهر "this._getHeaders is not a function"
           headers: CBS._getHeaders({ 'Content-Type': 'application/json' }),
           body: JSON.stringify({ token: fcmToken })
@@ -234,7 +251,7 @@ const CBS = {
   },
 
   /* ===== حفظ الملفات على الجهاز =====
-     WebView أندرويد لا يدعم تنزيل blob  داخل التطبيق نكتب الملف عبر Filesystem
+     WebView أندرويد لا يدعم تنزيل blob  داخل التطبيق نكتب الملف عبر Filesystem
      ثم نفتح نافذة المشاركة (حفظ في الملفات / إرسال). في المتصفح تنزيل عادي. */
   async saveFileNative(fileName, base64Data) {
     const { Filesystem, Share } = window.Capacitor?.Plugins || {};
@@ -247,8 +264,8 @@ const CBS = {
 
   /* ===== فتح ملف لا يعرضه التطبيق داخلياً (PowerPoint / Word / Excel / أرشيف) =====
      كانت الواجهة تعرض رابط <a href="blob:..." download> وهو لا يفعل شيئاً إطلاقاً
-     داخل WebView أندرويد (لا يملك منزّلاً للـ blob)، فيبدو للمستخدم أن ملفات
-     الباوربوينت "لا تفتح". هنا نكتب الملف فعلياً ثم نفتح نافذة "فتح بواسطة/مشاركة"
+     داخل WebView أندرويد (لا يملك منز←ّلاً للـ blob)، فيبدو للمستخدم أن ملفات
+     الباوربوينت "لا تفتح". هنا نكتب الملف فعلياً ثم نفتح نافذة "فتح بواسطة/مشاركة"
      ليختار تطبيقاً يعرضه. */
   async openFileExternally(buffer, filename, url) {
     const isNative = !!(window.Capacitor?.isNativePlatform?.());
@@ -264,6 +281,7 @@ const CBS = {
     }
 
     // المتصفح: تنزيل عادي
+    if (!buffer) { window.open(url, '_blank'); return 'opened'; }
     const blobUrl = URL.createObjectURL(new Blob([buffer]));
     const a = document.createElement('a');
     a.href = blobUrl;
@@ -276,6 +294,52 @@ const CBS = {
   },
 
   /* اسم ملف مقروء من الرابط، مع امتداد صالح */
+  /* ===== عارض الملفات الموحّد (js/file-viewer.js) =====
+     يُحمَّل عند أول فتح لملف فقط. كل الصفحات تمر من هنا — انظر اعتراض الروابط
+     في آخر الملف. */
+  _viewerReady: null,
+  _loadViewer() {
+    if (window.CBSViewer) return Promise.resolve();
+    if (!this._viewerReady) {
+      const v = (document.querySelector('script[src*="/js/app.js"]')?.src.split('v=')[1]) || Date.now();
+      this._viewerReady = new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = '/js/file-viewer.js?v=' + v;
+        s.onload = resolve;
+        s.onerror = () => { this._viewerReady = null; reject(new Error('تعذّر تحميل عارض الملفات')); };
+        document.head.appendChild(s);
+      });
+    }
+    return this._viewerReady;
+  },
+  /* داخل التطبيق الصفحات محلية (https://localhost) فرابط /uploads/... النسبي كان
+     يشير إلى الجهاز نفسه لا إلى الخادم — الامتحانات السابقة والإيصالات لم تُفتح قط. */
+  resolveFileUrl(url) {
+    try {
+      const u = new URL(url, location.href);
+      if (API_BASE && u.origin === location.origin && u.pathname.startsWith('/uploads/')) {
+        return new URL(u.pathname + u.search, API_BASE).href;
+      }
+      return u.href;
+    } catch (e) { return url; }
+  },
+  async openFileViewer(url, opts = {}) {
+    try { await this._loadViewer(); return window.CBSViewer.open(this.resolveFileUrl(url), opts); }
+    catch (e) { window.open(this.resolveFileUrl(url), this._isCapacitor() ? '_system' : '_blank'); }
+  },
+  async renderFileInto(host, url, opts = {}) {
+    await this._loadViewer();
+    return window.CBSViewer.renderInto(host, this.resolveFileUrl(url), opts);
+  },
+  async openMediaLink(url, title) {
+    try {
+      await this._loadViewer();
+      if (window.CBSViewer.openMedia(url, title)) return true;
+    } catch (e) {}
+    window.open(url, this._isCapacitor() ? '_system' : '_blank');
+    return false;
+  },
+
   fileNameFromUrl(url, fallback = 'file') {
     try {
       const path = new URL(url, location.origin).pathname;
@@ -291,12 +355,12 @@ const CBS = {
      الهاتف)، لذلك نولّد ملف PDF دائماً عبر html2pdf ثم:
        - داخل التطبيق: نكتبه بـ Filesystem ونفتح نافذة المشاركة/الحفظ.
        - في المتصفح: تنزيل عادي.
-     المحتوى يرسم دائماً في "مسرح" ثابت العرض (عرض A4) خارج الشاشة، لأن الالتقاط
+     المحتوى يرسم دائماً في "مسرح" ثابت العرض (عرض A4) خارج الشاشة، لأن الالتقاط
      من الصفحة الحية على الهاتف كان ينتج PDF بعرض الجوال (عمود ضيق مقصوص)
      وبألوان الوضع الليلي (خلفية سوداء). */
 
   PDF_STAGE_WIDTH: 794,     // A4 بعرض 96dpi
-  _PDF_MAX_CANVAS_PX: 12e6, // كانفاس الهاتف محدود؛ تجاوزه ينتج صفحة فارغة
+  _PDF_MAX_CANVAS_PX: 12e6, // كانفاس الهاتف محدود؛ تجاوزه ينتج صفحة فارغة
 
   async _ensureHtml2Pdf() {
     if (window.html2pdf) return window.html2pdf;
@@ -323,16 +387,16 @@ const CBS = {
     const stage = document.createElement('div');
     stage.className = 'cbs-pdf-stage';
     stage.setAttribute('data-theme', 'light');
-    // ملاحظة مهمة: لا نزيح الحاوية بعيداً (مثل right:-20000px) لأن html2canvas
+    // ملاحظة مهمة: لا نزيح الحاوية بعيداً (مثل right:-20000px) لأن html2canvas
     // يحسب حينها لوحة رسم بعرض عشرات الآلاف من البكسلات فيتجمّد التصدير.
     // نضعها في أعلى الصفحة خلف كل شيء (z-index سالب) كما في النمط المجرَّب.
     stage.setAttribute('dir', 'rtl');
     stage.style.cssText = [
       'position:fixed', 'top:0', 'left:0', `width:${width}px`,
-      // بدون border-box يصبح العرض الفعلي width+48 (الحشو) فيقصّ الملف من الجانب
+      // بدون border-box يصبح العرض الفعلي width+48 (الحشو) فيقصّ الملف من الجانب
       'box-sizing:border-box',
       'background:#ffffff', 'color:#0f1928', 'direction:rtl',
-      // خطوط النظام فقط: خطوط @font-face لا تحمَّل داخل صورة SVG المعزولة
+      // خطوط النظام فقط: خطوط @font-face لا تحمَّل داخل صورة SVG المعزولة
       'font-family:Tahoma,Arial,"Segoe UI",sans-serif',
       'padding:24px', 'z-index:-99999', 'pointer-events:none'
     ].join(';');
@@ -342,15 +406,15 @@ const CBS = {
   /* ===== تحويل المحتوى إلى صورة =====
      html2canvas يرسم النص بنفسه، وهو يفسد العربية: يفقد المسافات بين الكلمات
      ("أحمدعبدالله")، ويعكس ترتيب عناصر RTL، ويقصّ المحتوى جانبياً.
-     البديل: نغلّف المحتوى في <foreignObject> داخل SVG ونترك المتصفح يرسمه 
+     البديل: نغلّف المحتوى في <foreignObject> داخل SVG ونترك المتصفح يرسمه 
      فيخرج التشكيل والاتجاه والمسافات صحيحة تماماً. */
   /* محتوى الـ SVG معزول عن أوراق أنماط الصفحة، فأي تنسيق معتمد على الأصناف
-     (.kpi-card وغيرها في صفحة التقارير) يضيع تماماً. لذلك نثبّت الأنماط
+     (.kpi-card وغيرها في صفحة التقارير) يضيع تماماً. لذلك نثبّت الأنماط
      المحسوبة داخل كل عنصر قبل التسلسل. الأنماط المضمّنة أصلاً تبقى الأقوى. */
   _PDF_INLINE_PROPS: [
     'display','position','box-sizing','width','height','min-height','max-width',
     'margin','padding',
-    // getComputedStyle لا يرجع قيمة للاختصار 'border'، فنطلب الخصائص المفصّلة
+    // getComputedStyle لا يرجع قيمة للاختصار 'border'، فنطلب الخصائص المفصّلة
     'border-top-width','border-right-width','border-bottom-width','border-left-width',
     'border-top-style','border-right-style','border-bottom-style','border-left-style',
     'border-top-color','border-right-color','border-bottom-color','border-left-color',
@@ -369,12 +433,12 @@ const CBS = {
         const value = cs.getPropertyValue(prop);
         if (value) css += `${prop}:${value};`;
       }
-      // نلحق الأنماط الأصلية بعدها لتفوز عند التعارض
+      // نلحق الأنماط الأصلية بعدها لتفوز عند التعارض
       node.setAttribute('style', css + (node.getAttribute('style') || ''));
     });
   },
 
-  /* صورة SVG معزولة أمنياً: لا تحمَّل منها أي موارد خارجية، فالصور المشار
+  /* صورة SVG معزولة أمنياً: لا تحمَّل منها أي موارد خارجية، فالصور المشار
      إليها برابط (شعار الكلية مثلاً) تختفي تماماً. نحوّلها إلى data URI أولاً. */
   async _inlineImages(root) {
     const images = [...root.querySelectorAll('img')];
@@ -390,7 +454,7 @@ const CBS = {
           c.height = loader.naturalHeight;
           c.getContext('2d').drawImage(loader, 0, 0);
           img.setAttribute('src', c.toDataURL('image/png'));
-        } catch (e) { img.remove(); } // مصدر ملوّث  حذفها أفضل من مربع فارغ
+        } catch (e) { img.remove(); } // مصدر ملوّث  حذفها أفضل من مربع فارغ
         resolve();
       };
       loader.onerror = () => { img.remove(); resolve(); };
@@ -402,7 +466,7 @@ const CBS = {
     const height = Math.max(element.scrollHeight, element.offsetHeight);
     await this._inlineImages(element);
     this._inlineComputedStyles(element);
-    // XMLSerializer ينتج XHTML صالحاً (يغلق <br/> و <img/>)  بدونه يفشل تحميل الـ SVG
+    // XMLSerializer ينتج XHTML صالحاً (يغلق <br/> و <img/>)  بدونه يفشل تحميل الـ SVG
     const xhtml = new XMLSerializer().serializeToString(element);
     const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="${width}" height="${height}">` +
                 `<foreignObject width="100%" height="100%">${xhtml}</foreignObject></svg>`;
@@ -424,8 +488,8 @@ const CBS = {
     ctx.fillRect(0, 0, width, height);
     ctx.drawImage(img, 0, 0);
 
-    /* بعض إصدارات WebView تلوّث الكانفاس عند رسم SVG يحوي foreignObject،
-       فيفشل استخراج الصورة لاحقاً داخل html2pdf  خارج نطاق التقاطنا للأخطاء
+    /* بعض إصدارات WebView تلوّث الكانفاس عند رسم SVG يحوي foreignObject،
+       فيفشل استخراج الصورة لاحقاً داخل html2pdf  خارج نطاق التقاطنا للأخطاء
        فينهار التصدير كله. نتحقق هنا ليعمل التراجع إلى html2canvas بدل الانهيار. */
     canvas.toDataURL('image/png');
     return canvas;
@@ -433,7 +497,7 @@ const CBS = {
 
   /**
    * يصدّر محتوى إلى PDF.
-   * @param {HTMLElement|string} source عنصر (يستنسخ) أو نص HTML جاهز للطباعة.
+   * @param {HTMLElement|string} source عنصر (يستنسخ) أو نص HTML جاهز للطباعة.
    * @param {{filename?:string, width?:number, margin?:number, orientation?:string}} options
    * @returns {Promise<'shared'|'downloaded'>}
    */
@@ -451,7 +515,7 @@ const CBS = {
       clone.querySelectorAll(
         'button, nav, .btn, .btn-icon, .app-back-btn, #bottom-nav, .no-print, [data-html2canvas-ignore]'
       ).forEach(el => el.remove());
-      // cloneNode لا ينسخ محتوى الـ canvas  بدون هذا تخرج الرسوم البيانية بيضاء
+      // cloneNode لا ينسخ محتوى الـ canvas  بدون هذا تخرج الرسوم البيانية بيضاء
       const srcCanvases   = source.querySelectorAll('canvas');
       const clonedCanvases = clone.querySelectorAll('canvas');
       clonedCanvases.forEach((cnv, i) => {
@@ -462,7 +526,7 @@ const CBS = {
           img.src = src.toDataURL('image/png');
           img.style.cssText = `width:${src.clientWidth || src.width}px;height:auto;display:block`;
           cnv.replaceWith(img);
-        } catch (e) { /* canvas ملوّث بمصدر خارجي  نتركه كما هو */ }
+        } catch (e) { /* canvas ملوّث بمصدر خارجي  نتركه كما هو */ }
       });
       stage.appendChild(clone);
     } else {
@@ -471,7 +535,7 @@ const CBS = {
     document.body.appendChild(stage);
 
     try {
-      // نمهل المتصفح لحظة لحساب التخطيط قبل قياس الارتفاع.
+      // نمهل المتصفح لحظة لحساب التخطيط قبل قياس الارتفاع.
       // نستخدم setTimeout لا requestAnimationFrame: الأخير يتوقف تماماً عندما
       // تكون الصفحة في الخلفية، فيتجمّد التصدير إذا خرج المستخدم من التطبيق.
       await new Promise(r => setTimeout(r, 50));
@@ -485,14 +549,14 @@ const CBS = {
         filename,
         image:    { type: 'jpeg', quality: 0.95 },
         jsPDF: { unit: 'mm', format: 'a4', orientation: options.orientation || 'portrait' },
-        // تحذير: وضع 'legacy' يدخل هذه النسخة من html2pdf في حلقة لا نهائية
-        // تجمّد الواجهة تماماً  لا تضفه.
+        // تحذير: وضع 'legacy' يدخل هذه النسخة من html2pdf في حلقة لا نهائية
+        // تجمّد الواجهة تماماً  لا تض←فه.
         pagebreak: { mode: ['css'] }
       };
 
-      /* نرسم المحتوى بأنفسنا عبر SVG (يحفظ العربية) ثم نسلّم الصورة الجاهزة
-         لـ html2pdf ليتكفّل بتقسيم الصفحات فقط. عند فشل الرسم  كأن يكون
-         WebView قديماً لا يدعم foreignObject  نعود لمسار html2canvas. */
+      /* نرسم المحتوى بأنفسنا عبر SVG (يحفظ العربية) ثم نسلّم الصورة الجاهزة
+         لـ html2pdf ليتكفّل بتقسيم الصفحات فقط. عند فشل الرسم  كأن يكون
+         WebView قديماً لا يدعم foreignObject  نعود لمسار html2canvas. */
       let source = stage, sourceType = 'element';
       try {
         source = await this._rasterize(stage, width, scale);
@@ -554,7 +618,7 @@ const CBS = {
   },
 
   /* ===== التخزين الأوفلاين للملفات =====
-     التطبيق الأصلي: Capacitor Filesystem (يقرأ أوفلاين حتى للملفات عابرة الأصل).
+     التطبيق الأصلي: Capacitor Filesystem (يقرأ أوفلاين حتى للملفات عابرة الأصل).
      المتصفح/PWA: Cache API (يخدّمها service worker). طبقة موحّدة فوق الاثنين. */
   _offlineKey(url) {
     let path = url || '';
@@ -565,7 +629,7 @@ const CBS = {
     const ext = extMatch ? extMatch[1].toLowerCase() : '';
     const base = path.replace(/\.[a-zA-Z0-9]{2,5}$/, '');
     const cleanBase = base.replace(/[^a-zA-Z0-9]/g, '_').replace(/_+/g, '_').replace(/^_|_$/g, '');
-    // إذا كان الامتداد .pdf نضمن تسميته صراحةً لئلا يعامله الأندرويد كـ .bin
+    // إذا كان الامتداد .pdf نضمن تسميته صراحةً لئلا يعامله الأندرويد كـ .bin
     const safeExt = ext === '' ? '.pdf' : ext;
     return 'off_' + cleanBase + safeExt;
   },
@@ -594,7 +658,7 @@ const CBS = {
     localStorage.setItem('offlineFiles', JSON.stringify(idx));
   },
 
-  // حفظ ملف للتصفح لاحقاً  يجب أن يكون متصلاً الآن (ينزّل الملف)
+  // حفظ ملف للتصفح لاحقاً  يجب أن يكون متصلاً الآن (ينزّل الملف)
   async offlineSave(url) {
     // بلا credentials: ملفات uploads عامة، والخادم يرد ACAO:* الذي يتعارض مع credentials
     const res = await fetch(url);
@@ -617,12 +681,12 @@ const CBS = {
     return true;
   },
 
-  // يعيد ArrayBuffer من التخزين المحلي، أو null لو غير محفوظ
+  // يعيد ArrayBuffer من التخزين المحلي، أو null لو غير محفوظ
   async offlineGet(url) {
     const Filesystem = window.Capacitor?.Plugins?.Filesystem;
     try {
       if (this._isCapacitor() && Filesystem) {
-        // نحاول أولاً بالامتداد .pdf (للملفات التي حفظت بعد الإصلاح)
+        // نحاول أولاً بالامتداد .pdf (للملفات التي حفظت بعد الإصلاح)
         const pdfKey = this._offlineKey(url.replace(/\.[^/.]*$/, '') + '.pdf');
         try {
           const r = await Filesystem.readFile({ path: pdfKey, directory: 'DATA' });
@@ -636,7 +700,7 @@ const CBS = {
       const hit = await cache.match(url);
       return hit ? await hit.arrayBuffer() : null;
     } catch (e) {
-      return null; // غير موجود  سيحمّل من الشبكة
+      return null; // غير موجود  سيحمّل من الشبكة
     }
   },
 
@@ -645,17 +709,17 @@ const CBS = {
     return Object.keys(this._offlineIndex());
   },
 
-  /* ===== Dark Mode (Smart  يكتشف إعدادات النظام تلقائياً) ===== */
+  /* ===== Dark Mode (Smart  يكتشف إعدادات النظام تلقائياً) ===== */
   initDarkMode() {
     const saved = localStorage.getItem('darkMode');
     if (saved !== null) {
-      // المستخدم اختار يدوياً من قبل  احترم اختياره
+      // المستخدم اختار يدوياً من قبل  احترم اختياره
       if (saved === 'true') {
         document.body.classList.add('dark');
         document.documentElement.setAttribute('data-theme', 'dark');
       }
     } else {
-      // أول زيارة  اقرأ إعدادات النظام (هاتف / كمبيوتر)
+      // أول زيارة  اقرأ إعدادات النظام (هاتف / كمبيوتر)
       if (window.matchMedia?.('(prefers-color-scheme: dark)').matches) {
         document.body.classList.add('dark');
         document.documentElement.setAttribute('data-theme', 'dark');
@@ -686,11 +750,11 @@ const CBS = {
     icon.className = isDark ? 'ri-sun-line' : 'ri-moon-line';
   },
 
-  /* مع "العرض حتى حافة الشاشة" ترسم أيقونات شريط الحالة فوق ترويسة التطبيق
+  /* مع "العرض حتى حافة الشاشة" ترسم أيقونات شريط الحالة فوق ترويسة التطبيق
      مباشرةً، فيجب أن يتبع لونها سمة التطبيق وإلا صارت بيضاء على ترويسة بيضاء
      (غير مرئية تماماً في الوضع الفاتح).
      نستخدم إضافة SystemBars الأصلية (مضمّنة في المشروع، بلا تبعيات)، ونقبل
-     إضافة @capacitor/status-bar إن وجدت مستقبلاً. */
+     إضافة @capacitor/status-bar إن وجدت مستقبلاً. */
   _syncStatusBarStyle() {
     if (!this._isCapacitor()) return;
     const isDark = document.body.classList.contains('dark');
@@ -760,10 +824,10 @@ const CBS = {
 
   /* ===== قراءة رد JSON مع فحص حالة HTTP =====
      كان الشائع في الصفحات: `const data = await res.json()` دون فحص res.ok،
-     فيعامَل رد الخطأ ({success:false, message}) معاملة البيانات الصحيحة:
+     فيعامَل رد الخطأ ({success:false, message}) معاملة البيانات الصحيحة:
      إما تظهر "لا توجد بيانات" بدل سبب المشكلة، أو ينهار الكود عند .map()
      لأن كائن الخطأ صار هو "القائمة" في أنماط مثل (data.subjects || data).
-     تستخدم داخل try/catch حتى تلتقط رسالة الخادم الحقيقية. */
+     تستخدم داخل try/catch حتى تلتقط رسالة الخادم الحقيقية. */
   async readJson(res, fallbackMessage = 'تعذر تنفيذ الطلب') {
     let data = null;
     try { data = await res.json(); } catch (e) { /* رد غير JSON أو جسم فارغ */ }
@@ -773,7 +837,7 @@ const CBS = {
       err.data = data;
       throw err;
     }
-    /* لا نعيد null أبداً عند النجاح: المستدعون يقرأون data.success مباشرةً،
+    /* لا نعيد null أبداً عند النجاح: المستدعون يقرأون data.success مباشرةً،
        فكان رد ناجح بجسم فارغ أو غير JSON ينتج
        "Cannot read properties of null (reading 'success')" بدل رسالة مفهومة. */
     return data ?? {};
@@ -1038,6 +1102,8 @@ const CBS = {
   },
 
   async apiGet(url, _retry = true) {
+    // الصفحة تغادر بسبب رفض الصلاحية: لا نُطلق طلبات ستُرفض بـ403 حتماً
+    if (CBS._leavingPage) return new Promise(() => {});
     let res;
     const cacheKey = 'cbs_apicache_' + url;
     try {
@@ -1106,12 +1172,17 @@ const CBS = {
   },
 
   async apiPost(url, body, method = 'POST', _retry = true) {
+    if (CBS._leavingPage) return new Promise(() => {});
     let res;
     try {
       res = await CBS._fetchWithTimeout(API_BASE + url, {
         method,
         headers: CBS._getHeaders({ 'Content-Type': 'application/json' }),
-        body: JSON.stringify(body)
+        body: JSON.stringify(body),
+        /* طلبات كيدي: الخادم يمنح السؤال حتى 50 ث ويسابق بين المزوّدين. مهلة
+           20 ث الافتراضية كانت تقطع الانتظار والرد في الطريق، فيرى الطالب
+           "تعذر الاتصال" ويظن أن كيدي لا يرد. */
+        timeout: url.startsWith('/api/ai/') ? 75000 : undefined
       });
     } catch (err) {
       if (err.isOffline) return { ok: false, status: 0, json: async () => ({ success: false, message: 'أنت غير متصل بالإنترنت' }) };
@@ -1184,7 +1255,7 @@ const CBS = {
   },
 
   /* ===================================================================
-     نظام الإشعارات المحسّن  يدعم الإشعارات الحقيقية على الهاتف
+     نظام الإشعارات المحسّن  يدعم الإشعارات الحقيقية على الهاتف
      عبر Capacitor LocalNotifications مع fallback للـ toast على الويب
      =================================================================== */
 
@@ -1198,10 +1269,10 @@ const CBS = {
     return window.Capacitor?.Plugins?.LocalNotifications || null;
   },
 
-  // طلب صلاحية الإشعارات (يستدعى عند أول تشغيل)
+  // طلب صلاحية الإشعارات (يستدعى عند أول تشغيل)
   async requestNotifPermission() {
     const plugin = this._getLocalNotif();
-    if (!plugin) return; // متصفح عادي  لا حاجة
+    if (!plugin) return; // متصفح عادي  لا حاجة
     try {
       const { display } = await plugin.checkPermissions();
       if (display !== 'granted') {
@@ -1254,7 +1325,7 @@ const CBS = {
       // Badge شريط التنقل السفلي
       this._syncBnavBadge?.();
 
-      // Badge أيقونة التطبيق (Capacitor Badge plugin  اختياري)
+      // Badge أيقونة التطبيق (Capacitor Badge plugin  اختياري)
       if (this._isCapacitor() && window.Capacitor?.Plugins?.Badge) {
         try {
           if (count > 0) await window.Capacitor.Plugins.Badge.set({ count });
@@ -1276,7 +1347,8 @@ const CBS = {
       const batchParam = batchId ? `&batch=${batchId}` : '';
       const res = await CBS.apiGet(`/api/notifications/new?lastCheck=${lastCheck}${batchParam}`);
       if (!res || !res.ok) return;
-      const list = await res.json();
+      const resData = await res.json();
+      const list = Array.isArray(resData) ? resData : (resData?.data || []);
       if (!Array.isArray(list) || !list.length) return;
 
       const shownIds = JSON.parse(localStorage.getItem('shownNotifIds') || '[]');
@@ -1285,7 +1357,7 @@ const CBS = {
       for (const n of list) {
         if (shownIds.includes(n._id)) continue;
 
-        // لا نظهر إشعار للشخص الذي أنشأ الإشعار (المرسل لا يستقبل إشعاره بنفسه)
+        // لا نظه←ر إشعار للشخص الذي أنشأ الإشعار (المرس←ل لا يستقبل إشعاره بنفسه)
         const senderId = n.createdBy?._id || n.createdBy;
         if (senderId && String(senderId) === String(currentUserId)) {
           shownIds.push(n._id); // نحتفظ بالمعرف حتى لا يتكرر الفحص
@@ -1304,7 +1376,7 @@ const CBS = {
           isEmergency
         });
 
-        // ② Toast في التطبيق (دائماً  حتى لو على الهاتف)
+        // ② Toast في التطبيق (دائماً  حتى لو على الهاتف)
         this.toast(n.title, n.message, isEmergency ? 'emergency' : 'info',
                    isEmergency ? 10000 : 6000);
 
@@ -1319,7 +1391,7 @@ const CBS = {
 
   /* ===== بدء الـ Polling ===== */
   startNotifPolling() {
-    // على الموبايل polling أسرع (15 ثانية)  على الويب 30 ثانية
+    // على الموبايل polling أسرع (15 ثانية)  على الويب 30 ثانية
     const interval = this._isCapacitor() ? 15000 : 30000;
 
     this.checkNotifications();
@@ -1354,19 +1426,19 @@ const CBS = {
   },
 
   formatDate(iso) {
-    if (!iso) return '';
-    return new Date(iso).toLocaleDateString('ar-EG', { day: 'numeric', month: 'short', year: 'numeric' });
+    if (!iso) return '';
+    return new Date(iso).toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short', year: 'numeric' });
   },
 
   formatDateTime(iso) {
-    if (!iso) return '';
+    if (!iso) return '';
     const d = new Date(iso);
-    return d.toLocaleDateString('ar-EG', { day: 'numeric', month: 'short' }) +
+    return d.toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short' }) +
            '  ' +
-           d.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' });
+           d.toLocaleTimeString('ar-EG-u-nu-latn', { hour: '2-digit', minute: '2-digit' });
   },
 
-  // ملاحظة: showLoading معرّفة أسفل الملف (نسخة الهيكل العظمي/skeleton)  كان هناك
+  // ملاحظة: showLoading معرّفة أسفل الملف (نسخة الهيكل العظمي/skeleton)  كان هناك
   // تعريفان لنفس المفتاح فيطغى الأخير على الأول ويصبح هذا الأول شيفرة ميتة.
 
   showEmpty(containerId, msg = 'لا توجد بيانات', icon = 'ri-inbox-line') {
@@ -1392,7 +1464,7 @@ const CBS = {
   /* ===== Batch Switcher ===== */
   async renderBatchSwitcher() {
     const user = this.getUser();
-    // يظهر فقط للعميد والدكاترة  الليدر والطالب دفعتهم ثابتة
+    // يظهر فقط للعميد والدكاترة  الليدر والطالب دفعتهم ثابتة
     /* "admin" كان مفقوداً هنا، فلا يستطيع المسؤول اختيار دفعة إطلاقاً بينما
        batch.middleware يردّ 400 "يرجى تحديد الدفعة" على كل مسار مرتبط
        بدفعة — طريق مسدود بلا رسالة ولا حل. */
@@ -1401,8 +1473,14 @@ const CBS = {
     if (!canSwitch) return;
 
     // لا يظهر في صفحات الإعداد
+    /* صفحات الإعداد + الصفحات على مستوى الكلية أو الشخصية: شريط "سياق الدفعة"
+       فيها ضجيج (يظهر "لم يتم تحديد دفعة" فوق صفحة لا علاقة لها بدفعة) */
     const skip = ['/login.html', '/forgot-password.html', '/batch-selector.html',
-                  '/force-change-password.html', '/reset-code.html', '/new-password.html'];
+                  '/force-change-password.html', '/reset-code.html', '/new-password.html',
+                  '/admin_dashboard.html', '/manage-users.html', '/manage-batches.html',
+                  '/manage-subjects.html', '/pending-registrations.html', '/moderation.html',
+                  '/admin-content.html', '/financials.html', '/profile.html', '/notifications.html',
+                  '/student-portfolio.html', '/code-lab.html', '/privacy.html'];
     if (skip.some(p => window.location.pathname === p)) return;
 
     const pageContent = document.querySelector('.page-content');
@@ -1439,7 +1517,7 @@ const CBS = {
           <span class="inline-batch-dot" id="bsdDot" style="background:${dotColor}"></span>
           <div class="inline-batch-text">
             <span class="inline-batch-label">سياق الدفعة الحالية</span>
-            <span class="inline-batch-name" id="bsdName">${currentBatch ? currentBatch.name : 'لم يتم تحديد دفعة'}</span>
+            <span class="inline-batch-name" id="bsdName">${currentBatch ? this.escapeHTML(currentBatch.name) : 'لم يتم تحديد دفعة'}</span>
           </div>
         </div>
         <div class="inline-batch-action">
@@ -1448,14 +1526,16 @@ const CBS = {
         </div>`;
 
       wrap.appendChild(btn);
-      const banner = document.querySelector('.welcome-banner') || pageContent.firstChild;
-      pageContent.insertBefore(wrap, banner);
+      // الصفحة الرئيسية تخصص له مكاناً كشريحة بجانب الدور (data-batch-slot)
+      const slot = document.querySelector('[data-batch-slot]');
+      if (slot) slot.appendChild(wrap);
+      else pageContent.insertBefore(wrap, document.querySelector('.welcome-banner') || pageContent.firstChild);
 
-      // ===== الـ Dropdown  يلحق بـ body مباشرةً لتجنب stacking context =====
+      // ===== الـ Dropdown  يلحق بـ body مباشرةً لتجنب stacking context =====
       const dropdown = document.createElement('div');
       dropdown.className = 'batch-switcher-dropdown';
       dropdown.id = 'bsdDropdown';
-      dropdown.style.position = 'fixed'; // fixed بدل absolute  مستقل عن الهيدر
+      dropdown.style.position = 'fixed'; // fixed بدل absolute  مستقل عن الهيدر
       document.body.appendChild(dropdown);
 
       dropdown.innerHTML = `
@@ -1490,8 +1570,8 @@ const CBS = {
             <i class="${icon}"></i>
           </div>
           <div class="bsd-item-info">
-            <div class="bsd-item-name">${b.name}</div>
-            <div class="bsd-item-meta">${b.code || ''}</div>
+            <div class="bsd-item-name">${CBS.escapeHTML(b.name)}</div>
+            <div class="bsd-item-meta">${CBS.escapeHTML(b.code || '')}</div>
           </div>
           <i class="ri-check-line bsd-check"></i>`;
 
@@ -1608,7 +1688,7 @@ const CBS = {
     const user = this.getUser();
     const batchId = this.getBatchId();
 
-    // إذا كان عميداً أو مسؤولاً ولم يكن داخل سياق دفعة، عد به للوحة الإدارة العامة
+    // إذا كان عميداً أو مسؤولاً ولم يكن داخل سياق دفعة، عد به للوحة الإدارة العامة
     if (this.isAdminLevel(user) && !batchId) {
       window.location.href = '/admin_dashboard.html';
       return;
@@ -1680,15 +1760,21 @@ const CBS = {
         _debounce = setTimeout(() => CBS._runSearch(q), 400);
       });
     }
-    // Add search button to header
+    /* زر البحث في الترويسة — مرة واحدة فقط. صفحات كثيرة (الرئيسية مثلاً) فيها
+       زر بحث خاص بها، فكان يظهر زران متطابقان ويُدفع الثاني خارج الشاشة على
+       الهواتف الصغيرة لأنه أُلحق بحافة الترويسة خارج مجموعة الأزرار. */
     const header = document.querySelector('.main-header');
-    if (header && !header.querySelector('.search-open-btn')) {
+    const hasSearch = header && header.querySelector('.search-open-btn, #headerSearchBtn, [onclick*="openSearch"]');
+    if (header && !hasSearch) {
       const btn = document.createElement('button');
-      btn.className = 'search-open-btn';
+      btn.type = 'button';
+      btn.className = 'btn-icon search-open-btn';
       btn.title = 'بحث';
+      btn.setAttribute('aria-label', 'بحث');
       btn.innerHTML = '<i class="ri-search-line"></i>';
       btn.onclick = () => CBS.openSearch();
-      header.appendChild(btn);
+      const actions = header.querySelector('.header-actions');
+      if (actions) actions.prepend(btn); else header.appendChild(btn);
     }
   },
 
@@ -1718,7 +1804,7 @@ const CBS = {
         found = true;
         html += `<div class="search-result-group"><div class="search-result-group-title">${g.label}</div>`;
         items.forEach(item => {
-          // العناوين تأتي من محتوى أنشأه مستخدمون  يجب تعقيمها قبل الحقن (XSS)
+          // العناوين تأتي من محتوى أنشأه مستخدمون  يجب تعقيمها قبل الحقن (XSS)
           const safeUrl = /^\/[^\s'"<>]*$/.test(item.url || '') ? item.url : '#';
           html += `<div class="search-result-item" data-url="${CBS.escapeHTML(safeUrl)}"><i class="${g.icon}"></i><div style="display:flex;flex-direction:column;gap:2px"><span>${CBS.escapeHTML(item.title)}</span><small style="font-size:0.75rem;color:var(--text-muted)">${CBS.escapeHTML(item.subtitle || '')}</small></div></div>`;
         });
@@ -1760,45 +1846,43 @@ const CBS = {
     const bp          = batchId ? `?batch=${batchId}` : '';
     const primaryRole = this.getPrimaryRole(user);
 
+    /* خمسة تبويبات كحد أقصى: بستة كانت التسميات تُقصّ ("المستخد...") والأهداف
+       تضيق. ما خرج من الشريط موجود في "الوصول السريع" بالصفحة الرئيسية
+       (الرسوم للطالب، إرسال الإشعار للطاقم...). docs/design/home-screens.md */
     let items = [];
     if (primaryRole === 'student') {
       items = [
         { href: `/dashboard.html${bp}`,              icon: 'ri-home-5-line',         label: 'الرئيسية' },
         { href: `/subjects.html${bp}`,               icon: 'ri-book-2-line',         label: 'المواد' },
         { href: `/calendar.html${bp}`,               icon: 'ri-calendar-todo-line',  label: 'التقويم' },
-        { href: `/financials.html${bp}`,             icon: 'ri-money-dollar-circle-line', label: 'الرسوم' },
         { href: `/notifications.html${bp}`,          icon: 'ri-notification-3-line', label: 'التنبيهات', badge: true },
         { href: `/profile.html${bp}`,                icon: 'ri-user-3-line',         label: 'حسابي' },
       ];
     } else if (primaryRole === 'leader') {
-      /* الليدر طالب قبل أن يكون مسؤولاً: كان شريطه يعرض أدوات الإدارة فقط
-         بلا المواد ولا الرسوم ولا التنبيهات، رغم أنه يدرس ويدفع ويُشعَر
-         مثل أي طالب — فتصير تلك الصفحات بلا طريق يصل إليها. */
+      /* الليدر طالب قبل أن يكون مسؤولاً: المواد والتنبيهات كأي طالب، والحضور
+         لأنه يرصده يومياً. رفع المحاضرات والرسوم في الوصول السريع. */
       items = [
         { href: `/dashboard.html${bp}`,              icon: 'ri-home-5-line',         label: 'الرئيسية' },
         { href: `/subjects.html${bp}`,               icon: 'ri-book-2-line',         label: 'المواد' },
-        { href: `/manage-lectures.html${bp}`,        icon: 'ri-video-line',          label: 'المحاضرات' },
         { href: `/manage-attendance.html${bp}`,      icon: 'ri-calendar-check-line', label: 'الحضور' },
         { href: `/notifications.html${bp}`,          icon: 'ri-notification-3-line', label: 'التنبيهات', badge: true },
         { href: `/profile.html${bp}`,                icon: 'ri-user-3-line',         label: 'حسابي' },
       ];
     } else if (primaryRole === 'doctor') {
+      // التنبيهات الواردة من جرس الترويسة، وإرسال إشعار من الوصول السريع
       items = [
         { href: `/dashboard.html${bp}`,              icon: 'ri-home-5-line',        label: 'الرئيسية' },
         { href: `/manage-lectures.html${bp}`,        icon: 'ri-video-line',         label: 'المحاضرات' },
-        // الدكتور يرصد الحضور وينشئ الاختبارات — وكان الشريط يخلو منهما
         { href: `/manage-attendance.html${bp}`,      icon: 'ri-calendar-check-line', label: 'الحضور' },
         { href: `/quizzes.html${bp}`,                icon: 'ri-question-answer-line', label: 'الاختبارات' },
-        { href: `/manage-notifications.html${bp}`,   icon: 'ri-megaphone-line',     label: 'الإشعارات' },
         { href: `/profile.html${bp}`,                icon: 'ri-user-3-line',        label: 'حسابي' },
       ];
     } else if (primaryRole === 'dean' || primaryRole === 'admin') {
       items = [
         { href: `/admin_dashboard.html`,             icon: 'ri-home-5-line',        label: 'الرئيسية' },
         { href: `/manage-users.html${bp}`,           icon: 'ri-group-line',         label: 'المستخدمون' },
-        { href: `/financials.html${bp}`,             icon: 'ri-money-dollar-circle-line', label: 'الرسوم' },
         { href: `/manage-batches.html`,              icon: 'ri-layout-grid-line',   label: 'الدفعات' },
-        { href: `/manage-notifications.html${bp}`,   icon: 'ri-megaphone-line',     label: 'الإشعارات' },
+        { href: `/financials.html${bp}`,             icon: 'ri-money-dollar-circle-line', label: 'الرسوم' },
         { href: `/profile.html${bp}`,                icon: 'ri-user-3-line',        label: 'حسابي' },
       ];
     }
@@ -1850,17 +1934,25 @@ const CBS = {
     str = str.replace(/^\*\*\s*\(?Kedy\)?\s*\*\*/gi, '');
     str = str.replace(/^Kedy:\s*/gi, '');
 
-    // Detect Fenced Code Blocks ```lang ... ```
+    /* رد النموذج نص غير موثوق (قد يحمل HTML من محتوى محاضرة أو سؤال مُتلاعب به)
+       ويُدرج عبر innerHTML. كانت الأكواد وحدها تُهرَّب، وبقية النص تُدرج كما هي
+       — أي حقن HTML/سكربت داخل جلسة الطالب. الآن: نعزل كتل الأكواد أولاً، نهرّب
+       كل النص، ثم نطبق التنسيق ونعيد الأكواد. */
+    const codeBlocks = [];
     str = str.replace(/```([a-z0-9_+-]*)\n([\s\S]*?)```/gi, (match, lang, code) => {
       const codeId = 'code_' + Math.random().toString(36).substring(2, 8);
-      return `<div style="background:#0f172a;color:#f8fafc;border-radius:12px;padding:12px;margin:10px 0;font-family:monospace;direction:ltr;text-align:left;position:relative;overflow-x:auto;">
+      codeBlocks.push(`<div style="background:#0f172a;color:#f8fafc;border-radius:12px;padding:12px;margin:10px 0;font-family:monospace;direction:ltr;text-align:left;position:relative;overflow-x:auto;">
         <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;border-bottom:1px solid #334155;padding-bottom:4px;">
-          <span style="font-size:0.75rem;color:#94a3b8;font-weight:700;">${lang || 'code'}</span>
+          <span style="font-size:0.75rem;color:#94a3b8;font-weight:700;">${this.escapeHTML(lang || 'code')}</span>
           <button onclick="CBS._copyCodeText('${codeId}')" style="background:#334155;color:#fff;border:none;border-radius:4px;padding:2px 8px;font-size:0.72rem;cursor:pointer;"><i class="ri-file-copy-line"></i> نسخ الكود</button>
         </div>
         <pre id="${codeId}" style="margin:0;font-size:0.83rem;line-height:1.5;">${this.escapeHTML(code.trim())}</pre>
-      </div>`;
+      </div>`);
+      return `\u0000CODE${codeBlocks.length - 1}\u0000`;
     });
+    str = this.escapeHTML(str);
+    // الكود المضمّن `x` يبقى نصاً مهرَّباً داخل <code>
+    str = str.replace(/`([^`\n]+)`/g, '<code style="background:var(--bg-hover,#f1f5f9);padding:1px 5px;border-radius:5px;font-size:0.85em;direction:ltr;unicode-bidi:isolate;">$1</code>');
 
     // Math Equation Conversions
     str = str.replace(/\\frac\{([^}]+)\}\{([^}]+)\}/g, '<span class="ai-math-frac" style="font-weight:700;color:#4f46e5;"><span class="num">$1</span>&frasl;<span class="den">$2</span></span>');
@@ -1868,7 +1960,7 @@ const CBS = {
     str = str.replace(/\\int/g, '∫').replace(/\\sum/g, '∑').replace(/\\lim/g, 'lim');
     // كان ^n يُستبدل بحرف «ف» العربي — تشويه واضح لأي أُسّ رمزي مثل x^n
     str = str.replace(/\^2/g, '²').replace(/\^3/g, '³').replace(/\^n\b/g, 'ⁿ');
-    str = str.replace(/\\rightarrow/g, '→').replace(/\\leftarrow/g, '').replace(/\\infty/g, '∞');
+    str = str.replace(/\\rightarrow/g, '→').replace(/\\leftarrow/g, '←').replace(/\\infty/g, '∞');
 
     // Bold
     str = str.replace(/\*\*([^*]+)\*\*/g, '<strong class="ai-bold" style="color:#4f46e5;">$1</strong>');
@@ -1883,6 +1975,8 @@ const CBS = {
 
     // Newlines
     str = str.replace(/\n/g, '<br>');
+    // إعادة كتل الأكواد المعزولة (مهرّبة سلفاً)
+    str = str.replace(/\u0000CODE(\d+)\u0000/g, (m, i) => codeBlocks[Number(i)] || '');
     return str;
   },
 
@@ -1908,11 +2002,7 @@ const CBS = {
     
     // منع استدعاء كيدي في صفحات الواجبات والتكاليف تجنباً للغش
     const isAssignmentPage = ['/assignments.html', '/submit-assignment.html', '/manage-submissions.html'].some(p => curPath.endsWith(p));
-    if (isAssignmentPage) {
-      document.getElementById('globalKedyFab')?.remove();
-      document.getElementById('globalKedyModal')?.remove();
-      return;
-    }
+    if (isAssignmentPage) document.getElementById('globalKedyModal')?.remove();
 
     if (document.getElementById('globalKedyFab')) return;
 
@@ -1921,29 +2011,130 @@ const CBS = {
       const st = document.createElement('style');
       st.id = 'kedyGlobalStyle';
       st.textContent = `
+        /* ===== زر كيدي (2026-10-24) =====
+           دائرة بشعار فقاعة لها عينان ترمشان — شخصية المساعد لا أيقونة عامة.
+           تفاعل: لمسة تفتح المحادثة، ضغطة مطوّلة تفتح اختصارات، سحب أفقي ينقله
+           للجهة الأخرى (يُحفظ)، يختفي أثناء التمرير للأسفل ويعود عند الصعود،
+           تلميح بحسب الصفحة، ونقطة حين يصل رد والمحادثة مغلقة. */
         .kedy-global-fab {
           /* الموضع مشتق من --fab-bottom في نظام التصميم، فيتحرّك تلقائياً
              إن تغيّر ارتفاع الشريط السفلي بدل أن يتخلّف عنه. */
+          --kf-x: 0px;
           position: fixed; bottom: calc(var(--fab-bottom, 106px) + env(safe-area-inset-bottom, 0px));
-          left: max(20px, 4%); z-index: 8000;
-          background: linear-gradient(135deg, #4f46e5, #7c3aed);
-          color: #fff; border: none; border-radius: 30px;
-          padding: 11px 18px; font-weight: 800; font-size: 0.88rem;
-          cursor: pointer; display: flex; align-items: center; gap: 8px;
-          box-shadow: 0 8px 24px rgba(79,70,229,0.4);
-          transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-          font-family: 'Cairo', system-ui, sans-serif; animation: kedyGlow 3s infinite;
+          left: 16px; z-index: 8000;
+          width: 58px; height: 58px; padding: 0; border: none; border-radius: 50%;
+          background: var(--primary, #4F46E5); color: #fff; cursor: pointer;
+          display: grid; place-items: center;
+          box-shadow: 0 10px 24px -8px rgba(var(--primary-rgb, 79, 70, 229), 0.65), 0 2px 6px rgba(15, 23, 42, 0.18);
+          transform: translateX(var(--kf-x));
+          transition: transform var(--dur-sheet, 420ms) var(--ease-out, ease), opacity var(--dur-state, 200ms) ease, box-shadow var(--dur-state, 200ms) ease;
+          touch-action: pan-y; -webkit-tap-highlight-color: transparent; user-select: none;
+          animation: kfEnter 520ms var(--ease-spring, ease) 300ms backwards;
         }
-        @keyframes kedyGlow {
-          0%, 100% { box-shadow: 0 8px 24px rgba(79,70,229,0.4); }
-          50% { box-shadow: 0 12px 32px rgba(124,58,237,0.7); }
+        .kedy-global-fab.kf-right { left: auto; right: 16px; }
+        .kedy-global-fab:hover { box-shadow: 0 14px 30px -8px rgba(var(--primary-rgb, 79, 70, 229), 0.8), 0 2px 6px rgba(15, 23, 42, 0.2); }
+        .kedy-global-fab:focus-visible { outline: 3px solid var(--primary, #4F46E5); outline-offset: 3px; }
+        .kedy-global-fab.kf-pressed { transform: translateX(var(--kf-x)) scale(0.9); transition-duration: var(--dur-press, 120ms); }
+        .kedy-global-fab.kf-dragging { transition: none; box-shadow: 0 18px 36px -10px rgba(15, 23, 42, 0.45); }
+        .kedy-global-fab.kf-hidden { transform: translateX(var(--kf-x)) translateY(140%); opacity: 0; pointer-events: none; }
+        .kedy-global-fab svg { width: 30px; height: 30px; overflow: visible; }
+        .kf-eyes ellipse { fill: var(--primary, #4F46E5); }
+        .kf-eyes { transform-box: fill-box; transform-origin: center; animation: kfBlink 5.2s infinite; }
+        .kf-spark { transform-box: fill-box; transform-origin: center; animation: kfTwinkle 3.4s var(--ease-in-out, ease) infinite; }
+        .kedy-global-fab.is-thinking .kf-eyes { animation: kfLook 1.1s var(--ease-in-out, ease) infinite; }
+        .kf-ring {
+          position: absolute; inset: 0; border-radius: 50%;
+          border: 2px solid var(--primary, #4F46E5); opacity: 0; pointer-events: none;
         }
-        .kedy-global-fab:hover { transform: translateY(-4px) scale(1.04); }
+        .kedy-global-fab.kf-ping .kf-ring { animation: kfPing 1.6s var(--ease-out, ease) 2; }
+        .kf-dot {
+          position: absolute; top: 2px; right: 2px; width: 13px; height: 13px; border-radius: 50%;
+          background: #F59E0B; border: 2.5px solid var(--bg-card, #fff);
+          transform: scale(0); transition: transform var(--dur-enter, 320ms) var(--ease-spring, ease);
+        }
+        .kedy-global-fab.has-reply .kf-dot { transform: scale(1); }
+        /* فشل الرد والمحادثة مغلقة: النقطة حمراء بدل الكهرماني */
+        .kedy-global-fab.has-error .kf-dot { transform: scale(1); background: var(--danger-solid, #E11D48); }
+        /* ينتظر رد كيدي والمحادثة مغلقة: حلقة متقطعة تدور */
+        .kedy-global-fab.is-thinking .kf-ring { opacity: 0.7; border-style: dashed; border-color: rgba(255,255,255,0.85); inset: 4px; animation: spin 2.4s linear infinite; }
+        /* بلا اتصال: خافت ورمادي */
+        .kedy-global-fab.kf-offline { background: #94A3B8; box-shadow: none; }
+        .kedy-global-fab.kf-offline .kf-eyes ellipse { fill: #94A3B8; }
+        .kedy-global-fab.kf-offline .kf-spark { display: none; }
+        /* صفحات الواجبات: متوقف بقفل */
+        .kedy-global-fab.kf-locked { background: var(--bg-card, #fff); border: 1.5px solid var(--border, #e2e8f0) !important; box-shadow: 0 6px 16px -8px rgba(15,23,42,0.35); }
+        .kedy-global-fab.kf-locked path:first-child { fill: var(--text-muted, #94a3b8); }
+        .kedy-global-fab.kf-locked .kf-eyes ellipse { fill: var(--bg-card, #fff); }
+        .kedy-global-fab.kf-locked .kf-spark, .kedy-global-fab.kf-locked .kf-eyes { animation: none; }
+        .kedy-global-fab.kf-locked .kf-spark { display: none; }
+        .kf-lock { position: absolute; bottom: -2px; right: -2px; width: 22px; height: 22px; border-radius: 50%; display: grid; place-items: center; background: var(--text-main, #0f172a); color: var(--bg-card, #fff); font-size: 0.72rem; border: 2px solid var(--bg-main, #f8fafc); }
+        @keyframes kfEnter { from { opacity: 0; transform: translateX(var(--kf-x)) scale(0.4) rotate(-20deg); } }
+        @keyframes kfBlink { 0%, 92%, 100% { transform: scaleY(1); } 95% { transform: scaleY(0.1); } }
+        @keyframes kfTwinkle { 0%, 100% { transform: scale(1) rotate(0); opacity: 1; } 50% { transform: scale(0.6) rotate(45deg); opacity: 0.7; } }
+        @keyframes kfLook { 0%, 100% { transform: translateX(-1.2px); } 50% { transform: translateX(1.2px); } }
+        @keyframes kfPing { 0% { transform: scale(1); opacity: 0.55; } 100% { transform: scale(1.7); opacity: 0; } }
+
+        /* التلميح بجانب الزر */
+        .kf-tip {
+          position: fixed; z-index: 7999; max-width: min(240px, calc(100vw - 110px));
+          bottom: calc(var(--fab-bottom, 106px) + env(safe-area-inset-bottom, 0px) + 9px);
+          left: 86px; padding: 10px 14px; border-radius: 16px 16px 16px 4px;
+          background: var(--bg-card, #fff); color: var(--text-main, #0f172a);
+          border: 1px solid var(--border, #e2e8f0); box-shadow: 0 12px 28px -10px rgba(15, 23, 42, 0.35);
+          font-size: 0.82rem; font-weight: 700; line-height: 1.5; cursor: pointer;
+          opacity: 0; transform: translateY(6px) scale(0.96); transform-origin: bottom left; pointer-events: none;
+          transition: opacity var(--dur-state, 200ms) ease, transform var(--dur-enter, 320ms) var(--ease-out, ease);
+        }
+        .kf-tip.kf-right { left: auto; right: 86px; border-radius: 16px 16px 4px 16px; transform-origin: bottom right; }
+        .kf-tip.show { opacity: 1; transform: none; pointer-events: auto; }
+
+        /* اختصارات الضغطة المطوّلة */
+        .kf-menu {
+          position: fixed; z-index: 8001; left: 16px; display: flex; flex-direction: column; gap: 8px;
+          bottom: calc(var(--fab-bottom, 106px) + env(safe-area-inset-bottom, 0px) + 70px);
+          pointer-events: none;
+        }
+        .kf-menu.kf-right { left: auto; right: 16px; align-items: flex-end; }
+        .kf-menu button {
+          display: inline-flex; align-items: center; gap: 8px; padding: 10px 14px; border-radius: 999px;
+          background: var(--bg-card, #fff); color: var(--text-main, #0f172a); border: 1px solid var(--border, #e2e8f0);
+          font-family: inherit; font-size: 0.82rem; font-weight: 700; cursor: pointer; white-space: nowrap;
+          box-shadow: 0 10px 24px -10px rgba(15, 23, 42, 0.4);
+          opacity: 0; transform: translateY(12px) scale(0.9);
+          transition: opacity var(--dur-state, 200ms) ease, transform var(--dur-enter, 320ms) var(--ease-spring, ease);
+        }
+        .kf-menu button i { color: var(--primary-text, var(--primary)); font-size: 1rem; }
+        .kf-menu.open { pointer-events: auto; }
+        .kf-menu.open button { opacity: 1; transform: none; }
+        .kf-menu.open button:nth-child(2) { transition-delay: 40ms; }
+        .kf-menu.open button:nth-child(3) { transition-delay: 80ms; }
+        .kf-scrim { position: fixed; inset: 0; z-index: 8000; background: rgba(15, 23, 42, 0.28); opacity: 0; pointer-events: none; transition: opacity var(--dur-state, 200ms) ease; }
+        .kf-scrim.open { opacity: 1; pointer-events: auto; }
+        [data-theme="dark"] .kf-scrim { background: rgba(0, 0, 0, 0.55); }
+        [data-theme="dark"] .kf-menu button { background: #1f2937; border-color: rgba(255,255,255,0.12); }
+        body.modal-open .kf-tip, body.cbs-keyboard-open .kf-tip { display: none !important; }
+        @media (prefers-reduced-motion: reduce) {
+          .kedy-global-fab, .kf-eyes, .kf-spark, .kf-ring, .kf-tip, .kf-menu button { animation: none !important; transition: none !important; }
+        }
+        /* الرسائل تنزلق إلى مكانها، ومؤشر الكتابة ثلاث نقاط تتموّج */
+        .kedy-msg-user, .kedy-msg-bot { animation: cbsRise var(--dur-enter, 320ms) var(--ease-out, ease) backwards; }
+        .kedy-typing { display: inline-flex; gap: 4px; align-items: center; height: 18px; vertical-align: middle; }
+        .kedy-typing i { width: 7px; height: 7px; border-radius: 50%; background: var(--text-muted, #94a3b8); animation: kedyDot 1.1s var(--ease-in-out, ease) infinite; }
+        .kedy-typing i:nth-child(2) { animation-delay: 0.15s; }
+        .kedy-typing i:nth-child(3) { animation-delay: 0.3s; }
+        .kedy-typing-label { margin-inline-start: 10px; font-size: 0.8rem; color: var(--text-muted, #64748b); }
+        @keyframes kedyDot { 0%, 60%, 100% { transform: translateY(0); opacity: 0.45; } 30% { transform: translateY(-5px); opacity: 1; } }
+        @media (prefers-reduced-motion: reduce) { .kedy-typing i, .kedy-msg-user, .kedy-msg-bot { animation: none !important; } }
+        /* المحادثة تصعد من الزر بدل أن تظهر فجأة */
+        #globalKedyModal.active .kedy-modal-box { animation: cbsScaleIn var(--dur-enter, 320ms) var(--ease-out, ease); transform-origin: bottom left; }
         /* لوحة المفاتيح تُقلّص نافذة العرض، فتقفز العناصر الثابتة فوق
            المحتوى وتغطي ما يكتبه المستخدم. نخفيها ما دامت مفتوحة. */
         body.cbs-keyboard-open .kedy-global-fab,
         body.cbs-keyboard-open #bottom-nav,
         body.cbs-keyboard-open .bottom-nav { display: none !important; }
+        /* زر كيدي (z-index 9990) كان يطفو فوق كل النوافذ المنبثقة (1000)
+           ويغطي نصوصها وأزرارها على الهاتف. */
+        body.modal-open .kedy-global-fab { display: none !important; }
         #globalKedyModal {
           position: fixed; inset: 0; z-index: 99995;
           background: rgba(0,0,0,0.6); backdrop-filter: blur(8px);
@@ -2032,7 +2223,7 @@ const CBS = {
 
         /* ===== لوحة المحادثة وحاوية الرسائل ===== */
         #gkChatPanel { flex: 1; min-height: 0; }
-        .kedy-chat-container {
+        #globalKedyModal .kedy-chat-container {
           flex: 1; min-height: 0;
           overflow-y: auto; overflow-x: hidden;
           -webkit-overflow-scrolling: touch;
@@ -2041,11 +2232,11 @@ const CBS = {
           display: flex; flex-direction: column; gap: 12px;
           background: var(--bg-main, #f8fafc);
         }
-        .kedy-chat-container::-webkit-scrollbar { width: 6px; }
-        .kedy-chat-container::-webkit-scrollbar-thumb {
+        #globalKedyModal .kedy-chat-container::-webkit-scrollbar { width: 6px; }
+        #globalKedyModal .kedy-chat-container::-webkit-scrollbar-thumb {
           background: var(--border, #cbd5e1); border-radius: 3px;
         }
-        .kedy-chat-container::-webkit-scrollbar-track { background: transparent; }
+        #globalKedyModal .kedy-chat-container::-webkit-scrollbar-track { background: transparent; }
 
         /* رسالة الطالب — لم يكن لها أي تنسيق فكانت تظهر كنص عارٍ بلا فقاعة */
         .kedy-msg-user {
@@ -2106,8 +2297,13 @@ const CBS = {
         @media (max-width: 768px) {
           /* body يحجز المساحة الآن عبر --floating-chrome، فلا حاجة لرقم
              ثانٍ هنا كان يخالفه (110px مقابل 70px مقابل 106px). */
-          .kedy-global-fab { bottom: calc(var(--fab-bottom, 106px) + env(safe-area-inset-bottom, 0px)); left: 14px; padding: 9px 14px; font-size: 0.8rem; z-index: 9990; }
+          /* على الهاتف دائرة أيقونة فقط: الشريحة العريضة بالنص كانت تغطي البطاقات تحتها */
+          .kedy-global-fab { width: 54px; height: 54px; z-index: 9990; }
+          .kedy-global-fab svg { width: 28px; height: 28px; }
+          .kf-tip { left: 80px; }
+          .kf-tip.kf-right { right: 80px; }
           #globalKedyModal { padding: 0; align-items: flex-end; }
+          #globalKedyModal.active .kedy-modal-box { animation: cbsSheetUp var(--dur-sheet, 420ms) var(--ease-out, ease); }
           .kedy-modal-box {
             width: 100%;
             /* الارتفاع ثابت والتمرير داخلي: max-height وحدها كانت تترك الحاوية
@@ -2120,7 +2316,7 @@ const CBS = {
           .kedy-modal-header { padding: 12px 14px; }
           .kedy-modal-title { font-size: 0.9rem; }
           .kedy-modal-title small { display: none; }
-          .kedy-chat-container { padding: 12px; gap: 10px; }
+          #globalKedyModal .kedy-chat-container { padding: 12px; gap: 10px; }
           .kedy-input-bar { padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 8px)); }
           .kedy-msg-user, .kedy-msg-bot { max-width: 92%; font-size: 0.85rem; }
         }
@@ -2128,13 +2324,37 @@ const CBS = {
       document.head.appendChild(st);
     }
 
+    if (isAssignmentPage) {
+      /* كان الزر يختفي بلا تفسير فيظن الطالب أن كيدي تعطّل. يبقى خافتاً بقفل،
+         ولمسه يشرح السبب. */
+      if (!document.getElementById('globalKedyFab')) {
+        const locked = document.createElement('button');
+        locked.id = 'globalKedyFab';
+        locked.type = 'button';
+        locked.className = 'kedy-global-fab kf-locked';
+        locked.innerHTML = this._KEDY_SVG + '<span class="kf-lock" aria-hidden="true"><i class="ri-lock-2-fill"></i></span>';
+        locked.setAttribute('aria-label', 'كيدي متوقف في صفحات الواجبات');
+        try { if (localStorage.getItem('cbs_kedy_side') === 'right') locked.classList.add('kf-right'); } catch (e) {}
+        locked.addEventListener('click', () => this.toast('كيدي متوقف في صفحات الواجبات', 'حفاظاً على نزاهة التقييم. يمكنك سؤاله عن المفاهيم من أي صفحة أخرى.', 'info'));
+        document.body.appendChild(locked);
+      }
+      return;
+    }
+
     // FAB Button
     const fab = document.createElement('button');
     fab.id = 'globalKedyFab';
     fab.className = 'kedy-global-fab';
-    fab.innerHTML = '<i class="ri-sparkles-fill" style="color:#fbbf24;font-size:1.1rem;"></i> اسأل كيدي AI';
-    fab.onclick = () => CBS.openKedyAIModal();
+    fab.type = 'button';
+    fab.innerHTML = `
+      <span class="kf-ring" aria-hidden="true"></span>
+      ${this._KEDY_SVG}
+      <span class="kf-dot" aria-hidden="true"></span>`;
+    fab.setAttribute('aria-label', 'اسأل كيدي — المساعد الذكي. اضغط مطوّلاً للاختصارات');
+    fab.setAttribute('aria-haspopup', 'menu');
+    fab.title = 'اسأل كيدي';
     document.body.appendChild(fab);
+    this._initKedyFab(fab);
 
     // Modal Overlay
     const modal = document.createElement('div');
@@ -2142,12 +2362,12 @@ const CBS = {
     modal.innerHTML = `
       <div class="kedy-modal-box">
         <div class="kedy-modal-header">
-          <div class="kedy-modal-title"><i class="ri-sparkles-fill" style="color:#fbbf24;"></i> كيدي AI 2.0 <small style="opacity:0.75;font-weight:400;font-size:0.78rem;">(المساعد الأكاديمي الذكي)</small></div>
+          <div class="kedy-modal-title"><i class="ri-sparkling-2-fill" style="color:#fbbf24;"></i> كيدي AI 2.0 <small style="opacity:0.75;font-weight:400;font-size:0.78rem;">(المساعد الأكاديمي الذكي)</small></div>
           <button class="kedy-modal-close" onclick="CBS.closeKedyAIModal()"><i class="ri-close-line"></i></button>
         </div>
         <div class="kedy-modal-tabs">
           <button class="kedy-tab-btn active" id="gkTabChat" onclick="CBS._switchKedyTab('chat')"><i class="ri-chat-smile-2-line"></i> المحادثة</button>
-          <button class="kedy-tab-btn" id="gkTabNotes" onclick="CBS._switchKedyTab('notes')"><i class="ri-bookmark-3-line"></i> ملاحظاتي </button>
+          <button class="kedy-tab-btn" id="gkTabNotes" onclick="CBS._switchKedyTab('notes')"><i class="ri-bookmark-3-line"></i> ملاحظاتي </button>
         </div>
         <div class="kedy-quick-chips">
           <span class="kedy-chip" onclick="CBS._kedyQuickPrompt('ملخص شامل للمادة')"><i class="ri-file-list-3-line"></i> ملخص شامل للمادة</span>
@@ -2171,13 +2391,360 @@ const CBS = {
         </div>
       </div>
     `;
-    modal.addEventListener('click', e => { if (e.target === modal) CBS.closeKedyAIModal(); });
+    /* نقرة على الخلفية تُغلق — عدا ما يصل في أول 450ms بعد الفتح: تلك نقرة اللمس
+       التابعة للمسة التي فتحت النافذة (من أي زر في التطبيق) لا قرار إغلاق. */
+    modal.addEventListener('click', e => {
+      if (e.target === modal && Date.now() - (CBS._kedyOpenedAt || 0) > 450) CBS.closeKedyAIModal();
+    });
     document.body.appendChild(modal);
   },
 
+  /* تفاعلات زر كيدي: لمسة / ضغطة مطوّلة / سحب للجهة الأخرى / إخفاء أثناء التمرير / تلميح */
+  _initKedyFab(fab) {
+    const SIDE_KEY = 'cbs_kedy_side';
+    const tip = document.createElement('div');
+    tip.className = 'kf-tip';
+    tip.setAttribute('role', 'status');
+    const menu = document.createElement('div');
+    menu.className = 'kf-menu';
+    menu.setAttribute('role', 'menu');
+    /* الاختصارات بحسب من يستخدمه: خطة المذاكرة والمواعيد لا تعني الدكتور.
+       send: يُرسل فوراً · fill: يُكتب في الحقل ليكمله المستخدم */
+    const roles = this.getUser()?.roles || [];
+    const isStaff = roles.some(r => ['doctor', 'dean', 'admin'].includes(r));
+    const actions = isStaff ? [
+      ['ri-question-answer-line', 'اقترح أسئلة لكويز', { fill: 'اقترح 5 أسئلة اختيار من متعدد مع الإجابات عن: ' }],
+      ['ri-lightbulb-line', 'بسّط مفهوماً لطلابي', { fill: 'اشرح بأسلوب مبسط لطلاب السنة الأولى مفهوم: ' }],
+      ['ri-chat-1-line', 'سؤال حر', { fill: '' }]
+    ] : [
+      ['ri-calendar-schedule-line', 'رتّب لي مذاكرة الليلة', { send: 'رتب لي مذاكرة الليلة' }],
+      ['ri-task-line', 'واجباتي واختباراتي القادمة', { send: 'ما هي واجباتي واختباراتي القادمة؟' }],
+      ['ri-question-answer-line', 'اشرح لي مفهوماً', { fill: 'اشرح لي مفهوم: ' }]
+    ];
+    menu.innerHTML = actions.map(([icon, label, a]) =>
+      `<button type="button" role="menuitem" ${a.send ? `data-send="${a.send}"` : `data-fill="${a.fill}"`}><i class="${icon}"></i>${label}</button>`).join('');
+    const scrim = document.createElement('div');
+    scrim.className = 'kf-scrim';
+    document.body.append(scrim, tip, menu);
+
+    const setSide = side => {
+      [fab, tip, menu].forEach(el => el.classList.toggle('kf-right', side === 'right'));
+      try { localStorage.setItem(SIDE_KEY, side); } catch (e) {}
+    };
+    let side = 'left';
+    try { side = localStorage.getItem(SIDE_KEY) === 'right' ? 'right' : 'left'; } catch (e) {}
+    setSide(side);
+
+    const closeMenu = () => { menu.classList.remove('open'); scrim.classList.remove('open'); fab.setAttribute('aria-expanded', 'false'); };
+    const openMenu = () => {
+      hideTip();
+      menu.classList.add('open'); scrim.classList.add('open'); fab.setAttribute('aria-expanded', 'true');
+      if (navigator.vibrate) { try { navigator.vibrate(12); } catch (e) {} }
+      menu.querySelector('button')?.focus({ preventScroll: true });
+    };
+    scrim.addEventListener('click', closeMenu);
+    menu.addEventListener('click', e => {
+      const btn = e.target.closest('button');
+      if (!btn) return;
+      closeMenu();
+      if (!navigator.onLine) { CBS._kedyOfflineNotice(); return; }
+      CBS.openKedyAIModal();
+      if (btn.dataset.send) CBS._kedyQuickPrompt(btn.dataset.send);
+      else setTimeout(() => {
+        const input = document.getElementById('gkInput');
+        if (!input) return;
+        input.value = btn.dataset.fill || '';
+        input.focus();
+        input.setSelectionRange(input.value.length, input.value.length);
+      }, 350);
+    });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape' && menu.classList.contains('open')) { closeMenu(); fab.focus(); } });
+    fab.addEventListener('keydown', e => { if (e.key === 'ContextMenu' || (e.shiftKey && e.key === 'F10')) { e.preventDefault(); openMenu(); } });
+    fab.addEventListener('contextmenu', e => { e.preventDefault(); openMenu(); });
+
+    // لمسة / ضغطة مطوّلة / سحب
+    let start = null, longTimer = null, dragging = false, longFired = false;
+    /* الحركة والإفلات يُتابَعان على النافذة كلها أثناء الضغط: الإصبع يغادر حدود
+       الزر فور بدء السحب، والتقاط المؤشر (setPointerCapture) لا يعمل في كل
+       WebView، فكان السحب يتوقف بعد بضعة بكسلات. */
+    const onMove = e => {
+      if (!start || longFired) return;
+      const dx = e.clientX - start.x;
+      if (!dragging && Math.abs(dx) > 10 && Math.abs(dx) > Math.abs(e.clientY - start.y)) {
+        dragging = true; clearTimeout(longTimer);
+        fab.classList.remove('kf-pressed'); fab.classList.add('kf-dragging');
+        hideTip();
+      }
+      if (dragging) fab.style.setProperty('--kf-x', dx + 'px');
+    };
+    const stopTracking = () => {
+      window.removeEventListener('pointermove', onMove);
+      window.removeEventListener('pointerup', endPress);
+      window.removeEventListener('pointercancel', endPress);
+    };
+    fab.addEventListener('pointerdown', e => {
+      if (e.button !== 0) return;
+      start = { x: e.clientX, y: e.clientY };
+      dragging = false; longFired = false; suppressClick = false;
+      fab.classList.add('kf-pressed');
+      longTimer = setTimeout(() => { longFired = true; fab.classList.remove('kf-pressed'); openMenu(); }, 480);
+      window.addEventListener('pointermove', onMove);
+      window.addEventListener('pointerup', endPress);
+      window.addEventListener('pointercancel', endPress);
+    });
+    function endPress(e) {
+      stopTracking();
+      clearTimeout(longTimer);
+      fab.classList.remove('kf-pressed');
+      if (!start) return;
+      if (dragging) {
+        const r = fab.getBoundingClientRect();
+        const nextSide = (r.left + r.width / 2) > window.innerWidth / 2 ? 'right' : 'left';
+        fab.classList.remove('kf-dragging');
+        // ننقل الزر للجهة الجديدة ثم نُرجع الإزاحة صفراً فيبدو أنه يستقر في مكانه
+        const before = fab.getBoundingClientRect().left;
+        setSide(nextSide);
+        const after = fab.getBoundingClientRect().left;
+        fab.style.setProperty('--kf-x', (before - after) + 'px');
+        requestAnimationFrame(() => requestAnimationFrame(() => fab.style.setProperty('--kf-x', '0px')));
+      }
+      // السحب والضغطة المطوّلة لهما نقرة تابعة يجب ألا تفتح المحادثة
+      if (dragging || longFired) suppressClick = true;
+      start = null; dragging = false;
+    }
+    /* الفتح من حدث click لا من pointerup: على اللمس كان الفتح عند رفع الإصبع
+       يُظهر النافذة، ثم تقع النقرة التابعة التي يرسلها الهاتف على خلفيتها
+       فتُغلقها فوراً — فيبدو الزر كأنه لا يستجيب. click يشمل اللمس والفأرة
+       ولوحة المفاتيح (Enter/Space). */
+    let suppressClick = false;
+    fab.addEventListener('click', e => {
+      if (suppressClick) { suppressClick = false; e.preventDefault(); return; }
+      fab.classList.remove('has-reply');
+      CBS.openKedyAIModal();
+    });
+
+    // إخفاء أثناء التمرير للأسفل، وعودة عند الصعود — لا يغطي المحتوى أثناء القراءة
+    let lastY = window.scrollY, ticking = false;
+    window.addEventListener('scroll', () => {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(() => {
+        const y = window.scrollY, dy = y - lastY;
+        if (Math.abs(dy) > 8) {
+          const hide = dy > 0 && y > 120;
+          fab.classList.toggle('kf-hidden', hide);
+          if (hide) { hideTip(); closeMenu(); }
+          lastY = y;
+        }
+        ticking = false;
+      });
+    }, { passive: true });
+
+    // تلميح بحسب الصفحة — مرة لكل صفحة في الجلسة، وليس فوق الجولة الترحيبية
+    // بلا إنترنت: الزر خافت ويقول السبب بدل أن يفتح محادثة لن تُجاب
+    const syncOnline = () => {
+      fab.classList.toggle('kf-offline', !navigator.onLine);
+      fab.setAttribute('aria-label', navigator.onLine
+        ? 'اسأل كيدي — المساعد الذكي. اضغط مطوّلاً للاختصارات'
+        : 'كيدي غير متاح — لا يوجد اتصال بالإنترنت');
+    };
+    window.addEventListener('online', syncOnline);
+    window.addEventListener('offline', syncOnline);
+    syncOnline();
+
+    const path = location.pathname;
+    const tipText = isStaff
+      ? (path.endsWith('/manage-lectures.html') ? 'أقترح لك أسئلة كويز من محاضرتك؟' : 'أجهّز لك أسئلة كويز أو شرحاً مبسطاً لطلابك؟')
+      : path.endsWith('/subject.html') ? 'افتح محاضرة واطلب مني تلخيصها'
+      : path.endsWith('/quizzes.html') ? 'أختبرك قبل الكويز؟'
+      : path.endsWith('/code-lab.html') ? 'عندك خطأ في الكود؟ أرسله لي'
+      : path.endsWith('/calendar.html') ? 'أرتّب لك مذاكرة الأسبوع؟'
+      : /\/(dashboard|campus)\.html$/.test(path) ? 'أرتّب لك مذاكرة اليوم؟'
+      : 'اسألني عن أي شيء في دراستك';
+    tip.textContent = tipText;
+    let tipTimer = null;
+    function hideTip() { tip.classList.remove('show'); clearTimeout(tipTimer); }
+    tip.addEventListener('click', () => { hideTip(); CBS.openKedyAIModal(); });
+    let seen = false;
+    try { seen = sessionStorage.getItem('cbs_kedy_tip:' + path) === '1'; } catch (e) {}
+    const showTip = () => {
+      // الجولة الترحيبية مفتوحة: نؤجّل التلميح إلى ما بعد إغلاقها بدل أن يضيع
+      if (document.querySelector('.cbs-onboarding')) {
+        window.addEventListener('cbs:onboarding-done', () => setTimeout(showTip, 900), { once: true });
+        return;
+      }
+      // لا تلميح فوق حالة خطأ في الصفحة (مادة غير متاحة مثلاً) — نصه لن يناسبها
+      if (!navigator.onLine || fab.classList.contains('kf-hidden') || document.body.classList.contains('modal-open') || document.querySelector('.subject-unavailable, [role="alert"].empty-state')) return;
+      tip.classList.add('show');
+      fab.classList.add('kf-ping');
+      try { sessionStorage.setItem('cbs_kedy_tip:' + path, '1'); } catch (e) {}
+      tipTimer = setTimeout(hideTip, 5200);
+      setTimeout(() => fab.classList.remove('kf-ping'), 3400);
+    };
+    if (!seen) setTimeout(showTip, 2600);
+  },
+
+  /* ===== الجولة الترحيبية =====
+     تظهر مرة واحدة لكل حساب على الجهاز، بعد أول دخول للوحة الرئيسية، ومحتواها
+     بحسب الدور. تُعاد من CBS.showOnboarding(true). */
+  _ONBOARD_KEY: 'cbs_onboarded_v1',
+
+  _maybeShowOnboarding() {
+    if (!/\/(dashboard|admin_dashboard)\.html$/.test(location.pathname)) return;
+    const user = this.getUser();
+    if (!user || user.firstLogin) return;
+    let seen = false;
+    try { seen = localStorage.getItem(`${this._ONBOARD_KEY}:${user.id || user._id}`) === '1'; } catch (e) {}
+    if (!seen) setTimeout(() => this.showOnboarding(), 700);
+  },
+
+  // شعار كيدي: فقاعة بعينين ونجمة — يستخدمه الزر والجولة الترحيبية
+  _KEDY_SVG: `<svg viewBox="0 0 28 28" aria-hidden="true"><path d="M14 4.2c5.5 0 10 3.9 10 8.7s-4.5 8.7-10 8.7c-1.2 0-2.4-.2-3.5-.5L6 23.6l1.3-4.4C5.2 17.6 4 15.4 4 12.9 4 8.1 8.5 4.2 14 4.2z" fill="#fff"/><g class="kf-eyes"><ellipse cx="10.7" cy="12.9" rx="1.5" ry="1.9"/><ellipse cx="17.3" cy="12.9" rx="1.5" ry="1.9"/></g><path class="kf-spark" d="M24 1.6l.9 2.1 2.1.9-2.1.9-.9 2.1-.9-2.1-2.1-.9 2.1-.9z" fill="#FBBF24"/></svg>`,
+
+  _onboardingSlides(roles = []) {
+    const welcome = { art: 'logo', chips: [['ri-book-open-line', 'المحاضرات'], ['ri-calendar-check-line', 'المواعيد'], ['ri-notification-3-line', 'التنبيهات']],
+      title: 'أهلاً بك في تطبيق كلية النصر التقنية', text: 'كل ما يخص دراستك في مكان واحد، على هاتفك.' };
+    const isDean = roles.includes('dean') || roles.includes('admin');
+    if (isDean) return [
+      { ...welcome, text: 'إدارة الكلية كلها من لوحة واحدة: الدفعات والمستخدمون والمحتوى والرسوم.' },
+      { art: 'ri-user-settings-line', chips: [['ri-team-line', 'المستخدمون'], ['ri-stack-line', 'الدفعات'], ['ri-checkbox-circle-line', 'طلبات التسجيل']],
+        title: 'المستخدمون والدفعات', text: 'اعتمد طلبات التسجيل، ووزّع الدكاترة على الدفعات، وأنشئ دفعة جديدة بموادها في دقائق.' },
+      { art: 'ri-wallet-3-line', chips: [['ri-file-list-3-line', 'الرسوم'], ['ri-checkbox-circle-line', 'إشعارات السداد'], ['ri-alarm-warning-line', 'المتأخرات']],
+        title: 'الرسوم والمدفوعات', text: 'أضف رسوم الدفعة مرة واحدة، وراجع إشعارات السداد، وتابع المتأخرات أولاً بأول.' },
+      { art: 'ri-bar-chart-2-line', chips: [['ri-calendar-check-line', 'الحضور'], ['ri-alarm-warning-line', 'إنذار مبكر'], ['ri-file-list-3-line', 'تصدير']],
+        title: 'تقارير لحظية', text: 'نسب الحضور والأداء لكل دفعة، والطلاب المعرّضون للتعثر قبل فوات الأوان.' }
+    ];
+    if (roles.includes('doctor')) return [
+      { ...welcome, text: 'موادك وطلابك ومحتواك في مكان واحد.' },
+      { art: 'ri-presentation-line', chips: [['ri-file-list-3-line', 'محاضرات'], ['ri-video-line', 'فيديو'], ['ri-timer-line', 'كويزات']],
+        title: 'ارفع محتواك مرة واحدة', text: 'محاضرات وفيديوهات وواجبات وكويزات بمؤقت تصل لطلاب دفعتك مع تنبيه فوري.' },
+      { art: 'ri-calendar-check-line', chips: [['ri-team-line', 'كشف الدفعة'], ['ri-checkbox-circle-line', 'حاضر'], ['ri-notification-3-line', 'تحذير الغياب']],
+        title: 'الحضور بلمسة', text: 'ارصد حضور المحاضرة من هاتفك، ويصل الطالب تحذير تلقائي إن انخفضت نسبته.' },
+      { art: 'ri-bar-chart-2-line', chips: [['ri-alarm-warning-line', 'إنذار مبكر'], ['ri-file-list-3-line', 'التسليمات'], ['ri-checkbox-circle-line', 'التقييم']],
+        title: 'تقارير وإنذار مبكر', text: 'اعرف من يحتاج متابعة من الآن: حضور منخفض، أو واجبات متأخرة، أو نتائج متراجعة.' }
+    ];
+    return [
+      welcome,
+      { art: 'kedy', chips: [['ri-file-list-3-line', 'يلخّص'], ['ri-checkbox-circle-line', 'يختبرك'], ['ri-calendar-check-line', 'يرتّب يومك']],
+        title: 'كيدي، مساعدك الذكي', text: 'اسأله عن أي مفهوم، أو اطلب ملخص محاضرة، أو خطة مذاكرة من مواعيدك الحقيقية. تجده في الزر الدائري أسفل الشاشة.' },
+      { art: 'ri-book-open-line', chips: [['ri-video-line', 'فيديو'], ['ri-timer-line', 'كويزات'], ['ri-code-s-slash-line', 'معمل الأكواد']],
+        title: 'محاضراتك وواجباتك وكويزاتك', text: 'كل مادة بمحاضراتها وفيديوهاتها، وواجبات بمواعيد واضحة، وكويزات بمؤقت تراجع إجاباتها بعد الإغلاق.' },
+      { art: 'ri-qr-code-line', chips: [['ri-shield-check-line', 'موقّعة'], ['ri-notification-3-line', 'تنبيهات'], ['ri-wallet-3-line', 'الرسوم']],
+        title: 'هويتك الرقمية', text: 'بطاقة جامعية برمز QR يمكن التحقق منه، وتنبيهات فورية بكل جديد في دفعتك.' }
+    ];
+  },
+
+  showOnboarding(force = false) {
+    if (document.querySelector('.cbs-onboarding')) return;
+    const user = this.getUser() || {};
+    const slides = this._onboardingSlides(user.roles || []);
+    const esc = s => this.escapeHTML(s);
+    const art = s => {
+      const center = s.art === 'logo' ? '<img src="/assets/logo.png" alt="" class="ob-logo">'
+        : s.art === 'kedy' ? `<span class="ob-core">${this._KEDY_SVG}</span>`
+        : `<span class="ob-core"><i class="${s.art}"></i></span>`;
+      return `<div class="ob-art" aria-hidden="true">
+        <span class="ob-halo"></span>
+        ${center}
+        ${s.chips.map(([ic, label], k) => `<span class="ob-chip ob-chip-${k}"><i class="${ic}"></i>${esc(label)}</span>`).join('')}
+      </div>`;
+    };
+
+    const root = document.createElement('div');
+    root.className = 'cbs-onboarding';
+    root.setAttribute('role', 'dialog');
+    root.setAttribute('aria-modal', 'true');
+    root.setAttribute('aria-label', 'جولة تعريفية بالتطبيق');
+    root.innerHTML = `
+      <div class="ob-top"><button type="button" class="ob-skip">تخطّي</button></div>
+      <div class="ob-viewport"><div class="ob-track">
+        ${slides.map((s, i) => `<section class="ob-slide${i === 0 ? ' active' : ''}" aria-hidden="${i !== 0}">
+          ${art(s)}
+          <h2 class="ob-title">${esc(s.title)}</h2>
+          <p class="ob-text">${esc(s.text)}</p>
+        </section>`).join('')}
+      </div></div>
+      <div class="ob-footer">
+        <div class="ob-dots" role="tablist">${slides.map((_, i) => `<button type="button" class="ob-dot${i === 0 ? ' active' : ''}" aria-label="الشريحة ${i + 1}" data-i="${i}"></button>`).join('')}</div>
+        <button type="button" class="ob-next">التالي <i class="ri-arrow-left-line"></i></button>
+      </div>`;
+    document.body.appendChild(root);
+    document.body.classList.add('cbs-onboarding-open');
+
+    const track = root.querySelector('.ob-track');
+    const dots = [...root.querySelectorAll('.ob-dot')];
+    const slideEls = [...root.querySelectorAll('.ob-slide')];
+    const next = root.querySelector('.ob-next');
+    let index = 0;
+
+    const go = i => {
+      index = Math.max(0, Math.min(slides.length - 1, i));
+      track.style.transform = `translateX(${index * 100}%)`; // RTL: الشريحة التالية على اليسار
+      slideEls.forEach((el, k) => { el.classList.toggle('active', k === index); el.setAttribute('aria-hidden', String(k !== index)); });
+      dots.forEach((d, k) => { d.classList.toggle('active', k === index); d.setAttribute('aria-current', k === index ? 'step' : 'false'); });
+      const last = index === slides.length - 1;
+      next.innerHTML = last ? 'ابدأ الآن' : 'التالي <i class="ri-arrow-left-line"></i>';
+      next.classList.toggle('ob-finish', last);
+      if (navigator.vibrate) { try { navigator.vibrate(6); } catch (e) {} }
+    };
+    const finish = () => {
+      try { localStorage.setItem(`${this._ONBOARD_KEY}:${user.id || user._id}`, '1'); } catch (e) {}
+      root.classList.add('leaving');
+      document.body.classList.remove('cbs-onboarding-open');
+      setTimeout(() => { root.remove(); window.dispatchEvent(new Event('cbs:onboarding-done')); }, 320);
+      document.removeEventListener('keydown', onKey);
+    };
+    const onKey = e => {
+      if (e.key === 'Escape') finish();
+      else if (e.key === 'ArrowLeft') go(index + 1);   // RTL: اليسار = التالي
+      else if (e.key === 'ArrowRight') go(index - 1);
+    };
+    document.addEventListener('keydown', onKey);
+    root.querySelector('.ob-skip').addEventListener('click', finish);
+    next.addEventListener('click', () => (index === slides.length - 1 ? finish() : go(index + 1)));
+    dots.forEach(d => d.addEventListener('click', () => go(Number(d.dataset.i))));
+
+    // السحب: إصبع نحو اليمين = التالي في واجهة من اليمين لليسار
+    const vp = root.querySelector('.ob-viewport');
+    let sx = null, sy = null, dx = 0, horizontal = null;
+    vp.addEventListener('pointerdown', e => { sx = e.clientX; sy = e.clientY; dx = 0; horizontal = null; });
+    vp.addEventListener('pointermove', e => {
+      if (sx === null) return;
+      dx = e.clientX - sx;
+      if (horizontal === null && (Math.abs(dx) > 8 || Math.abs(e.clientY - sy) > 8)) horizontal = Math.abs(dx) > Math.abs(e.clientY - sy);
+      if (horizontal) {
+        track.classList.add('dragging');
+        const edge = (index === 0 && dx < 0) || (index === slides.length - 1 && dx > 0);
+        track.style.transform = `translateX(calc(${index * 100}% + ${edge ? dx / 3 : dx}px))`;
+      }
+    });
+    const end = () => {
+      if (sx === null) return;
+      track.classList.remove('dragging');
+      if (horizontal && Math.abs(dx) > vp.clientWidth * 0.18) go(index + (dx > 0 ? 1 : -1));
+      else go(index);
+      sx = null;
+    };
+    vp.addEventListener('pointerup', end);
+    vp.addEventListener('pointercancel', end);
+    vp.addEventListener('pointerleave', end);
+
+    requestAnimationFrame(() => root.classList.add('shown'));
+    setTimeout(() => next.focus({ preventScroll: true }), 350);
+    if (force) go(0);
+  },
+
+  _kedyOfflineNotice() {
+    this.toast('كيدي يحتاج اتصالاً بالإنترنت', 'تحقّق من الاتصال ثم حاول مرة أخرى', 'warning');
+  },
+
   openKedyAIModal() {
+    if (!navigator.onLine) { this._kedyOfflineNotice(); return; }
     const modal = document.getElementById('globalKedyModal');
     if (!modal) { this.renderGlobalKedyAI(); }
+    document.getElementById('globalKedyFab')?.classList.remove('has-reply', 'has-error');
+    document.querySelector('.kf-tip')?.classList.remove('show');
+    this._kedyOpenedAt = Date.now();
     document.getElementById('globalKedyModal')?.classList.add('active');
   },
 
@@ -2283,9 +2850,11 @@ const CBS = {
 
     const botMsg = document.createElement('div');
     botMsg.className = 'kedy-msg-bot';
-    botMsg.innerHTML = '<i class="ri-loader-4-line" style="animation:spin 1s linear infinite;display:inline-block"></i> جاري التفكير...';
+    botMsg.innerHTML = CBS._kedyTypingHtml();
     container.appendChild(botMsg);
     container.scrollTop = container.scrollHeight;
+    const fab = document.getElementById('globalKedyFab');
+    fab?.classList.add('is-thinking');
 
     try {
       /* العنصر كان يُقرأ بمعرّف خاطئ ('subjectTitle' غير موجود؛ الصحيح
@@ -2310,7 +2879,7 @@ const CBS = {
          يُرسَل معه أي نص، فيعتذر كيدي رغم أن الملف مفتوح أمامه. */
       const openLectureId = this._currentLectureId?.() || document.getElementById('pdfModalTitle')?.dataset?.lectureId || '';
       if (openLectureId && this._isContentRequest(msg)) {
-        botMsg.innerHTML = '<i class="ri-loader-4-line" style="animation:spin 1s linear infinite;display:inline-block"></i> جاري قراءة المحاضرة...';
+        botMsg.innerHTML = CBS._kedyTypingHtml('أقرأ المحاضرة');
         try {
           const lr = await this.apiGet(`/api/ai/lecture-context/${openLectureId}`);
           const ld = await lr.json();
@@ -2324,7 +2893,7 @@ const CBS = {
 
       // داخل صفحة مادة + طلب محتوى ولم نقرأ محاضرة بعينها → اقرأ المادة كلها
       if (!payload.text && subjectId && this._isContentRequest(msg)) {
-        botMsg.innerHTML = '<i class="ri-loader-4-line" style="animation:spin 1s linear infinite;display:inline-block"></i> جاري قراءة محاضرات المادة...';
+        botMsg.innerHTML = CBS._kedyTypingHtml('أقرأ محاضرات المادة');
         const ctx = await this._fetchSubjectContext(subjectId);
         if (ctx && ctx.hasText) {
           payload.text = ctx.text;
@@ -2332,7 +2901,7 @@ const CBS = {
           const missing = (ctx.skippedLectures || []).length;
           payload.prompt = `${msg}\n\n(محتوى ${ctx.includedLectures.length} محاضرة من أصل ${ctx.lectureCount} مرفق أدناه.)`;
           if (missing) {
-            botMsg.innerHTML = `<i class="ri-loader-4-line" style="animation:spin 1s linear infinite;display:inline-block"></i> قرأت ${ctx.includedLectures.length} محاضرة، جاري التلخيص...`;
+            botMsg.innerHTML = CBS._kedyTypingHtml(`قرأت ${ctx.includedLectures.length} محاضرة، أكتب الملخص`);
           }
         } else {
           // لا نص قابل للاستخراج (فيديو أو PDF مصوَّر) — نصارح الطالب
@@ -2354,7 +2923,7 @@ const CBS = {
         } else if (data.interactive?.type === 'select_scope') {
           interactiveHtml = `<div style="display:flex;flex-direction:column;gap:6px;margin-top:10px;">` +
             `<button onclick="CBS._kedyQuickPrompt('ملخص شامل لمادة ${this.escapeHTML(data.interactive.subjectName)}')" style="padding:8px 12px;background:#4f46e5;color:#fff;border:none;border-radius:12px;font-size:0.8rem;font-weight:700;cursor:pointer;text-align:right;"><i class="ri-file-list-3-line"></i> ملخص شامل للمادة كاملة</button>` +
-            `<button onclick="CBS._kedyQuickPrompt('ابحث لي عن جزئية في مادة ${this.escapeHTML(data.interactive.subjectName)}')" style="padding:8px 12px;background:var(--bg-card);color:#4f46e5;border:1.5px solid #4f46e5;border-radius:12px;font-size:0.8rem;font-weight:700;cursor:pointer;text-align:right;"> البحث عن جزئية/موضوع معين</button>` +
+            `<button onclick="CBS._kedyQuickPrompt('ابحث لي عن جزئية في مادة ${this.escapeHTML(data.interactive.subjectName)}')" style="padding:8px 12px;background:var(--bg-card);color:#4f46e5;border:1.5px solid #4f46e5;border-radius:12px;font-size:0.8rem;font-weight:700;cursor:pointer;text-align:right;"> البحث عن جزئية/موضوع معين</button>` +
             (data.interactive.lectures.length ? `<strong style="font-size:0.78rem;margin-top:6px;color:var(--text-muted);">أو اختر محاضرة معينة:</strong>` +
             data.interactive.lectures.map(l =>
               `<button onclick="CBS._kedySelectLecture('${l._id}', '${this.escapeHTML(l.title)}', '${this.escapeHTML(data.interactive.subjectName)}')" style="padding:6px 10px;background:var(--bg-main);color:var(--text-main);border:1px solid var(--border);border-radius:8px;font-size:0.78rem;cursor:pointer;text-align:right;"><i class="ri-file-text-line"></i> ${this.escapeHTML(l.title)}</button>`
@@ -2362,15 +2931,25 @@ const CBS = {
         }
 
         botMsg.innerHTML = this.formatAiResponse(data.answer) + interactiveHtml + 
-          `<br><button onclick="CBS._saveGlobalNote('${this.escapeHTML(msg)}', '${this.escapeHTML(data.answer)}')" style="margin-top:8px;padding:3px 8px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;cursor:pointer;font-size:0.75rem;font-weight:700;"><i class="ri-bookmark-3-line"></i> حفظ في ملاحظاتي </button>`;
+          this._noteSaveButton(msg, data.answer);
+        // الطالب أغلق المحادثة أثناء الانتظار: نقطة على الزر تخبره أن الرد وصل
+        if (!document.getElementById('globalKedyModal')?.classList.contains('active')) fab?.classList.add('has-reply');
       } else {
-        botMsg.innerHTML = '<span style="color:var(--danger)">' + (data.message || 'حدث خطأ في الإجابة') + '</span>';
+        botMsg.innerHTML = '<span style="color:var(--danger)">' + this.escapeHTML(data.message || 'حدث خطأ في الإجابة') + '</span>';
+        if (!document.getElementById('globalKedyModal')?.classList.contains('active')) fab?.classList.add('has-error');
       }
     } catch {
       botMsg.innerHTML = '<span style="color:var(--danger)">تعذّر الاتصال بالخادم الذكي</span>';
+      if (!document.getElementById('globalKedyModal')?.classList.contains('active')) fab?.classList.add('has-error');
     }
+    fab?.classList.remove('is-thinking');
     sendBtn.disabled = false;
     container.scrollTop = container.scrollHeight;
+  },
+
+  /* مؤشر الكتابة: ثلاث نقاط بدل أيقونة دوّارة ونص — نفس ما يتوقعه الطالب من أي محادثة */
+  _kedyTypingHtml(label = '') {
+    return `<span class="kedy-typing" role="status" aria-label="كيدي يكتب"><i></i><i></i><i></i></span>${label ? `<span class="kedy-typing-label">${label}</span>` : ''}`;
   },
 
   _kedySelectSubject(subjectId, subjectName) {
@@ -2397,7 +2976,7 @@ const CBS = {
 
     const botMsg = document.createElement('div');
     botMsg.className = 'kedy-msg-bot';
-    botMsg.innerHTML = '<i class="ri-loader-4-line" style="animation:spin 1s linear infinite;display:inline-block"></i> جاري جلب المحاضرات...';
+    botMsg.innerHTML = CBS._kedyTypingHtml('أجلب المحاضرات');
     container.appendChild(botMsg);
     container.scrollTop = container.scrollHeight;
 
@@ -2417,7 +2996,7 @@ const CBS = {
         if (data.interactive?.type === 'select_scope') {
           interactiveHtml = `<div style="display:flex;flex-direction:column;gap:6px;margin-top:10px;">` +
             `<button onclick="CBS._kedyQuickPrompt('ملخص شامل لمادة ${this.escapeHTML(subjectName)}')" style="padding:8px 12px;background:#4f46e5;color:#fff;border:none;border-radius:12px;font-size:0.8rem;font-weight:700;cursor:pointer;text-align:right;"><i class="ri-file-list-3-line"></i> ملخص شامل لمادة ${this.escapeHTML(subjectName)}</button>` +
-            `<button onclick="CBS._kedyQuickPrompt('ابحث لي عن جزئية في مادة ${this.escapeHTML(subjectName)}')" style="padding:8px 12px;background:var(--bg-card);color:#4f46e5;border:1.5px solid #4f46e5;border-radius:12px;font-size:0.8rem;font-weight:700;cursor:pointer;text-align:right;"> البحث عن جزئية/موضوع معين</button>` +
+            `<button onclick="CBS._kedyQuickPrompt('ابحث لي عن جزئية في مادة ${this.escapeHTML(subjectName)}')" style="padding:8px 12px;background:var(--bg-card);color:#4f46e5;border:1.5px solid #4f46e5;border-radius:12px;font-size:0.8rem;font-weight:700;cursor:pointer;text-align:right;"> البحث عن جزئية/موضوع معين</button>` +
             (data.interactive.lectures.length ? `<strong style="font-size:0.78rem;margin-top:6px;color:var(--text-muted);">أو اختر محاضرة معينة:</strong>` +
             data.interactive.lectures.map(l =>
               `<button onclick="CBS._kedySelectLecture('${l._id}', '${this.escapeHTML(l.title)}', '${this.escapeHTML(subjectName)}')" style="padding:6px 10px;background:var(--bg-main);color:var(--text-main);border:1px solid var(--border);border-radius:8px;font-size:0.78rem;cursor:pointer;text-align:right;"><i class="ri-file-text-line"></i> ${this.escapeHTML(l.title)}</button>`
@@ -2445,7 +3024,7 @@ const CBS = {
     // رسالة التحميل
     const botMsg = document.createElement('div');
     botMsg.className = 'kedy-msg-bot';
-    botMsg.innerHTML = '<i class="ri-loader-4-line" style="animation:spin 1s linear infinite;display:inline-block"></i> جاري قراءة المحاضرة...';
+    botMsg.innerHTML = CBS._kedyTypingHtml('أقرأ المحاضرة');
     container.appendChild(botMsg);
     container.scrollTop = container.scrollHeight;
 
@@ -2483,14 +3062,32 @@ const CBS = {
           : `<div style="font-size:0.72rem;color:#f59e0b;margin-top:8px;padding-top:6px;border-top:1px solid var(--border);"><i class="ri-alert-line"></i> لم يُعثر على نص قابل للقراءة في هذه المحاضرة — يمكنك نسخ ولصق محتوى الـ PDF مباشرة</div>`;
 
         botMsg.innerHTML = this.formatAiResponse(data.answer) + sourceNote +
-          `<br><button onclick="CBS._saveGlobalNote('${this.escapeHTML(lectureTitle)}', '${this.escapeHTML(data.answer)}')" style="margin-top:8px;padding:3px 8px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;cursor:pointer;font-size:0.75rem;font-weight:700;"><i class="ri-bookmark-3-line"></i> حفظ في ملاحظاتي</button>`;
+          this._noteSaveButton(lectureTitle, data.answer);
       } else {
-        botMsg.innerHTML = '<span style="color:var(--danger)">' + (data.message || 'حدث خطأ') + '</span>';
+        botMsg.innerHTML = '<span style="color:var(--danger)">' + this.escapeHTML(data.message || 'حدث خطأ') + '</span>';
       }
     } catch {
       botMsg.innerHTML = '<span style="color:var(--danger)">تعذّر الاتصال بالخادم الذكي</span>';
     }
     container.scrollTop = container.scrollHeight;
+  },
+
+  /* زر "حفظ في ملاحظاتي": كان يمرّر السؤال والإجابة نصاً داخل onclick='...'.
+     escapeHTML يحوّل ' إلى &#39; لكن المتصفح يفكّها قبل تنفيذ JS، فأي إجابة فيها
+     علامة ' (شائعة في الأكواد) تكسر الزر — ونص مُتلاعب به يُنفَّذ كسكربت.
+     الآن يُحفظ النص في الذاكرة ويحمل الزر معرّفاً قصيراً فقط. */
+  _noteStash: new Map(),
+
+  _noteSaveButton(title, content) {
+    const id = 'n' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    this._noteStash.set(id, { title: String(title || ''), content: String(content || '') });
+    if (this._noteStash.size > 100) this._noteStash.delete(this._noteStash.keys().next().value);
+    return `<br><button onclick="CBS._saveStashedNote('${id}')" style="margin-top:8px;padding:3px 8px;border:1px solid #cbd5e1;border-radius:6px;background:#fff;cursor:pointer;font-size:0.75rem;font-weight:700;"><i class="ri-bookmark-3-line"></i> حفظ في ملاحظاتي</button>`;
+  },
+
+  _saveStashedNote(id) {
+    const note = this._noteStash.get(id);
+    if (note) this._saveGlobalNote(note.title, note.content);
   },
 
   _saveGlobalNote(title, content) {
@@ -2501,10 +3098,10 @@ const CBS = {
         subject: 'المساعد الذكي (كيدي)',
         title: title || 'ملاحظة كيدي',
         content: content,
-        date: new Date().toLocaleDateString('ar-SD', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })
+        date: new Date().toLocaleDateString('ar-EG-u-nu-latn', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })
       });
       localStorage.setItem('cbs_saved_notes', JSON.stringify(notes));
-      this.toast('تم الحفظ في ملاحظاتك بنجاح ', '', 'success');
+      this.toast('تم الحفظ في ملاحظاتك بنجاح ', '', 'success');
     } catch(e){}
   },
 
@@ -2537,7 +3134,7 @@ const CBS = {
      deliberately mobile-only and previously hid fingerprint/account setup. */
   renderAccountShortcut() {
     if (window.location.pathname === '/profile.html' || document.getElementById('accountShortcut')) return;
-    // على الهاتف يوجد عنصر "حسابي" في الشريط السفلي  لا داعي لزر ثان في الترويسة
+    // على الهاتف يوجد عنصر "حسابي" في الشريط السفلي  لا داعي لزر ثان في الترويسة
     if (window.innerWidth <= 900) return;
     const actions = document.querySelector('.main-header .header-actions');
     if (!actions) return;
@@ -2556,6 +3153,22 @@ const CBS = {
      يعيد true إذا أُغلق شيء — ليعرف زر الرجوع العتادي أنه استُهلك.
      المشروع يستخدم ثلاث اصطلاحات: .show و .active و .open، لذا نغطيها كلها. */
   _closeTopOverlay() {
+    // عارض الملفات فوق كل شيء: الرجوع يُغلقه أولاً (لا يغادر الصفحة والملف مفتوح)
+    const viewer = document.querySelector('.cv-overlay:not(.leaving) [data-cv="close"]');
+    if (viewer) { viewer.click(); return true; }
+    // الجولة الترحيبية: الرجوع = تخطٍّ (يحفظ أنها عُرضت)
+    const obSkip = document.querySelector('.cbs-onboarding:not(.leaving) .ob-skip');
+    if (obSkip) { obSkip.click(); return true; }
+    // قائمة اختصارات كيدي (الضغطة المطوّلة)
+    if (document.querySelector('.kf-menu.open')) { document.querySelector('.kf-scrim')?.click(); return true; }
+    const lectureModal = document.getElementById('pdfModal');
+    if (lectureModal && lectureModal.style.display === 'flex' && typeof window.closePdfModal === 'function') {
+      // لوحة كيدي داخل صفحة المادة تُغلق قبل المحاضرة نفسها
+      const aiPanel = document.getElementById('aiPanel');
+      if (aiPanel && aiPanel.classList.contains('show') && typeof window.closeAiPanel === 'function') { window.closeAiPanel(); return true; }
+      window.closePdfModal();
+      return true;
+    }
     const selectors = [
       '#globalKedyModal.active',
       '.lightbox-overlay.active', '#lightbox-modal.active', '#news-detail-modal.active',
@@ -2620,7 +3233,7 @@ const CBS = {
 
   /* ===== إزالة الأزرار المكرّرة من الترويسة =====
      كانت كل صفحة تكتب زر "رجوع"/"الرئيسية" الخاص بها، ثم يضيف التطبيق زر الرجوع
-     الموحّد وشريط التنقل السفلي فوقه  فيظهر زران بنفس الوظيفة جنباً إلى جنب. */
+     الموحّد وشريط التنقل السفلي فوقه  فيظهر زران بنفس الوظيفة جنباً إلى جنب. */
   _dedupeHeaderControls(hasInjectedBack) {
     const header = document.querySelector('.main-header') || document.querySelector('.dashboard-header');
     if (!header) return;
@@ -2646,7 +3259,7 @@ const CBS = {
   },
 
   /* تسع صفحات كانت تعرض عنوانها مرتين: مرة في البانر الملوّن (.welcome-banner)
-     ومرة في ترويسة الصفحة (.page-header). نبقي البانر ونحذف العنوان المكرر
+     ومرة في ترويسة الصفحة (.page-header). نبقي البانر ونحذف العنوان المكرر
      مع الحفاظ على أزرار الإجراءات الموجودة في الترويسة. */
   _dedupePageHeadings() {
     const banner = document.querySelector('.welcome-banner');
@@ -2655,8 +3268,8 @@ const CBS = {
     const titleBlock = header.querySelector('.page-header-left');
     if (!titleBlock) return;
 
-    // بعض العناوين الفرعية عدّادات تحدَّث بالـ id (مثل "جاري التحميل...").
-    // ننقل الـ id إلى نص البانر أولاً، وإن تعذّر نبقي الترويسة كما هي
+    // بعض العناوين الفرعية عدّادات تحدَّث بالـ id (مثل "جاري التحميل...").
+    // ننقل الـ id إلى نص البانر أولاً، وإن تعذّر نبقي الترويسة كما هي
     // حتى لا ينهار كود يبحث عن العنصر بـ getElementById.
     const dynamic = titleBlock.querySelector('[id]');
     if (dynamic) {
@@ -2672,6 +3285,74 @@ const CBS = {
       header.classList.add('page-header-actions-only');
     } else {
       header.remove();
+    }
+  },
+
+  /* عدّ عربي صحيح: arCount(1,['مقرر واحد','مقرران','مقررات','مقرراً']) ← "مقرر واحد"،
+     2 ← "مقرران"، 3..10 ← "3 مقررات"، 11+ ← "11 مقرراً"، 0 ← "لا مقررات" */
+  arCount(n, [one, two, few, many]) {
+    n = Number(n) || 0;
+    if (n === 0) return `لا ${few}`;
+    if (n === 1) return one;
+    if (n === 2) return two;
+    const rem = n % 100;
+    return `${n} ${rem >= 3 && rem <= 10 ? few : many}`;
+  },
+
+  /* موعد مقروء: "اليوم" / "غداً" / "بعد 3 أيام" / تاريخ — والإلحاح بلون (tone) */
+  dueLabel(when) {
+    const d = new Date(when);
+    if (isNaN(d)) return { text: '', tone: '' };
+    const day = x => { const y = new Date(x); y.setHours(0, 0, 0, 0); return y; };
+    const days = Math.round((day(d) - day(new Date())) / 864e5);
+    if (days < 0) return { text: 'فات الموعد', tone: 'danger' };
+    if (days === 0) return { text: 'اليوم', tone: 'danger' };
+    if (days === 1) return { text: 'غداً', tone: 'warning' };
+    if (days === 2) return { text: 'بعد يومين', tone: 'warning' };
+    if (days <= 10) return { text: `بعد ${days} أيام`, tone: '' };
+    return { text: d.toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short' }), tone: '' };
+  },
+
+  /* ===== توحيد هيكل الصفحات الداخلية =====
+     كانت لكل صفحة ترويستها: شعار + "كلية النصر التقنية" + عنوان فرعي صغير، ثم
+     بطاقة تكرر العنوان بأيقونة ووصف، وزرا الخروج والوضع الليلي في كل صفحة.
+     الآن (docs/design/home-screens.md): رجوع · عنوان الصفحة · إجراءاتها،
+     والبطاقة تصير سطر سياق. التنسيق في css/ui.css تحت body.app-inner. */
+  _normalizeShell() {
+    const header = document.querySelector('.main-header');
+    if (!header) return;
+    // الخروج والوضع الليلي في "حسابي" — كانا بجانب البحث في كل ترويسة
+    header.querySelectorAll('.header-actions [onclick]').forEach(el => {
+      if (/CBS\.logout\s*\(|toggleDark\s*\(/.test(el.getAttribute('onclick') || '')) el.remove();
+    });
+
+    const path = window.location.pathname;
+    if (path === '/dashboard.html' || path === '/admin_dashboard.html') return;
+    document.body.classList.add('app-inner');
+
+    const strong = header.querySelector('.header-title-group strong');
+    const banner = document.querySelector('.welcome-banner');
+    const heading = banner?.querySelector('h2, h1');
+    const small = header.querySelector('.header-title-group small');
+    // بعض الصفحات تضع عنوانها الحقيقي في <strong> وشعاراً وصفياً في <small> ("تقييم عادل وسريع")
+    const ownTitle = strong && !/كلية النصر/.test(strong.textContent) ? strong.textContent.trim() : '';
+    const setTitle = () => {
+      const text = heading?.textContent.trim() || ownTitle || small?.textContent.trim() || document.title.split('|')[0].trim();
+      if (strong && text) strong.textContent = text;
+      document.querySelectorAll('.page-header .page-title').forEach(t => {
+        if (t.textContent.trim() === text) t.style.display = 'none';
+      });
+    };
+    setTitle();
+    // عناوين تُملأ بعد التحميل (اسم المادة مثلاً) تتبعها الترويسة
+    const watched = heading || small;
+    if (watched) new MutationObserver(setTitle).observe(watched, { childList: true, characterData: true, subtree: true });
+
+    if (banner) {
+      banner.classList.add('page-lead');
+      const lead = banner.querySelector('p');
+      // بطاقة بلا وصف ولا عدّاد ديناميكي لم يعد فيها ما يُعرض
+      if (!lead || (!lead.id && !lead.textContent.trim())) banner.style.display = 'none';
     }
   },
 
@@ -2773,6 +3454,14 @@ const CBS = {
     this.initDarkMode();
     this.initModalClose();
     this.initKeyboardSuggestions();
+    // رسالة مؤجلة من صفحة سابقة أعادت التوجيه (مثل رفض الصلاحية)
+    try {
+      const flash = sessionStorage.getItem('cbs_flash');
+      if (flash) {
+        sessionStorage.removeItem('cbs_flash');
+        setTimeout(() => this.toast(flash, '', 'error'), 400);
+      }
+    } catch (e) {}
     this.initHaptics();
     this._injectMobileCSS();
     this.initPullToRefresh();
@@ -2782,10 +3471,10 @@ const CBS = {
     /* شريط الحالة على أندرويد 15 (SDK 35+):
        - setBackgroundColor يعتمد على Window.setStatusBarColor المتوقّفة نهائياً
          وأصبح بلا أثر، والنظام يفرض "العرض حتى حافة الشاشة".
-       - setOverlaysWebView({overlay:false}) كان يلغي هذا العرض تحديداً وهو
-         ما تحذّر منه Google  أزيل.
+       - setOverlaysWebView({overlay:false}) كان يلغي هذا العرض تحديداً وهو
+         ما تحذّر منه Google  أزيل.
        يبقى فقط ضبط لون أيقونات الشريط ليطابق سمة التطبيق (فاتح/داكن)،
-       لأن المحتوى صار يرسم خلف الشريط مباشرةً. */
+       لأن المحتوى صار يرسم خلف الشريط مباشرةً. */
     if (this._isCapacitor()) {
       const StatusBar = window.Capacitor?.Plugins?.StatusBar;
       if (StatusBar?.setOverlaysWebView) StatusBar.setOverlaysWebView({ overlay: true }).catch(()=>{});
@@ -2806,7 +3495,9 @@ const CBS = {
       // Single role check (legacy)
       if (options.requireRole) {
         if (!user.roles || !user.roles.includes(options.requireRole)) {
-          alert('لا تملك صلاحيات للوصول إلى هذه الصفحة');
+          // رسالة تُعرض في الصفحة التالية (alert() يظهر نافذة نظام بعنوان الموقع داخل التطبيق)
+          try { sessionStorage.setItem('cbs_flash', 'لا تملك صلاحيات للوصول إلى هذه الصفحة'); } catch (e) {}
+          CBS._leavingPage = true;
           window.location.replace('/dashboard.html');
           document.body.style.display = 'none';
           return false;
@@ -2816,7 +3507,9 @@ const CBS = {
       // Multiple roles check (new)
       if (options.requireRoles && Array.isArray(options.requireRoles)) {
         if (!user.roles || !options.requireRoles.some(r => user.roles.includes(r))) {
-          alert('لا تملك صلاحيات للوصول إلى هذه الصفحة');
+          // رسالة تُعرض في الصفحة التالية (alert() يظهر نافذة نظام بعنوان الموقع داخل التطبيق)
+          try { sessionStorage.setItem('cbs_flash', 'لا تملك صلاحيات للوصول إلى هذه الصفحة'); } catch (e) {}
+          CBS._leavingPage = true;
           window.location.replace('/dashboard.html');
           document.body.style.display = 'none';
           return false;
@@ -2829,10 +3522,12 @@ const CBS = {
       this.initKeyboardAwareness();
       if (window.innerWidth <= 900) this.renderBottomNav();
       else this._navItemsForRole();  // نحسب التبويبات ليعرف زر الرجوع أيها جذري
+      this._maybeShowOnboarding();
 
       const hasInjectedBack = this.renderBackButton(); // Add back button if child page
       this._dedupeHeaderControls(hasInjectedBack);     // إزالة أزرار الصفحة المكرّرة
       this._dedupePageHeadings();                      // إزالة العناوين المكرّرة
+      this._normalizeShell();                          // ترويسة موحّدة: رجوع · العنوان · الإجراءات
       this._initGlobalSearch(); // Global search overlay
       this.initScrollAnimations(); // Scroll animations for cards and stats
       
@@ -2844,13 +3539,21 @@ const CBS = {
     
     // Hardware Back Button (Android)
     if (this._isCapacitor() && window.Capacitor?.Plugins?.App) {
-      window.Capacitor.Plugins.App.addListener('backButton', () => {
+      /* يعمل فقط مع إضافة @capacitor/app — كانت غير مثبّتة، فلم يُسجَّل هذا
+         المستمع أصلاً وكان أندرويد يغلق التطبيق من أول ضغطة رجوع. */
+      window.Capacitor.Plugins.App.addListener('backButton', ({ canGoBack } = {}) => {
         // 1) أي طبقة مفتوحة تُغلق أولاً — سلوك التطبيقات الأصلية.
         //    كان زر الرجوع يغادر الصفحة كلها والنافذة المنبثقة مفتوحة.
         if (this._closeTopOverlay()) return;
 
-        // 2) صفحة جذرية (تبويب في شريط هذا الدور) → تأكيد قبل الخروج
-        if (this.isRootPage()) {
+        const path = window.location.pathname;
+        const isHome = path === '/dashboard.html' || path === '/admin_dashboard.html' || this._ALWAYS_ROOT_PAGES.includes(path);
+
+        // 2) تبويب آخر في الشريط السفلي → الرئيسية أولاً، لا الخروج
+        if (this.isRootPage() && !isHome) { this.goHome(); return; }
+
+        // 3) الرئيسية → تأكيد قبل الخروج
+        if (this.isRootPage() || isHome) {
           if (this._exitArmed) {
             window.Capacitor.Plugins.App.exitApp();
             return;
@@ -2862,8 +3565,8 @@ const CBS = {
           return;
         }
 
-        // 3) صفحة داخلية → رجوع، وإن لم يوجد سجل تصفح نعود للوحة المناسبة
-        if (window.history.length > 1) window.history.back();
+        // 4) صفحة داخلية → رجوع خطوة، وإن لم يوجد سجل تصفح نعود للوحة المناسبة
+        if (canGoBack ?? window.history.length > 1) window.history.back();
         else this.goHome();
       });
     }
@@ -2871,10 +3574,130 @@ const CBS = {
     return true;
   },
 
+  /* ===== حاسبة المعدل (GPA) =====
+     أداة تقديرية للطالب فقط: لا يوجد حقل ساعات معتمدة في نموذج المادة، لذلك
+     تبدأ كل مادة بـ 3 ساعات ويعدّلها الطالب. لا تُحفظ أي بيانات على الخادم. */
+  _GPA_GRADES: [
+    ['4.00', 'A+'], ['3.75', 'A'], ['3.50', 'B+'], ['3.00', 'B'],
+    ['2.50', 'C+'], ['2.00', 'C'], ['1.50', 'D'], ['0.00', 'F']
+  ],
+
+  _gpaRowHTML(name = '', hours = 3) {
+    const opts = this._GPA_GRADES.map(([v, l]) => `<option value="${v}">${l} (${v})</option>`).join('');
+    return `
+      <td><input type="text" class="form-control gpa-sub-name" value="${this.escapeHTML(name)}" placeholder="اسم المقرر" aria-label="اسم المقرر"></td>
+      <td><input type="number" min="1" max="6" step="1" class="form-control gpa-sub-hours" value="${Number(hours) || 3}" oninput="CBS._calcGpa()" aria-label="الساعات المعتمدة"></td>
+      <td><select class="form-control gpa-sub-grade" onchange="CBS._calcGpa()" aria-label="التقدير">${opts}</select></td>
+      <td><button type="button" class="btn-icon gpa-del" onclick="this.closest('tr').remove(); CBS._calcGpa();" title="حذف المقرر" aria-label="حذف المقرر"><i class="ri-delete-bin-line"></i></button></td>`;
+  },
+
+  async openGpaCalculatorModal() {
+    let modal = document.getElementById('cbsGpaModal');
+    if (!modal) {
+      modal = document.createElement('div');
+      modal.id = 'cbsGpaModal';
+      modal.className = 'modal-overlay';
+      document.body.appendChild(modal);
+    }
+
+    let subjects = [];
+    try {
+      const res = await this.apiGet('/api/subjects?limit=12');
+      if (res && res.ok) {
+        const json = await res.json();
+        const d = json?.data;
+        subjects = Array.isArray(d) ? d : (Array.isArray(d?.subjects) ? d.subjects : []);
+      }
+    } catch (e) {}
+
+    modal.innerHTML = `
+      <div class="modal-box gpa-modal" role="dialog" aria-modal="true" aria-labelledby="gpaModalTitle">
+        <div class="gpa-modal-head">
+          <div>
+            <h3 id="gpaModalTitle"><i class="ri-calculator-line"></i> حاسبة المعدل الفصلي</h3>
+            <small>تقدير تقريبي — عدّل الساعات والتقديرات حسب لائحة كليتك</small>
+          </div>
+          <button type="button" class="modal-close" onclick="CBS.closeModal('cbsGpaModal')" aria-label="إغلاق">&times;</button>
+        </div>
+
+        <div class="gpa-modal-body">
+          <div class="gpa-dial-container">
+            <div class="gpa-score-display" id="gpaScoreDisplay">—</div>
+            <div class="gpa-scale-label">المعدل المتوقع من 4.00</div>
+            <div class="gpa-honors-pill" id="gpaHonorsPill" hidden></div>
+          </div>
+
+          <div class="gpa-table-head">
+            <strong>المقررات</strong>
+            <button type="button" class="btn btn-xs btn-outline-primary" onclick="CBS._addGpaRow()"><i class="ri-add-line"></i> إضافة مقرر</button>
+          </div>
+
+          <table class="gpa-subject-table">
+            <thead><tr><th>المقرر</th><th>الساعات</th><th>التقدير</th><th></th></tr></thead>
+            <tbody id="gpaSubjectsTbody">
+              ${subjects.map(s => `<tr class="gpa-row">${this._gpaRowHTML(s.name)}</tr>`).join('')}
+            </tbody>
+          </table>
+          <p class="gpa-empty" id="gpaEmpty" hidden>أضف مقرراً واحداً على الأقل لحساب المعدل.</p>
+        </div>
+      </div>`;
+
+    if (!subjects.length) this._addGpaRow();
+    this.openModal('cbsGpaModal');
+    this._calcGpa();
+  },
+
+  _addGpaRow() {
+    const tbody = document.getElementById('gpaSubjectsTbody');
+    if (!tbody) return;
+    const tr = document.createElement('tr');
+    tr.className = 'gpa-row';
+    tr.innerHTML = this._gpaRowHTML();
+    tbody.appendChild(tr);
+    tr.querySelector('.gpa-sub-name')?.focus();
+    this._calcGpa();
+  },
+
+  _calcGpa() {
+    let totalPoints = 0;
+    let totalHours = 0;
+    document.querySelectorAll('#gpaSubjectsTbody tr').forEach(r => {
+      const h = Math.max(0, parseFloat(r.querySelector('.gpa-sub-hours')?.value) || 0);
+      const g = parseFloat(r.querySelector('.gpa-sub-grade')?.value) || 0;
+      totalPoints += h * g;
+      totalHours += h;
+    });
+
+    const display = document.getElementById('gpaScoreDisplay');
+    const pill = document.getElementById('gpaHonorsPill');
+    const empty = document.getElementById('gpaEmpty');
+    if (empty) empty.hidden = totalHours > 0;
+
+    if (!totalHours) {
+      if (display) display.textContent = '—';
+      if (pill) pill.hidden = true;
+      return;
+    }
+
+    const gpa = totalPoints / totalHours;
+    if (display) display.textContent = gpa.toFixed(2);
+
+    const bands = [
+      [3.5, 'ممتاز', 'success'], [3.0, 'جيد جداً', 'info'], [2.5, 'جيد', 'primary'],
+      [2.0, 'مقبول', 'warning'], [0, 'دون الحد الأدنى', 'danger']
+    ];
+    const [, label, tone] = bands.find(([min]) => gpa >= min);
+    if (pill) {
+      pill.hidden = false;
+      pill.textContent = label;
+      pill.dataset.tone = tone;
+    }
+  },
+
   /* ===== حقن mobile.css للموبايل ===== */
   _injectMobileCSS() {
     if (document.getElementById('mobile-css')) return;
-    // معظم الصفحات تربط mobile.css في <head> مسبقاً؛ الحقن كان ينزّل الملف مرة ثانية
+    // معظم الصفحات تربط mobile.css في <head> مسبقاً؛ الحقن كان ينزّل الملف مرة ثانية
     // بنسخة مختلفة (?v=) فيتضاعف الطلب وقد تفوز نسخة قديمة من الكاش.
     if (document.querySelector('link[rel="stylesheet"][href*="/css/mobile.css"]')) return;
     const link = document.createElement('link');
@@ -2945,7 +3768,7 @@ const CBS = {
       }
       startY = e.touches[0].clientY;
       startX = e.touches[0].clientX;
-      dist = 0; // مسافة اللمسة السابقة قد تبقى لو ألغي السحب في منتصفه
+      dist = 0; // مسافة اللمسة السابقة قد تبقى لو ألغي السحب في منتصفه
       isPulling = true;
     }, { passive: true });
 
@@ -3002,7 +3825,7 @@ const CBS = {
           document.body.classList.remove('ptr-refreshing', 'ptr-pulling');
           ptr.style.transform = 'translateY(-100%)';
         };
-        // الصفحة التي تعرّف مستمع cbs:refresh (مع preventDefault) تجدد بياناتها فقط 
+        // الصفحة التي تعرّف مستمع cbs:refresh (مع preventDefault) تجدد بياناتها فقط 
         // أسرع بكثير من إعادة تحميل كاملة. غير ذلك نرجع لإعادة التحميل.
         const evt = new CustomEvent('cbs:refresh', { cancelable: true, detail: { done } });
         const notHandled = document.dispatchEvent(evt);
@@ -3031,23 +3854,23 @@ const CBS = {
     const plugin = this._getLocalNotif();
     if (!plugin?.createChannel) return; // ليس على Android
     try {
-      // قناة الإشعارات العادية  نغمة message_sound المخصصة
+      // قناة الإشعارات العادية  نغمة message_sound المخصصة
       await plugin.createChannel({
         id:          'general',
         name:        'إشعارات كلية النصر التقنية',
         description: 'الإشعارات الاعتيادية من كلية النصر التقنية',
-        importance:  4,              // IMPORTANCE_HIGH  لضمان الصوت دائماً
+        importance:  4,              // IMPORTANCE_HIGH  لضمان الصوت دائماً
         visibility:  1,              // VISIBILITY_PUBLIC
         sound:       'cbs_notif', // ملف res/raw/cbs_notif.wav
         vibration:   true,
         lights:      true,
         lightColor:  '#2563eb'
       });
-      // قناة الإشعارات الطارئة  نغمة La-La-Do الأعلى
+      // قناة الإشعارات الطارئة  نغمة La-La-Do الأعلى
       await plugin.createChannel({
         id:          'emergency',
         name:        'إشعارات طارئة',
-        description: 'تنبيهات عاجلة وطارئة  صوت مميز وأولوية قصوى',
+        description: 'تنبيهات عاجلة وطارئة  صوت مميز وأولوية قصوى',
         importance:  5,               // IMPORTANCE_MAX
         visibility:  1,
         sound:       'cbs_emergency', // ملف res/raw/cbs_emergency.wav
@@ -3055,7 +3878,7 @@ const CBS = {
         lights:      true,
         lightColor:  '#ef4444'
       });
-    } catch { /* silent  قد لا يدعمها الجهاز */ }
+    } catch { /* silent  قد لا يدعمها الجهاز */ }
   },
 
 
@@ -3082,13 +3905,13 @@ const CBS = {
           localStorage.setItem('fcm_token', token.value);
           console.log(' FCM Token Registered for User');
         } catch(err) {
-          console.warn('  FCM Token Register Warn:', err.message);
+          console.warn('  FCM Token Register Warn:', err.message);
         }
       });
 
       // عند حدوث خطأ في التسجيل
       PushNotifications.addListener('registrationError', (error) => {
-        console.error(' Push registration error: ', JSON.stringify(error));
+        console.error(' Push registration error: ', JSON.stringify(error));
       });
 
       // استلام إشعار والتطبيق مفتوح (Foreground)
@@ -3119,13 +3942,14 @@ const CBS = {
             // تحقق من تحديثات كل ساعة
             setInterval(() => reg.update(), 60 * 60 * 1000);
 
-            // إشعار "يوجد تحديث جديد": نسخة جديدة جاهزة لكنها تنتظر إغلاق كل التبويبات 
+            // إشعار "يوجد تحديث جديد": نسخة جديدة جاهزة لكنها تنتظر إغلاق كل التبويبات 
             // نعرض شريطاً بزر يحدّث فوراً بدل انتظار المستخدم
             const showUpdateBar = (waiting) => {
               if (document.getElementById('cbsUpdateBar')) return;
               const bar = document.createElement('div');
               bar.id = 'cbsUpdateBar';
-              bar.style.cssText = 'position:fixed;bottom:calc(80px + env(safe-area-inset-bottom,0px));left:50%;transform:translateX(-50%);z-index:99999;background:#0d3b66;color:#fff;border-radius:14px;padding:12px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 10px 30px rgba(0,0,0,0.4);font-family:inherit;direction:rtl;max-width:92%;';
+              // فوق الشريط السفلي وزر كيدي (كان bottom:80px فيتراكب مع الشريط السفلي)
+              bar.style.cssText = 'position:fixed;bottom:calc(var(--fab-bottom, 106px) + 60px + env(safe-area-inset-bottom,0px));left:12px;right:12px;margin:0 auto;width:fit-content;justify-content:space-between;z-index:99999;background:#0d3b66;color:#fff;border-radius:14px;padding:12px 16px;display:flex;align-items:center;gap:12px;box-shadow:0 10px 30px rgba(0,0,0,0.4);font-family:inherit;direction:rtl;max-width:calc(100% - 24px);';
               bar.innerHTML = '<i class="ri-refresh-line" style="font-size:1.2rem;color:#60a5fa;"></i><span style="font-size:0.85rem;font-weight:600;">يتوفر تحديث جديد للتطبيق</span><button id="cbsUpdateNow" style="border:none;background:#2563eb;color:#fff;border-radius:8px;padding:8px 14px;font-weight:700;font-family:inherit;cursor:pointer;font-size:0.82rem;white-space:nowrap;">حدّث الآن</button>';
               document.body.appendChild(bar);
               document.getElementById('cbsUpdateNow').onclick = () => {
@@ -3154,7 +3978,7 @@ const CBS = {
 
   /* ===== ضغط الصور قبل الرفع =====
      يقلّص أبعاد وحجم الصور (كاميرا الهواتف تنتج 3-8 ميجابايت) لتسريع الرفع
-     وتوفير البيانات. الملفات غير الصورية (PDF) تعاد كما هي دون مساس. */
+     وتوفير البيانات. الملفات غير الصورية (PDF) تعاد كما هي دون مساس. */
   async compressImage(file, { maxDim = 1600, quality = 0.72, maxBytes = 900 * 1024 } = {}) {
     try {
       if (!file || !file.type || !file.type.startsWith('image/')) return file;
@@ -3184,7 +4008,7 @@ const CBS = {
       canvas.getContext('2d').drawImage(img, 0, 0, width, height);
 
       const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', quality));
-      if (!blob || blob.size >= file.size) return file; // لم ننجح في التصغير، نبقي الأصل
+      if (!blob || blob.size >= file.size) return file; // لم ننجح في التصغير، نبقي الأصل
 
       const newName = file.name.replace(/\.(png|jpe?g|webp|bmp|heic|heif)$/i, '') + '.jpg';
       return new File([blob], newName, { type: 'image/jpeg', lastModified: Date.now() });
@@ -3204,8 +4028,8 @@ const CBS = {
     return arr;
   },
 
-  // يطلب من زر صريح (إذن الإشعارات يحتاج إيماءة مستخدم، خصوصاً على iOS).
-  // يعيد true عند النجاح.
+  // يطلب من زر صريح (إذن الإشعارات يحتاج إيماءة مستخدم، خصوصاً على iOS).
+  // يعيد true عند النجاح.
   async enableWebPush() {
     try {
       if (this._isCapacitor()) return false; // التطبيق الأصلي يستخدم FCM
@@ -3216,7 +4040,7 @@ const CBS = {
 
       const keyRes = await this.apiGet('/api/device/webpush/key');
       const { key, enabled } = await keyRes.json();
-      if (!enabled || !key) { console.warn('[Push] VAPID غير معدّ في الخادم'); return false; }
+      if (!enabled || !key) { console.warn('[Push] VAPID غير معدّ في الخادم'); return false; }
 
       const reg = await navigator.serviceWorker.ready;
       let sub = await reg.pushManager.getSubscription();
@@ -3235,7 +4059,7 @@ const CBS = {
   },
 
   // مزامنة صامتة: لو الإذن ممنوح مسبقاً نتأكد أن الاشتراك محفوظ في الخادم
-  // (الاشتراك قد يتغيّر أو يفقد بعد تحديث). لا يطلب إذناً ولا يزعج المستخدم.
+  // (الاشتراك قد يتغيّر أو يفقد بعد تحديث). لا يطلب إذناً ولا يزعج المستخدم.
   async _syncWebPush() {
     try {
       if (this._isCapacitor()) return;
@@ -3248,7 +4072,7 @@ const CBS = {
       if (sub) {
         await this.apiPost('/api/device/webpush/subscribe', sub.toJSON());
       } else {
-        await this.enableWebPush(); // الإذن ممنوح فإعادة الاشتراك لن تظهر أي نافذة
+        await this.enableWebPush(); // الإذن ممنوح فإعادة الاشتراك لن تظهر أي نافذة
       }
     } catch (e) { /* صامت */ }
   }
@@ -3489,7 +4313,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
               display:flex;align-items:center;justify-content:center;font-size:1.2rem;
             "></div>
             <div>
-              <div style="font-weight:700;font-size:0.95rem;">اضغط <span style="color:#a78bfa;">إضافة</span>  اكتمل التثبيت</div>
+              <div style="font-weight:700;font-size:0.95rem;">اضغط <span style="color:#a78bfa;">إضافة</span> ← اكتمل التثبيت</div>
               <div style="font-size:0.75rem;opacity:0.6;margin-top:1px;">التطبيق يفتح بالكامل بدون Safari</div>
             </div>
           </div>
@@ -3558,7 +4382,7 @@ window.addEventListener('beforeinstallprompt', (e) => {
       <div class="arrow-icon"><i class="ri-arrow-down-line"></i></div>
     `;
     document.body.appendChild(arw);
-    // يختفي بعد 6 ثوان
+    // يختفي بعد 6 ثوان
     setTimeout(() => arw.remove(), 6000);
   }
 
@@ -3738,8 +4562,35 @@ CBS.navigateTo = function(url) {
   setTimeout(() => { window.location.href = url; }, 200);
 };
 
+/* ----- الملفات وروابط الفيديو تُفتح داخل التطبيق -----
+   أي رابط إلى /uploads/ (محاضرة، مرجع، امتحان سابق، واجب، تسليم، إيصال) يمر
+   بالعارض الموحّد، وروابط يوتيوب/Drive/المقاطع المباشرة بمشغّل داخلي. كانت كلها
+   تفتح المتصفح الخارجي (أو لا تفتح إطلاقاً في التطبيق إن كان الرابط نسبياً).
+   استثناء: الروابط ذات download أو data-no-viewer. */
+document.addEventListener('click', function (e) {
+  if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
+  const a = e.target.closest && e.target.closest('a[href]');
+  if (!a || a.hasAttribute('download') || a.hasAttribute('data-no-viewer')) return;
+  let u;
+  try { u = new URL(a.getAttribute('href'), location.href); } catch (err) { return; }
+  if (!/^https?:$/.test(u.protocol)) return;
+  const title = (a.dataset.title || '').trim() || undefined;
+  const apiOrigin = (() => { try { return API_BASE ? new URL(API_BASE).origin : location.origin; } catch (err) { return location.origin; } })();
+  if (u.pathname.startsWith('/uploads/') && (u.origin === location.origin || u.origin === apiOrigin)) {
+    e.preventDefault(); e.stopPropagation();
+    CBS.openFileViewer(u.href, { title });
+    return;
+  }
+  const host = u.hostname.replace(/^www\.|^m\./, '');
+  if (host === 'youtu.be' || host.endsWith('youtube.com') || host === 'drive.google.com' || /\.(mp4|webm|mov|m4v|mp3|m4a|wav|ogg)$/i.test(u.pathname)) {
+    e.preventDefault(); e.stopPropagation();
+    CBS.openMediaLink(u.href, title);
+  }
+}, true);
+
 /* ----- Intercept target="_blank" Links in Native App ----- */
 document.addEventListener('click', function(e) {
+  if (e.defaultPrevented) return;
   const link = e.target.closest('a[target="_blank"]');
   if (link && typeof window !== 'undefined' && !!(window.Capacitor?.isNativePlatform?.())) {
     e.preventDefault();
@@ -3773,7 +4624,7 @@ document.addEventListener('click', function(e) {
     });
     mo.observe(document.body, { childList: true, subtree: true });
   }
-  // app.js قد يحمَّل في <head> قبل وجود body  الانتظار إلزامي وإلا ظهر toast خطأ لكل زائر
+  // app.js قد يحمَّل في <head> قبل وجود body  الانتظار إلزامي وإلا ظهر toast خطأ لكل زائر
   if (document.readyState === 'loading' || !document.body) {
     document.addEventListener('DOMContentLoaded', start);
   } else {
@@ -3799,13 +4650,13 @@ CBS.vibrate = function(ms = 30) {
    النسخة السابقة كانت ترسم نمطاً مشتقاً من دالة تجزئة: تبدو كرمز QR لكنها
    لا تحمل أي بيانات ولا تحوي أنماط التوقيت التي يوجبها المعيار، فكان أي
    قارئ يفشل في مسحها. الآن نستخدم مكتبة qrcode-generator (MIT) المضمّنة
-   محلياً في /vendor/qrcode.min.js  ترميز حقيقي مع تصحيح أخطاء ودعم UTF-8
+   محلياً في /vendor/qrcode.min.js  ترميز حقيقي مع تصحيح أخطاء ودعم UTF-8
    (ضروري للأسماء العربية). */
 CBS.renderQRCode = function(canvasOrId, text, options = {}) {
   const canvas = typeof canvasOrId === 'string' ? document.getElementById(canvasOrId) : canvasOrId;
   if (!canvas) return false;
   if (typeof qrcode !== 'function') {
-    console.warn('renderQRCode: مكتبة qrcode غير محمّلة  أضف <script src="/vendor/qrcode.min.js">');
+    console.warn('renderQRCode: مكتبة qrcode غير محمّلة  أضف <script src="/vendor/qrcode.min.js">');
     return false;
   }
 
@@ -3823,14 +4674,14 @@ CBS.renderQRCode = function(canvasOrId, text, options = {}) {
     qr.make();
   } catch (e) {
     // يحدث لو تجاوزت البيانات سعة أكبر إصدار
-    console.warn('renderQRCode: تعذر ترميز البيانات ', e.message);
+    console.warn('renderQRCode: تعذر ترميز البيانات ', e.message);
     ctx.fillStyle = light;
     ctx.fillRect(0, 0, size, size);
     return false;
   }
 
   const count = qr.getModuleCount();
-  // نقرّب حجم الوحدة لعدد صحيح حتى تبقى الحواف حادة ولا تتشوّه عند المسح
+  // نقرّب حجم الوحدة لعدد صحيح حتى تبقى الحواف حادة ولا تتشوّه عند المسح
   const cell = Math.max(1, Math.floor(size / (count + 2))); // +2 لهامش السكون
   const drawn = cell * count;
   const offset = Math.floor((size - drawn) / 2);
@@ -3893,7 +4744,7 @@ CBS.enqueueOfflineTask = function(actionType, payload) {
   this.toast('تم الحفظ أوفلاين', 'سيتم رفع البيانات تلقائياً عند عودة اتصال الإنترنت', 'info');
 };
 
-/* المعالجات حسب نوع المهمة  أي نوع غير مسجَّل هنا كان يحذف بصمت */
+/* المعال←جات حسب نوع المهمة  أي نوع غير مسجَّل هنا كان يحذف بصمت */
 CBS._offlineHandlers = {
   attendance: function(payload) { return CBS.apiPost('/api/attendance', payload); }
 };
@@ -3907,7 +4758,7 @@ CBS.flushOfflineQueue = async function() {
   const remaining = [];
   let successCount = 0;
 
-  /* مهم: لا نفرّغ الطابور قبل الإرسال. النسخة السابقة كانت تمسحه أولاً،
+  /* مهم: لا نفرّغ الطابور قبل الإرسال. النسخة السابقة كانت تمسحه أولاً،
      فأي فشل شبكة أو خطأ خادم يعني ضياع سجل الحضور نهائياً بلا إعادة محاولة. */
   for (const task of queue) {
     const handler = this._offlineHandlers[task.type];
@@ -3921,13 +4772,13 @@ CBS.flushOfflineQueue = async function() {
       if (res.ok) {
         successCount++;
       } else if (res.status >= 400 && res.status < 500 && res.status !== 429) {
-        // خطأ في البيانات نفسها: إعادة المحاولة لن تنجح أبداً  نسقطها ونبلّغ
+        // خطأ في البيانات نفسها: إعادة المحاولة لن تنجح أبداً  نسقطها ونبلّغ
         console.warn('مهمة أوفلاين مرفوضة نهائياً:', task.type, res.status);
       } else {
-        remaining.push(task);                      // خطأ خادم/مؤقت → نعيد المحاولة لاحقاً
+        remaining.push(task);                      // خطأ خادم/مؤقت → نعيد المحاولة لاحقاً
       }
     } catch (e) {
-      remaining.push(task);                        // انقطاع الشبكة → نبقيها
+      remaining.push(task);                        // انقطاع الشبكة → نبقيها
       console.warn('Offline sync item failed:', e.message);
     }
   }
@@ -3937,7 +4788,7 @@ CBS.flushOfflineQueue = async function() {
   this._flushing = false;
 
   if (remaining.length > 0 && successCount === 0) {
-    this.toast('تعذرت المزامنة', `${remaining.length} عمليّة ما زالت محفوظة وسترفع لاحقاً`, 'warning');
+    this.toast('تعذرت المزامنة', `${remaining.length} عمليّة ما زالت محفوظة وسترفع لاحقاً`, 'warning');
   }
 
   if (successCount > 0) {
@@ -4036,9 +4887,15 @@ CBS.checkAppVersion = async function() {
       return;
     }
 
-    const v = CBS.VERSION || '2.1.0';
-    const code = CBS.BUILD_CODE || 28;
-    const platform = 'android';
+    /* الإصدار الحقيقي للتطبيق المثبّت من النظام (@capacitor/app)؛ الثابتان
+       احتياط فقط — كانا متأخرين عن build.gradle فيرى الخادم كل نسخة قديمة */
+    let v = CBS.VERSION, code = CBS.BUILD_CODE;
+    try {
+      const info = await window.Capacitor?.Plugins?.App?.getInfo?.();
+      if (info?.version) v = info.version;
+      if (Number(info?.build)) code = Number(info.build);
+    } catch (e) {}
+    const platform = window.Capacitor?.getPlatform ? window.Capacitor.getPlatform() : 'android';
 
     const res = await fetch(`${API_BASE}/api/app-version/check?v=${encodeURIComponent(v)}&code=${code}&platform=${platform}`);
     if (!res.ok) return;
@@ -4065,8 +4922,8 @@ CBS.showUpdateModal = function(info = {}) {
   if (document.getElementById('cbsUpdateModalOverlay')) return;
 
   const isMandatory = !!info.isMandatory;
-  const latestVersion = info.latestVersion || '2.1.0';
-  const title = info.title || (isMandatory ? 'تحديث إجباري للنظام ⚠️' : 'تحديث جديد متوفر للتطبيق 🚀');
+  const latestVersion = info.latestVersion || '2.3.0';
+  const title = info.title || (isMandatory ? 'تحديث إجباري للنظام' : 'تحديث جديد متوفر للتطبيق');
   const message = info.message || 'يتوفر إصدار جديد من تطبيق كلية النصر التقنية يتضمن تحسينات هامة للأداء واستقرار النظام.';
   const notes = Array.isArray(info.releaseNotes) && info.releaseNotes.length ? info.releaseNotes : [
     'تحديثات شاملة لواجهات النظام وهوية كلية النصر التقنية',
@@ -4160,7 +5017,7 @@ if (document.readyState === 'loading') {
    على النسخة القديمة إلى الأبد. حُذف. */
 
 /* ===== مؤشر الاتصال بالإنترنت (Online / Offline) =====
-   يظهر للمستخدم شريط تنبيه عند انقطاع الشبكة ويخفيه عند عودتها */
+   يظهر للمستخدم شريط تنبيه عند انقطاع الشبكة ويخفيه عند عودتها */
 (function initConnectionIndicator() {
   function showOfflineBanner() {
     if (navigator.onLine || document.getElementById('cbs-offline-banner')) return;
@@ -4175,7 +5032,7 @@ if (document.readyState === 'loading') {
       'justify-content:center', 'gap:8px',
       'box-shadow:0 2px 8px rgba(0,0,0,0.3)'
     ].join(';');
-    banner.innerHTML = '<i class="ri-wifi-off-line"></i> أنت غير متصل بالإنترنت  يمكنك تصفح الصفحات المحفوظة';
+    banner.innerHTML = '<i class="ri-wifi-off-line"></i> أنت غير متصل بالإنترنت  يمكنك تصفح الصفحات المحفوظة';
     document.body.prepend(banner);
   }
 

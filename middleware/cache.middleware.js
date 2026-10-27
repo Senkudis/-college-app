@@ -47,6 +47,7 @@ const cacheRoute = (duration = 60) => {
       const cachedBody = await redis.get(key);
       if (cachedBody) {
         res.setHeader('X-Cache', 'HIT');
+        res.type('application/json');
         return res.send(JSON.parse(cachedBody));
       } else {
         res.setHeader('X-Cache', 'MISS');
@@ -55,8 +56,10 @@ const cacheRoute = (duration = 60) => {
         res.sendResponse = res.send;
         res.send = (body) => {
           try {
-            // نخزن البيانات كنص في Redis
-            redis.setex(key, duration, JSON.stringify(body));
+            // نخزن الاستجابات الناجحة فقط — تخزين 500 أو 403 كان يعيدها لدقائق بعد زوال السبب
+            if (res.statusCode >= 200 && res.statusCode < 300) {
+              redis.setex(key, duration, JSON.stringify(body));
+            }
           } catch (e) {
             console.error('[REDIS] Error saving to cache:', e);
           }

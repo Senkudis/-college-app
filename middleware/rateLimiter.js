@@ -1,4 +1,5 @@
 const rateLimit = require('express-rate-limit');
+const jwt = require('jsonwebtoken');
 
 // Helper to mask IPv6 to /64 to prevent rate limit bypass
 const getIpPrefix = (ip) => {
@@ -31,28 +32,78 @@ const createRateLimiter = (windowMs, max, message, keyGenerator, skipSuccessfulR
   return rateLimit(options);
 };
 
-// General API limiter: 1000 requests per 15 minutes (increased to allow background polling)
+/* طلاب الحرم يخرجون إلى الإنترنت من عنوان IP واحد (شبكة الكلية أو مزوّد
+   الهاتف). أي حدّ مفتاحه الـIP وحده يُعامل الحرم كله كمستخدم واحد:
+   خمس محاولات دخول خاطئة من خمسة طلاب كانت تقفل الدخول على الجميع خمس
+   دقائق، وألف طلب في ربع ساعة تستهلكها بضع عشرات من الطلاب يتصفحون معاً.
+   نعدّ لكل مستخدم/حساب، ونُبقي على الـIP سقفاً أعلى بكثير ضد الإغراق. */
+const userFromToken = (req) => {
+  const h = req.headers?.authorization;
+  if (!h || !h.startsWith('Bearer ')) return null;
+  try {
+    // تحقق كامل من التوقيع: توكن مزوّر لا يمنح صاحبه دلواً جديداً في كل طلب
+    const d = jwt.verify(h.slice(7).trim(), process.env.JWT_SECRET);
+    return d.id || d._id || d.userId || null;
+  } catch { return null; }
+};
+const emailKey = (req) => String(req.body?.email || '').trim().toLowerCase().slice(0, 200);
+
+// General API limiter: per signed-in user, per IP for anonymous traffic
 const apiLimiter = createRateLimiter(
   15 * 60 * 1000,
   1000,
-  'طلبات كثيرة جداً، يرجى الانتظار قبل المحاولة مرة أخرى'
+  'طلبات كثيرة جداً، يرجى الانتظار قبل المحاولة مرة أخرى',
+  (req) => { const uid = userFromToken(req); return uid ? `user:${uid}` : `ip:${getIpPrefix(req.ip)}`; }
 );
 
-// Auth endpoints: stricter limits (5 min, IP only, only counts failed attempts)
+// Login: failed attempts per account from this network (the account itself also locks after repeated failures)
 const authLimiter = createRateLimiter(
   5 * 60 * 1000, // 5 min
   5, // 5 failed attempts
   'محاولات تسجيل دخول خاطئة كثيرة، يرجى المحاولة بعد 5 دقائق',
-  (req) => `ip:${getIpPrefix(req.ip)}`, // Restrict to IP only
+  (req) => `login:${getIpPrefix(req.ip)}:${emailKey(req)}`,
   true // skipSuccessfulRequests: only count failed attempts (400, 401, 500 etc)
 );
 
-// Password reset: very strict
+// سقف الشبكة: يوقف تجربة كلمات مرور على حسابات كثيرة من مصدر واحد
+const authIpLimiter = createRateLimiter(
+  5 * 60 * 1000,
+  80,
+  'محاولات تسجيل دخول خاطئة كثيرة من هذه الشبكة، يرجى المحاولة بعد 5 دقائق',
+  (req) => `loginip:${getIpPrefix(req.ip)}`,
+  true
+);
+
+/* التحقق من كود الاستعادة: الكود 6 أرقام صالح 20 دقيقة، وبلا حدّ كان
+   تخمينه بالقوة الغاشمة ممكناً خلال دقائق = الاستيلاء على أي حساب.
+   الحدّ لكل بريد هو ما يحمي الكود؛ سقف الـIP يمنع تدوير البريد. */
+const resetCodeLimiter = createRateLimiter(
+  15 * 60 * 1000,
+  10,
+  'محاولات كثيرة للتحقق من الكود، يرجى الانتظار 15 دقيقة',
+  (req) => `resetcode:${emailKey(req) || getIpPrefix(req.ip)}`,
+  true
+);
+const resetCodeIpLimiter = createRateLimiter(
+  15 * 60 * 1000,
+  100,
+  'محاولات كثيرة للتحقق من الكود، يرجى الانتظار 15 دقيقة',
+  (req) => `resetcodeip:${getIpPrefix(req.ip)}`,
+  true
+);
+
+// Password reset emails: per address, with a network ceiling against mail flooding
 const passwordResetLimiter = createRateLimiter(
   60 * 60 * 1000, // 1 hour
   3,
   'تم تجاوز حد طلبات استعادة كلمة المرور، يرجى الانتظار ساعة',
-  (req) => `ip:${getIpPrefix(req.ip)}` // Restrict to IP only
+  (req) => `reset:${getIpPrefix(req.ip)}:${emailKey(req)}`
+);
+const passwordResetIpLimiter = createRateLimiter(
+  60 * 60 * 1000,
+  40,
+  'تم تجاوز حد طلبات استعادة كلمة المرور من هذه الشبكة، يرجى الانتظار ساعة',
+  (req) => `resetip:${getIpPrefix(req.ip)}`
 );
 
 // File upload: moderate limits
@@ -95,10 +146,25 @@ const publicActionLimiter = createRateLimiter(
   (req) => `public:${getIpPrefix(req.ip)}`
 );
 
+/* صفحة التحقق من بطاقة الهوية — عامة بلا تسجيل دخول. الرموز موقّعة فلا
+   يُجدي تخمينها، والحدّ يمنع استخدامها لإغراق قاعدة البيانات بالاستعلامات.
+   60 مسحاً في 10 دقائق يكفي حارس بوابة يتحقق من طابور طلاب. */
+const idVerifyLimiter = createRateLimiter(
+  10 * 60 * 1000,
+  60,
+  'محاولات تحقق كثيرة، يرجى الانتظار قليلاً',
+  (req) => `idverify:${getIpPrefix(req.ip)}`
+);
+
 module.exports = {
   apiLimiter,
+  idVerifyLimiter,
   authLimiter,
+  authIpLimiter,
   passwordResetLimiter,
+  passwordResetIpLimiter,
+  resetCodeLimiter,
+  resetCodeIpLimiter,
   uploadLimiter,
   aiLimiter,
   aiDailyLimiter,

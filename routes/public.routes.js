@@ -4,7 +4,9 @@ const PublicNews = require('../models/PublicNews');
 const PublicGallery = require('../models/PublicGallery');
 const { success, serverError } = require('../utils/response');
 const { cacheRoute } = require('../middleware/cache.middleware');
-const { publicActionLimiter } = require('../middleware/rateLimiter');
+const { publicActionLimiter, idVerifyLimiter } = require('../middleware/rateLimiter');
+const User = require('../models/User');
+const { verifyCode } = require('../utils/idCard');
 
 // ── Rate Limiter: 100 طلب لكل IP كل 15 دقيقة ──────────────────────────────
 const publicLimiter = rateLimit({
@@ -65,6 +67,57 @@ router.get('/news/:id', async (req, res) => {
   }
 });
 
+// ── GET /api/public/verify-id/:code ───────────────────────────────────────
+// التحقق من بطاقة الهوية الرقمية عبر رمز الـQR (صفحة /id/:code)
+// يعرض ما تُظهره البطاقة المطبوعة نفسها لا أكثر: لا بريد ولا هاتف ولا درجات.
+const ID_ROLE_TITLES = {
+  admin: 'إدارة النظام',
+  dean: 'عمادة الكلية',
+  doctor: 'عضو هيئة التدريس',
+  leader: 'طالب - ممثل الدفعة',
+  student: 'طالب'
+};
+
+router.get('/verify-id/:code', idVerifyLimiter, async (req, res) => {
+  try {
+    const userId = verifyCode(req.params.code);
+    if (!userId) {
+      return res.status(404).json({ success: false, valid: false, message: 'رمز البطاقة غير صالح أو تم التلاعب به' });
+    }
+
+    // findById يستبعد المحذوفين تلقائياً — بطاقة حساب محذوف = غير صالحة
+    const user = await User.findById(userId)
+      .select('name roles batch isActive isPendingRegistration createdAt')
+      .populate('batch', 'name code')
+      .lean();
+    if (!user) {
+      return res.status(404).json({ success: false, valid: false, message: 'هذه البطاقة لم تعد مرتبطة بحساب في الكلية' });
+    }
+
+    const roles = user.roles || ['student'];
+    const roleKey = Object.keys(ID_ROLE_TITLES).find(r => roles.includes(r)) || 'student';
+    const active = Boolean(user.isActive) && !user.isPendingRegistration;
+
+    res.setHeader('Cache-Control', 'no-store'); // حالة الحساب قد تتغير — لا نعرض نتيجة قديمة
+    success(res, {
+      valid: true,
+      status: active ? 'active' : 'suspended',
+      holder: {
+        name: user.name,
+        role: roleKey,
+        roleTitle: ID_ROLE_TITLES[roleKey],
+        batchName: user.batch?.name || '',
+        batchCode: user.batch?.code || '',
+        memberSince: user.createdAt ? new Date(user.createdAt).getFullYear() : null
+      },
+      institution: { name: 'جامعة النصر التقنية', faculty: 'كلية النصر التقنية' },
+      checkedAt: new Date()
+    });
+  } catch (err) {
+    serverError(res, err, 'التحقق من بطاقة الهوية');
+  }
+});
+
 // ── GET /api/public/gallery ───────────────────────────────────────────────
 // جلب صور المعرض الظاهرة مرتبة (بيانات حية مباشرة بدون تخزين مؤقت)
 router.get('/gallery', async (req, res) => {
@@ -121,8 +174,8 @@ router.post('/gallery/upload', authMiddleware, async (req, res) => {
     /* imageUrl كان نصاً حراً يُخزَّن ويُعرض للزوار كما هو — أي رابط خارجي
        أو نظام URI مثل javascript:. نقصره على مسارات الرفع الداخلية. */
     const cleanUrl = String(imageUrl).trim();
-    if (!/^\/uploads\/[A-Za-z0-9._\-\/]+$/.test(cleanUrl)) {
-      return fail(res, 'رابط الصورة غير صالح — يجب رفع الصورة عبر النظام', 400);
+    if (!/^\/uploads\/(?:misc|gallery)\/[A-Za-z0-9._\-]+\.(?:jpg|jpeg|png|webp|gif)$/i.test(cleanUrl) || cleanUrl.includes('..')) {
+      return fail(res, 'رابط الصورة غير صالح — يجب أن تكون صورة مرفوعة في المعرض أو المجلد العام', 400);
     }
 
     const safeCategories = ['نشاط', 'مبنى', 'تخرج', 'أخرى'];

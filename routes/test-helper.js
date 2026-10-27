@@ -241,6 +241,24 @@ class MockQuery {
   }
   lean() { return this; }
   where() { return this; }
+  // distinct(field): القيم الفريدة للحقل في نتيجة الاستعلام
+  distinct(field) {
+    this.promise = this.promise.then(result => {
+      const list = Array.isArray(result) ? result : (result ? [result] : []);
+      const seen = new Map();
+      for (const doc of list) {
+        const raw = doc && typeof doc.toObject === 'function' ? doc.toObject() : doc;
+        let v = resolvePath(raw || {}, field);
+        for (const one of (Array.isArray(v) ? v : [v])) {
+          if (one === undefined || one === null) continue;
+          const k = String(one);
+          if (!seen.has(k)) seen.set(k, one);
+        }
+      }
+      return [...seen.values()];
+    });
+    return this;
+  }
   async exec() {
     return this.promise;
   }
@@ -468,6 +486,23 @@ const ModelOverrides = {
     return new MockQuery(Promise.resolve(result));
   },
   
+  // findOneAndUpdate مع upsert — كان غائباً فمسار تسجيل الحضور يسقط بـ500 في الاختبار
+  findOneAndUpdate(filter, update, options = {}) {
+    const Model = this;
+    const store = getStore(this.modelName);
+    const item = store.find(it => matchFilter(it, filter, Model.modelName));
+    if (item) {
+      applyUpdate(item, update, Model);
+      return new MockQuery(Promise.resolve(new Model(item)));
+    }
+    if (!options.upsert) return new MockQuery(Promise.resolve(null));
+    const plain = {};
+    for (const [k, v] of Object.entries(filter || {})) if (!k.startsWith("$") && (v === null || typeof v !== "object" || v instanceof mongoose.Types.ObjectId)) plain[k] = v;
+    const fields = Object.fromEntries(Object.entries(update || {}).filter(([k]) => !k.startsWith("$")));
+    const doc = new Model({ ...plain, ...(update?.$setOnInsert || {}), ...(update?.$set || {}), ...fields });
+    return new MockQuery(doc.save().then(() => doc));
+  },
+
   findByIdAndDelete(id) {
     if (!id) return new MockQuery(Promise.resolve(null));
     const modelName = this.modelName;
@@ -514,10 +549,184 @@ const ModelOverrides = {
     const modelName = this.modelName;
     const store = getStore(modelName);
     return new MockQuery(Promise.resolve(store.length));
+  },
+
+  aggregate(pipeline) {
+    const modelName = this.modelName;
+    return new MockQuery(Promise.resolve().then(() => runAggregate(modelName, pipeline)));
   }
 };
 
 const compiledModels = {};
+
+/* ===== محاكاة aggregate مبسّطة =====
+   تدعم المراحل والتعابير التي تستخدمها المسارات فعلاً: $match و$unwind و$group
+   ($sum/$avg/$first/$push/$max/$min) و$lookup و$sort و$limit و$skip و$project و$count،
+   والتعابير "$path" و$cond و$eq و$ne و$ifNull و$subtract و$add و$max و$min و$map و$size. */
+function aggClone(v) {
+  if (v === null || v === undefined) return v;
+  if (typeof v.toObject === 'function') return v.toObject();
+  return v;
+}
+function aggEval(expr, doc, vars = {}) {
+  if (typeof expr === 'string') {
+    if (expr.startsWith('$$')) {
+      const [name, ...rest] = expr.slice(2).split('.');
+      let val = vars[name];
+      return rest.length ? resolvePath(val || {}, rest.join('.')) : val;
+    }
+    if (expr.startsWith('$')) return resolvePath(doc || {}, expr.slice(1));
+    return expr;
+  }
+  if (Array.isArray(expr)) return expr.map(e => aggEval(e, doc, vars));
+  if (expr && typeof expr === 'object' && !(expr instanceof Date) && !expr._bsontype) {
+    const keys = Object.keys(expr);
+    const op = keys[0];
+    if (keys.length === 1 && op.startsWith('$')) {
+      const arg = expr[op];
+      const ev = a => aggEval(a, doc, vars);
+      const num = v => (Array.isArray(v) ? v.reduce((s, x) => s + (Number(x) || 0), 0) : (Number(v) || 0));
+      switch (op) {
+        case '$cond': {
+          const [cond, a, b] = Array.isArray(arg) ? arg : [arg.if, arg.then, arg.else];
+          return ev(cond) ? ev(a) : ev(b);
+        }
+        case '$eq': { const [a, b] = arg.map(ev); return String(a) === String(b); }
+        case '$ne': { const [a, b] = arg.map(ev); return String(a) !== String(b); }
+        case '$gt': { const [a, b] = arg.map(ev); return a > b; }
+        case '$gte': { const [a, b] = arg.map(ev); return a >= b; }
+        case '$lt': { const [a, b] = arg.map(ev); return a < b; }
+        case '$lte': { const [a, b] = arg.map(ev); return a <= b; }
+        case '$and': return arg.every(x => ev(x));
+        case '$or': return arg.some(x => ev(x));
+        case '$ifNull': { const [a, b] = arg; const v = ev(a); return v === null || v === undefined ? ev(b) : v; }
+        case '$subtract': { const [a, b] = arg.map(ev); return num(a) - num(b); }
+        case '$add': return arg.map(ev).reduce((s, x) => s + num(x), 0);
+        case '$multiply': return arg.map(ev).reduce((s, x) => s * num(x), 1);
+        case '$divide': { const [a, b] = arg.map(ev); return num(b) ? num(a) / num(b) : null; }
+        case '$max': { const vals = (Array.isArray(arg) ? arg.map(ev) : [ev(arg)]).flat().filter(v => v !== null && v !== undefined); return vals.length ? vals.reduce((m, x) => (x > m ? x : m)) : null; }
+        case '$min': { const vals = (Array.isArray(arg) ? arg.map(ev) : [ev(arg)]).flat().filter(v => v !== null && v !== undefined); return vals.length ? vals.reduce((m, x) => (x < m ? x : m)) : null; }
+        case '$sum': return num(ev(arg));
+        case '$size': { const v = ev(arg); return Array.isArray(v) ? v.length : 0; }
+        case '$map': {
+          const input = ev(arg.input) || [];
+          const as = arg.as || 'this';
+          return (Array.isArray(input) ? input : [input]).map(item => aggEval(arg.in, doc, { ...vars, [as]: item }));
+        }
+        case '$toString': return String(ev(arg));
+        default: return undefined;
+      }
+    }
+    const out = {};
+    for (const k of keys) out[k] = aggEval(expr[k], doc, vars);
+    return out;
+  }
+  return expr;
+}
+function aggSetPath(obj, path, value) {
+  const parts = path.split('.');
+  let cur = obj;
+  for (let i = 0; i < parts.length - 1; i++) {
+    if (cur[parts[i]] === undefined || cur[parts[i]] === null) cur[parts[i]] = {};
+    cur = cur[parts[i]];
+  }
+  cur[parts[parts.length - 1]] = value;
+}
+function aggCollectionStore(collection) {
+  const wanted = String(collection).toLowerCase();
+  const name = Object.keys(compiledModels).find(n => {
+    const m = compiledModels[n];
+    const coll = (m.collection && m.collection.name) || '';
+    return coll.toLowerCase() === wanted || (n.toLowerCase() + 's') === wanted || n.toLowerCase() === wanted;
+  });
+  return name ? getStore(name) : [];
+}
+function runAggregate(modelName, pipeline) {
+  let docs = getStore(modelName).map(item => ({ ...aggClone(item) }));
+  if (modelName === 'User') docs = docs.filter(d => d.deletedAt === null || d.deletedAt === undefined);
+  for (const stage of pipeline || []) {
+    const op = Object.keys(stage)[0];
+    const arg = stage[op];
+    if (op === '$match') {
+      docs = docs.filter(d => matchFilter(d, arg, modelName));
+    } else if (op === '$unwind') {
+      const path = (typeof arg === 'string' ? arg : arg.path).replace(/^\$/, '');
+      const keep = typeof arg === 'object' && arg.preserveNullAndEmptyArrays;
+      const out = [];
+      for (const d of docs) {
+        const v = resolvePath(d, path);
+        const parts = path.split('.');
+        const arr = path.includes('.') ? v : d[path];
+        if (Array.isArray(arr) && arr.length) {
+          for (const el of arr) { const copy = { ...d }; aggSetPath(copy, path, aggClone(el)); out.push(copy); }
+        } else if (keep) {
+          out.push({ ...d });
+        }
+      }
+      docs = out;
+    } else if (op === '$group') {
+      const groups = new Map();
+      for (const d of docs) {
+        const id = aggEval(arg._id, d);
+        const key = JSON.stringify(id === undefined ? null : (id && id.toString && typeof id === 'object' && !Array.isArray(id) && id._bsontype ? id.toString() : id));
+        if (!groups.has(key)) groups.set(key, { _id: id === undefined ? null : id, __n: {}, __docs: [] });
+        groups.get(key).__docs.push(d);
+      }
+      docs = [...groups.values()].map(g => {
+        const out = { _id: g._id };
+        for (const [field, acc] of Object.entries(arg)) {
+          if (field === '_id') continue;
+          const accOp = Object.keys(acc)[0];
+          const vals = g.__docs.map(d => aggEval(acc[accOp], d));
+          if (accOp === '$sum') out[field] = vals.reduce((s, v) => s + (Number(Array.isArray(v) ? v.reduce((a, b) => a + (Number(b) || 0), 0) : v) || 0), 0);
+          else if (accOp === '$avg') { const n = vals.filter(v => typeof v === 'number'); out[field] = n.length ? n.reduce((a, b) => a + b, 0) / n.length : null; }
+          else if (accOp === '$first') out[field] = vals[0];
+          else if (accOp === '$last') out[field] = vals[vals.length - 1];
+          else if (accOp === '$push') out[field] = vals;
+          else if (accOp === '$addToSet') out[field] = [...new Map(vals.map(v => [String(v), v])).values()];
+          else if (accOp === '$max') out[field] = vals.reduce((m, v) => (m === undefined || v > m ? v : m), undefined);
+          else if (accOp === '$min') out[field] = vals.reduce((m, v) => (m === undefined || v < m ? v : m), undefined);
+        }
+        return out;
+      });
+    } else if (op === '$lookup') {
+      const foreign = aggCollectionStore(arg.from).map(aggClone);
+      docs = docs.map(d => {
+        const local = resolvePath(d, arg.localField);
+        const locals = (Array.isArray(local) ? local : [local]).map(String);
+        return { ...d, [arg.as]: foreign.filter(f => { const fv = resolvePath(f, arg.foreignField); return (Array.isArray(fv) ? fv : [fv]).some(x => locals.includes(String(x))); }) };
+      });
+    } else if (op === '$sort') {
+      const entries = Object.entries(arg);
+      docs.sort((a, b) => {
+        for (const [k, dir] of entries) {
+          const va = resolvePath(a, k), vb = resolvePath(b, k);
+          if (va < vb) return -dir;
+          if (va > vb) return dir;
+        }
+        return 0;
+      });
+    } else if (op === '$limit') {
+      docs = docs.slice(0, arg);
+    } else if (op === '$skip') {
+      docs = docs.slice(arg);
+    } else if (op === '$count') {
+      docs = [{ [arg]: docs.length }];
+    } else if (op === '$project' || op === '$addFields' || op === '$set') {
+      docs = docs.map(d => {
+        const includeOnly = op === '$project' && Object.values(arg).some(v => v === 1 || v === true);
+        const out = op === '$project' ? (includeOnly ? { _id: d._id } : { ...d }) : { ...d };
+        for (const [k, v] of Object.entries(arg)) {
+          if (v === 0 || v === false) { delete out[k]; continue; }
+          aggSetPath(out, k, (v === 1 || v === true) ? resolvePath(d, k) : aggEval(v, d));
+        }
+        return out;
+      });
+    }
+  }
+  return docs;
+}
+
 
 // Monkeypatch mongoose.model compilation
 mongoose.model = function(name, schema) {
@@ -730,7 +939,10 @@ mongoose.model = function(name, schema) {
       }
       
       if (modelName === 'User') {
-        if (this.isModified('password')) {
+        /* isModified في هذا المحاكي يعيد true دائماً، فكان كل save (ومسار الدخول
+           يحفظ المستخدم) يعيد تشفير الـhash نفسه فيفشل الدخول التالي. النموذج
+           الحقيقي يتجاوز الـhash الجاهز — نطابقه هنا. */
+        if (this.isModified('password') && !/^\$2[abxy]\$\d+\$/.test(String(this.password || ''))) {
           const salt = bcrypt.genSaltSync(10);
           this.password = bcrypt.hashSync(this.password, salt);
           this.passwordChangedAt = Date.now();
@@ -820,8 +1032,10 @@ mongoose.model = function(name, schema) {
   modelClass.findByIdAndUpdate = ModelOverrides.findByIdAndUpdate;
   modelClass.findByIdAndDelete = ModelOverrides.findByIdAndDelete;
   modelClass.findOneAndDelete = ModelOverrides.findOneAndDelete;
+  modelClass.findOneAndUpdate = ModelOverrides.findOneAndUpdate;
   modelClass.countDocuments = ModelOverrides.countDocuments;
   modelClass.estimatedDocumentCount = ModelOverrides.estimatedDocumentCount;
+  modelClass.aggregate = ModelOverrides.aggregate;
   
   compiledModels[name] = modelClass;
   return modelClass;

@@ -1,5 +1,6 @@
 const router = require("express").Router();
 const mongoose = require("mongoose");
+const { resolveDueDateTime } = require("../utils/dueDate");
 const auth = require("../middleware/auth.middleware");
 const role = require("../middleware/role.middleware");
 const User = require("../models/User");
@@ -82,7 +83,7 @@ router.get("/dashboard", auth, async (req, res) => {
       .select("batch batches points name")
       .lean();
 
-    const batchId = student?.batch;
+    const batchId = student?.batch || (student?.batches && student.batches[0]);
 
     // استعلامات متوازية لأقصى سرعة
     const [
@@ -166,12 +167,8 @@ router.get("/dashboard", auth, async (req, res) => {
     );
     const now = new Date();
     const pendingAssignments = allAssignments.filter(a => {
-      const due = new Date(a.dueDate);
-      if (a.dueTime) {
-        const [h, m] = a.dueTime.split(":").map(Number);
-        due.setHours(h, m, 0, 0);
-      }
-      return due > now && !submittedAssignmentIds.has(a._id.toString());
+      const due = resolveDueDateTime(a);
+      return due && due > now && !submittedAssignmentIds.has(a._id.toString());
     });
 
     // حساب متوسط الدرجات
@@ -260,10 +257,16 @@ router.get("/dashboard", auth, async (req, res) => {
 router.get("/report", auth, async (req, res) => {
   try {
     const student = await User.findById(req.user.id)
-      .select("batch points name email")
+      .select("batch batches points name email")
+      .populate("batch", "name code")
       .lean();
 
-    const batchId = student?.batch;
+    if (!student) {
+      return fail(res, "المستخدم غير موجود", 404);
+    }
+
+    const batchId = student?.batch?._id || student?.batch || (student?.batches && student.batches[0]);
+    const studentIdObj = new mongoose.Types.ObjectId(req.user.id);
 
     const [allAssignments, submissions, attendanceAgg, bySubjectAgg, quizAttempts] = await Promise.all([
       batchId ? Assignment.countDocuments({ batches: batchId }) : 0,
@@ -273,49 +276,46 @@ router.get("/report", auth, async (req, res) => {
         .populate("assignment", "title dueDate subject")
         .lean(),
 
-      batchId
-        ? Attendance.aggregate([
-            { $match: { batch: batchId } },
-            { $unwind: "$students" },
-            { $match: { "students.student": student._id } },
-            {
-              $group: {
-                _id: "$students.status",
-                count: { $sum: 1 }
-              }
+      Attendance.aggregate([
+        { $match: { "students.student": studentIdObj } },
+        { $unwind: "$students" },
+        { $match: { "students.student": studentIdObj } },
+        {
+          $group: {
+            _id: "$students.status",
+            count: { $sum: 1 }
+          }
+        }
+      ]),
+
+      Attendance.aggregate([
+        { $match: { "students.student": studentIdObj } },
+        { $unwind: "$students" },
+        { $match: { "students.student": studentIdObj } },
+        {
+          $group: {
+            _id: "$subject",
+            total: { $sum: 1 },
+            present: {
+              $sum: { $cond: [{ $eq: ["$students.status", "present"] }, 1, 0] }
             }
-          ])
-        : [],
+          }
+        },
+        {
+          $lookup: {
+            from: "subjects",
+            localField: "_id",
+            foreignField: "_id",
+            as: "subjectDoc"
+          }
+        },
+        { $unwind: { path: "$subjectDoc", preserveNullAndEmptyArrays: true } }
+      ]),
 
-      batchId
-        ? Attendance.aggregate([
-            { $match: { batch: batchId } },
-            { $unwind: "$students" },
-            { $match: { "students.student": student._id } },
-            {
-              $group: {
-                _id: "$subject",
-                total: { $sum: 1 },
-                present: {
-                  $sum: { $cond: [{ $eq: ["$students.status", "present"] }, 1, 0] }
-                }
-              }
-            },
-            {
-              $lookup: {
-                from: "subjects",
-                localField: "_id",
-                foreignField: "_id",
-                as: "subjectDoc"
-              }
-            },
-            { $unwind: { path: "$subjectDoc", preserveNullAndEmptyArrays: true } }
-          ])
-        : [],
-
-      QuizAttempt.find({ student: req.user.id })
-        .select("score maxScore submittedAt")
+      QuizAttempt.find({ student: req.user.id, submitted: true })
+        .select("quiz score maxScore submittedAt")
         .populate("quiz", "title")
+        .sort({ submittedAt: -1 })
         .lean()
     ]);
 
@@ -348,8 +348,29 @@ router.get("/report", auth, async (req, res) => {
         )
       : null;
 
+    /* الواجهة تعرض title وsubmittedAt — السجلات الخام كانت بلا عنوان وبتاريخ باسم
+       آخر، فيظهر "واجب · Invalid Date" والدفعة "غير محدد" (معرّف بلا اسم). */
+    const submissionList = [...submissions]
+      .sort((a, b) => new Date(b.submissionDate) - new Date(a.submissionDate))
+      .slice(0, 20)
+      .map(s => ({
+        _id: s._id,
+        title: s.assignment?.title || "تكليف محذوف",
+        submittedAt: s.submissionDate,
+        status: s.status,
+        grade: s.grade,
+        isLate: s.isLate
+      }));
+    const quizList = quizAttempts.slice(0, 10).map(q => ({
+      _id: q._id,
+      title: q.quiz?.title || "اختبار محذوف",
+      submittedAt: q.submittedAt,
+      score: q.score,
+      maxScore: q.maxScore
+    }));
+
     success(res, {
-      student: { name: student.name, email: student.email, points: student.points || 0, batch: student.batch },
+      student: { name: student.name, email: student.email, points: student.points || 0, batch: student.batch || null },
       totalPoints: student.points || 0,
       assignments: {
         total: submissions.length,
@@ -358,7 +379,7 @@ router.get("/report", auth, async (req, res) => {
         graded: gradedSubmissions.length,
         avgGrade,
         late: submissions.filter(s => s.isLate).length,
-        list: submissions.slice(0, 20) // آخر 20 واجب
+        list: submissionList // آخر 20 تسليم
       },
       attendance: {
         total: totalSessions,
@@ -372,7 +393,7 @@ router.get("/report", auth, async (req, res) => {
       quizzes: {
         total: quizAttempts.length,
         avgScore: avgQuizScore,
-        list: quizAttempts.slice(0, 10)
+        list: quizList
       }
     });
   } catch (err) {

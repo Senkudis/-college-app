@@ -54,6 +54,15 @@ module.exports = async (req, res, next) => {
     // إضافة معلومات المستخدم إلى request
     const userId = decoded.id || decoded._id || decoded.userId || decoded.user?.id;
     
+    // التحقق من غرض التوكن (منع استخدام توكن استعادة كلمة المرور كتوكن وصول)
+    if (decoded.purpose && decoded.purpose !== "access") {
+      return res.status(401).json({
+        success: false,
+        message: "توكن غير مخصص للوصول إلى هذا المسار",
+        action: "يرجى تسجيل الدخول مرة أخرى"
+      });
+    }
+    
     // تأكيد أن userId موجود (ضروري للاستعلامات اللاحقة)
     if (!userId) {
       console.error("تحذير: التوكن لا يحتوي على معرف المستخدم:", decoded);

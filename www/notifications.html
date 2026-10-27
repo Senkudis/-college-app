@@ -7,73 +7,25 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>الإشعارات | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=2026083019">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026083019">
+  <link rel="stylesheet" href="/css/style.css?v=2026102613">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026102613">
+  <link rel="stylesheet" href="/css/ui.css?v=2026102613">
   <style>
-    .notif-list { display: flex; flex-direction: column; gap: 8px; }
-    .notif-card {
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-right: 3px solid var(--primary);
-      border-radius: 12px;
-      padding: 12px 14px 12px 12px;
-      box-shadow: var(--shadow-sm);
-      position: relative;
-      animation: fadeUp 0.3s ease;
-      transition: transform 0.15s, box-shadow 0.15s;
-    }
-    @keyframes fadeUp { from{opacity:0;transform:translateY(8px);}to{opacity:1;transform:translateY(0);} }
-    .notif-card.unread { cursor: pointer; }
-    .notif-card.unread:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
-    .notif-card.emergency { background: var(--danger-bg); border-right-color: var(--danger); }
-
-    .unread-dot {
-      position: absolute;
-      top: 14px; left: 14px;
-      width: 7px; height: 7px;
-      border-radius: 50%;
-      background: var(--primary);
-    }
-    .notif-card.emergency .unread-dot { background: var(--danger); }
-
-    .notif-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 10px; margin-bottom: 5px; }
-    .notif-title { font-size: 0.86rem; font-weight: 700; color: var(--text-main); }
-    .notif-card.emergency .notif-title { color: var(--danger); }
-    .notif-time { font-size: 0.72rem; color: var(--text-muted); white-space: nowrap; display: flex; align-items: center; gap: 3px; flex-shrink: 0; }
-    .notif-body { font-size: 0.8rem; color: var(--text-muted); line-height: 1.55; }
-
-    .emergency-pill {
-      display: inline-flex; align-items: center; gap: 4px;
-      background: var(--danger); color: white;
-      padding: 1px 8px; border-radius: 20px;
-      font-size: 0.68rem; font-weight: 700;
-      margin-bottom: 5px;
-    }
-    .page-actions { display: flex; justify-content: flex-end; }
-    .notif-tabs { display:flex; gap:8px; margin-bottom:16px; }
-    .notif-tab {
-      border:none; background:var(--bg-card); color:var(--text-muted);
-      border:1px solid var(--border); border-radius:20px;
-      padding:7px 16px; font-size:0.82rem; font-weight:700;
-      cursor:pointer; transition:all 0.2s;
-      display:flex; align-items:center; gap:6px;
-    }
-    .notif-tab.active { background:var(--primary); color:#fff; border-color:var(--primary); }
-    .notif-tab .tab-count {
-      background:rgba(255,255,255,0.25); color:inherit;
-      border-radius:10px; padding:1px 7px; font-size:0.75rem; font-weight:800;
-      display:none;
-    }
-    .notif-tab.active .tab-count, .notif-tab .tab-count.has-count { display:inline; }
-    .notif-tools{display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap}
-    .notif-search,.notif-category{min-height:40px;border:1px solid var(--border);border-radius:10px;background:var(--bg-input);color:var(--text-main);font:inherit;padding:8px 11px}
-    .notif-search{flex:1;min-width:190px}.notif-category{min-width:145px}
-    .notif-actions{display:flex;gap:6px;margin-top:10px;justify-content:flex-start}
-    .notif-action-btn{border:1px solid var(--border);border-radius:8px;background:var(--bg-hover);color:var(--text-muted);font:700 .72rem var(--font-ar);padding:5px 8px;cursor:pointer}
-    .notif-action-btn:hover{border-color:var(--primary);color:var(--primary)}
-    .notif-group-count{display:inline-flex;align-items:center;background:var(--primary-light);color:var(--primary);border-radius:99px;padding:2px 7px;font-size:.68rem;margin-right:5px}
-    .notif-card.snoozed{opacity:.7;border-right-color:var(--warning)}
-    @media(max-width:520px){.notif-tools{align-items:stretch}.notif-search,.notif-category{width:100%}}
+    /* صندوق وارد: مجموعات حسب اليوم، غير المقروء بنقطة وعنوان أثقل، والنص يتسع عند الضغط */
+    .nt-day { margin: 18px 2px 8px; font-size: 0.8rem; font-weight: 800; color: var(--text-muted); }
+    .nt-day:first-child { margin-top: 0; }
+    .nt-row { align-items: flex-start; padding-block: 12px; cursor: pointer; }
+    .nt-row .hm-row-title { white-space: normal; font-weight: 600; color: var(--text-muted); }
+    .nt-row.unread .hm-row-title { font-weight: 800; color: var(--text-main); }
+    .nt-row .nt-msg { margin-top: 3px; font-size: 0.82rem; line-height: 1.6; color: var(--text-muted);
+      display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .nt-row.open .nt-msg { display: block; -webkit-line-clamp: unset; }
+    .nt-end { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+    .nt-time { font-size: 0.72rem; color: var(--text-light); white-space: nowrap; }
+    .nt-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); }
+    .nt-row.emergency .nt-dot { background: var(--danger-solid); }
+    .nt-x { margin-inline-start: 6px; font-size: 0.72rem; font-weight: 800; color: var(--text-muted); }
+    .nt-row .ui-icon-btn { width: 32px !important; height: 32px !important; min-width: 32px !important; min-height: 32px !important; font-size: 1rem; }
   </style>
 
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
@@ -96,60 +48,28 @@
   </div>
 </header>
 
-<div class="page-content" style="max-width:860px;">
+<div class="page-content">
 
-  <!-- Welcome Banner -->
-  <div class="welcome-banner" style="background: linear-gradient(135deg,#3b82f6,#2563eb,#1d4ed8);">
-    <div class="welcome-banner-icon-wrap">
-      <i class="ri-notification-3-line welcome-banner-icon"></i>
-    </div>
-    <div class="welcome-banner-body">
-      <h2>الإشعارات</h2>
-      <p>متابعة جميع الإشعارات والتنبيهات</p>
-    </div>
-  </div>
-  <div class="page-header">
-    <div class="page-header-left">
-      <div class="page-icon"><i class="ri-notification-3-fill"></i></div>
-      <div>
-        <div class="page-title">الإشعارات</div>
-        <div class="page-subtitle">آخر التحديثات والإشعارات</div>
-      </div>
-    </div>
-    <button class="btn btn-secondary" id="readAllBtn" onclick="markAllRead()" style="display:none;">
-      <i class="ri-check-double-line"></i> تعيين الكل كمقروء
-    </button>
+  <!-- العنوان في الترويسة؛ هنا الأدوات والقائمة فقط -->
+  <div class="welcome-banner"><div class="welcome-banner-body"><h2>الإشعارات</h2></div></div>
+
+  <div class="ui-toolbar" role="search">
+    <div class="ui-search"><i class="ri-search-line"></i><input type="search" id="notifSearch" placeholder="ابحث في الإشعارات" aria-label="ابحث في الإشعارات"></div>
+    <button type="button" class="ui-act primary" id="readAllBtn" onclick="markAllRead()" style="display:none;min-height:44px" title="تعيين الكل كمقروء"><i class="ri-check-double-line"></i> قراءة الكل</button>
   </div>
 
-    <div class="notif-tabs" id="notifTabs" role="tablist" aria-label="تبويبات الإشعارات">
-    <button class="notif-tab active" role="tab" aria-selected="true" data-tab="all" onclick="setTab('all')" aria-label="الإشعارات">
-
-      <i class="ri-notification-3-line"></i> الكل
-      <span class="tab-count" id="tabCountAll">0</span>
-    </button>
-        <button class="notif-tab" role="tab" aria-selected="false" data-tab="unread" onclick="setTab('unread')">
-
-      <i class="ri-checkbox-blank-circle-fill" style="font-size:0.6rem;color:var(--primary);"></i> غير مقروء
-      <span class="tab-count" id="tabCountUnread">0</span>
-    </button>
-        <button class="notif-tab" role="tab" aria-selected="false" data-tab="emergency" onclick="setTab('emergency')">
-
-      <i class="ri-alarm-warning-fill"></i> عاجل
-      <span class="tab-count" id="tabCountEmergency">0</span>
-    </button>
-    </div>
-  <div class="notif-tools" role="search" aria-label="تصفية الإشعارات">
-    <input class="notif-search" id="notifSearch" type="search" placeholder="ابحث في الإشعارات..." aria-label="ابحث في الإشعارات">
-    <select class="notif-category" id="notifCategory" aria-label="تصنيف الإشعارات">
-      <option value="all">كل التصنيفات</option>
-      <option value="assignment">الواجبات والتسليمات</option>
-      <option value="quiz">الاختبارات</option>
-      <option value="attendance">الحضور</option>
-      <option value="announcement">الإعلانات</option>
-      <option value="emergency">العاجل</option>
-    </select>
+  <!-- تبويبات + قائمة تصنيف منسدلة صارت صف شرائح واحد -->
+  <div class="ui-chips" id="notifTabs" aria-label="تصفية الإشعارات">
+    <button type="button" class="ui-chip" data-tab="all" onclick="setTab('all')">الكل <span class="n" id="tabCountAll"></span></button>
+    <button type="button" class="ui-chip" data-tab="unread" onclick="setTab('unread')">غير مقروء <span class="n" id="tabCountUnread"></span></button>
+    <button type="button" class="ui-chip" data-tab="emergency" onclick="setTab('emergency')">عاجل <span class="n" id="tabCountEmergency"></span></button>
+    <button type="button" class="ui-chip" data-tab="assignment" onclick="setTab('assignment')">الواجبات</button>
+    <button type="button" class="ui-chip" data-tab="quiz" onclick="setTab('quiz')">الاختبارات</button>
+    <button type="button" class="ui-chip" data-tab="attendance" onclick="setTab('attendance')">الحضور</button>
+    <button type="button" class="ui-chip" data-tab="announcement" onclick="setTab('announcement')">الإعلانات</button>
   </div>
-  <div class="notif-list" id="notifList" role="log" aria-live="polite" aria-busy="false"></div>
+
+  <div id="notifList" role="log" aria-live="polite" aria-busy="false"></div>
 
 </div>
 
@@ -159,9 +79,9 @@
   جميع الحقوق محفوظة © <span id="year"></span> النظام الجامعي المتكامل
 </footer>
 
-<script src="/js/shared.js?v=2026083019"></script>
-<script src="/js/app.js?v=2026083019"></script>
-<script src="/js/socket-client.js?v=2026083019" defer></script>
+<script src="/js/shared.js?v=2026102613"></script>
+<script src="/js/app.js?v=2026102613"></script>
+<script src="/js/socket-client.js?v=2026102613" defer></script>
 <script>
   CBS.init({ polling: false });
   const user = CBS.getUser();
@@ -188,72 +108,92 @@
   function saveSnoozed() { localStorage.setItem('snoozedNotifications', JSON.stringify(_snoozedNotifs)); }
   function setTab(tab) {
     _activeTab = tab;
-    document.querySelectorAll('.notif-tab').forEach(t => {
-      const active = t.dataset.tab === tab;
-      t.classList.toggle('active', active);
-      t.setAttribute('aria-selected', String(active));
-    });
+    document.querySelectorAll('#notifTabs .ui-chip').forEach(t => t.setAttribute('aria-pressed', String(t.dataset.tab === tab)));
     renderNotifs();
+  }
+
+  const CAT_ICON = { emergency: 'ri-alarm-warning-line', assignment: 'ri-task-line', quiz: 'ri-question-answer-line', attendance: 'ri-calendar-check-line', announcement: 'ri-megaphone-line' };
+  function dayLabel(d) {
+    const day = x => { const y = new Date(x); y.setHours(0, 0, 0, 0); return y.getTime(); };
+    const diff = Math.round((day(Date.now()) - day(d)) / 864e5);
+    if (diff <= 0) return 'اليوم';
+    if (diff === 1) return 'أمس';
+    if (diff < 7) return 'هذا الأسبوع';
+    return 'أقدم';
+  }
+  function timeLabel(d) {
+    const dt = new Date(d), mins = Math.round((Date.now() - dt) / 60000);
+    if (mins < 1) return 'الآن';
+    if (mins < 60) return `منذ ${mins} د`;
+    if (mins < 24 * 60) return dt.toLocaleTimeString('ar-EG-u-nu-latn', { hour: 'numeric', minute: '2-digit' });
+    return dt.toLocaleDateString('ar-EG-u-nu-latn', { day: 'numeric', month: 'short' });
   }
 
   function renderNotifs() {
     const list = document.getElementById('notifList');
     const term = (document.getElementById('notifSearch')?.value || '').trim().toLowerCase();
-    const category = document.getElementById('notifCategory')?.value || 'all';
+    const cats = ['assignment', 'quiz', 'attendance', 'announcement'];
     let data = _allNotifs.filter(n => {
       const unread = !n.readBy?.includes(user.id);
       const text = `${n.title || ''} ${n.message || ''}`.toLowerCase();
-      return (_activeTab === 'all' || (_activeTab === 'unread' && unread) || (_activeTab === 'emergency' && notifCategory(n) === 'emergency'))
-        && (category === 'all' || notifCategory(n) === category)
-        && (!term || text.includes(term))
-        && !isSnoozed(n);
+      const tabOk = _activeTab === 'all' || (_activeTab === 'unread' && unread)
+        || (_activeTab === 'emergency' && notifCategory(n) === 'emergency')
+        || (cats.includes(_activeTab) && notifCategory(n) === _activeTab);
+      return tabOk && (!term || text.includes(term)) && !isSnoozed(n);
     });
 
     if (!data.length) {
-      list.innerHTML = `<div style="text-align:center;padding:40px 20px;color:var(--text-muted);"><i class="ri-notification-off-line" style="font-size:3rem;opacity:0.3;"></i><p style="margin-top:12px;">لا توجد إشعارات مطابقة</p></div>`;
+      list.innerHTML = `<div class="hm-list"><div class="hm-row hm-empty"><span class="hm-ic" data-tone="info"><i class="ri-notification-off-line"></i></span><div class="hm-row-body"><div class="hm-row-title">لا إشعارات هنا</div><div class="hm-row-meta">${term ? 'جرّب كلمة بحث أخرى' : 'ستظهر هنا إعلانات الكلية والدكاترة'}</div></div></div></div>`;
       return;
     }
 
+    // نفس الإشعار المكرر خلال يوم يُعرض مرة واحدة بعدّاد
     const grouped = new Map();
     data.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0)).forEach(n => {
-      const titleKey = String(n.title || n.message || '').trim().toLowerCase();
-      const key = `${notifCategory(n)}:${titleKey}`;
+      const key = `${notifCategory(n)}:${String(n.title || n.message || '').trim().toLowerCase()}`;
       if (!grouped.has(key)) grouped.set(key, []);
       const items = grouped.get(key);
       const firstTime = items[0] ? new Date(items[0].createdAt || 0).getTime() : Date.now();
-      const currentTime = new Date(n.createdAt || 0).getTime();
-      if (items.length && Math.abs(firstTime - currentTime) > 24 * 60 * 60 * 1000) {
-        grouped.set(`${key}:${n._id}`, [n]);
-      } else {
-        items.push(n);
-      }
+      if (items.length && Math.abs(firstTime - new Date(n.createdAt || 0).getTime()) > 864e5) grouped.set(`${key}:${n._id}`, [n]);
+      else items.push(n);
     });
 
     _notificationGroups = {};
-    list.innerHTML = [...grouped.values()].map(items => {
+    const byDay = new Map();
+    [...grouped.values()].forEach(items => {
+      const label = dayLabel(items[0].createdAt);
+      if (!byDay.has(label)) byDay.set(label, []);
+      byDay.get(label).push(items);
+    });
+
+    list.innerHTML = [...byDay.entries()].map(([label, groups]) => `<h2 class="nt-day">${label}</h2><div class="hm-list">` + groups.map(items => {
       const first = items[0];
       const groupId = `g-${first._id}`;
       _notificationGroups[groupId] = items.map(item => item._id);
       const unread = items.some(n => !n.readBy?.includes(user.id));
-      const emergency = items.some(n => notifCategory(n) === 'emergency');
-      const snoozed = items.some(isSnoozed);
-      const count = items.length;
-      return `<div class="notif-card ${emergency ? 'emergency' : ''} ${unread ? 'unread' : ''} ${snoozed ? 'snoozed' : ''}" id="${groupId}" onclick="${unread ? `markGroupRead('${groupId}')` : ''}">
-        ${unread ? '<div class="unread-dot"></div>' : ''}
-        <div>
-          ${emergency ? '<div class="emergency-pill"><i class="ri-alarm-warning-fill"></i> تنبيه عاجل</div>' : ''}
-          <div class="notif-top">
-            <div class="notif-title" style="${unread ? 'padding-left:18px' : ''}">${CBS.escapeHTML(first.title)}${count > 1 ? `<span class="notif-group-count">Ã— ${count}</span>` : ''}</div>
-            <div class="notif-time"><i class="ri-time-line"></i>${CBS.formatDateTime(first.createdAt)}</div>
-          </div>
-          <div class="notif-body">${CBS.escapeHTML(first.message)}</div>
-          <div class="notif-actions">
-            ${unread ? `<button class="notif-action-btn" type="button" onclick="event.stopPropagation();markGroupRead('${groupId}')"><i class="ri-check-line"></i> مقروء</button>` : ''}
-            <button class="notif-action-btn" type="button" onclick="event.stopPropagation();snoozeGroup('${groupId}', 60)"><i class="ri-time-line"></i> تأجيل ساعة</button>
-          </div>
+      const cat = notifCategory(first);
+      const emergency = cat === 'emergency';
+      return `<div class="hm-row nt-row${unread ? ' unread' : ''}${emergency ? ' emergency' : ''}" id="${groupId}" role="button" tabindex="0"
+          onclick="openNotif('${groupId}')" onkeydown="if(event.key==='Enter'){openNotif('${groupId}')}">
+        <span class="hm-ic"${emergency ? ' data-tone="danger"' : ''}><i class="${CAT_ICON[cat]}"></i></span>
+        <div class="hm-row-body">
+          <div class="hm-row-title">${CBS.escapeHTML(first.title)}${items.length > 1 ? `<span class="nt-x">×${items.length}</span>` : ''}</div>
+          <div class="nt-msg">${CBS.escapeHTML(first.message)}</div>
+        </div>
+        <div class="nt-end">
+          <span class="nt-time">${timeLabel(first.createdAt)}</span>
+          ${unread ? '<span class="nt-dot" aria-label="غير مقروء"></span>' : ''}
+          <button type="button" class="ui-icon-btn" onclick="event.stopPropagation();snoozeGroup('${groupId}', 60)" title="تأجيل ساعة" aria-label="تأجيل ساعة"><i class="ri-time-line"></i></button>
         </div>
       </div>`;
-    }).join('');
+    }).join('') + '</div>').join('');
+  }
+
+  // الضغط يفتح النص كاملاً ويعلّمه مقروءاً
+  function openNotif(groupId) {
+    const row = document.getElementById(groupId);
+    row?.classList.toggle('open');
+    if (row?.classList.contains('unread')) markGroupRead(groupId);
   }
 
   async function loadNotifications() {
@@ -283,9 +223,9 @@
     const allEl = document.getElementById('tabCountAll');
     const unEl = document.getElementById('tabCountUnread');
     const emEl = document.getElementById('tabCountEmergency');
-    if (allEl) { allEl.textContent = _allNotifs.length; allEl.classList.toggle('has-count', _allNotifs.length > 0); }
-    if (unEl) { unEl.textContent = unreadCount; unEl.classList.toggle('has-count', unreadCount > 0); }
-    if (emEl) { emEl.textContent = emergencyCount; emEl.classList.toggle('has-count', emergencyCount > 0); }
+    if (allEl) allEl.textContent = _allNotifs.length || '';
+    if (unEl) unEl.textContent = unreadCount || '';
+    if (emEl) emEl.textContent = emergencyCount || '';
     const readAll = document.getElementById('readAllBtn');
     if (readAll) readAll.style.display = unreadCount > 0 ? 'inline-flex' : 'none';
   }
@@ -302,8 +242,10 @@
 
   async function markGroupRead(groupId) {
     const ids = _notificationGroups[groupId] || [];
+    const wasOpen = document.getElementById(groupId)?.classList.contains('open');
     await Promise.all(ids.map(id => markRead(id)));
     renderNotifs();
+    if (wasOpen) document.getElementById(groupId)?.classList.add('open');
   }
 
   function snoozeGroup(groupId, minutes = 60) {
@@ -322,9 +264,9 @@
   }
 
     document.getElementById('notifSearch')?.addEventListener('input', renderNotifs);
-  document.getElementById('notifCategory')?.addEventListener('change', renderNotifs);
   document.getElementById('year').textContent = new Date().getFullYear();
   window.refreshNotifications = loadNotifications;
+  setTab('all');
   loadNotifications();
 
 </script>

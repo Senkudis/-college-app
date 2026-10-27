@@ -7,7 +7,15 @@ const crypto = require("crypto");
 const { requiredFields, validEmail, minLength } = require("../middleware/validate.middleware");
 const { success, fail, serverError } = require("../utils/response");
 const normalizeEmail = require("../utils/normalizeEmail");
-const { authLimiter: loginLimiter, passwordResetLimiter: forgotPasswordLimiter } = require("../middleware/rateLimiter");
+const normalizePassword = require("../utils/normalizePassword");
+const { authLimiter: loginLimiter, authIpLimiter, passwordResetLimiter: forgotPasswordLimiter, passwordResetIpLimiter, resetCodeLimiter, resetCodeIpLimiter } = require("../middleware/rateLimiter");
+
+const MAX_RESET_CODE_ATTEMPTS = 5;
+function codesMatch(stored, given) {
+  const a = Buffer.from(String(stored || ""));
+  const b = Buffer.from(String(given || ""));
+  return a.length > 0 && a.length === b.length && crypto.timingSafeEqual(a, b);
+}
 const { sendResetCodeEmail } = require("../utils/emailService");
 const { logActivity } = require("../utils/activityLogger");
 
@@ -42,6 +50,10 @@ router.post("/register",
     if (invalidRoles.length) {
       return fail(res, `أدوار غير صحيحة: ${invalidRoles.join('، ')}`);
     }
+    // منح دور المسؤول للمسؤول وحده — لا يُنشئ العميد حساباً أعلى صلاحية منه
+    if ((Array.isArray(roles) ? roles : [roles]).includes("admin") && !req.user.roles.includes("admin")) {
+      return fail(res, "منح دور المسؤول متاح للمسؤول فقط", 403);
+    }
 
     // التحقق من وجود دفعة للطالب والليدر
     const userRoles = Array.isArray(roles) ? roles : [roles];
@@ -62,7 +74,7 @@ router.post("/register",
       // مستخدم محذوف (soft-deleted) → نعيد تفعيله ببيانات جديدة
       if (existingUser.deletedAt !== null && existingUser.deletedAt !== undefined) {
         const bcrypt = require('bcryptjs');
-        const hashedPassword = await bcrypt.hash(password, 12);
+        const hashedPassword = await bcrypt.hash(normalizePassword(password), 12);
         const restoredData = {
           name: name.trim(),
           password: hashedPassword,
@@ -149,10 +161,11 @@ router.post("/register-public",
       if (matchedBatch) {
         targetBatchId = matchedBatch._id;
       } else {
-        // Fallback: التحقق من الكود العام للشفرة وتأمين الدفعة المرسلة بديلة
+        /* الكود العام اختياري: كان يرجع افتراضياً إلى "CBS2026" المكتوب في
+           الشيفرة المصدرية — أي أن كل من قرأها يملك كود تسجيل صالحاً. */
         const inviteSetting = await Setting.findOne({ key: "registrationInviteCode" });
-        const validGlobalCode = inviteSetting ? String(inviteSetting.value).trim() : "CBS2026";
-        if (cleanCode.toUpperCase() === validGlobalCode.toUpperCase() && req.body.batch) {
+        const validGlobalCode = inviteSetting ? String(inviteSetting.value || "").trim() : "";
+        if (validGlobalCode && cleanCode.toUpperCase() === validGlobalCode.toUpperCase() && req.body.batch) {
           const bDoc = await Batch.findById(req.body.batch);
           if (bDoc) targetBatchId = bDoc._id;
         }
@@ -160,6 +173,14 @@ router.post("/register-public",
 
       if (!targetBatchId) {
         return fail(res, "كود الدعوة غير صحيح أو لا ينتمي لأي دفعة أكاديمية نشطة");
+      }
+
+      const chosenPassword = password ? normalizePassword(password) : "";
+      if (password && chosenPassword.length < 6) {
+        return fail(res, "كلمة المرور يجب أن تكون 6 أحرف على الأقل");
+      }
+      if (String(name).trim().length < 3 || String(name).length > 100) {
+        return fail(res, "الاسم يجب أن يكون بين 3 و100 حرف");
       }
 
       // 2. التحقق من عدم تكرار البريد الإلكتروني
@@ -175,14 +196,13 @@ router.post("/register-public",
         phone: phone ? phone.trim() : "",
         /* كلمة مرور أولية عشوائية بدل "123456" الثابتة: تلك جعلت كل حساب
            جديد قابلاً للاختراق بمعرفة البريد وحده حتى يغيّرها صاحبه. */
-        password: (password && String(password).trim())
-          ? String(password).trim()
-          : crypto.randomBytes(9).toString("base64url"),
+        password: chosenPassword || crypto.randomBytes(9).toString("base64url"),
         roles: ["student"],
         batch: targetBatchId,
         isPendingRegistration: true,
         isActive: false,
-        firstLogin: true // إجبار الطالب على تغيير كلمة المرور عند أول تسجيل دخول
+        // كلمة اختارها الطالب بنفسه لا تحتاج تغييراً إجبارياً؛ العشوائية تحتاجه
+        firstLogin: !chosenPassword
       });
 
       success(res, { userId: user._id, batchId: targetBatchId }, "تم تقديم طلب التسجيل بنجاح! حسابك قيد المراجعة والموافقة من الإدارة", 201);
@@ -198,6 +218,7 @@ router.post("/register-public",
 
 // ========== تسجيل الدخول ==========
 router.post("/login",
+  authIpLimiter,
   loginLimiter,
   requiredFields("email", "password"),
   validEmail(),
@@ -211,17 +232,19 @@ router.post("/login",
       return fail(res, "بيانات الدخول غير صحيحة", 401);
     }
 
+    /* كلمة المرور أولاً ثم حالة الحساب: الترتيب المعاكس كان يكشف لأي أحد
+       أن البريد مسجّل (قيد المراجعة/موقوف) دون معرفة كلمة المرور. */
+    const isMatch = await user.comparePassword(password);
+
+    if (!isMatch) {
+      return fail(res, "بيانات الدخول غير صحيحة", 401);
+    }
+
     if (!user.isActive) {
       if (user.isPendingRegistration) {
         return fail(res, "حسابك قيد المراجعة والموافقة من إدارة الكلية", 403);
       }
       return fail(res, "الحساب غير نشط، يرجى التواصل مع الإدارة", 403);
-    }
-
-    const isMatch = await user.comparePassword(password);
-
-    if (!isMatch) {
-      return fail(res, "بيانات الدخول غير صحيحة", 401);
     }
 
     const sessionId = crypto.randomUUID();
@@ -269,7 +292,9 @@ router.post("/login",
         name: user.name,
         email: user.email,
         roles: user.roles,
-        firstLogin: user.firstLogin
+        firstLogin: user.firstLogin,
+        // دفعة الطالب: بدونها تعرض الواجهة "الدفعة: غير محدد" في بطاقة الهوية وغيرها
+        batch: user.batch || null
       }
     });
   } catch (err) {
@@ -324,7 +349,7 @@ router.post("/refresh", async (req, res) => {
 });
 
 // ========== طلب إعادة تعيين كلمة المرور ==========
-router.post(["/forgot-password", "/resend-reset-code"], forgotPasswordLimiter, async (req, res) => {
+router.post(["/forgot-password", "/resend-reset-code"], passwordResetIpLimiter, forgotPasswordLimiter, async (req, res) => {
   try {
     const { email } = req.body;
 
@@ -346,11 +371,11 @@ router.post(["/forgot-password", "/resend-reset-code"], forgotPasswordLimiter, a
       });
     }
 
-    // التحقق من حالة الحساب
+    // الحساب الموقوف يأخذ نفس الرد العام — رسالة مختلفة كانت تكشف وجود البريد
     if (!user.isActive) {
-      return res.status(403).json({
-        success: false,
-        message: "الحساب غير نشط"
+      return res.json({
+        success: true,
+        message: "إذا كان البريد الإلكتروني مسجل لدينا، ستصلك رسالة بالتعليمات خلال دقائق"
       });
     }
 
@@ -358,6 +383,7 @@ router.post(["/forgot-password", "/resend-reset-code"], forgotPasswordLimiter, a
     const resetCode = crypto.randomInt(100000, 999999).toString();
     user.resetPasswordCode = resetCode;
     user.resetPasswordExpires = new Date(Date.now() + 20 * 60 * 1000); // 20 دقيقة
+    user.resetCodeAttempts = 0;
     
     await user.save();
 
@@ -368,8 +394,7 @@ router.post(["/forgot-password", "/resend-reset-code"], forgotPasswordLimiter, a
 
     res.json({
       success: true,
-      message: "تم إرسال كود إعادة التعيين إلى بريدك الإلكتروني",
-      email: user.email
+      message: "إذا كان البريد الإلكتروني مسجل لدينا، ستصلك رسالة بالتعليمات خلال دقائق"
     });
   } catch (err) {
     console.error("Forgot password error:", err);
@@ -381,7 +406,7 @@ router.post(["/forgot-password", "/resend-reset-code"], forgotPasswordLimiter, a
 });
 
 // ========== التحقق من كود إعادة التعيين ==========
-router.post("/verify-reset-code", async (req, res) => {
+router.post("/verify-reset-code", resetCodeIpLimiter, resetCodeLimiter, async (req, res) => {
   try {
     const { email, code } = req.body;
 
@@ -392,25 +417,33 @@ router.post("/verify-reset-code", async (req, res) => {
       });
     }
 
-    // البحث عن المستخدم
+    const invalid = () => res.status(400).json({
+      success: false,
+      message: "الكود غير صالح أو منتهي الصلاحية"
+    });
+
+    // البحث عن المستخدم — نفس الرد للبريد غير المسجّل كي لا نكشف وجوده
     const user = await User.findOne({ email: normalizeEmail(email) });
-
-    if (!user) {
-      return res.status(404).json({
-        success: false,
-        message: "المستخدم غير موجود"
-      });
+    if (!user || !user.resetPasswordCode || new Date() > user.resetPasswordExpires) {
+      return invalid();
     }
 
-    // التحقق من صحة الكود
-    if (!user.resetPasswordCode || 
-        user.resetPasswordCode !== code || 
-        new Date() > user.resetPasswordExpires) {
-      return res.status(400).json({
-        success: false,
-        message: "الكود غير صالح أو منتهي الصلاحية"
-      });
+    // التحقق من صحة الكود (مقارنة ثابتة الزمن)، وإلغاؤه بعد 5 محاولات خاطئة
+    if (!codesMatch(user.resetPasswordCode, code)) {
+      const attempts = (user.resetCodeAttempts || 0) + 1;
+      const update = attempts >= MAX_RESET_CODE_ATTEMPTS
+        ? { $set: { resetPasswordCode: null, resetPasswordExpires: null, resetCodeAttempts: 0 } }
+        : { $set: { resetCodeAttempts: attempts } };
+      await User.updateOne({ _id: user._id }, update);
+      if (attempts >= MAX_RESET_CODE_ATTEMPTS) {
+        return res.status(400).json({
+          success: false,
+          message: "تجاوزت عدد المحاولات المسموح — اطلب كوداً جديداً"
+        });
+      }
+      return invalid();
     }
+
 
     // إنشاء توكن مؤقت (بدون كشف البريد الفعلي)
     const tempToken = jwt.sign(
@@ -439,7 +472,7 @@ router.post("/verify-reset-code", async (req, res) => {
 });
 
 // ========== إعادة تعيين كلمة المرور بعد التحقق ==========
-router.post("/reset-password", async (req, res) => {
+router.post("/reset-password", resetCodeIpLimiter, resetCodeLimiter, async (req, res) => {
   try {
     const { tempToken, newPassword, confirmPassword } = req.body;
 
@@ -459,7 +492,7 @@ router.post("/reset-password", async (req, res) => {
     }
 
     // التحقق من قوة كلمة المرور
-    if (newPassword.length < 6) {
+    if (typeof newPassword !== "string" || newPassword.length < 6) {
       return res.status(400).json({
         success: false,
         message: "كلمة المرور يجب أن تكون 6 أحرف على الأقل"
@@ -495,8 +528,8 @@ router.post("/reset-password", async (req, res) => {
     }
 
     // التحقق من أن الكود لا يزال صالحاً
-    if (!user.resetPasswordCode || 
-        user.resetPasswordCode !== decoded.resetCode || 
+    if (!user.resetPasswordCode ||
+        !codesMatch(user.resetPasswordCode, decoded.resetCode) ||
         new Date() > user.resetPasswordExpires) {
       return res.status(400).json({
         success: false,
@@ -508,7 +541,10 @@ router.post("/reset-password", async (req, res) => {
     user.password = newPassword; // نص عادي - سيشفر في الـmodel
     user.resetPasswordCode = null;
     user.resetPasswordExpires = null;
+    user.resetCodeAttempts = 0;
     user.firstLogin = false;
+    // إبطال كل الجلسات القائمة — من استعاد كلمته لأنها سُرقت يجب أن يُخرج المتسلل
+    user.currentSessionId = crypto.randomUUID();
     
     await user.save();
 
@@ -715,7 +751,9 @@ router.get("/stats", auth, async (req, res) => {
 
       // الواجبات القادمة
       if (student.batch) {
-        upcomingAssignments = await Assignment.countDocuments({ batches: student.batch, dueDate: { $gte: new Date() } });
+        // dueDate تاريخ بلا وقت (منتصف الليل UTC): المقارنة بـ now كانت تُسقط واجبات اليوم نفسه
+        const todayStart = new Date(); todayStart.setUTCHours(0, 0, 0, 0);
+        upcomingAssignments = await Assignment.countDocuments({ batches: student.batch, dueDate: { $gte: todayStart } });
       }
 
       // الإشعارات غير المقروءة — نفس منطق الرؤية الموحّد في نموذج الإشعارات

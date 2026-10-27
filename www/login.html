@@ -11,8 +11,8 @@
   <link rel="stylesheet" href="/vendor/remixicon/remixicon.css">
   <!-- إصدار مثبَّت v13 ليطابق @simplewebauthn/server على الخادم — الأحدث غير المثبَّت كسر البصمة سابقاً -->
   <script src="/vendor/simplewebauthn.umd.min.js"></script>
-  <script src="/js/shared.js?v=2026083019"></script>
-<script src="/js/app.js?v=2026083019"></script>
+  <script src="/js/shared.js?v=2026102613"></script>
+<script src="/js/app.js?v=2026102613"></script>
 
   <style>
     @font-face {
@@ -650,6 +650,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <link rel="stylesheet" href="/css/login.css">
+  <link rel="stylesheet" href="/css/auth.css?v=2026102613">
 </head>
 
 <body>
@@ -705,7 +706,7 @@
 
         <div class="form-group">
           <div class="input-wrap">
-            <input type="password" id="password" name="password" placeholder=" " autocomplete="current-password" required>
+            <input type="password" id="password" name="password" placeholder=" " autocomplete="current-password" autocapitalize="off" autocorrect="off" spellcheck="false" required>
             <label for="password" class="floating-label">كلمة المرور</label>
             <i class="ri-lock-password-line i-start"></i>
             <i class="ri-eye-off-line i-end" id="togglePass" onclick="togglePass()"></i>
@@ -868,6 +869,10 @@
       const el = document.getElementById(map[type]);
       el.innerHTML = `<i class="${icons[type]}"></i> ${msg}`;
       el.classList.add('show');
+    }
+
+    function escapeAlertText(s) {
+      return String(s || '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
     }
 
     function hideAlerts() {
@@ -1155,8 +1160,15 @@
         if (!res.ok) {
           if (res.status === 423) showAlert('warn', data.message || 'حسابك محظور مؤقتاً');
           else if (res.status === 429) showAlert('warn', 'محاولات كثيرة، حاول بعد 5 دقائق');
-          else if (res.status === 403) showAlert('warn', 'حسابك غير مفعل، تواصل مع الإدارة');
-          else if (res.status === 401) showAlert('error', 'البريد الإلكتروني أو كلمة المرور غير صحيحة');
+          // رسالة الخادم تفرّق بين "قيد المراجعة" و"موقوف" — الطالب الجديد يحتاج أن يعرف أنه ينتظر القبول
+          else if (res.status === 403) showAlert('warn', escapeAlertText(data.message) || 'حسابك غير مفعل، تواصل مع الإدارة');
+          else if (res.status === 401) {
+            // أشيع سبب لـ"كتبتها صح ومرفوضة": لوحة المفاتيح على العربية والحقل يعرض نقاطاً فقط
+            const arabicKeyboard = /[ء-يٱ-ۓ]/.test(password);
+            showAlert('error', arabicKeyboard
+              ? 'كلمة المرور غير صحيحة. لاحظنا أنها مكتوبة بحروف عربية: تأكد من لغة لوحة المفاتيح، أو اضغط أيقونة العين لرؤية ما كتبته'
+              : 'البريد الإلكتروني أو كلمة المرور غير صحيحة');
+          }
           else {
             let msg = data.message || 'حدث خطأ غير متوقع';
             if (data.remainingAttempts !== undefined) msg += ` · المحاولات المتبقية: ${data.remainingAttempts}`;

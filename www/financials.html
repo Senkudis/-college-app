@@ -6,9 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>الرسوم المالية | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=2026083019">
+  <link rel="stylesheet" href="/css/style.css?v=2026102613">
   
-  <link rel="stylesheet" href="/css/mobile.css?v=2026083019">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026102613">
+  <link rel="stylesheet" href="/css/ui.css?v=2026102613">
   <style>
     .financials-wrap {
       max-width: 1200px;
@@ -131,25 +132,27 @@
       font-size: 0.85rem;
       font-weight: 500;
     }
-    .badge-success { background: rgba(34, 197, 94, 0.1); color: #22c55e; }
+    .badge-success { background: rgba(34, 197, 94, 0.1); color: var(--success-text); }
     .badge-primary { background: rgba(59, 130, 246, 0.1); color: #3b82f6; }
-    .badge-warning { background: rgba(245, 158, 11, 0.1); color: #f59e0b; }
+    .badge-warning { background: rgba(245, 158, 11, 0.1); color: var(--warning-text); }
     .badge-danger { background: rgba(239, 68, 68, 0.1); color: #ef4444; }
 
     /* ====================================================
        Hero Balance Card (Student)
        ==================================================== */
     .hero-balance-card {
-      background: linear-gradient(135deg, #0d3b66 0%, #1a6fc4 55%, #2176c7 100%);
+      background: var(--hero-gradient);
       border-radius: 20px;
       padding: 22px 20px 18px;
       color: white;
       margin-bottom: 16px;
       position: relative;
       overflow: hidden;
-      box-shadow: 0 10px 32px rgba(13,59,102,0.35);
+      box-shadow: var(--hero-shadow);
     }
-    .hero-blob {
+    /* فقاعات زخرفية خلف الرصيد — تُشتّت عن الرقم الذي جاء الطالب ليقرأه */
+    .hero-blob { display: none !important; }
+    .hero-blob-unused {
       position: absolute;
       border-radius: 50%;
       pointer-events: none;
@@ -306,42 +309,37 @@
     @media (max-width: 600px) {
       .admin-summary-grid { grid-template-columns: 1fr; gap: 12px; }
     }
+    /* بطاقات أرقام محايدة: اللون الدلالي في الأيقونة والرقم فقط. ثلاث كتل مشبعة
+       متراصة (والحمراء كاملة) كانت تقرأ كإنذار خطأ لا كملخص مالي. */
     .admin-stat-card {
-      border-radius: 20px;
-      padding: 20px;
-      color: white;
+      --stat: #1d4ed8;
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      color: var(--text-main);
+      background: var(--bg-card);
+      border: 1px solid var(--border);
       display: flex;
       align-items: center;
-      gap: 16px;
-      box-shadow: 0 8px 24px rgba(0,0,0,0.1), inset 0 1px 0 rgba(255,255,255,0.2);
-      transition: all 0.35s cubic-bezier(0.34, 1.56, 0.64, 1);
-      position: relative;
-      overflow: hidden;
-    }
-    .admin-stat-card:hover {
-      transform: translateY(-4px) scale(1.02);
-      box-shadow: 0 12px 32px rgba(0,0,0,0.18);
+      gap: 14px;
     }
     .admin-stat-icon {
-      width: 48px;
-      height: 48px;
-      border-radius: 14px;
-      background: rgba(255,255,255,0.2);
-      backdrop-filter: blur(8px);
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      color: var(--stat);
+      background: rgba(29, 78, 216, 0.1);
+      background: color-mix(in srgb, var(--stat) 12%, transparent);
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 1.5rem;
+      font-size: 1.35rem;
       flex-shrink: 0;
-      transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
-    .admin-stat-card:hover .admin-stat-icon {
-      transform: scale(1.1) rotate(5deg);
-    }
+    .admin-stat-val { color: var(--stat); }
     .admin-stat-body { flex: 1; min-width: 0; }
     .admin-stat-label {
       font-size: 0.8rem;
-      opacity: 0.9;
+      color: var(--text-muted);
       font-weight: 600;
       margin-bottom: 4px;
     }
@@ -352,12 +350,16 @@
       overflow: hidden;
       text-overflow: ellipsis;
     }
-    .admin-stat-blue  { background: linear-gradient(135deg, #1e40af, #3b82f6); }
-    .admin-stat-green { background: linear-gradient(135deg, #065f46, #10b981); }
-    .admin-stat-red   { background: linear-gradient(135deg, #7f1d1d, #ef4444); }
+    /* ألوان صلبة داكنة: النص الأبيض فوقها يجتاز التباين، والمعنى (رسوم/محصّل/متبقٍّ) يبقى */
+    .admin-stat-blue  { --stat: #1d4ed8; }
+    .admin-stat-green { --stat: #047857; }
+    .admin-stat-red   { --stat: #b91c1c; }
+    [data-theme="dark"] .admin-stat-blue  { --stat: #93c5fd; }
+    [data-theme="dark"] .admin-stat-green { --stat: #6ee7b7; }
+    [data-theme="dark"] .admin-stat-red   { --stat: #fca5a5; }
 
     /* ====================================================
-       Table action buttons â€” smaller on mobile
+       Table action buttons — smaller on mobile
        ==================================================== */
     .btn-sm {
       padding: 5px 10px !important;
@@ -479,7 +481,7 @@
             <div class="hero-blob hero-blob-1"></div>
             <div class="hero-blob hero-blob-2"></div>
             <div class="hero-card-label">كشف الحساب المالي</div>
-            <div class="hero-student-name" id="heroStudentName">â€”</div>
+            <div class="hero-student-name" id="heroStudentName">—</div>
             <div class="hero-amount-row">
               <div id="heroBalanceDue" class="hero-amount">0.00</div>
               <div class="hero-amount-label">ج.س مستحق</div>
@@ -500,10 +502,10 @@
             </button>
           </div>
 
-          <!-- â”€â”€ Fees List â”€â”€ -->
+          <!-- ── Fees List ── -->
           <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:20px;padding:20px;margin-bottom:16px;box-shadow:0 2px 12px rgba(0,0,0,0.06);">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border);">
-              <div style="width:34px;height:34px;background:linear-gradient(135deg,#0d3b66,#2176c7);border-radius:10px;display:flex;align-items:center;justify-content:center;">
+              <div style="width:34px;height:34px;background:var(--hero-gradient);border-radius:10px;display:flex;align-items:center;justify-content:center;">
                 <i class="ri-file-list-3-line" style="color:white;font-size:1rem;"></i>
               </div>
               <h3 style="margin:0;font-size:0.95rem;font-weight:700;color:var(--text-primary);">تفاصيل الرسوم الدراسية</h3>
@@ -516,11 +518,11 @@
             </div>
           </div>
 
-          <!-- â”€â”€ Payment Requests History â”€â”€ -->
+          <!-- ── Payment Requests History ── -->
           <div style="background:var(--bg-card);border:1px solid var(--border);border-radius:20px;padding:20px;box-shadow:0 2px 12px rgba(0,0,0,0.06);">
             <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;padding-bottom:14px;border-bottom:1px solid var(--border);">
-              <div style="width:34px;height:34px;background:linear-gradient(135deg,#7c3aed,#a855f7);border-radius:10px;display:flex;align-items:center;justify-content:center;">
-                <i class="ri-history-line" style="color:white;font-size:1rem;"></i>
+              <div style="width:34px;height:34px;background:rgba(124,58,237,0.12);color:#7c3aed;border-radius:10px;display:flex;align-items:center;justify-content:center;">
+                <i class="ri-history-line" style="font-size:1rem;"></i>
               </div>
               <h3 style="margin:0;font-size:0.95rem;font-weight:700;color:var(--text-primary);">طلبات السداد المرفوعة</h3>
             </div>
@@ -802,7 +804,7 @@
     <div class="modal-box" style="max-width: 850px; padding: 0; border-radius: 20px; overflow: hidden;">
       
       <!-- Gradient Hero Header -->
-      <div style="background: linear-gradient(135deg, #0d3b66, #1a6fc4); padding: 30px; position: relative; color: white;">
+      <div style="background: var(--hero-gradient); padding: 30px; position: relative; color: white;">
         <div style="position:absolute;top:-40px;left:-40px;width:200px;height:200px;background:rgba(255,255,255,0.04);border-radius:50%;pointer-events:none;"></div>
         <div style="position:absolute;bottom:-60px;right:-30px;width:240px;height:240px;background:rgba(255,255,255,0.03);border-radius:50%;pointer-events:none;"></div>
         
@@ -892,7 +894,7 @@
   <div id="payNowModal" class="modal-overlay">
     <div class="modal-box" style="max-width: 480px; padding: 0; border-radius: 20px; overflow: hidden;">
       <!-- Header -->
-      <div style="background: linear-gradient(135deg, #0d3b66, #1a6fc4); padding: 22px 20px 18px; display:flex; align-items:center; justify-content:space-between;">
+      <div style="background: var(--hero-gradient); padding: 22px 20px 18px; display:flex; align-items:center; justify-content:space-between;">
         <div>
           <div style="font-size:1.15rem;font-weight:800;color:white;display:flex;align-items:center;gap:8px;">
             <i class="ri-bank-card-line"></i> رفع إشعار سداد
@@ -959,10 +961,15 @@
 
 <div id="toast-container" class="toast-container"></div>
 
-  <script src="/js/shared.js?v=2026083019"></script>
-<script src="/js/app.js?v=2026083019"></script>
-  <script src="/js/socket-client.js?v=2026083019" defer></script>
+  <script src="/js/shared.js?v=2026102613"></script>
+<script src="/js/app.js?v=2026102613"></script>
+  <script src="/js/socket-client.js?v=2026102613" defer></script>
   <script>
+  // مبالغ بفواصل الآلاف وبلا ".00" (450,000 بدل 450000.00) — أوضح للقراءة
+  function money(v) {
+    const n = Number(v) || 0;
+    return n.toLocaleString('en-US', { maximumFractionDigits: 2 });
+  }
     /* كشف الحساب: كان يُطبع عبر iframe + window.print()، وهذا لا يعمل إطلاقاً
        داخل WebView أندرويد (زر الطباعة لا يستجيب على الهاتف). صار يولّد PDF
        ويُنزّله في المتصفح أو يفتح نافذة الحفظ/المشاركة داخل التطبيق. */
@@ -1018,8 +1025,8 @@
             <p>كشف الحساب المالي المعتمد</p>
           </div>
           <div class="invoice-meta">
-            <div>تاريخ الإصدار: <strong>${new Date().toLocaleDateString('ar-EG')}</strong></div>
-            <div>وقت الإصدار: <strong>${new Date().toLocaleTimeString('ar-EG')}</strong></div>
+            <div>تاريخ الإصدار: <strong>${new Date().toLocaleDateString('ar-EG-u-nu-latn')}</strong></div>
+            <div>وقت الإصدار: <strong>${new Date().toLocaleTimeString('ar-EG-u-nu-latn')}</strong></div>
           </div>
         </div>
 
@@ -1140,19 +1147,19 @@
 
         // Hero card
         document.getElementById('heroStudentName').textContent = name;
-        document.getElementById('heroBalanceDue').textContent = (data.balance || 0).toFixed(2);
-        document.getElementById('heroTotalFees').textContent = (data.totalFees || 0).toFixed(2) + ' ج.س';
-        document.getElementById('heroTotalPaid').textContent = (data.totalPaid || 0).toFixed(2) + ' ج.س';
+        document.getElementById('heroBalanceDue').textContent = money((data.balance || 0));
+        document.getElementById('heroTotalFees').textContent = money((data.totalFees || 0)) + ' ج.س';
+        document.getElementById('heroTotalPaid').textContent = money((data.totalPaid || 0)) + ' ج.س';
 
         // Color hero card red if all paid, green if balance=0
         const heroCard = document.getElementById('balanceHeroCard');
         if (heroCard) {
           if ((data.balance || 0) <= 0) {
-            heroCard.style.background = 'linear-gradient(135deg, #065f46 0%, #059669 60%, #10b981 100%)';
-            heroCard.style.boxShadow = '0 12px 40px rgba(6,95,70,0.35)';
+            heroCard.style.background = '#047857';
+            heroCard.style.boxShadow = 'none';
           } else if ((data.balance || 0) > 0) {
-            heroCard.style.background = 'linear-gradient(135deg, #0d3b66 0%, #1a6fc4 60%, #2176c7 100%)';
-            heroCard.style.boxShadow = '0 12px 40px rgba(13,59,102,0.35)';
+            heroCard.style.background = ''; // يعود للون الموحّد في الأنماط
+            heroCard.style.boxShadow = '';
           }
         }
 
@@ -1168,16 +1175,20 @@
         } else {
           // الحالات كما هي في نموذج Fee بالخادم: paid / partially_paid / pending
           const statusConfig = {
-            paid:           { label: 'مدفوع بالكامل', color: '#22c55e', bg: 'rgba(34,197,94,0.1)', icon: 'ri-checkbox-circle-fill' },
-            partially_paid: { label: 'مدفوع جزئياً',  color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', icon: 'ri-time-line' },
+            paid:           { label: 'مدفوع بالكامل', color: 'var(--success-text)', bg: 'rgba(34,197,94,0.1)', icon: 'ri-checkbox-circle-fill' },
+            partially_paid: { label: 'مدفوع جزئياً',  color: 'var(--warning-text)', bg: 'rgba(245,158,11,0.1)', icon: 'ri-time-line' },
             pending:        { label: 'غير مدفوع',     color: '#ef4444', bg: 'rgba(239,68,68,0.1)',  icon: 'ri-close-circle-fill' },
           };
           feesContainer.innerHTML = data.fees.map((f, idx) => {
             const paid = f.paidAmount || 0;
             const sc = statusConfig[f.status] || statusConfig.pending;
-            const remaining = Math.max(0, f.amount - paid).toFixed(2);
-            const pct = f.amount > 0 ? Math.min(100, (paid / f.amount) * 100) : 0;
-            const dueDate = f.dueDate ? new Date(f.dueDate).toLocaleDateString('ar-EG', { year:'numeric', month:'short', day:'numeric' }) : 'â€”';
+            // الصافي بعد الخصم: كان المتبقي يُحسب من القيمة الكاملة فيخالف الإجمالي أعلى الصفحة
+            const discount = f.discount || 0;
+            const net = Math.max(0, (f.amount || 0) - discount);
+            const remainingNum = Math.max(0, net - paid);
+            const remaining = money(remainingNum);
+            const pct = net > 0 ? Math.min(100, (paid / net) * 100) : 100;
+            const dueDate = f.dueDate ? new Date(f.dueDate).toLocaleDateString('ar-EG-u-nu-latn', { year:'numeric', month:'short', day:'numeric' }) : '—';
             return `
               <div style="
                 padding: 16px;
@@ -1205,9 +1216,9 @@
                   <div style="height:100%;width:${pct.toFixed(1)}%;background:${sc.color};border-radius:99px;transition:width 0.6s;"></div>
                 </div>
                 <div style="display:flex;gap:12px;font-size:0.8rem;flex-wrap:wrap;">
-                  <div style="color:var(--text-muted);">الإجمالي: <strong style="color:var(--text-primary);">${f.amount.toFixed(2)} ج.س</strong></div>
-                  <div style="color:var(--text-muted);">المدفوع: <strong style="color:#22c55e;">${paid.toFixed(2)} ج.س</strong></div>
-                  <div style="color:var(--text-muted);">المتبقي: <strong style="color:${parseFloat(remaining) > 0 ? '#ef4444' : '#22c55e'};">${remaining} ج.س</strong></div>
+                  <div style="color:var(--text-muted);">الإجمالي: <strong style="color:var(--text-primary);">${money(net)} ج.س</strong>${discount ? ` <small>(بعد خصم ${money(discount)})</small>` : ''}</div>
+                  <div style="color:var(--text-muted);">المدفوع: <strong style="color:var(--success-text);">${money(paid)} ج.س</strong></div>
+                  <div style="color:var(--text-muted);">المتبقي: <strong style="color:${remainingNum > 0 ? 'var(--danger-text)' : 'var(--success-text)'};">${remaining} ج.س</strong></div>
                 </div>
               </div>`;
           }).join('');
@@ -1252,13 +1263,13 @@
             </div>`;
         } else {
           const stMap = {
-            pending:  { label: 'قيد المراجعة', color: '#f59e0b', bg: 'rgba(245,158,11,0.1)', icon: 'ri-time-line' },
-            approved: { label: 'مقبول',         color: '#22c55e', bg: 'rgba(34,197,94,0.1)',  icon: 'ri-checkbox-circle-fill' },
+            pending:  { label: 'قيد المراجعة', color: 'var(--warning-text)', bg: 'rgba(245,158,11,0.1)', icon: 'ri-time-line' },
+            approved: { label: 'مقبول',         color: 'var(--success-text)', bg: 'rgba(34,197,94,0.1)',  icon: 'ri-checkbox-circle-fill' },
             rejected: { label: 'مرفوض',         color: '#ef4444', bg: 'rgba(239,68,68,0.1)',  icon: 'ri-close-circle-fill' },
           };
           container.innerHTML = requests.map((r, idx) => {
             const st = stMap[r.status] || stMap.pending;
-            const dateStr = CBS.formatDateTime ? CBS.formatDateTime(r.createdAt) : new Date(r.createdAt).toLocaleDateString('ar-EG');
+            const dateStr = CBS.formatDateTime ? CBS.formatDateTime(r.createdAt) : new Date(r.createdAt).toLocaleDateString('ar-EG-u-nu-latn');
             const rejNote = r.rejectionReason ? `
               <div style="margin-top:10px;padding:8px 12px;background:rgba(239,68,68,0.08);border-radius:10px;border-right:3px solid #ef4444;font-size:0.82rem;color:var(--text-secondary);">
                 <i class="ri-information-line"></i> ملاحظة الإدارة: ${CBS.escapeHTML ? CBS.escapeHTML(r.rejectionReason) : r.rejectionReason}
@@ -1278,7 +1289,7 @@
                 <div style="flex:1;min-width:0;">
                   <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px;margin-bottom:6px;">
                     <div>
-                      <div style="font-size:1rem;font-weight:700;color:var(--text-primary);">${(r.amount || 0).toFixed(2)} <span style="font-size:0.75rem;font-weight:500;color:var(--text-muted);">ج.س</span></div>
+                      <div style="font-size:1rem;font-weight:700;color:var(--text-primary);">${money((r.amount || 0))} <span style="font-size:0.75rem;font-weight:500;color:var(--text-muted);">ج.س</span></div>
                       <div style="font-size:0.75rem;color:var(--text-muted);margin-top:2px;">${dateStr}${r.reference ? ' · مرجع: ' + CBS.escapeHTML(r.reference) : ''}</div>
                     </div>
                     <div style="background:${st.bg};color:${st.color};border-radius:20px;padding:4px 10px;font-size:0.75rem;font-weight:700;white-space:nowrap;display:flex;align-items:center;gap:4px;">
@@ -1410,13 +1421,7 @@
         else if (data.users) students = data.users;
         else if (data.data) students = data.data;
         
-        if (students.length === 0) {
-          // Fallback: try attendance/students
-          const res2 = await CBS.apiGet('/api/attendance/students');
-          const data2 = await res2.json();
-          if (Array.isArray(data2)) students = data2;
-        }
-
+        // (كان هنا احتياط يستدعي /api/attendance/students بلا مادة — يرفضه الخادم دائماً بـ 400)
         studentsCached = students;
 
         if (students.length === 0) {
@@ -1426,7 +1431,7 @@
           return;
         }
 
-        const options = students.map(s => `<option value="${s._id}">${CBS.escapeHTML(s.name)} â€” ${CBS.escapeHTML(s.email)}</option>`).join('');
+        const options = students.map(s => `<option value="${s._id}">${CBS.escapeHTML(s.name)} — ${CBS.escapeHTML(s.email)}</option>`).join('');
         
         document.getElementById('feeStudentId').innerHTML = `<option value="">اختر الطالب...</option>` + options;
         document.getElementById('paymentStudentId').innerHTML = `<option value="">اختر الطالب...</option>` + options;
@@ -1480,7 +1485,7 @@
         totalCollected += b.totalPaid || 0;
       });
       const remaining = Math.max(0, totalExpected - totalCollected);
-      const fmt = n => n.toLocaleString('ar-EG', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + ' ج.س';
+      const fmt = n => money(n) + ' ج.س'; // نفس تنسيق صفحة الطالب (450,000)
       const elE = document.getElementById('adminTotalExpected');
       const elC = document.getElementById('adminTotalCollected');
       const elR = document.getElementById('adminTotalRemaining');
@@ -1510,9 +1515,9 @@
                   </div>
                 </td>
                 <td data-label="الدفعة"><span class="badge" style="background:var(--bg-hover);color:var(--text-main);font-size:0.75rem; border:1px solid var(--border)">${esc(batchName)}</span></td>
-                <td data-label="إجمالي الرسوم"><span class="badge bg-primary-subtle text-primary">${(b.totalFees || 0).toFixed(2)} ج.س</span></td>
-                <td data-label="المدفوع"><span class="badge bg-success-subtle text-success">${(b.totalPaid || 0).toFixed(2)} ج.س</span></td>
-                <td data-label="المتبقي"><span class="badge bg-danger-subtle text-danger fw-bold">${Math.max(0, (b.totalFees || 0) - (b.totalPaid || 0)).toFixed(2)} ج.س</span></td>
+                <td data-label="إجمالي الرسوم"><span class="badge bg-primary-subtle text-primary">${money((b.totalFees || 0))} ج.س</span></td>
+                <td data-label="المدفوع"><span class="badge bg-success-subtle text-success">${money((b.totalPaid || 0))} ج.س</span></td>
+                <td data-label="المتبقي"><span class="badge bg-danger-subtle text-danger fw-bold">${money(Math.max(0, (b.totalFees || 0) - (b.totalPaid || 0)))} ج.س</span></td>
                 <td data-label="إجراءات">
                   <button class="btn btn-sm btn-outline-primary" data-registry-idx="${idx}" onclick="openBillingFromRegistry(this)" title="عرض التفاصيل المالية"><i class="ri-eye-line"></i> كشف الحساب</button>
                   <button class="btn btn-sm btn-outline-success" data-student-id="${esc(String(b.student?._id || ''))}" onclick="quickAddPayment(this)" title="إضافة دفعة سريعة"><i class="ri-money-dollar-circle-line"></i></button>
@@ -1701,9 +1706,9 @@
         document.getElementById('modalStudentBatch').innerText = batchName || 'غير محدد';
 
         // Populate summary
-        document.getElementById('modalTotalFees').innerText = data.totalFees.toFixed(2) + ' ج.س';
-        document.getElementById('modalTotalPaid').innerText = data.totalPaid.toFixed(2) + ' ج.س';
-        document.getElementById('modalBalance').innerText = data.balance.toFixed(2) + ' ج.س';
+        document.getElementById('modalTotalFees').innerText = money(data.totalFees) + ' ج.س';
+        document.getElementById('modalTotalPaid').innerText = money(data.totalPaid) + ' ج.س';
+        document.getElementById('modalBalance').innerText = money(data.balance) + ' ج.س';
 
         // Populate Fees Modal List
         const feesBody = document.getElementById('modalFeesBody');
@@ -1713,13 +1718,13 @@
           feesBody.innerHTML = data.fees.map(f => {
             const statusLabel = f.status === 'paid' ? 'مدفوع كامل' : (f.status === 'partially_paid' ? 'مدفوع جزئي' : 'قيد الانتظار');
             const statusClass = f.status === 'paid' ? 'success' : (f.status === 'partially_paid' ? 'primary' : 'warning');
-            const remaining = Math.max(0, f.amount - f.paidAmount);
+            const remaining = Math.max(0, (f.amount || 0) - (f.discount || 0) - (f.paidAmount || 0));
             return `
               <tr>
                 <td data-label="البيان">${CBS.escapeHTML(f.title)}</td>
-                <td data-label="القيمة">${f.amount.toFixed(2)} ج.س</td>
-                <td data-label="المدفوع">${(f.paidAmount || 0).toFixed(2)} ج.س</td>
-                <td data-label="المتبقي">${remaining.toFixed(2)} ج.س</td>
+                <td data-label="القيمة">${money(f.amount)} ج.س</td>
+                <td data-label="المدفوع">${money((f.paidAmount || 0))} ج.س</td>
+                <td data-label="المتبقي">${money(remaining)} ج.س</td>
                 <td data-label="تاريخ الاستحقاق">${CBS.formatDate(f.dueDate)}</td>
                 <td data-label="الحالة"><span class="badge badge-${statusClass}">${statusLabel}</span></td>
               </tr>
@@ -1741,7 +1746,7 @@
 
             return `
               <tr>
-                <td data-label="المبلغ">${p.amount.toFixed(2)} ج.س</td>
+                <td data-label="المبلغ">${money(p.amount)} ج.س</td>
                 <td data-label="طريقة الدفع">${methodLabel}</td>
                 <td data-label="رقم الإيصال">${CBS.escapeHTML(p.reference || '')}</td>
                 <td data-label="التاريخ">${CBS.formatDateTime(p.paymentDate)}</td>
@@ -1828,7 +1833,7 @@
           return `
             <tr>
               <td data-label="الطالب" class="font-bold">${CBS.escapeHTML(r.student?.name || 'طالب محذوف')}</td>
-              <td data-label="المبلغ" class="text-success font-bold">${r.amount.toFixed(2)} ج.س</td>
+              <td data-label="المبلغ" class="text-success font-bold">${money(r.amount)} ج.س</td>
               <td data-label="رقم الإيصال">${CBS.escapeHTML(r.reference || r.notes || '-')}</td>
               <td data-label="التاريخ">${CBS.formatDate(r.createdAt)}</td>
               <td data-label="صورة الإشعار">

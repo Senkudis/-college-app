@@ -9,52 +9,37 @@
   <link rel="manifest" href="/manifest.json">
   <title>حسابي | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet">
-  <link rel="stylesheet" href="/css/style.css?v=2026083019">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026083019">
+  <link rel="stylesheet" href="/css/style.css?v=2026102613">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026102613">
+  <link rel="stylesheet" href="/css/ui.css?v=2026102613">
   <style>
-    /* â”€â”€ Profile Hero â”€â”€ */
+    /* ── Profile Hero ── */
+    /* صف هوية واحد بدل غلاف متدرج بفقاعات زخرفية: الاسم والدور يُقرآن من نظرة */
     .profile-hero {
-      background: linear-gradient(135deg, #0d3b66 0%, #1a5c9a 50%, #2176c7 100%);
-      border-radius: 20px;
-      padding: 36px 20px 28px;
-      display: flex;
-      flex-direction: column;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 16px;
+      display: grid;
+      grid-template-columns: auto 1fr;
+      grid-template-rows: auto auto auto;
+      column-gap: 14px;
+      row-gap: 2px;
       align-items: center;
-      gap: 14px;
-      position: relative;
-      overflow: hidden;
       margin-bottom: 20px;
-      box-shadow: 0 8px 32px rgba(13, 59, 102, 0.35);
     }
-    .profile-hero::before {
-      content: '';
-      position: absolute;
-      top: -40px; right: -40px;
-      width: 160px; height: 160px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.06);
-    }
-    .profile-hero::after {
-      content: '';
-      position: absolute;
-      bottom: -30px; left: -20px;
-      width: 120px; height: 120px;
-      border-radius: 50%;
-      background: rgba(255,255,255,0.04);
-    }
+    .profile-hero .profile-avatar { grid-row: 1 / span 3; }
     .profile-avatar {
       width: 88px;
       height: 88px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #f59e0b, #ef4444);
+      background: #0d3b66;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 2.2rem;
+      font-size: 1.9rem;
       font-weight: 800;
       color: #fff;
-      border: 4px solid rgba(255,255,255,0.35);
-      box-shadow: 0 4px 20px rgba(0,0,0,0.3);
       position: relative;
       z-index: 1;
       flex-shrink: 0;
@@ -70,35 +55,36 @@
       border: 2.5px solid #fff;
     }
     .profile-hero-name {
-      font-size: 1.25rem;
+      font-size: 1.15rem;
       font-weight: 800;
-      color: #fff;
-      text-align: center;
+      color: var(--text-main);
+      text-align: start;
       position: relative;
       z-index: 1;
       line-height: 1.3;
     }
     .profile-hero-email {
       font-size: 0.82rem;
-      color: rgba(255,255,255,0.72);
-      text-align: center;
+      color: var(--text-muted);
+      text-align: start;
+      overflow-wrap: anywhere;
       position: relative;
       z-index: 1;
     }
     .profile-role-badge {
-      padding: 5px 16px;
+      justify-self: start;
+      margin-top: 4px;
+      padding: 2px 10px;
       border-radius: 20px;
-      background: rgba(255,255,255,0.18);
-      color: #fff;
-      font-size: 0.8rem;
-      font-weight: 600;
-      backdrop-filter: blur(6px);
-      border: 1px solid rgba(255,255,255,0.25);
+      background: rgba(var(--primary-rgb), 0.1);
+      color: var(--primary);
+      font-size: 0.75rem;
+      font-weight: 700;
       position: relative;
       z-index: 1;
       letter-spacing: 0.4px;
     }
-    /* â”€â”€ Info Cards â”€â”€ */
+    /* ── Info Cards ── */
     .profile-card {
       background: var(--bg-card, #fff);
       border: 1px solid var(--border, #e5e7eb);
@@ -121,11 +107,11 @@
       width: 38px;
       height: 38px;
       border-radius: 10px;
-      background: linear-gradient(135deg, var(--primary, #0d3b66), #2176c7);
+      background: rgba(var(--primary-rgb), 0.12);
       display: flex;
       align-items: center;
       justify-content: center;
-      color: #fff;
+      color: var(--primary);
       font-size: 1.1rem;
       flex-shrink: 0;
     }
@@ -156,7 +142,7 @@
       flex: 1;
     }
     .profile-field i { color: var(--primary, #0d3b66); font-size: 1rem; flex-shrink: 0; }
-    /* â”€â”€ Quick Actions â”€â”€ */
+    /* ── Quick Actions ── */
     .quick-actions-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -184,13 +170,14 @@
     }
     .quick-action-btn i { font-size: 1.5rem; color: var(--primary, #0d3b66); }
     .quick-action-btn span { font-size: 0.75rem; font-weight: 600; color: var(--text-primary, #1a1a2e); text-align: center; }
-    /* â”€â”€ Logout Button â”€â”€ */
+    /* ── Logout Button ── */
     .profile-logout-btn {
       width: 100%;
-      padding: 15px;
+      padding: 13px;
       border-radius: 14px;
-      background: linear-gradient(135deg, #ef4444, #dc2626);
-      color: #fff;
+      background: transparent;
+      color: #dc2626;
+      border: 1.5px solid currentColor !important;
       font-size: 1rem;
       font-weight: 700;
       border: none;
@@ -205,12 +192,12 @@
       transition: all 0.22s;
       font-family: inherit;
     }
-    .profile-logout-btn:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 8px 24px rgba(239,68,68,0.40);
-    }
+    .profile-logout-btn:hover { background: rgba(220, 38, 38, 0.08); }
+    [data-theme="dark"] .profile-logout-btn { color: #f87171; }
+    [data-theme="dark"] .profile-card-icon,
+    [data-theme="dark"] .profile-role-badge { color: #a5b4fc; }
     .profile-logout-btn:active { transform: translateY(0); }
-    /* â”€â”€ Section Label â”€â”€ */
+    /* ── Section Label ── */
     .profile-section-label {
       font-size: 0.78rem;
       font-weight: 700;
@@ -221,7 +208,7 @@
       margin-top: 4px;
       padding-right: 4px;
     }
-    /* â”€â”€ Batch Chip â”€â”€ */
+    /* ── Batch Chip ── */
     .batch-chip {
       display: inline-flex;
       align-items: center;
@@ -234,7 +221,7 @@
       font-size: 0.78rem;
       font-weight: 600;
     }
-    /* â”€â”€ Dark Mode Overrides â”€â”€ */
+    /* ── Dark Mode Overrides ── */
     body.dark .profile-card, [data-theme="dark"] .profile-card,
     body.dark .quick-action-btn, [data-theme="dark"] .quick-action-btn {
       background: #1E293B !important;
@@ -255,7 +242,40 @@
       border-color: rgba(59, 130, 246, 0.3) !important;
       color: #60A5FA !important;
     }
-  </style>
+      /* ===== إعادة التصميم: هوية أفقية + قوائم مجمّعة ===== */
+    .pf-hero { display: flex; align-items: center; gap: 14px; margin: 4px 2px 22px; }
+    .pf-hero .profile-avatar { width: 60px; height: 60px; flex-shrink: 0; font-size: 1.5rem; margin: 0; }
+    .pf-hero-body { min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 3px; }
+    .pf-hero-name { font-size: 1.15rem; font-weight: 800; color: var(--text-main); }
+    .pf-hero-email { font-size: 0.82rem; color: var(--text-muted); direction: ltr; }
+    .profile-section-label { margin: 22px 2px 8px; font-size: 0.82rem; font-weight: 800; color: var(--text-muted); }
+    .pf-info { min-height: 52px; justify-content: space-between; }
+    .hm-list .pf-info + .pf-info::before { inset-inline-start: 14px; }
+    .pf-label { font-size: 0.85rem; color: var(--text-muted); flex-shrink: 0; }
+    .pf-value { font-size: 0.88rem; font-weight: 700; color: var(--text-main); text-align: end; min-width: 0; overflow-wrap: anywhere; }
+    .pf-click { cursor: pointer; }
+    .pf-click:active { background: var(--bg-hover); }
+    .pf-xp { display: flex; align-items: center; gap: 10px; margin-top: 6px; }
+    .pf-xp-bar { flex: 1; height: 6px; border-radius: 3px; background: var(--bg-hover); overflow: hidden; }
+    .pf-xp-bar > div { height: 100%; width: 0; border-radius: 3px; background: #f59e0b; transition: width 0.5s ease-out; }
+    .pf-xp-n { font-size: 0.74rem; color: var(--text-muted); white-space: nowrap; direction: ltr; }
+    .pf-action {
+      position: relative; display: flex !important; align-items: center; gap: 12px; width: 100%; min-height: 54px !important;
+      padding: 0 16px !important; border: 0 !important; border-radius: 0 !important; background: transparent !important;
+      font-family: inherit; font-size: 0.92rem !important; font-weight: 700 !important; color: var(--text-main); text-align: start; cursor: pointer;
+    }
+    .pf-action i { font-size: 1.2rem; color: var(--primary-text); }
+    .pf-action:active { background: var(--bg-hover) !important; }
+    .hm-list > * + .pf-action::before, .hm-list > .pf-action + *::before { content: ''; position: absolute; top: 0; height: 1px; background: var(--border); inset-inline: 14px; }
+    .pf-action.danger, .pf-action.danger i { color: var(--danger-text); }
+    #logoutBtn i { color: var(--text-muted); }
+    /* مفتاح تشغيل/إيقاف بدل مربع الاختيار */
+    .ui-switch { appearance: none; -webkit-appearance: none; flex-shrink: 0; width: 44px; height: 26px; margin: 0; border-radius: 999px; background: var(--border); position: relative; pointer-events: none; transition: background-color 0.2s ease; }
+    html:not([data-theme=dark]) .ui-switch { background: #cbd5e1; }
+    .ui-switch::after { content: ''; position: absolute; top: 3px; inset-inline-start: 3px; width: 20px; height: 20px; border-radius: 50%; background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: inset-inline-start 0.2s ease; }
+    .ui-switch:checked { background: var(--primary) !important; }
+    .ui-switch:checked::after { inset-inline-start: 21px; }
+</style>
 
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
@@ -277,26 +297,22 @@
     <button class="btn-icon" onclick="CBS.toggleDark()" title="الوضع الليلي" aria-label="تبديل الوضع الليلي">
       <i class="ri-moon-line" id="themeIcon"></i>
     </button>
-    <button class="btn-icon" onclick="CBS.goBack()" title="رجوع" aria-label="رجوع">
-      <i class="ri-arrow-right-line"></i>
-    </button>
   </div>
 </header>
 
 <div class="page-content">
 
-  <!-- â”€â”€ Hero / Avatar Card â”€â”€ -->
-  <div class="profile-hero">
-    <div class="profile-avatar" id="profileAvatar" style="position:relative">
-      <span id="avatarInitial">؟</span>
-      <span class="profile-avatar-online"></span>
+  <!-- ── الهوية: صف أفقي بدل بطاقة كبيرة في المنتصف ── -->
+  <div class="pf-hero">
+    <div class="profile-avatar" id="profileAvatar"><span id="avatarInitial">؟</span></div>
+    <div class="pf-hero-body">
+      <div class="pf-hero-name" id="profileName">جاري التحميل...</div>
+      <div class="pf-hero-email" id="profileEmail"></div>
+      <span class="hm-chip" data-tone="primary" id="profileRoleBadge">—</span>
     </div>
-    <div class="profile-hero-name" id="profileName">جاري التحميل...</div>
-    <div class="profile-hero-email" id="profileEmail"></div>
-    <div class="profile-role-badge" id="profileRoleBadge">â€”</div>
   </div>
 
-  <!-- â”€â”€ Digital Student ID Card â”€â”€ -->
+  <!-- ── Digital Student ID Card ── -->
   <div class="profile-section-label">بطاقة الهوية الأكاديمية الرقمية</div>
   <div class="student-id-card" id="studentIdCard">
     <div class="id-card-header">
@@ -316,167 +332,105 @@
         <div class="id-card-meta"><i class="ri-mail-line"></i> البريد: <span id="idCardEmail">-</span></div>
         <div class="id-card-meta"><i class="ri-group-line"></i> الدفعة: <span id="idCardBatch">-</span></div>
       </div>
-      <div class="id-card-qr-box" title="رمز QR للتحقق الأكاديمي">
+      <button type="button" class="id-card-qr-box id-card-qr-btn" id="idCardQRBtn" onclick="openIdQR()" aria-label="تكبير رمز التحقق لمسحه" disabled>
         <!-- دقة الكانفاس أعلى من حجم العرض حتى تبقى وحدات الرمز حادة وقابلة للمسح -->
         <canvas id="idCardQRCanvas" width="264" height="264" style="width:90px;height:90px;display:block;"></canvas>
-      </div>
+        <span class="id-card-qr-hint"><i class="ri-zoom-in-line"></i> اضغط للتكبير</span>
+      </button>
     </div>
   </div>
 
-  <!-- â”€â”€ My Level Card â”€â”€ -->
-  <div class="profile-section-label">مستواي</div>
-  <div class="profile-card">
-    <div class="profile-card-header">
-      <div class="profile-card-icon"><i class="ri-vip-crown-line"></i></div>
-      <div class="profile-card-title">نقاط الخبرة (XP)</div>
-    </div>
-    <div style="margin: 10px 0;">
-      <div style="display:flex; justify-content:space-between; margin-bottom:8px;">
-        <span style="font-weight:700; color:var(--text-primary);">المستوى <span id="levelLabel">1</span></span>
-        <span style="font-size:0.85rem; color:var(--text-muted);"><span id="xpCount">0</span> / <span id="xpNext">100</span> XP</span>
+  <!-- نافذة الـQR المكبّر: الرمز الصغير في البطاقة (90px) صعب المسح من شاشة هاتف لهاتف -->
+  <div class="modal-overlay" id="idQRModal">
+    <div class="modal-box id-qr-modal-box">
+      <div class="modal-header">
+        <h3 class="modal-title">رمز التحقق من الهوية</h3>
+        <button class="modal-close" onclick="CBS.closeModal('idQRModal')" aria-label="إغلاق"><i class="ri-close-line"></i></button>
       </div>
-      <div style="height:10px; background:var(--border, #e5e7eb); border-radius:5px; overflow:hidden;">
-        <div id="xpProgress" style="height:100%; width:0%; background:linear-gradient(135deg, #f59e0b, #facc15); transition:width 0.5s ease-out;"></div>
-      </div>
-    </div>
-    <div style="margin-top:14px; padding-top:12px; border-top:1px solid var(--border);">
-      <a href="/student-portfolio.html" class="btn btn-outline" style="width:100%; display:flex; justify-content:center; align-items:center; gap:8px; font-weight:800; font-size:0.88rem; border-color:var(--primary); color:var(--primary);">
-        <i class="ri-verified-badge-fill" style="color:#f59e0b;"></i> عرض السجل الأكاديمي الرقمي الموثق
-      </a>
-    </div>
-  </div>
-
-  <!-- â”€â”€ Personal Info Card â”€â”€ -->
-  <div class="profile-section-label">البيانات الشخصية</div>
-  <div class="profile-card">
-    <div class="profile-card-header">
-      <div class="profile-card-icon"><i class="ri-user-3-line"></i></div>
-      <div class="profile-card-title">معلومات الحساب</div>
-    </div>
-    <div class="profile-field">
-      <i class="ri-account-circle-line"></i>
-      <div class="profile-field-label">الاسم الكامل</div>
-      <div class="profile-field-value" id="infoName">â€”</div>
-    </div>
-    <div class="profile-field">
-      <i class="ri-mail-line"></i>
-      <div class="profile-field-label">البريد الإلكتروني</div>
-      <div class="profile-field-value" id="infoEmail">â€”</div>
-    </div>
-    <div class="profile-field">
-      <i class="ri-shield-user-line"></i>
-      <div class="profile-field-label">الصلاحية</div>
-      <div class="profile-field-value" id="infoRole">â€”</div>
-    </div>
-    <div class="profile-field">
-      <i class="ri-fingerprint-line"></i>
-      <div class="profile-field-label">المعرّف</div>
-      <div class="profile-field-value" id="infoId" style="font-size:0.75rem;word-break:break-all;color:var(--text-muted)">â€”</div>
-    </div>
-  </div>
-
-  <!-- â”€â”€ Batch Info Card â”€â”€ -->
-  <div class="profile-section-label">معلومات الدفعة</div>
-  <div class="profile-card">
-    <div class="profile-card-header">
-      <div class="profile-card-icon"><i class="ri-graduation-cap-line"></i></div>
-      <div class="profile-card-title">الدفعة الدراسية</div>
-    </div>
-    <div class="profile-field">
-      <i class="ri-layout-grid-line"></i>
-      <div class="profile-field-label">رقم الدفعة</div>
-      <div class="profile-field-value">
-        <span class="batch-chip">
-          <i class="ri-bookmark-line"></i>
-          <span id="batchLabel">غير محدد</span>
-        </span>
-      </div>
-    </div>
-    <div class="profile-field">
-      <i class="ri-calendar-event-line"></i>
-      <div class="profile-field-label">آخر دخول</div>
-      <div class="profile-field-value" id="infoLastSeen">â€”</div>
-    </div>
-  </div>
-
-  <!-- â”€â”€ Quick Actions â”€â”€ -->
-  <div class="profile-section-label">روابط سريعة</div>
-  <div class="quick-actions-grid">
-    <a class="quick-action-btn" id="qaBtnSubjects" href="/subjects.html">
-      <i class="ri-book-2-line"></i>
-      <span>المواد</span>
-    </a>
-    <a class="quick-action-btn" id="qaBtnAssignments" href="/assignments.html">
-      <i class="ri-task-line"></i>
-      <span>الواجبات</span>
-    </a>
-    <a class="quick-action-btn" id="qaBtnNotifications" href="/notifications.html">
-      <i class="ri-notification-3-line"></i>
-      <span>التنبيهات</span>
-    </a>
-    <a class="quick-action-btn" id="qaBtnFinancials" href="/financials.html">
-      <i class="ri-money-dollar-circle-line"></i>
-      <span>الرسوم</span>
-    </a>
-    <a class="quick-action-btn" id="qaBtnDashboard" href="/dashboard.html">
-      <i class="ri-home-5-line"></i>
-      <span>الرئيسية</span>
-    </a>
-    <a class="quick-action-btn" id="qaBtnLectures" href="/calendar.html">
-      <i class="ri-video-line"></i>
-      <span>المحاضرات</span>
-    </a>
-  </div>
-
-  <!-- â”€â”€ Settings â”€â”€ -->
-  <div class="profile-section-label">الإعدادات</div>
-  <div class="profile-card">
-    <div class="profile-field" style="justify-content: space-between; cursor: pointer;" onclick="toggleDarkModeUI()">
-      <div style="display: flex; align-items: center; gap: 12px;">
-        <i class="ri-moon-line"></i>
-        <div class="profile-field-label" style="font-size: 0.88rem; font-weight: 600; color: var(--text-primary);">الوضع الليلي</div>
-      </div>
-      <div>
-        <input type="checkbox" id="darkModeCheckbox" style="transform: scale(1.2); pointer-events: none;">
-      </div>
+      <div class="modal-body id-qr-modal-body">
+        <div class="id-qr-large"><canvas id="idCardQRLarge" width="640" height="640"></canvas></div>
+        <p class="id-qr-caption">اعرض هذا الرمز للمسح بكاميرا أي هاتف. يفتح صفحة الكلية الرسمية التي تؤكد صلاحية بطاقتك وحالة حسابك.</p>
+        <div class="id-qr-actions">
+          <button type="button" class="btn btn-outline" onclick="copyIdVerifyLink()"><i class="ri-file-copy-line"></i> نسخ الرابط</button>
+          <a class="btn btn-primary" id="idVerifyOpen" href="#" target="_blank" rel="noopener"><i class="ri-external-link-line"></i> فتح صفحة التحقق</a>
         </div>
-    <div class="profile-field" role="button" tabindex="0" style="justify-content: space-between; cursor: pointer;" onclick="toggleNotificationSoundUI()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleNotificationSoundUI();}">
-      <div style="display: flex; align-items: center; gap: 12px;">
-        <i class="ri-volume-up-line"></i>
-        <div class="profile-field-label" style="font-size: 0.88rem; font-weight: 600; color: var(--text-primary);">صوت الإشعارات</div>
       </div>
-      <input type="checkbox" id="notificationSoundCheckbox" style="transform: scale(1.2); pointer-events: none;">
-    </div>
-    <div class="profile-field" role="button" tabindex="0" style="justify-content: space-between; cursor: pointer;" onclick="toggleNotificationVibrationUI()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleNotificationVibrationUI();}">
-      <div style="display: flex; align-items: center; gap: 12px;">
-        <i class="ri-smartphone-line"></i>
-        <div class="profile-field-label" style="font-size: 0.88rem; font-weight: 600; color: var(--text-primary);">اهتزاز الإشعارات</div>
-      </div>
-      <input type="checkbox" id="notificationVibrationCheckbox" style="transform: scale(1.2); pointer-events: none;">
-    </div>
-    <div class="profile-field" style="justify-content: center; padding: 15px 0 0 0;">
-      <button id="setupBiometricBtn" onclick="setupBiometric()" style="background: var(--bg-card); color: var(--text-primary); border: 1px solid var(--border); padding: 10px 20px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 8px; width: 100%; justify-content: center;">
-        <i class="ri-fingerprint-line" style="font-size: 1.1rem; color: var(--primary);"></i> إعداد الدخول بالبصمة
-      </button>
-    </div>
-    <div class="profile-field" style="justify-content: center; padding: 15px 0;">
-      <button id="pushNotifBtn" onclick="enablePushNotifs()" style="background: var(--primary, #0d3b66); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-size: 0.85rem; font-weight: 600; cursor: pointer; font-family: inherit; display: flex; align-items: center; gap: 8px; width: 100%; justify-content: center;" aria-label="الإشعارات">
-        <i class="ri-notification-badge-line" style="color: #fff; font-size: 1.1rem;"></i> تفعيل إشعارات الدفع
-      </button>
     </div>
   </div>
 
-  <!-- â”€â”€ Logout â”€â”€ -->
-  <button class="profile-logout-btn" id="logoutBtn" onclick="CBS.logout()" aria-label="تسجيل الخروج">
-    <i class="ri-logout-box-r-line"></i>
-    تسجيل الخروج
-  </button>
+  <!-- ── المستوى ── -->
+  <div class="profile-section-label">مستواي</div>
+  <div class="hm-list">
+    <div class="hm-row pf-level">
+      <span class="hm-ic" data-tone="warning"><i class="ri-vip-crown-line"></i></span>
+      <div class="hm-row-body">
+        <div class="hm-row-title">المستوى <span id="levelLabel">1</span></div>
+        <div class="pf-xp"><div class="pf-xp-bar"><div id="xpProgress"></div></div><span class="pf-xp-n"><span id="xpCount">0</span> / <span id="xpNext">100</span> XP</span></div>
+      </div>
+    </div>
+    <a class="hm-row" href="/student-portfolio.html">
+      <span class="hm-ic"><i class="ri-file-chart-line"></i></span>
+      <div class="hm-row-body"><div class="hm-row-title">ملخص النشاط الأكاديمي</div><div class="hm-row-meta">قابل للطباعة والمشاركة</div></div>
+      <span class="hm-row-end"><i class="ri-arrow-left-s-line" aria-hidden="true"></i></span>
+    </a>
+  </div>
 
-  <!-- â”€â”€ Account Deletion (Google Play Compliance) â”€â”€ -->
-  <button class="profile-logout-btn" id="deleteAccountBtn" onclick="requestAccountDeletion()" style="background: transparent; color: #ef4444; border: 1px solid rgba(239, 68, 68, 0.3); box-shadow: none; margin-top: -10px; margin-bottom: 30px;">
-    <i class="ri-user-unfollow-line"></i>
-    حذف الحساب نهائياً
-  </button>
+  <!-- ── بيانات الحساب: قائمة واحدة (كانت بطاقتين بعنوانين) ── -->
+  <div class="profile-section-label">الحساب</div>
+  <div class="hm-list">
+    <div class="hm-row pf-info"><span class="pf-label">الاسم</span><span class="pf-value" id="infoName">—</span></div>
+    <div class="hm-row pf-info"><span class="pf-label">البريد</span><span class="pf-value" id="infoEmail" dir="ltr">—</span></div>
+    <div class="hm-row pf-info"><span class="pf-label">الصلاحية</span><span class="pf-value" id="infoRole">—</span></div>
+    <div class="hm-row pf-info"><span class="pf-label">الدفعة</span><span class="pf-value" id="batchLabel">غير محدد</span></div>
+    <div class="hm-row pf-info"><span class="pf-label">آخر دخول</span><span class="pf-value" id="infoLastSeen">—</span></div>
+  </div>
+
+  <!-- ── أدوات: ما ليس في الشريط السفلي (الروابط المكررة له حُذفت) ── -->
+  <div class="profile-section-label">أدوات</div>
+  <div class="hm-list">
+    <a class="hm-row" id="qaBtnFinancials" href="/financials.html">
+      <span class="hm-ic"><i class="ri-money-dollar-circle-line"></i></span>
+      <div class="hm-row-body"><div class="hm-row-title">الرسوم والمدفوعات</div></div>
+      <span class="hm-row-end"><i class="ri-arrow-left-s-line" aria-hidden="true"></i></span>
+    </a>
+    <div class="hm-row pf-click" id="gpaRow" role="button" tabindex="0" onclick="CBS.openGpaCalculatorModal()" onkeydown="if(event.key==='Enter'){CBS.openGpaCalculatorModal()}">
+      <span class="hm-ic"><i class="ri-calculator-line"></i></span>
+      <div class="hm-row-body"><div class="hm-row-title">حاسبة المعدل</div><div class="hm-row-meta">تقدير تقريبي لمعدلك الفصلي</div></div>
+      <span class="hm-row-end"><i class="ri-arrow-left-s-line" aria-hidden="true"></i></span>
+    </div>
+  </div>
+
+  <!-- ── الإعدادات: مفاتيح حقيقية بدل مربعات اختيار ── -->
+  <div class="profile-section-label">الإعدادات</div>
+  <div class="hm-list">
+    <div class="hm-row pf-click" role="switch" tabindex="0" onclick="toggleDarkModeUI()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleDarkModeUI();}">
+      <span class="hm-ic"><i class="ri-moon-line"></i></span>
+      <div class="hm-row-body"><div class="hm-row-title">الوضع الليلي</div></div>
+      <input type="checkbox" class="ui-switch" id="darkModeCheckbox" tabindex="-1" aria-hidden="true">
+    </div>
+    <div class="hm-row pf-click" role="switch" tabindex="0" onclick="toggleNotificationSoundUI()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleNotificationSoundUI();}">
+      <span class="hm-ic"><i class="ri-volume-up-line"></i></span>
+      <div class="hm-row-body"><div class="hm-row-title">صوت الإشعارات</div></div>
+      <input type="checkbox" class="ui-switch" id="notificationSoundCheckbox" tabindex="-1" aria-hidden="true">
+    </div>
+    <div class="hm-row pf-click" role="switch" tabindex="0" onclick="toggleNotificationVibrationUI()" onkeydown="if(event.key==='Enter'||event.key===' '){event.preventDefault();toggleNotificationVibrationUI();}">
+      <span class="hm-ic"><i class="ri-smartphone-line"></i></span>
+      <div class="hm-row-body"><div class="hm-row-title">اهتزاز الإشعارات</div></div>
+      <input type="checkbox" class="ui-switch" id="notificationVibrationCheckbox" tabindex="-1" aria-hidden="true">
+    </div>
+    <button type="button" class="pf-action" id="setupBiometricBtn" onclick="setupBiometric()">
+      <i class="ri-fingerprint-line"></i> إعداد الدخول بالبصمة
+    </button>
+    <button type="button" class="pf-action" id="pushNotifBtn" onclick="enablePushNotifs()">
+      <i class="ri-notification-badge-line"></i> تفعيل إشعارات الدفع
+    </button>
+  </div>
+
+  <!-- ── الخروج وحذف الحساب في نهاية الصفحة، منفصلين عن الإعدادات ── -->
+  <div class="hm-list" style="margin-top:24px">
+    <button type="button" class="pf-action" id="logoutBtn" onclick="CBS.logout()"><i class="ri-logout-box-r-line"></i> تسجيل الخروج</button>
+    <button type="button" class="pf-action danger" id="deleteAccountBtn" onclick="requestAccountDeletion()"><i class="ri-user-unfollow-line"></i> حذف الحساب نهائياً</button>
+  </div>
 
 </div>
 
@@ -486,9 +440,69 @@
   جميع الحقوق محفوظة &copy; <span id="year"></span> النظام الجامعي المتكامل
 </footer>
 
-<script src="/js/shared.js?v=2026083019"></script>
-<script src="/js/app.js?v=2026083019"></script>
-<script src="/js/socket-client.js?v=2026083019" defer></script>
+<script src="/js/shared.js?v=2026102613"></script>
+<script src="/js/app.js?v=2026102613"></script>
+<script src="/js/socket-client.js?v=2026102613" defer></script>
+<script>
+  /* ===== رمز QR لبطاقة الهوية ===== */
+  let idVerifyUrl = '';
+
+  function idVerifyUrlFor(code) {
+    // داخل تطبيق أندرويد origin هو localhost — الرابط يجب أن يفتح عند من يمسحه
+    const base = (window.CBSShared && CBSShared.publicBaseUrl()) || 'https://elnasrcsit.website';
+    return base + '/id/' + encodeURIComponent(code);
+  }
+
+  function drawIdCardQR(code) {
+    idVerifyUrl = idVerifyUrlFor(code);
+    if (typeof CBS.renderQRCode === 'function' && CBS.renderQRCode('idCardQRCanvas', idVerifyUrl)) {
+      const btn = document.getElementById('idCardQRBtn');
+      btn.disabled = false;
+      btn.title = 'رمز التحقق من الهوية — اضغط للتكبير';
+      document.getElementById('idVerifyOpen').href = idVerifyUrl;
+    }
+  }
+
+  async function loadIdCardQR(userId) {
+    const cacheKey = 'idCardCode:' + userId;
+    let cached = null;
+    try { cached = localStorage.getItem(cacheKey); } catch (e) {}
+    // الرمز ثابت لكل حساب: نرسم المحفوظ فوراً (يعمل بلا إنترنت) ثم نحدّثه من الخادم
+    if (cached) drawIdCardQR(cached);
+    try {
+      const res = await CBS.apiGet('/api/users/me/id-card');
+      if (!res.ok) return;
+      const body = await res.json();
+      const code = body.data && body.data.code;
+      if (!code) return;
+      if (code !== cached) drawIdCardQR(code);
+      try { localStorage.setItem(cacheKey, code); } catch (e) {}
+    } catch (e) {
+      if (!cached) console.warn('تعذر تحميل رمز بطاقة الهوية', e);
+    }
+  }
+
+  function openIdQR() {
+    if (!idVerifyUrl) return;
+    CBS.renderQRCode('idCardQRLarge', idVerifyUrl, { errorCorrection: 'Q' });
+    /* .page-content يحتفظ بـ transform من حركة الدخول، فيصير position:fixed
+       نسبياً إليه لا إلى الشاشة وتظهر النافذة أسفل الصفحة. ننقلها إلى body. */
+    const modal = document.getElementById('idQRModal');
+    if (modal.parentElement !== document.body) document.body.appendChild(modal);
+    CBS.openModal('idQRModal');
+  }
+
+  async function copyIdVerifyLink() {
+    if (!idVerifyUrl) return;
+    try {
+      await navigator.clipboard.writeText(idVerifyUrl);
+      CBS.toast('تم نسخ رابط التحقق', '', 'success');
+    } catch (e) {
+      // متصفحات قديمة/WebView بلا صلاحية الحافظة
+      window.prompt('انسخ رابط التحقق:', idVerifyUrl);
+    }
+  }
+</script>
 <script>
   CBS.init();
 
@@ -549,7 +563,7 @@
   document.getElementById('profileEmail').textContent = user.email || '';
 
   // Role label
-  let roleLabel = 'â€”';
+  let roleLabel = '—';
   if (typeof CBS.roleLabel === 'function') {
     roleLabel = CBS.roleLabel(user.roles && user.roles[0] ? user.roles[0] : '');
   } else {
@@ -560,27 +574,23 @@
 
   // Digital Student ID Card Population & QR Code Generation
   document.getElementById('idCardName').textContent = name;
-  document.getElementById('idCardEmail').textContent = user.email || 'â€”';
-  document.getElementById('idCardStudentId').textContent = user.studentId || (user._id ? user._id.substring(0, 10) : 'â€”');
+  document.getElementById('idCardEmail').textContent = user.email || '—';
+  // لا رقم جامعي مسجل = لا نعرض السطر (كان يظهر "—" أو جزءاً من المعرّف الداخلي)
+  const sidEl = document.getElementById('idCardStudentId');
+  if (user.studentId) sidEl.textContent = user.studentId;
+  else sidEl.closest('.id-card-meta')?.remove();
   document.getElementById('idCardRoleBadge').textContent = roleLabel;
   document.getElementById('idCardBatch').textContent = '...';
 
-  const qrPayload = JSON.stringify({
-    sys: 'CBS_IT_COLLEGE',
-    uid: user._id || user.id,
-    name: name,
-    email: user.email,
-    role: user.roles ? user.roles[0] : 'student'
-  });
-  if (typeof CBS.renderQRCode === 'function') {
-    CBS.renderQRCode('idCardQRCanvas', qrPayload);
-  }
+  /* الـQR رابط موقَّع إلى صفحة التحقق العامة /id/<code> — كان JSON نصياً
+     (الاسم والبريد والمعرّف) فيعرضه الماسح نصاً لا يفتح شيئاً ويكشف البريد.
+     الرمز يُحفظ محلياً حتى تبقى البطاقة قابلة للعرض بلا إنترنت عند البوابة. */
+  loadIdCardQR(user._id || user.id);
 
   // Info fields
   document.getElementById('infoName').textContent  = name;
-  document.getElementById('infoEmail').textContent = user.email || 'â€”';
+  document.getElementById('infoEmail').textContent = user.email || '—';
   document.getElementById('infoRole').textContent  = roleLabel;
-  document.getElementById('infoId').textContent    = user._id || user.id || 'â€”';
 
   // Batch — جلب الاسم الحقيقي من API
   (async function loadBatchName() {
@@ -624,6 +634,15 @@
           }
         }
       }
+      // محاولة 5: الطالب/الليدر — الخادم يعيد دفعته وحدها (جلسات قديمة بلا user.batch)
+      if (!batchName && (CBS.hasRole('student') || CBS.hasRole('leader'))) {
+        const listRes = await CBS.apiGet('/api/batches').catch(() => null);
+        if (listRes && listRes.ok) {
+          const listData = await listRes.json();
+          const batches = listData.batches || listData.data?.batches || [];
+          if (batches.length === 1) batchName = batches[0].name;
+        }
+      }
     } catch(e) { /* silent */ }
 
     const displayName = batchName || 'غير محدد';
@@ -633,7 +652,7 @@
 
   document.getElementById('infoLastSeen').textContent =
     user.lastLogin
-      ? new Date(user.lastLogin).toLocaleDateString('ar-EG', { year:'numeric', month:'long', day:'numeric' })
+      ? new Date(user.lastLogin).toLocaleDateString('ar-EG-u-nu-latn', { year:'numeric', month:'long', day:'numeric' })
       : 'غير متاح';
 
   // Role-based Quick Actions filtering
@@ -644,69 +663,10 @@
 
   const isLeaderUser = primaryRole === 'leader' || (user.roles && user.roles.includes('leader') && !user.roles.includes('dean') && !user.roles.includes('doctor'));
 
-  const quickGrid = document.querySelector('.quick-actions-grid');
-  if (quickGrid) {
-    if (isDoctorUser) {
-      quickGrid.innerHTML = `
-        <a class="quick-action-btn" id="qaBtnDashboard" href="/dashboard.html">
-          <i class="ri-home-5-line"></i>
-          <span>الرئيسية</span>
-        </a>
-        <a class="quick-action-btn" id="qaBtnSubjects" href="/subjects.html">
-          <i class="ri-book-2-line"></i>
-          <span>المواد</span>
-        </a>
-        <a class="quick-action-btn" id="qaBtnLectures" href="/manage-lectures.html">
-          <i class="ri-video-line"></i>
-          <span>المحاضرات</span>
-        </a>
-        <a class="quick-action-btn" id="qaBtnSubmissions" href="/manage-submissions.html">
-          <i class="ri-stack-line"></i>
-          <span>التسليمات</span>
-        </a>
-        <a class="quick-action-btn" id="qaBtnNotifications" href="/manage-notifications.html">
-          <i class="ri-megaphone-line"></i>
-          <span>الإشعارات</span>
-        </a>
-        <a class="quick-action-btn" id="qaBtnStudio" href="/creator-studio.html">
-          <i class="ri-magic-line"></i>
-          <span>الاستوديو</span>
-        </a>
-      `;
-    } else if (isLeaderUser) {
-      quickGrid.innerHTML = `
-        <a class="quick-action-btn" id="qaBtnDashboard" href="/dashboard.html">
-          <i class="ri-home-5-line"></i>
-          <span>الرئيسية</span>
-        </a>
-        <a class="quick-action-btn" id="qaBtnSubjects" href="/subjects.html">
-          <i class="ri-book-2-line"></i>
-          <span>المواد</span>
-        </a>
-        <a class="quick-action-btn" id="qaBtnQuizzes" href="/quizzes.html">
-          <i class="ri-question-answer-line"></i>
-          <span>الاختبارات</span>
-        </a>
-        <a class="quick-action-btn" id="qaBtnLectures" href="/manage-lectures.html">
-          <i class="ri-video-line"></i>
-          <span>المحاضرات</span>
-        </a>
-        <a class="quick-action-btn" id="qaBtnAttendance" href="/manage-attendance.html">
-          <i class="ri-calendar-check-line"></i>
-          <span>الحضور</span>
-        </a>
-        <a class="quick-action-btn" id="qaBtnNotifications" href="/manage-notifications.html">
-          <i class="ri-megaphone-line"></i>
-          <span>الإشعارات</span>
-        </a>
-      `;
-    } else if (isDeanUser) {
-      const qaBtnFinancials = document.getElementById('qaBtnFinancials');
-      if (qaBtnFinancials && qaBtnFinancials.querySelector('span')) {
-        qaBtnFinancials.querySelector('span').textContent = 'إدارة الخزينة';
-      }
-    }
-  }
+  // الطاقم: "الرسوم" للعميد إدارة الخزينة، وحاسبة المعدل للطلاب فقط
+  if (isDeanUser) document.querySelector('#qaBtnFinancials .hm-row-title').textContent = 'إدارة الخزينة';
+  if (isDoctorUser || isDeanUser) document.getElementById('gpaRow').hidden = true;
+  if (isDoctorUser) document.getElementById('qaBtnFinancials').hidden = true;
 
   // Attach batch param to quick-action links
   if (batchId) {
@@ -721,15 +681,8 @@
     });
   }
 
-  // Avatar gradient (name-hash-based)
-  var gradients = [
-    'linear-gradient(135deg,#f59e0b,#ef4444)',
-    'linear-gradient(135deg,#7c3aed,#4f46e5)',
-    'linear-gradient(135deg,#0ea5e9,#0d3b66)',
-    'linear-gradient(135deg,#10b981,#065f46)',
-    'linear-gradient(135deg,#f43f5e,#9f1239)',
-    'linear-gradient(135deg,#8b5cf6,#ec4899)',
-  ];
+  // لون الصورة الرمزية ثابت لكل اسم (ألوان صلبة يُقرأ عليها الحرف الأبيض)
+  var gradients = ['#0d3b66', '#4338ca', '#0f766e', '#9f1239', '#7c2d12', '#334155'];
   var nameHash = name.split('').reduce(function(acc, c){ return acc + c.charCodeAt(0); }, 0);
   document.getElementById('profileAvatar').style.background = gradients[nameHash % gradients.length];
 
@@ -738,11 +691,14 @@
     if (typeof CBS !== 'undefined' && CBS.toggleDark) {
       CBS.toggleDark();
     }
-    document.getElementById('darkModeCheckbox').checked = document.body.classList.contains('dark');
+    syncDarkCheckbox();
   }
-    if (localStorage.getItem('darkMode') === 'true') {
-    document.getElementById('darkModeCheckbox').checked = true;
+  /* السمة تُحفظ في data-theme على <html>، لا كصنف 'dark' على body — فكان المفتاح
+     يعود مطفأً فور تفعيل الوضع الليلي، ولا يُظهر الوضع المأخوذ من إعداد النظام. */
+  function syncDarkCheckbox() {
+    document.getElementById('darkModeCheckbox').checked = document.documentElement.getAttribute('data-theme') === 'dark';
   }
+  syncDarkCheckbox();
 
   function toggleNotificationSoundUI() {
     const checkbox = document.getElementById('notificationSoundCheckbox');
@@ -794,7 +750,7 @@
         btn.disabled = true;
         btn.style.opacity = '0.6';
         btn.style.cursor = 'default';
-        btn.innerHTML = '<i class="ri-check-line" style="color: #fff; font-size: 1.1rem;"></i> مفعلة';
+        btn.innerHTML = '<i class="ri-check-line" style="color: var(--success-text)"></i> إشعارات الدفع مفعّلة';
       }
       return;
     }
@@ -813,7 +769,7 @@
         btn.disabled = true;
         btn.style.opacity = '0.6';
         btn.style.cursor = 'default';
-        btn.innerHTML = '<i class="ri-check-line" style="color: #fff; font-size: 1.1rem;"></i> مفعلة';
+        btn.innerHTML = '<i class="ri-check-line" style="color: var(--success-text)"></i> إشعارات الدفع مفعّلة';
       }
     } else if (Notification.permission === 'denied') {
       CBS.toast('مرفوضة', 'الإشعارات محظورة من إعدادات المتصفح. فعّلها من إعدادات الموقع.', 'error');
@@ -835,7 +791,7 @@
       btn.disabled = true;
       btn.style.opacity = '0.6';
       btn.style.cursor = 'default';
-      btn.innerHTML = '<i class="ri-check-line" style="color: #fff; font-size: 1.1rem;"></i> مفعلة';
+      btn.innerHTML = '<i class="ri-check-line" style="color: var(--success-text)"></i> إشعارات الدفع مفعّلة';
     }
   }
 

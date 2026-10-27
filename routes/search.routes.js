@@ -52,7 +52,8 @@ router.get("/", auth, async (req, res) => {
     // جلب بيانات المستخدم للتصفية
     const user = await User.findById(req.user.id).select("batch batches roles").lean();
     const roles = Array.isArray(req.user.roles) ? req.user.roles : [];
-    const isStaff = roles.some(r => ["dean", "doctor", "admin", "leader"].includes(r));
+    /* الليدر طالب: لا يبحث في بريد زملائه وهواتفهم */
+    const isStaff = roles.some(r => ["dean", "doctor", "admin"].includes(r));
     const scope = buildSearchScope(user, req.user.id);
     const accessibleSubjectIds = scope.global
       ? null
@@ -64,9 +65,14 @@ router.get("/", auth, async (req, res) => {
     const notificationVisibility = Notification.buildVisibilityQuery(
       req.user.id, roles, user?.batch, user?.batches || []
     );
+    /* $and لا الدمج: scope.userFilter يحمل $or بالدفعات، ودمجه مع $or البحث
+       كان يستبدل الأول بالثاني — فيبحث الطالب في أسماء الكلية كلها،
+       والليدر في بريد وهواتف كل الطلاب. نفس العلّة في الفيديو والتكليفات. */
     const userSearchFilter = {
-      ...scope.userFilter,
-      $or: [{ name: regex }, ...(isStaff ? [{ email: regex }, { phone: regex }] : [])],
+      $and: [
+        scope.userFilter,
+        { $or: [{ name: regex }, ...(isStaff ? [{ email: regex }, { phone: regex }] : [])] }
+      ],
       deletedAt: null,
       isActive: true,
       isPendingRegistration: { $ne: true }
@@ -95,9 +101,11 @@ router.get("/", auth, async (req, res) => {
       // 3. الفيديوهات
       Video.find({
         status: "ready",
-        ...scope.batchFilter,
         ...subjectAccessFilter,
-        $or: [{ title: regex }, { description: regex }]
+        $and: [
+          scope.global ? {} : { $or: [...(scope.batchFilter.$or || [scope.batchFilter]), { batches: { $size: 0 } }] },
+          { $or: [{ title: regex }, { description: regex }] }
+        ]
       })
         .select("title description subject")
         .populate("subject", "name")
@@ -106,9 +114,8 @@ router.get("/", auth, async (req, res) => {
 
       // 4. الواجبات
       Assignment.find({
-        ...scope.batchFilter,
         ...subjectAccessFilter,
-        $or: [{ title: regex }, { description: regex }]
+        $and: [scope.batchFilter, { $or: [{ title: regex }, { description: regex }] }]
       })
         .select("title description type dueDate subject")
         .populate("subject", "name")

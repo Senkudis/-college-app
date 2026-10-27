@@ -6,12 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>إدارة التسليمات | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=2026083019">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026083019">
+  <link rel="stylesheet" href="/css/style.css?v=2026102613">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026102613">
+  <link rel="stylesheet" href="/css/ui.css?v=2026102613">
   <style>
     .stats-row {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(min(150px, 100%), 1fr));
       gap: 14px;
       margin-bottom: 24px;
     }
@@ -60,7 +61,7 @@
        فكانت البطاقات تظهر كنص متراكم بلا إطار ولا ترتيب. */
     .sub-cards-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+      grid-template-columns: repeat(auto-fill, minmax(min(300px, 100%), 1fr));
       gap: 14px;
     }
     .sub-card {
@@ -108,7 +109,11 @@
     @media (max-width: 480px) {
       .sub-cards-grid { grid-template-columns: 1fr; }
     }
-  </style>
+      .ms-tools { display: flex; gap: 8px; margin-bottom: 10px; }
+    .ms-tools select { min-height: 44px; padding: 0 10px; border-radius: 12px; border: 1px solid var(--border); background: var(--hm-surface); color: var(--text-main); font: inherit; font-size: 0.86rem; min-width: 0; }
+    .ms-tools > select:first-child { flex: 1; }
+    .ms-av { width: 38px; height: 38px; flex-shrink: 0; border-radius: 50%; display: grid; place-items: center; font-weight: 800; color: var(--primary-text); background: var(--primary-light); }
+</style>
 
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
   <meta name="mobile-web-app-capable" content="yes">
@@ -133,7 +138,7 @@
 <div class="page-content">
 
     <!-- Welcome Banner -->
-    <div class="welcome-banner" style="background: linear-gradient(135deg,#8b5cf6,#7c3aed,#6d28d9);">
+    <div class="welcome-banner" style="--page-accent:#7c3aed">
       <div class="welcome-banner-icon-wrap">
         <i class="ri-stack-line welcome-banner-icon"></i>
       </div>
@@ -142,74 +147,37 @@
         <p>مراجعة وتقييم تكليفات الطلاب</p>
       </div>
     </div>
-  <div class="page-header">
-    <div class="page-header-left">
-      <div class="page-icon"><i class="ri-stack-line"></i></div>
-      <div>
-        <div class="page-title">إدارة التسليمات</div>
-        <div class="page-subtitle">مراجعة وتقييم أعمال الطلاب</div>
-      </div>
-    </div>
-    <button class="btn btn-secondary" onclick="exportCSV()" id="exportBtn">
-      <i class="ri-file-excel-2-line"></i> تصدير CSV
-    </button>
+  <div class="ms-tools">
+    <select id="filterAssign" onchange="loadSubmissions()" aria-label="التكليف"><option value="">جميع التكليفات</option></select>
+    <button type="button" class="ui-act" onclick="exportCSV()" id="exportBtn" style="min-height:44px" title="تصدير CSV"><i class="ri-file-excel-2-line"></i> CSV</button>
   </div>
 
-  <!-- Stats -->
-  <div class="stats-row" id="statsRow"></div>
-
-  <!-- Filters -->
-  <div class="filters-bar">
-    <div class="form-group">
-      <label class="form-label" for="filterAssign">التكليف</label>
-      <div class="input-wrapper"><i class="input-icon ri-file-list-line"></i>
-        <select class="form-control" id="filterAssign" onchange="loadSubmissions()">
-          <option value="">جميع التكليفات</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-group">
-      <label class="form-label" for="filterType">النوع</label>
-      <div class="input-wrapper"><i class="input-icon ri-bookmark-line"></i>
-        <select class="form-control" id="filterType" onchange="loadSubmissions()">
-          <option value="">الكل</option>
-          <option value="exercise">تمرين</option>
-          <option value="research">بحث</option>
-          <option value="project">مشروع</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-group">
-      <label class="form-label" for="filterStatus">الحالة</label>
-      <div class="input-wrapper"><i class="input-icon ri-filter-line"></i>
-        <select class="form-control" id="filterStatus" onchange="loadSubmissions()">
-          <option value="">الكل</option>
-          <option value="pending">قيد المراجعة</option>
-          <option value="reviewed">تمت المراجعة</option>
-          <option value="graded">مقيّم</option>
-        </select>
-      </div>
-    </div>
-    <div class="form-group" style="flex: 2; min-width: 200px;">
-      <label class="form-label" for="searchSubInput">بحث بالاسم</label>
-      <div class="input-wrapper">
-        <i class="input-icon ri-search-line"></i>
-        <input type="text" id="searchSubInput" class="form-control" placeholder="ابحث باسم الطالب..." oninput="searchSubmissions(this.value)">
-      </div>
-    </div>
-    <button class="btn btn-secondary" onclick="loadSubmissions()"><i class="ri-refresh-line"></i> تحديث</button>
+  <!-- الحالة كشرائح (القائمة المنسدلة باقية مخفية لأن الروابط المباشرة تضبطها) -->
+  <select id="filterStatus" onchange="loadSubmissions()" hidden>
+    <option value="">الكل</option><option value="pending">قيد المراجعة</option><option value="reviewed">تمت المراجعة</option><option value="graded">مقيّم</option>
+  </select>
+  <div class="ui-chips" id="statusChips" aria-label="حالة التسليم">
+    <button type="button" class="ui-chip" data-s="pending">بانتظار التصحيح <span class="n" data-c="pending"></span></button>
+    <button type="button" class="ui-chip" data-s="graded">مقيّمة <span class="n" data-c="graded"></span></button>
+    <button type="button" class="ui-chip" data-s="reviewed">تمت المراجعة <span class="n" data-c="reviewed"></span></button>
+    <button type="button" class="ui-chip" data-s="">الكل <span class="n" data-c="all"></span></button>
   </div>
+
+  <div class="ms-tools">
+    <div class="ui-search" style="flex:1;min-width:0"><i class="ri-search-line"></i><input type="search" id="searchSubInput" placeholder="ابحث باسم الطالب" aria-label="ابحث باسم الطالب" oninput="searchSubmissions(this.value)"></div>
+    <select id="filterType" onchange="loadSubmissions()" aria-label="النوع">
+      <option value="">كل الأنواع</option><option value="exercise">تمرين</option><option value="research">بحث</option><option value="project">مشروع</option>
+    </select>
+  </div>
+  <div id="statsRow" class="ui-count"></div>
 
   <div id="alertMsg" class="alert"></div>
-
-  <!-- Submissions List -->
   <div id="subsContainer"></div>
 
-  <!-- لم يسلموا -->
-  <div class="not-sub-card" id="notSubCard" style="display:none;">
-    <div class="not-sub-title"><i class="ri-user-unfollow-line"></i> طلاب لم يسلموا هذا التكليف</div>
-    <div class="not-sub-list" id="notSubList"></div>
-  </div>
+  <section id="notSubCard" style="display:none;margin-top:22px">
+    <div class="hm-sec-head"><h2 class="hm-sec-title">لم يسلّموا <span class="n" id="notSubCount"></span></h2></div>
+    <div class="hm-list" id="notSubList"></div>
+  </section>
 </div>
 
 <!-- Grade Modal -->
@@ -246,11 +214,11 @@
   جميع الحقوق محفوظة © <span id="year"></span> النظام الجامعي المتكامل
 </footer>
 
-<script src="/js/shared.js?v=2026083019"></script>
-<script src="/js/app.js?v=2026083019"></script>
-<script src="/js/socket-client.js?v=2026083019" defer></script>
+<script src="/js/shared.js?v=2026102613"></script>
+<script src="/js/app.js?v=2026102613"></script>
+<script src="/js/socket-client.js?v=2026102613" defer></script>
 <script>
-  CBS.init({ requireRoles: ['dean', 'doctor', 'leader', 'admin'] });
+  CBS.init({ requireRoles: ['dean', 'doctor', 'admin'] }); // تقييم التسليمات ليس من صلاحيات الليدر
 
   let allSubs = [], allAssigns = [], currentSubId = null;
   const typeLabel   = { exercise:'تمرين', research:'بحث', project:'مشروع' };
@@ -259,10 +227,10 @@
 
   function searchSubmissions(query) {
     const q = query.toLowerCase().trim();
-    const cards = document.querySelectorAll('#subsContainer .sub-card');
+    const cards = document.querySelectorAll('#subsContainer .ms-sub');
     cards.forEach(card => {
-      const text = card.querySelector('.sub-name')?.innerText.toLowerCase() || '';
-      card.style.display = text.includes(q) ? 'flex' : 'none';
+      const text = card.querySelector('.hm-row-title')?.innerText.toLowerCase() || '';
+      card.style.display = text.includes(q) ? '' : 'none';
     });
   }
 
@@ -279,6 +247,11 @@
       const sel = document.getElementById('filterAssign');
       sel.innerHTML = '<option value="">جميع التكليفات</option>' +
         allAssigns.map(a => `<option value="${a._id}">${CBS.escapeHTML(a.title)}</option>`).join('');
+      // رابط مباشر من الصفحة الرئيسية: ?assignment=<id>&status=pending
+      const q = new URLSearchParams(location.search);
+      if (allAssigns.some(a => a._id === q.get('assignment'))) sel.value = q.get('assignment');
+      const st = document.getElementById('filterStatus');
+      if (st && q.get('status') && [...st.options].some(o => o.value === q.get('status'))) st.value = q.get('status');
       loadSubmissions();
     } catch(e) { CBS.showAlert('alertMsg', 'خطأ في التحميل', 'danger'); }
   }
@@ -308,39 +281,22 @@
       updateStats(filtered);
 
       if (!filtered.length) {
-        container.innerHTML = '<div class="empty-state"><i class="ri-inbox-line"></i><p>لا توجد تسليمات</p></div>';
+        container.innerHTML = `<div class="hm-list"><div class="hm-row hm-empty"><span class="hm-ic" data-tone="success"><i class="ri-checkbox-circle-line"></i></span><div class="hm-row-body"><div class="hm-row-title">لا تسليمات هنا</div><div class="hm-row-meta">جرّب حالة أو تكليفاً آخر</div></div></div></div>`;
       } else {
-        // عرض كبطاقات (أنسب للموبايل)
-        container.innerHTML = `<div class="sub-cards-grid">${filtered.map(s => `
-          <div class="sub-card">
-            <div class="sub-card-head">
-              <div class="sub-card-student">
-                <div class="sub-avatar">${CBS.escapeHTML((s.student?.name || '?')[0])}</div>
-                <div>
-                  <div class="sub-name">${CBS.escapeHTML(s.student?.name || '-')}</div>
-                  <div class="sub-email">${CBS.escapeHTML(s.student?.email || '')}</div>
-                </div>
-              </div>
-              <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
-                <span class="badge ${statusBadge[s.status] || 'badge-accent'}">${statusLabel[s.status] || s.status}</span>
-                ${s.isLate ? '<span class="badge badge-danger">متأخر</span>' : '<span class="badge badge-success">في الوقت</span>'}
-              </div>
-            </div>
-            <div class="sub-card-meta">
-              <span><i class="ri-file-list-3-line"></i> ${CBS.escapeHTML(s.assignment?.title || '-')}</span>
-              <span><i class="ri-bookmark-line"></i> ${typeLabel[s.submissionType] || s.submissionType}</span>
-              <span><i class="ri-time-line"></i> ${CBS.formatDateTime(s.submissionDate)}</span>
-              <span><i class="ri-star-line"></i> ${s.grade != null ? `<strong>${s.grade}/100</strong>` : 'لم يقيم'}</span>
-            </div>
-            <div class="sub-card-actions">
-              <button class="btn btn-secondary" style="flex:1;" onclick="openGrade('${s._id}')" aria-label="تعديل">
-                <i class="ri-edit-line"></i> تقييم
-              </button>
-              <a href="${API_BASE}${CBS.privateFileUrl('submissions', s.file)}" target="_blank" rel="noopener noreferrer" class="btn btn-primary" style="text-decoration:none;">
-                <i class="ri-download-line"></i>
-              </a>
-            </div>
-          </div>`).join('')}</div>`;
+        // صف لكل تسليم: الضغط يفتح التقييم، والملف أيقونة في الطرف
+        const tone = { pending: 'warning', reviewed: 'primary', graded: 'success' };
+        container.innerHTML = '<div class="hm-list">' + filtered.map(s => `
+          <div class="hm-row ui-row ms-sub">
+            <button type="button" class="ui-row-main" onclick="openGrade('${s._id}')">
+              <span class="ms-av">${CBS.escapeHTML((s.student?.name || '?').trim()[0])}</span>
+              <div class="hm-row-body"><div class="hm-row-title">${CBS.escapeHTML(s.student?.name || '-')}</div>
+                <div class="hm-row-meta">${CBS.escapeHTML(s.assignment?.title || '-')} · ${CBS.formatDateTime(s.submissionDate)}${s.isLate ? ' · <span style="color:var(--danger-text)">متأخر</span>' : ''}</div></div>
+            </button>
+            <span class="hm-row-end">
+              <span class="hm-chip" data-tone="${tone[s.status] || ''}">${s.grade != null ? s.grade + '/100' : (statusLabel[s.status] || s.status)}</span>
+              <a class="ui-icon-btn" href="${API_BASE}${CBS.privateFileUrl('submissions', s.file)}" target="_blank" rel="noopener noreferrer" title="ملف التسليم" aria-label="ملف التسليم"><i class="ri-file-download-line"></i></a>
+            </span>
+          </div>`).join('') + '</div>';
       }
 
       if (assignId) loadNotSubmitted(assignId);
@@ -393,18 +349,20 @@
   }
 
   function updateStats(list) {
-    const total    = list.length;
-    const pending  = list.filter(s => s.status === 'pending').length;
-    const graded   = list.filter(s => s.status === 'graded').length;
-    const late     = list.filter(s => s.isLate).length;
-    const reviewed = list.filter(s => s.status === 'reviewed').length;
-    document.getElementById('statsRow').innerHTML = `
-      <div class="stat-box"><div class="num">${total}</div><div class="lbl">الإجمالي</div></div>
-      <div class="stat-box warn"><div class="num">${pending}</div><div class="lbl">قيد المراجعة</div></div>
-      <div class="stat-box"><div class="num">${reviewed}</div><div class="lbl">تمت المراجعة</div></div>
-      <div class="stat-box success"><div class="num">${graded}</div><div class="lbl">مقيّم</div></div>
-      <div class="stat-box danger"><div class="num">${late}</div><div class="lbl">تسليم متأخر</div></div>`;
+    const late = list.filter(s => s.isLate).length;
+    document.getElementById('statsRow').textContent = list.length
+      ? `${CBS.arCount(list.length, ['تسليم واحد', 'تسليمان', 'تسليمات', 'تسليماً'])}${late ? ` · ${late} متأخر` : ''}` : '';
+    // أعداد الشرائح من كل التسليمات (لا من المصفّاة) ليعرف المستخدم ما في كل حالة
+    const count = st => allSubs.filter(s => !st || s.status === st).length;
+    document.querySelectorAll('#statusChips [data-c]').forEach(el => { const c = el.dataset.c; el.textContent = count(c === 'all' ? '' : c) || ''; });
+    const cur = document.getElementById('filterStatus').value;
+    document.querySelectorAll('#statusChips .ui-chip').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.s === cur)));
   }
+  document.getElementById('statusChips').addEventListener('click', e => {
+    const b = e.target.closest('.ui-chip'); if (!b) return;
+    document.getElementById('filterStatus').value = b.dataset.s;
+    loadSubmissions();
+  });
 
   async function loadNotSubmitted(assignId) {
     try {
@@ -415,11 +373,12 @@
       const notSubmitted = data.data?.notSubmitted || data.notSubmitted || [];
       if (!notSubmitted.length) { card.style.display = 'none'; return; }
       card.style.display = 'block';
+      const totalStudents = data.data?.totalStudents ?? data.totalStudents;
+      document.getElementById('notSubCount').textContent = totalStudents ? `${notSubmitted.length} من ${totalStudents}` : notSubmitted.length;
       document.getElementById('notSubList').innerHTML = notSubmitted.map(st => `
-        <div class="not-sub-item">
-          <div><strong>${CBS.escapeHTML(st.name)}</strong><div style="font-size:0.75rem;color:var(--text-muted);">${CBS.escapeHTML(st.email)}</div></div>
-          <span class="badge badge-danger">لم يسلم</span>
-        </div>`).join('') + `<div style="text-align:center;margin-top:8px;font-size:0.82rem;color:var(--text-muted);">${data.notSubmitted.length} من ${data.totalStudents} طلاب لم يسلموا</div>`;
+        <div class="hm-row"><span class="ms-av">${CBS.escapeHTML((st.name || '?').trim()[0])}</span>
+          <div class="hm-row-body"><div class="hm-row-title">${CBS.escapeHTML(st.name)}</div><div class="hm-row-meta">${CBS.escapeHTML(st.email || '')}</div></div>
+          <span class="hm-row-end"><span class="hm-chip" data-tone="danger">لم يسلّم</span></span></div>`).join('');
     } catch(e) {
       // لوحة ثانوية — لا نُزعج المستخدم برسالة، لكن لا نبتلع الخطأ بصمت تام
       console.warn('loadNotSubmitted:', e.message);

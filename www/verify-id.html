@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>التحقق من بطاقة الهوية | كلية النصر التقنية</title>
+  <meta name="description" content="صفحة التحقق الرسمية من بطاقة الهوية الرقمية لكلية النصر التقنية">
+  <meta name="robots" content="noindex, nofollow">
+  <meta name="referrer" content="no-referrer">
+  <link rel="icon" href="/assets/logo.png">
+  <link href="/vendor/fonts/cairo.css" rel="stylesheet">
+  <link rel="stylesheet" href="/vendor/remixicon/remixicon.css">
+  <style>
+    /* صفحة عامة مستقلة: يفتحها حارس البوابة أو أي جهة بمسح الـQR من كاميرا
+       الهاتف، دون تسجيل دخول ودون تحميل app.js (الذي يحوّل غير المسجلين
+       إلى صفحة الدخول). */
+    :root {
+      --bg: #f1f5f9;
+      --card: #ffffff;
+      --text: #0f172a;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --brand: #2563eb;
+      --ok: #059669;
+      --ok-bg: #ecfdf5;
+      --warn: #b45309;
+      --warn-bg: #fffbeb;
+      --bad: #dc2626;
+      --bad-bg: #fef2f2;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #0b1220;
+        --card: #111a2e;
+        --text: #e2e8f0;
+        --muted: #94a3b8;
+        --line: #1e2a44;
+        --brand: #60a5fa;
+        --ok: #34d399;
+        --ok-bg: rgba(16, 185, 129, 0.12);
+        --warn: #fbbf24;
+        --warn-bg: rgba(245, 158, 11, 0.12);
+        --bad: #f87171;
+        --bad-bg: rgba(239, 68, 68, 0.12);
+      }
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px 16px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Cairo', system-ui, sans-serif;
+    }
+    .wrap { width: 100%; max-width: 420px; }
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 20px;
+      overflow: hidden;
+      box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+    }
+    .head {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 16px 18px;
+      border-bottom: 1px solid var(--line);
+    }
+    .head img { width: 44px; height: 44px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+    .head strong { display: block; font-size: 1rem; }
+    .head small { color: var(--muted); font-size: 0.8rem; }
+
+    .status {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 6px;
+      padding: 26px 18px 20px;
+      text-align: center;
+    }
+    .status-icon {
+      width: 68px;
+      height: 68px;
+      border-radius: 50%;
+      display: grid;
+      place-items: center;
+      font-size: 2.2rem;
+      margin-bottom: 6px;
+      background: var(--line);
+      color: var(--muted);
+    }
+    .status h1 { font-size: 1.25rem; font-weight: 800; }
+    .status p { color: var(--muted); font-size: 0.88rem; line-height: 1.7; }
+    .is-ok .status-icon { background: var(--ok-bg); color: var(--ok); }
+    .is-ok .status h1 { color: var(--ok); }
+    .is-warn .status-icon { background: var(--warn-bg); color: var(--warn); }
+    .is-warn .status h1 { color: var(--warn); }
+    .is-bad .status-icon { background: var(--bad-bg); color: var(--bad); }
+    .is-bad .status h1 { color: var(--bad); }
+    .spin { animation: spin 0.9s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .holder { padding: 0 18px 18px; }
+    .holder-name {
+      font-size: 1.2rem;
+      font-weight: 800;
+      text-align: center;
+      padding: 14px;
+      border-radius: 14px;
+      background: var(--bg);
+      margin-bottom: 12px;
+      overflow-wrap: anywhere;
+    }
+    .rows { display: grid; gap: 1px; background: var(--line); border-radius: 14px; overflow: hidden; }
+    .row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 11px 14px;
+      background: var(--card);
+      font-size: 0.88rem;
+    }
+    .row span:first-child { color: var(--muted); display: flex; align-items: center; gap: 6px; }
+    .row span:last-child { font-weight: 700; text-align: left; overflow-wrap: anywhere; }
+
+    .note {
+      display: flex;
+      gap: 8px;
+      margin: 0 18px 18px;
+      padding: 12px 14px;
+      border-radius: 14px;
+      border: 1px dashed var(--line);
+      color: var(--muted);
+      font-size: 0.8rem;
+      line-height: 1.7;
+    }
+    .note i { color: var(--brand); font-size: 1rem; flex-shrink: 0; margin-top: 2px; }
+    .foot {
+      text-align: center;
+      margin-top: 14px;
+      font-size: 0.78rem;
+      color: var(--muted);
+    }
+    .foot a { color: var(--brand); text-decoration: none; font-weight: 700; }
+    [hidden] { display: none !important; }
+  </style>
+</head>
+<body>
+  <main class="wrap">
+    <div class="card" id="card" aria-live="polite">
+      <div class="head">
+        <img src="/assets/logo.png" alt="" onerror="this.hidden=true">
+        <div>
+          <strong>جامعة النصر التقنية</strong>
+          <small>كلية النصر التقنية · التحقق من بطاقة الهوية</small>
+        </div>
+      </div>
+
+      <div class="status">
+        <div class="status-icon" id="statusIcon"><i class="ri-loader-4-line spin"></i></div>
+        <h1 id="statusTitle">جاري التحقق...</h1>
+        <p id="statusText">نتحقق من البطاقة مع سجلات الكلية</p>
+      </div>
+
+      <div class="holder" id="holder" hidden>
+        <div class="holder-name" id="holderName"></div>
+        <div class="rows">
+          <div class="row"><span><i class="ri-shield-user-line"></i> الصفة</span><span id="holderRole"></span></div>
+          <div class="row" id="batchRow"><span><i class="ri-group-line"></i> الدفعة</span><span id="holderBatch"></span></div>
+          <div class="row" id="sinceRow"><span><i class="ri-calendar-line"></i> مسجّل منذ</span><span id="holderSince"></span></div>
+          <div class="row"><span><i class="ri-time-line"></i> وقت التحقق</span><span id="checkedAt"></span></div>
+        </div>
+      </div>
+
+      <div class="note" id="note" hidden>
+        <i class="ri-information-line"></i>
+        <span>طابِق الاسم أعلاه مع حامل البطاقة. هذه الصفحة تصدر من موقع الكلية الرسمي، وحالة الحساب فيها مباشرة لا مخزّنة.</span>
+      </div>
+    </div>
+
+    <div class="foot">
+      <a href="/welcome.html">elnasrcsit.website</a>
+    </div>
+  </main>
+
+  <script>
+    (function () {
+      var card = document.getElementById('card');
+
+      function show(state, icon, title, text) {
+        card.classList.remove('is-ok', 'is-warn', 'is-bad');
+        if (state) card.classList.add('is-' + state);
+        document.getElementById('statusIcon').innerHTML = '<i class="' + icon + '"></i>';
+        document.getElementById('statusTitle').textContent = title;
+        document.getElementById('statusText').textContent = text;
+      }
+
+      // الرمز في المسار /id/<code>، ويُقبل ?c=<code> احتياطاً
+      var match = location.pathname.match(/\/id\/([^\/?#]+)/);
+      var code = match ? decodeURIComponent(match[1]) : new URLSearchParams(location.search).get('c');
+
+      if (!code) {
+        show('bad', 'ri-close-circle-line', 'لا يوجد رمز للتحقق', 'افتح هذه الصفحة بمسح رمز QR الموجود على بطاقة الهوية.');
+        return;
+      }
+
+      fetch('/api/public/verify-id/' + encodeURIComponent(code), { headers: { Accept: 'application/json' } })
+        .then(function (res) {
+          return res.json().catch(function () { return {}; }).then(function (body) { return { res: res, body: body }; });
+        })
+        .then(function (r) {
+          if (r.res.status === 429) {
+            show('warn', 'ri-hourglass-line', 'محاولات كثيرة', r.body.message || 'يرجى الانتظار قليلاً ثم إعادة المسح.');
+            return;
+          }
+          var data = r.body && r.body.data;
+          if (!r.res.ok || !data || !data.valid) {
+            show('bad', 'ri-close-circle-line', 'بطاقة غير صالحة', r.body.message || 'لم نتمكن من مطابقة هذه البطاقة مع سجلات الكلية.');
+            return;
+          }
+
+          var h = data.holder || {};
+          if (data.status === 'active') {
+            show('ok', 'ri-checkbox-circle-line', 'بطاقة صالحة', 'حامل هذه البطاقة مسجّل في الكلية وحسابه نشط.');
+          } else {
+            show('warn', 'ri-error-warning-line', 'الحساب غير نشط', 'البطاقة أصلية، لكن حساب صاحبها موقوف أو بانتظار الاعتماد حالياً.');
+          }
+
+          document.getElementById('holderName').textContent = h.name || '';
+          document.getElementById('holderRole').textContent = h.roleTitle || '';
+          var batch = [h.batchName, h.batchCode].filter(Boolean).join(' · ');
+          document.getElementById('holderBatch').textContent = batch;
+          document.getElementById('batchRow').hidden = !batch;
+          document.getElementById('holderSince').textContent = h.memberSince || '';
+          document.getElementById('sinceRow').hidden = !h.memberSince;
+          document.getElementById('checkedAt').textContent = new Date(data.checkedAt || Date.now())
+            .toLocaleString('ar-EG-u-nu-latn', { dateStyle: 'medium', timeStyle: 'short' });
+          document.getElementById('holder').hidden = false;
+          document.getElementById('note').hidden = false;
+        })
+        .catch(function () {
+          show('warn', 'ri-wifi-off-line', 'تعذر الاتصال', 'تحقق من اتصال الإنترنت ثم أعد مسح الرمز.');
+        });
+    })();
+  </script>
+</body>
+</html>

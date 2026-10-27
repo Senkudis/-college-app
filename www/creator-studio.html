@@ -6,8 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>استوديو المحاضرات | كلية النصر التقنية</title>
   <link href="/vendor/remixicon/remixicon.css" rel="stylesheet" />
-  <link rel="stylesheet" href="/css/style.css?v=2026083019">
-  <link rel="stylesheet" href="/css/mobile.css?v=2026083019">
+  <link rel="stylesheet" href="/css/style.css?v=2026102613">
+  <link rel="stylesheet" href="/css/mobile.css?v=2026102613">
+  <link rel="stylesheet" href="/css/ui.css?v=2026102613">
   <style>
     .studio-hero {
       background: linear-gradient(135deg, #6366f1, #8b5cf6, #a855f7);
@@ -72,11 +73,11 @@
     .progress-section.active { display: block; }
 
     .progress-bar-wrap {
-      width: 100%; height: 24px; background: var(--bg-main);
+      width: 100%; height: 20px; background: var(--bg-hover);
       border-radius: 12px; overflow: hidden; margin: 12px 0;
     }
     .progress-bar-fill {
-      height: 100%; background: linear-gradient(90deg, #6366f1, #a855f7);
+      height: 100%; background: var(--primary);
       border-radius: 12px; transition: width 0.3s ease;
       display: flex; align-items: center; justify-content: center;
       color: white; font-size: 0.75rem; font-weight: 700;
@@ -103,7 +104,8 @@
       .studio-hero h1 { font-size: 1.3rem; }
       .upload-zone { padding: 32px 16px; }
     }
-  </style>
+      .studio-hero { display: none !important; }
+</style>
 
   <link rel="apple-touch-icon" href="/assets/icon-192.png">
   <meta name="mobile-web-app-capable" content="yes">
@@ -326,9 +328,9 @@
 <div id="toast-container"></div>
 <footer class="main-footer">حقوق النشر &copy; <span id="year"></span> جامعة النصر التقنية</footer>
 
-<script src="/js/shared.js?v=2026083019"></script>
-<script src="/js/app.js?v=2026083019"></script>
-<script src="/js/socket-client.js?v=2026083019" defer></script>
+<script src="/js/shared.js?v=2026102613"></script>
+<script src="/js/app.js?v=2026102613"></script>
+<script src="/js/socket-client.js?v=2026102613" defer></script>
 <script>
   CBS.init({ requireRoles: ['dean', 'doctor', 'leader'] });
 
@@ -914,6 +916,9 @@
     const subject = document.getElementById('videoSubject').value;
     
     // Get selected batches based on user role
+    /* كان user معرّفاً داخل كتلة try في دالة أخرى فقط: أول سطر هنا يرمي
+       "user is not defined" فلا يحدث شيء عند الضغط على "بدء الرفع" إطلاقاً */
+    const user = CBS.getUser() || { roles: [] };
     let batches = [];
     if (user.roles.includes('leader') && !user.roles.includes('dean') && !user.roles.includes('doctor')) {
       // Leader auto-assigns their own batch
@@ -930,15 +935,21 @@
     if (batches.length === 0) { CBS.toast('اختر دفعة واحدة على الأقل (أو تأكد من حسابك)', '', 'error'); return; }
     if (!selectedFile) { CBS.toast('اختر ملف فيديو أو سجّل من المتصفح', '', 'error'); return; }
 
-    document.getElementById('uploadBtn').disabled = true;
+    /* ردّ فوري: كان الزر يتعطل بصمت ولوحة التقدم تظهر أسفل الصفحة خارج الشاشة وبعد
+       ردّ الخادم الأول فقط — فيبدو التطبيق "معلّقاً" والرفع يعمل أو فشل دون علم المستخدم */
+    setUploadBtn('busy');
     isUploading = true;
     const totalChunks = Math.ceil(selectedFile.size / CHUNK_SIZE);
+    uploadStartedAt = Date.now();
 
-    // Show progress
     const ps = document.getElementById('progressSection');
     ps.classList.add('active');
     document.getElementById('processingMsg').style.display = 'none';
     document.getElementById('doneMsg').style.display = 'none';
+    document.getElementById('progressTitle').textContent = 'جاري التحضير للرفع...';
+    updateStatusBadge('uploading', 'تحضير');
+    updateProgress(0, totalChunks);
+    ps.scrollIntoView({ behavior: 'smooth', block: 'center' });
 
     try {
       // Step 1: Init upload
@@ -956,9 +967,11 @@
           mimeType: selectedFile.type
         })
       });
-      const initData = await initRes.json();
-      if (!initData.success) throw new Error(initData.message);
+      const initData = await readJsonSafe(initRes);
+      if (!initRes.ok || !initData.success) throw new Error(initData.message || httpMessage(initRes.status));
       currentUploadId = initData.uploadId;
+      document.getElementById('progressTitle').textContent = 'جاري رفع الفيديو...';
+      updateStatusBadge('uploading', 'رفع');
 
       // Step 2: Check for resumable chunks
       let uploadedChunks = [];
@@ -990,29 +1003,41 @@
           xhr.open('POST', API_BASE + `/api/videos/upload-chunk/${currentUploadId}`);
           xhr.setRequestHeader('Authorization', 'Bearer ' + CBS.getToken());
 
+          // بلا مهلة كانت القطعة العالقة تُبقي الشاشة على حالها إلى الأبد
+          xhr.timeout = 180000;
           xhr.upload.onprogress = (evt) => {
             if (evt.lengthComputable) {
               const chunkPct = (evt.loaded / evt.total) * (1 / totalChunks) * 100;
               const totalPct = Math.min(99, baseProgress + chunkPct);
               document.getElementById('progressBar').style.width = totalPct.toFixed(1) + '%';
               document.getElementById('progressBar').textContent = Math.round(totalPct) + '%';
+              const sent = Math.min(selectedFile.size, start + evt.loaded);
+              const secs = Math.max(1, (Date.now() - uploadStartedAt) / 1000);
               document.getElementById('progressSpeed').textContent =
-                `${formatBytes(evt.loaded)} / ${formatBytes(evt.total)}`;
+                `${formatBytes(sent)} من ${formatBytes(selectedFile.size)} · ${formatBytes(sent / secs)}/ث`;
             }
           };
 
           xhr.onload = () => {
-            try {
-              const res = JSON.parse(xhr.responseText);
-              if (res.success) { resolve(res); }
-              else reject(new Error(res.message || 'خطأ في الرفع'));
-            } catch { reject(new Error('استجابة غير صالحة')); }
+            let res = null;
+            try { res = JSON.parse(xhr.responseText); } catch {}
+            if (xhr.status >= 200 && xhr.status < 300 && res?.success) return resolve(res);
+            const e = new Error(res?.message || httpMessage(xhr.status));
+            // 4xx (عدا 408/429) خطأ دائم: إعادة المحاولة خمس مرات كانت تضيّع نصف دقيقة صامتة
+            e.permanent = xhr.status >= 400 && xhr.status < 500 && xhr.status !== 408 && xhr.status !== 429;
+            reject(e);
           };
-          xhr.onerror = () => reject(new Error('خطأ في الشبكة'));
+          xhr.onerror = () => reject(new Error('انقطع الاتصال أثناء رفع جزء من الفيديو'));
+          xhr.ontimeout = () => reject(new Error('انتهت مهلة رفع جزء من الفيديو — الاتصال بطيء جداً'));
 
+          /* رقم القطعة قبل الملف وفي الترويسة: multer يسمّي ملف القطعة أثناء
+             استقباله، وحقول النموذج بعد الملف لم تكن وصلت بعد — فكانت كل القطع
+             تُحفظ باسم chunk-0 فوق بعضها ويفشل الدمج "القطعة 1 مفقودة" لأي
+             فيديو أكبر من 5MB */
+          xhr.setRequestHeader('x-chunk-index', String(i));
           const formData = new FormData();
-          formData.append('chunk', chunk, `chunk-${i}`);
           formData.append('chunkIndex', i);
+          formData.append('chunk', chunk, `chunk-${i}`);
           xhr.send(formData);
         });
         successCount++;
@@ -1020,10 +1045,13 @@
         break;
           } catch (err) {
             retries++;
-            if (retries >= maxRetries) throw new Error(`فشل رفع القطعة ${i} بعد ${maxRetries} محاولات`);
-            // Wait before retry (exponential backoff)
-            await new Promise(r => setTimeout(r, 1000 * Math.pow(2, retries)));
-            updateStatusBadge('uploading', `إعادة المحاولة (${retries})...`);
+            if (err.permanent || retries >= maxRetries) throw err;
+            // الحالة تظهر قبل الانتظار لا بعده، ليعرف المستخدم أن التطبيق يحاول
+            const wait = 1000 * Math.pow(2, retries);
+            updateStatusBadge('uploading', `إعادة المحاولة ${retries} من ${maxRetries - 1}`);
+            document.getElementById('progressTitle').textContent = `${err.message} — إعادة المحاولة بعد ${wait / 1000} ث`;
+            await new Promise(r => setTimeout(r, wait));
+            document.getElementById('progressTitle').textContent = 'جاري رفع الفيديو...';
           }
         }
       }
@@ -1034,8 +1062,10 @@
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Authorization: 'Bearer ' + CBS.getToken() }
       });
-      const finalData = await finalRes.json();
-      if (!finalData.success) throw new Error(finalData.message);
+      const finalData = await readJsonSafe(finalRes);
+      if (!finalRes.ok || !finalData.success) throw new Error(finalData.message || httpMessage(finalRes.status));
+      document.getElementById('progressTitle').textContent = 'اكتمل الرفع';
+      setUploadBtn('done');
 
       // Show processing state
       document.getElementById('processingMsg').style.display = 'block';
@@ -1045,12 +1075,34 @@
       pollVideoStatus(finalData.videoId);
 
     } catch (err) {
-      CBS.toast(err.message || 'فشل الرفع', '', 'error');
+      CBS.toast('تعذّر رفع الفيديو', err.message || 'حاول مرة أخرى', 'error', 8000);
       updateStatusBadge('failed', 'فشل');
-      document.getElementById('uploadBtn').disabled = false;
+      document.getElementById('progressTitle').textContent = err.message || 'فشل الرفع';
+      setUploadBtn('idle');
     }
     isUploading = false;
   }
+
+  let uploadStartedAt = 0;
+  function setUploadBtn(state) {
+    const btn = document.getElementById('uploadBtn');
+    btn.disabled = state !== 'idle';
+    btn.innerHTML = state === 'busy' ? '<i class="ri-loader-4-line ri-spin"></i> جاري الرفع...'
+      : state === 'done' ? '<i class="ri-check-line"></i> تم الرفع'
+      : '<i class="ri-upload-cloud-2-line"></i> إعادة المحاولة';
+  }
+  async function readJsonSafe(res) { try { return await res.json(); } catch { return {}; } }
+  // رسائل مفهومة بدل "استجابة غير صالحة" حين يرد الخادم أو الوسيط بصفحة HTML
+  function httpMessage(status) {
+    if (status === 413) return 'الخادم يرفض حجم الجزء المرفوع (413) — يلزم رفع حد حجم الطلب في إعدادات الخادم (nginx: client_max_body_size)';
+    if (status === 401 || status === 403) return 'انتهت الجلسة أو لا تملك صلاحية الرفع — سجّل الدخول من جديد';
+    if (status === 404) return 'جلسة الرفع لم تعد موجودة — ابدأ الرفع من جديد';
+    if (status === 502 || status === 503 || status === 504) return `الخادم لا يستجيب حالياً (${status}) — حاول بعد قليل`;
+    if (!status) return 'تعذّر الاتصال بالخادم';
+    return `خطأ من الخادم (${status})`;
+  }
+  // مغادرة الصفحة أثناء الرفع تُلغيه
+  window.addEventListener('beforeunload', e => { if (isUploading) { e.preventDefault(); e.returnValue = ''; } });
 
   function updateProgress(done, total) {
     const pct = Math.round((done / total) * 100);
