@@ -17,8 +17,8 @@ on:
       - 'package.json'
       - '.github/workflows/build-ios.yml'
 
-# التوقيع يتم عبر مفتاح App Store Connect API (توقيع تلقائي سحابي، بلا شهادات
-# أو ملفات provisioning يدوية). بدون الأسرار الثلاثة يبني نسخة غير موقّعة فقط
+# التوقيع يتم عبر مفتاح App Store Connect API: ينشئ شهادة وملف provisioning مؤقتين
+# لكل تشغيل (scripts/ios-ci-signing.cjs) ثم يحذفهما. بدون الأسرار الثلاثة يبني نسخة غير موقّعة فقط
 # للتأكد أن المشروع يُترجم. معرّف الفريق ليس سراً: مثبّت في project.pbxproj
 # (DEVELOPMENT_TEAM) ويمكن تجاوزه بسر APPLE_TEAM_ID.
 #   ASC_KEY_ID      — Key ID لمفتاح App Store Connect API (صلاحية Admin)
@@ -101,12 +101,59 @@ jobs:
           retention-days: 14
 
       # ---------- نسخة موقّعة + رفع إلى TestFlight ----------
-      - name: 🔑 Install App Store Connect API key
+      # التوقيع التلقائي يحتاج Development profile وجهازاً مسجَّلاً؛ الحساب بلا أجهزة،
+      # لذلك: شهادة Distribution + App Store profile مؤقتان عبر API، ويُحذفان في النهاية.
+      - name: 🔑 Create temporary signing certificate & profile
+        if: steps.signing.outputs.enabled == 'true'
+        env:
+          PROFILE_NAME: CBS CI ${{ github.run_id }}
+        run: |
+          set -e
+          SIGN="$RUNNER_TEMP/signing"; mkdir -p "$RUNNER_TEMP/keys" "$SIGN"
+          printf '%s\n' "$ASC_KEY_P8" | tr -d '\r' > "$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
+          export ASC_KEY_PATH="$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
+          echo "ASC_KEY_PATH=$ASC_KEY_PATH" >> "$GITHUB_ENV"
+          echo "SIGN_DIR=$SIGN" >> "$GITHUB_ENV"
+          echo "PROFILE_NAME=$PROFILE_NAME" >> "$GITHUB_ENV"
+
+          /usr/bin/openssl genrsa -out "$SIGN/key.pem" 2048
+          /usr/bin/openssl req -new -key "$SIGN/key.pem" -out "$SIGN/csr.pem" -subj "/CN=CBS CI/O=$APPLE_TEAM_ID"
+          node scripts/ios-ci-signing.cjs setup "$SIGN/csr.pem" "$SIGN"
+
+          KC="$RUNNER_TEMP/ci.keychain-db"; KC_PW="$(uuidgen)"
+          /usr/bin/openssl x509 -inform DER -in "$SIGN/cert.cer" -out "$SIGN/cert.pem"
+          /usr/bin/openssl pkcs12 -export -inkey "$SIGN/key.pem" -in "$SIGN/cert.pem" -out "$SIGN/cert.p12" -passout pass:"$KC_PW"
+          security create-keychain -p "$KC_PW" "$KC"
+          security set-keychain-settings -lut 21600 "$KC"
+          security unlock-keychain -p "$KC_PW" "$KC"
+          security import "$SIGN/cert.p12" -k "$KC" -P "$KC_PW" -T /usr/bin/codesign -T /usr/bin/security
+          security set-key-partition-list -S apple-tool:,apple: -k "$KC_PW" "$KC" > /dev/null
+          security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
+          echo "KEYCHAIN_PATH=$KC" >> "$GITHUB_ENV"
+
+          UUID=$(node -p "require('$SIGN/state.json').profileUuid")
+          for d in "$HOME/Library/MobileDevice/Provisioning Profiles" "$HOME/Library/Developer/Xcode/UserData/Provisioning Profiles"; do
+            mkdir -p "$d"; cp "$SIGN/profile.mobileprovision" "$d/$UUID.mobileprovision"
+          done
+
+      # توقيع يدوي لهدف App وحده في Release (تمرير PROVISIONING_PROFILE_SPECIFIER من سطر
+      # الأوامر يطبّقه على حزم SPM أيضاً فيفشل)، و aps-environment=production لنسخ App Store
+      - name: ✍️ Switch App target to manual distribution signing
         if: steps.signing.outputs.enabled == 'true'
         run: |
-          mkdir -p "$RUNNER_TEMP/keys"
-          printf '%s\n' "$ASC_KEY_P8" > "$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8"
-          echo "ASC_KEY_PATH=$RUNNER_TEMP/keys/AuthKey_$ASC_KEY_ID.p8" >> "$GITHUB_ENV"
+          node -e '
+            const fs = require("fs"); const f = "ios/App/App.xcodeproj/project.pbxproj";
+            let s = fs.readFileSync(f, "utf8"); let hits = 0;
+            s = s.replace(/\/\* Release \*\/ = \{\n\t\t\tisa = XCBuildConfiguration;[\s\S]*?\n\t\t\};/g, (blk) => {
+              if (!blk.includes("CODE_SIGN_ENTITLEMENTS")) return blk;
+              hits++;
+              return blk.replace("CODE_SIGN_STYLE = Automatic;",
+                `CODE_SIGN_STYLE = Manual;\n\t\t\t\tCODE_SIGN_IDENTITY = "Apple Distribution";\n\t\t\t\tPROVISIONING_PROFILE_SPECIFIER = "${process.env.PROFILE_NAME}";`);
+            });
+            if (hits !== 1) { console.error("App Release config not found"); process.exit(1); }
+            fs.writeFileSync(f, s);
+          '
+          /usr/libexec/PlistBuddy -c "Set :aps-environment production" ios/App/App/App.entitlements
 
       - name: 📱 Build iOS Archive (Signed)
         if: steps.signing.outputs.enabled == 'true'
@@ -117,12 +164,8 @@ jobs:
             -configuration Release \
             -destination 'generic/platform=iOS' \
             -archivePath build/App.xcarchive \
-            -allowProvisioningUpdates \
-            -authenticationKeyPath "$ASC_KEY_PATH" \
-            -authenticationKeyID "$ASC_KEY_ID" \
-            -authenticationKeyIssuerID "$ASC_ISSUER_ID" \
             DEVELOPMENT_TEAM="$APPLE_TEAM_ID" \
-            CODE_SIGN_STYLE=Automatic \
+            OTHER_CODE_SIGN_FLAGS="--keychain $KEYCHAIN_PATH" \
             archive
 
       # destination=upload يرفع مباشرة إلى App Store Connect؛ export يكتفي بملف IPA
@@ -144,7 +187,10 @@ jobs:
             <key>method</key><string>app-store-connect</string>
             <key>destination</key><string>$DEST</string>
             <key>teamID</key><string>$APPLE_TEAM_ID</string>
-            <key>signingStyle</key><string>automatic</string>
+            <key>signingStyle</key><string>manual</string>
+            <key>signingCertificate</key><string>Apple Distribution</string>
+            <key>provisioningProfiles</key>
+            <dict><key>com.elnasrcsit.cbs</key><string>$PROFILE_NAME</string></dict>
             <key>uploadSymbols</key><true/>
           </dict>
           </plist>
@@ -153,7 +199,6 @@ jobs:
             -archivePath build/App.xcarchive \
             -exportOptionsPlist build/ExportOptions.plist \
             -exportPath build/export \
-            -allowProvisioningUpdates \
             -authenticationKeyPath "$ASC_KEY_PATH" \
             -authenticationKeyID "$ASC_KEY_ID" \
             -authenticationKeyIssuerID "$ASC_ISSUER_ID"
@@ -171,6 +216,10 @@ jobs:
           if-no-files-found: ignore
           retention-days: 14
 
-      - name: 🧹 Remove API key
-        if: always()
-        run: rm -rf "$RUNNER_TEMP/keys"
+      # حذف الشهادة والـ profile المؤقتين لا يؤثر على النسخ المرفوعة، ويمنع امتلاء حد الشهادات
+      - name: 🧹 Revoke temporary certificate & remove keys
+        if: always() && steps.signing.outputs.enabled == 'true'
+        run: |
+          [ -n "$SIGN_DIR" ] && node scripts/ios-ci-signing.cjs cleanup "$SIGN_DIR" || true
+          [ -n "$KEYCHAIN_PATH" ] && security delete-keychain "$KEYCHAIN_PATH" || true
+          rm -rf "$RUNNER_TEMP/keys" "$RUNNER_TEMP/signing"
