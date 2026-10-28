@@ -65,3 +65,6 @@ mcp-servers-catalog.md
 
 # ناتج scripts/eval-kedy.js (ردود نماذج على بيانات تجريبية)
 eval-kedy-results.json
+
+# App Store review demo credentials (scripts/seed-review-accounts.js)
+review-accounts.local.txt
