@@ -1,6 +1,6 @@
 {
   "name": "college_lms_backend",
-  "version": "2.6.0",
+  "version": "2.7.0",
   "description": "نظام إدارة أكاديمي - كلية النصر التقنية",
   "main": "server.js",
   "scripts": {

@@ -83,6 +83,16 @@ if (fs.existsSync(appJsPath)) {
   if (s !== before) { fs.writeFileSync(appJsPath, s, 'utf8'); changed.push('www/js/app.js (VERSION/BUILD_CODE)'); }
 }
 
+/* 3ج. iOS: نفس الإصدار ورقم البناء (App Store يرفض تكرار رقم البناء) */
+const pbxPath = path.join(__dirname, 'ios/App/App.xcodeproj/project.pbxproj');
+if (fs.existsSync(pbxPath)) {
+  let s = fs.readFileSync(pbxPath, 'utf8');
+  const before = s;
+  s = s.replace(/MARKETING_VERSION = [\d.]+;/g, `MARKETING_VERSION = ${VERSION};`);
+  if (VERSION_CODE) s = s.replace(/CURRENT_PROJECT_VERSION = \d+;/g, `CURRENT_PROJECT_VERSION = ${VERSION_CODE};`);
+  if (s !== before) { fs.writeFileSync(pbxPath, s, 'utf8'); changed.push(`ios project.pbxproj (${VERSION} / ${VERSION_CODE})`); }
+}
+
 /* 4. اسم ذاكرة الـService Worker — تغييره يُبطل الذاكرة القديمة */
 const swPath = path.join(__dirname, 'www/sw.js');
 if (fs.existsSync(swPath)) {

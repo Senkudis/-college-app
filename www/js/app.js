@@ -10,8 +10,8 @@ const API_BASE = _IS_CAPACITOR_NATIVE ? 'https://elnasrcsit.website' : '';
 
 const CBS = {
 
-  VERSION: '2.6.0',
-  BUILD_CODE: 37,
+  VERSION: '2.7.0',
+  BUILD_CODE: 38,
   ASSET_VERSION: '2026100603',
 
   /* ===== Auth ===== */

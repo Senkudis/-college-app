@@ -13,6 +13,12 @@
       "runtimeExecutable": "node",
       "runtimeArgs": ["C:/Users/kde/AppData/Local/Temp/claude/C--Users-kde-Desktop-kedwebcbs-main/8d10d9f2-fb82-448c-beec-e9ef75f6fc12/scratchpad/demo-server.js"],
       "port": 5077
+    },
+    {
+      "name": "kedwebcbs-teaser-demo",
+      "runtimeExecutable": "node",
+      "runtimeArgs": ["promo-video/teaser/demo-server.cjs"],
+      "port": 5088
     }
   ]
 }
