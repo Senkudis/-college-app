@@ -60,26 +60,41 @@ function init() {
   }
 }
 
+// قنوات Android التي ينشئها التطبيق (_initNotifChannels في www/js/app.js) — يجب أن تتطابق
+const CHANNELS = {
+  normal:    { id: 'cbs_general',   sound: 'cbs_notif',     color: '#2563eb', priority: 'high' },
+  emergency: { id: 'cbs_emergency', sound: 'cbs_emergency', color: '#ef4444', priority: 'max' }
+};
+
 /**
  * إرسال إشعار لجهاز واحد
  */
 async function sendToToken(token, { title, body, data = {}, isEmergency = false }) {
   if (!initialized) init();
   if (!messaging || !token) return false;
+  const ch = isEmergency ? CHANNELS.emergency : CHANNELS.normal;
   try {
     await messaging.send({
       token,
       notification: { title, body },
-      data: { ...data, isEmergency: String(isEmergency) },
+      // FCM يرفض الرسالة كلها إن كانت أي قيمة في data ليست نصاً (مثل url غير معرّف)
+      data: Object.fromEntries(
+        Object.entries({ ...data, isEmergency })
+          .filter(([, v]) => v !== undefined && v !== null)
+          .map(([k, v]) => [k, String(v)])
+      ),
       android: {
-        priority: isEmergency ? 'high' : 'normal',
+        // 'normal' كان يؤجّل الإشعار حتى يستيقظ الجهاز من وضع Doze، فيبدو أنه لم يصل
+        priority: 'high',
         notification: {
-          channelId:  isEmergency ? 'emergency' : 'general',
-          color:      isEmergency ? '#ef4444'   : '#2563eb',
-          sound:      'default',
-          priority:   isEmergency ? 'max'       : 'default',
+          channelId:  ch.id,
+          color:      ch.color,
+          sound:      ch.sound,       // لأندرويد 7 وما دون؛ من 8 فصاعداً تحدده القناة
+          priority:   ch.priority,
           visibility: 'public',
-          clickAction: 'FLUTTER_NOTIFICATION_CLICK'
+          defaultVibrateTimings: true
+          // لا clickAction: قيمة FLUTTER_NOTIFICATION_CLICK لا يلتقطها أي نشاط في
+          // تطبيقنا فكان النقر على الإشعار لا يفتح التطبيق
         }
       },
       apns: {

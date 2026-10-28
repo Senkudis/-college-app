@@ -1293,7 +1293,7 @@ const CBS = {
           body:          body,
           smallIcon:     'ic_notification',
           iconColor:     isEmergency ? '#ef4444' : '#2563eb',
-          channelId:     isEmergency ? 'emergency' : 'general',
+          channelId:     isEmergency ? 'cbs_emergency' : 'cbs_general',
           sound:         isEmergency ? 'cbs_emergency.wav' : 'cbs_notif.wav',
           importance:    isEmergency ? 5 : 4,
           extra:         { type: isEmergency ? 'emergency' : 'normal' }
@@ -3531,8 +3531,7 @@ const CBS = {
       this._initGlobalSearch(); // Global search overlay
       this.initScrollAnimations(); // Scroll animations for cards and stats
       
-      // تهيئة الإشعارات الحقيقية (FCM) وقنوات Android (تطبيق الهاتف فقط)
-      this._initNotifChannels();
+      // تهيئة الإشعارات الحقيقية (FCM) وقنوات Android (تطبيق الهاتف فقط) — القنوات تُنشأ داخلها
       this._initPushNotifications();
       this.requestNotifPermission();
     }
@@ -3849,14 +3848,18 @@ const CBS = {
     }
   },
 
-  /* ===== إنشاء قنوات الإشعارات في Android ===== */
+  /* ===== إنشاء قنوات الإشعارات في Android =====
+     تُنشأ عبر PushNotifications لأن LocalNotifications غير مثبّت في التطبيق؛ كانت
+     القنوات لا تُنشأ إطلاقاً فيعرض Android إشعارات FCM في قناة احتياطية بلا نغمتنا.
+     المعرّفات cbs_* جديدة عمداً: إعدادات القناة لا تتغير بعد إنشائها على الجهاز.
+     يجب أن تطابق CHANNELS في utils/fcmService.js. */
   async _initNotifChannels() {
-    const plugin = this._getLocalNotif();
-    if (!plugin?.createChannel) return; // ليس على Android
+    const plugin = window.Capacitor?.Plugins?.PushNotifications || this._getLocalNotif();
+    if (!plugin?.createChannel || window.Capacitor?.getPlatform?.() !== 'android') return;
     try {
-      // قناة الإشعارات العادية  نغمة message_sound المخصصة
+      // قناة الإشعارات العادية  نغمة cbs_notif المخصصة
       await plugin.createChannel({
-        id:          'general',
+        id:          'cbs_general',
         name:        'إشعارات كلية النصر التقنية',
         description: 'الإشعارات الاعتيادية من كلية النصر التقنية',
         importance:  4,              // IMPORTANCE_HIGH  لضمان الصوت دائماً
@@ -3868,7 +3871,7 @@ const CBS = {
       });
       // قناة الإشعارات الطارئة  نغمة La-La-Do الأعلى
       await plugin.createChannel({
-        id:          'emergency',
+        id:          'cbs_emergency',
         name:        'إشعارات طارئة',
         description: 'تنبيهات عاجلة وطارئة  صوت مميز وأولوية قصوى',
         importance:  5,               // IMPORTANCE_MAX
@@ -3888,14 +3891,9 @@ const CBS = {
     const PushNotifications = window.Capacitor.Plugins.PushNotifications;
     
     try {
-      let permStatus = await PushNotifications.checkPermissions();
-      if (permStatus.receive !== 'granted') {
-        permStatus = await PushNotifications.requestPermissions();
-      }
-      
-      if (permStatus.receive === 'granted') {
-        await PushNotifications.register();
-      }
+      // المستمعون قبل register(): حدث registration قد يصل فوراً، وكان يضيع حين
+      // يُضاف المستمع بعده فلا يُرسل التوكن للخادم ولا تصل الإشعارات لذلك الجهاز
+      await this._initNotifChannels();
 
       // عند استلام التوكن من Firebase، نرسله للـ Backend ونربطه بحساب المستخدم الحالي
       PushNotifications.addListener('registration', async (token) => {
@@ -3926,6 +3924,14 @@ const CBS = {
         // توجيه لصفحة الإشعارات داخل التطبيق عند النقر
         window.location.href = '/notifications.html';
       });
+
+      let permStatus = await PushNotifications.checkPermissions();
+      if (permStatus.receive !== 'granted') {
+        permStatus = await PushNotifications.requestPermissions();
+      }
+      if (permStatus.receive === 'granted') {
+        await PushNotifications.register();
+      }
 
     } catch (err) {
       console.error('Push Notifications Error:', err);

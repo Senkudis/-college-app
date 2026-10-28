@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- shrinkResources يحذف ملفات raw غير المشار إليها في الكود، ونغمات الإشعارات
+     يُشار إليها بالاسم وقت التشغيل فقط (قنوات Android) فكانت تُحذف من نسخة الإصدار -->
+<resources xmlns:tools="http://schemas.android.com/tools"
+    tools:keep="@raw/cbs_notif,@raw/cbs_emergency,@drawable/ic_notification" />
