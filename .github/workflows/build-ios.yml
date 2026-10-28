@@ -107,6 +107,8 @@ jobs:
         if: steps.signing.outputs.enabled == 'true'
         env:
           PROFILE_NAME: CBS CI ${{ github.run_id }}
+          DIST_CERT_P12_BASE64: ${{ secrets.DIST_CERT_P12_BASE64 }}
+          DIST_CERT_P12_PASSWORD: ${{ secrets.DIST_CERT_P12_PASSWORD }}
         run: |
           set -e
           SIGN="$RUNNER_TEMP/signing"; mkdir -p "$RUNNER_TEMP/keys" "$SIGN"
@@ -116,17 +118,26 @@ jobs:
           echo "SIGN_DIR=$SIGN" >> "$GITHUB_ENV"
           echo "PROFILE_NAME=$PROFILE_NAME" >> "$GITHUB_ENV"
 
-          /usr/bin/openssl genrsa -out "$SIGN/key.pem" 2048
-          /usr/bin/openssl req -new -key "$SIGN/key.pem" -out "$SIGN/csr.pem" -subj "/CN=CBS CI/O=$APPLE_TEAM_ID"
-          node scripts/ios-ci-signing.cjs setup "$SIGN/csr.pem" "$SIGN"
-
           KC="$RUNNER_TEMP/ci.keychain-db"; KC_PW="$(uuidgen)"
-          /usr/bin/openssl x509 -inform DER -in "$SIGN/cert.cer" -out "$SIGN/cert.pem"
-          /usr/bin/openssl pkcs12 -export -inkey "$SIGN/key.pem" -in "$SIGN/cert.pem" -out "$SIGN/cert.p12" -passout pass:"$KC_PW"
+          if [ -n "$DIST_CERT_P12_BASE64" ]; then
+            # الحساب يسمح بشهادة Distribution واحدة (المشتركة مع وجيز): نستخدمها ولا نحذفها
+            printf '%s' "$DIST_CERT_P12_BASE64" | base64 --decode > "$SIGN/cert.p12"
+            /usr/bin/openssl pkcs12 -in "$SIGN/cert.p12" -passin pass:"$DIST_CERT_P12_PASSWORD" -clcerts -nokeys \
+              | /usr/bin/openssl x509 -outform DER -out "$SIGN/cert.cer"
+            node scripts/ios-ci-signing.cjs profile "$SIGN/cert.cer" "$SIGN"
+            P12_PW="$DIST_CERT_P12_PASSWORD"
+          else
+            /usr/bin/openssl genrsa -out "$SIGN/key.pem" 2048
+            /usr/bin/openssl req -new -key "$SIGN/key.pem" -out "$SIGN/csr.pem" -subj "/CN=CBS CI/O=$APPLE_TEAM_ID"
+            node scripts/ios-ci-signing.cjs setup "$SIGN/csr.pem" "$SIGN"
+            /usr/bin/openssl x509 -inform DER -in "$SIGN/cert.cer" -out "$SIGN/cert.pem"
+            /usr/bin/openssl pkcs12 -export -inkey "$SIGN/key.pem" -in "$SIGN/cert.pem" -out "$SIGN/cert.p12" -passout pass:"$KC_PW"
+            P12_PW="$KC_PW"
+          fi
           security create-keychain -p "$KC_PW" "$KC"
           security set-keychain-settings -lut 21600 "$KC"
           security unlock-keychain -p "$KC_PW" "$KC"
-          security import "$SIGN/cert.p12" -k "$KC" -P "$KC_PW" -T /usr/bin/codesign -T /usr/bin/security
+          security import "$SIGN/cert.p12" -k "$KC" -P "$P12_PW" -T /usr/bin/codesign -T /usr/bin/security
           security set-key-partition-list -S apple-tool:,apple: -k "$KC_PW" "$KC" > /dev/null
           security list-keychains -d user -s "$KC" $(security list-keychains -d user | tr -d '"')
           echo "KEYCHAIN_PATH=$KC" >> "$GITHUB_ENV"

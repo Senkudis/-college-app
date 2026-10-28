@@ -4,6 +4,7 @@
 // ونوقّع يدوياً، ثم نحذفهما في النهاية (الحذف لا يؤثر على النسخ المرفوعة).
 //
 //   node scripts/ios-ci-signing.cjs setup <csr.pem> <outDir>   -> cert.cer, profile.mobileprovision, state.json
+//   node scripts/ios-ci-signing.cjs profile <cert.cer> <outDir> -> profile فقط لشهادة موجودة
 //   node scripts/ios-ci-signing.cjs cleanup <outDir>
 //
 // المتغيرات: ASC_KEY_ID, ASC_ISSUER_ID, ASC_KEY_PATH, BUNDLE_ID, PROFILE_NAME
@@ -64,6 +65,36 @@ async function ensureBundleId() {
   return item.id;
 }
 
+// شهادة Distribution موجودة مسبقاً (مثلاً المشتركة مع وجيز): نجد معرّفها وننشئ profile فقط،
+// ولا تُحذف الشهادة في cleanup لأن state.json لا يحمل certId
+async function profileForExisting(cerPath, outDir) {
+  fs.mkdirSync(outDir, { recursive: true });
+  const bundleRef = await ensureBundleId();
+  const content = fs.readFileSync(cerPath).toString('base64');
+  const list = await api('GET', '/certificates?filter[certificateType]=DISTRIBUTION,IOS_DISTRIBUTION&limit=50');
+  const cert = (list.data || []).find((c) => c.attributes.certificateContent === content);
+  if (!cert) throw new Error('الشهادة في DIST_CERT_P12_BASE64 غير موجودة (أو أُلغيت) في حساب Apple.');
+  await createProfile(bundleRef, cert.id, outDir, {});
+}
+
+async function createProfile(bundleRef, certId, outDir, state) {
+  const profile = (await api('POST', '/profiles', {
+    data: {
+      type: 'profiles',
+      attributes: { name: process.env.PROFILE_NAME, profileType: 'IOS_APP_STORE' },
+      relationships: {
+        bundleId: { data: { type: 'bundleIds', id: bundleRef } },
+        certificates: { data: [{ type: 'certificates', id: certId }] },
+      },
+    },
+  })).data;
+  fs.writeFileSync(path.join(outDir, 'profile.mobileprovision'), Buffer.from(profile.attributes.profileContent, 'base64'));
+  state.profileId = profile.id;
+  state.profileUuid = profile.attributes.uuid;
+  fs.writeFileSync(path.join(outDir, 'state.json'), JSON.stringify(state));
+  console.log(`Certificate ${certId}, profile "${process.env.PROFILE_NAME}" (${profile.attributes.uuid})`);
+}
+
 async function setup(csrPath, outDir) {
   fs.mkdirSync(outDir, { recursive: true });
   const bundleRef = await ensureBundleId();
@@ -82,22 +113,7 @@ async function setup(csrPath, outDir) {
   fs.writeFileSync(path.join(outDir, 'cert.cer'), Buffer.from(cert.attributes.certificateContent, 'base64'));
   const state = { certId: cert.id };
   fs.writeFileSync(path.join(outDir, 'state.json'), JSON.stringify(state));
-
-  const profile = (await api('POST', '/profiles', {
-    data: {
-      type: 'profiles',
-      attributes: { name: process.env.PROFILE_NAME, profileType: 'IOS_APP_STORE' },
-      relationships: {
-        bundleId: { data: { type: 'bundleIds', id: bundleRef } },
-        certificates: { data: [{ type: 'certificates', id: cert.id }] },
-      },
-    },
-  })).data;
-  fs.writeFileSync(path.join(outDir, 'profile.mobileprovision'), Buffer.from(profile.attributes.profileContent, 'base64'));
-  state.profileId = profile.id;
-  state.profileUuid = profile.attributes.uuid;
-  fs.writeFileSync(path.join(outDir, 'state.json'), JSON.stringify(state));
-  console.log(`Certificate ${cert.id}, profile "${process.env.PROFILE_NAME}" (${profile.attributes.uuid})`);
+  await createProfile(bundleRef, cert.id, outDir, state);
 }
 
 async function cleanup(outDir) {
@@ -112,4 +128,5 @@ async function cleanup(outDir) {
 }
 
 const [cmd, a, b] = process.argv.slice(2);
-(cmd === 'setup' ? setup(a, b) : cleanup(a)).catch((e) => { console.error(e.message); process.exit(1); });
+const run = { setup: () => setup(a, b), profile: () => profileForExisting(a, b), cleanup: () => cleanup(a) }[cmd];
+run().catch((e) => { console.error(e.message); process.exit(1); });
