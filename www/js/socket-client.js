@@ -194,10 +194,13 @@
     });
   }
 
-  /* ───── Smart Install Banner (APK / iOS PWA) ───── */
+  /* ───── Smart Install Banner (Google Play / App Store) ───── */
+  const APP_STORE_URL = (typeof CBS !== 'undefined' && CBS.APP_STORE_URL) || 'https://apps.apple.com/app/id6827734693';
   function detectAndShowInstall() {
-    if (localStorage.getItem('pwa_dismissed')) return;
-    if (window.navigator.standalone === true || window.matchMedia('(display-mode: standalone)').matches) return; // Already installed
+    // مفتاح جديد: من أغلق لافتة "أضف للشاشة الرئيسية" القديمة يرى لافتة المتجر مرة
+    if (localStorage.getItem('store_banner_dismissed')) return;
+    // لا نستثني نسخة الويب المثبّتة على الشاشة الرئيسية: مستخدموها هم أكثر من يحتاج
+    // الانتقال للتطبيق الحقيقي (إشعارات موثوقة)
 
     /* داخل التطبيق الأصلي (Capacitor) لا تُعرض لافتة التثبيت إطلاقاً:
        الـUA على آيفون يحوي "iphone" حتى داخل التطبيق، فكانت اللافتة
@@ -227,7 +230,8 @@
     try {
       const res = await fetch('/api/app-version/check?platform=android');
       const data = await res.json();
-      return (data?.data?.directApkUrl) || data?.directApkUrl || null;
+      const cfg = data?.data || data || {};
+      return cfg.playStoreUrl || cfg.directApkUrl || null; // رابط المتجر أولاً إن ضبطه العميد
     } catch { return null; }
   }
 
@@ -265,16 +269,22 @@
         location.href = url;
       });
     } else {
-      // iOS
+      // iOS — التطبيق متاح في App Store
       banner.innerHTML = `
         <div class="pwa-icon"><i class="ri-apple-line"></i></div>
         <div class="pwa-text">
-          <strong>ثبّت التطبيق على الآيفون</strong>
-          <small>اضغط على أيقونة المشاركة <i class="ri-share-box-line" style="font-size:1.1rem;vertical-align:middle"></i> ثم (Add to Home Screen)</small>
+          <strong>التطبيق الرسمي للآيفون</strong>
+          <small>حمل التطبيق من App Store لتجربة أسرع وإشعارات فورية</small>
         </div>
         <div class="pwa-actions">
-          <button class="btn-dismiss" type="button">حسناً</button>
+          <button class="btn-install" type="button">تحميل</button>
+          <button class="btn-dismiss" type="button">لاحقاً</button>
         </div>`;
+
+      banner.querySelector('.btn-install').addEventListener('click', () => {
+        window._dismissPWA();
+        location.href = APP_STORE_URL;
+      });
     }
 
     banner.querySelector('.btn-dismiss')?.addEventListener('click', () => window._dismissPWA());
@@ -286,7 +296,7 @@
   window._dismissPWA = () => {
     const banner = document.getElementById('pwa-install-banner');
     if (banner) banner.remove();
-    localStorage.setItem('pwa_dismissed', '1');
+    localStorage.setItem('store_banner_dismissed', '1');
   };
 
   /* ───── Offline Bar ───── */

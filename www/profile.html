@@ -774,11 +774,12 @@
     } else if (Notification.permission === 'denied') {
       CBS.toast('مرفوضة', 'الإشعارات محظورة من إعدادات المتصفح. فعّلها من إعدادات الموقع.', 'error');
     } else {
-      // على iOS يجب تثبيت التطبيق للشاشة الرئيسية أولاً حتى تعمل الإشعارات
+      // Safari على iOS لا يدعم إشعارات المواقع غير المثبّتة — التطبيق متاح في App Store
       const isIOS = /iphone|ipad|ipod/i.test(navigator.userAgent);
       const standalone = window.navigator.standalone || window.matchMedia('(display-mode: standalone)').matches;
       if (isIOS && !standalone) {
-        CBS.toast('خطوة مطلوبة', 'أضف التطبيق إلى الشاشة الرئيسية أولاً (زر المشاركة ← إضافة إلى الشاشة الرئيسية)، ثم فعّل الإشعارات.', 'info', 8000);
+        CBS.toast('حمّل التطبيق', 'لتصلك الإشعارات على الآيفون حمّل تطبيق الكلية من App Store.', 'info', 8000);
+        setTimeout(() => { location.href = CBS.APP_STORE_URL; }, 1500);
       } else {
         CBS.toast('تعذّر التفعيل', 'الإشعارات غير متاحة على هذا الجهاز حالياً.', 'error');
       }

@@ -147,7 +147,8 @@
             `• *كلمة المرور:* التي اخترتها عند التسجيل (إن نسيتها استخدم "نسيت كلمة المرور")\n` +
             `• *الدفعة الدراسية:* ${batchName}\n\n` +
             ` *الدخول عبر تطبيق الأندرويد (رابط التحميل):*\nhttps://play.google.com/apps/testing/com.elnasrcsit.cbs\n\n` +
-            ` *الدخول عبر متصفح الويب (للآيفون والكمبيوتر):*\n${CBS.publicBaseUrl()}/login.html\n\n` +
+            ` *تطبيق الآيفون (App Store):*\n${CBS.APP_STORE_URL}\n\n` +
+            ` *الدخول عبر متصفح الويب (للكمبيوتر):*\n${CBS.publicBaseUrl()}/login.html\n\n` +
             `نتمنى لك رحلة دراسية مكللة بالنجاح والتوفيق! `;
 
           const waUrl = cleanPhone ? `https://wa.me/${cleanPhone}?text=${encodeURIComponent(waMsg)}` : '#';
